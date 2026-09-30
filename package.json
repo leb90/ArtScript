@@ -1,0 +1,24 @@
+{
+  "name": "artscript",
+  "version": "0.1.0",
+  "description": "Lenguaje web AI-native que compila a JavaScript. Menos tokens, menos contexto, menos errores.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "art": "src/cli.ts"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.ts",
+    "typecheck": "tsc -p .",
+    "art": "node src/cli.ts",
+    "bench": "node src/cli.ts bench"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "js-tiktoken": "^1.0.21",
+    "typescript": "^7.0.2"
+  }
+}

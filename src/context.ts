@@ -1,0 +1,122 @@
+// `art context`: contexto compacto y determinista para LLMs, en vez de archivos completos.
+import type { ComponentDecl, ModelDecl, Program, ViewNode } from "./ast.ts";
+import { show, type Analysis } from "./checker.ts";
+import { fmtLoc } from "./errors.ts";
+import { printDecl, printElementHead, printExpr, printStmt, printType } from "./printer.ts";
+
+// Estimación grosera (≈4 caracteres por token). NO es una medición: ver benchmarks/ para medir en serio.
+export const estimateTokens = (s: string) => Math.ceil(s.length / 4);
+
+function walk(nodes: ViewNode[], fn: (n: ViewNode) => void) {
+  for (const n of nodes) {
+    fn(n);
+    if (n.kind === "IfView") { walk(n.then, fn); if (n.else) walk(n.else, fn); }
+    else if (n.kind === "ForView") walk(n.body, fn);
+    else walk(n.children, fn);
+  }
+}
+
+function uses(c: ComponentDecl): string[] {
+  const out = new Set<string>();
+  walk(c.view, (n) => { if (n.kind === "Element" && /^[A-Z]/.test(n.tag)) out.add(n.tag); });
+  return [...out];
+}
+
+function modelDeps(c: ComponentDecl, a: Analysis): string[] {
+  const syms = a.symbols.get(c.name);
+  const out = new Set<string>();
+  for (const s of syms?.values() ?? []) {
+    for (const m of a.models.keys()) if (new RegExp(`\\b${m}\\b`).test(show(s.ty))) out.add(m);
+  }
+  return [...out];
+}
+
+// Usa los tipos tal como se declararon (ID, Email), no su representación interna.
+function modelLine(name: string, p: Program): string {
+  const m = p.decls.find((d): d is ModelDecl => d.kind === "Model" && d.name === name)!;
+  return `model ${name} { ${m.fields.map((f) => `${f.name}: ${printType(f.type)}`).join(", ")} }`;
+}
+
+function symList(c: ComponentDecl, a: Analysis, kind: string): string {
+  const syms = a.symbols.get(c.name);
+  const items: string[] = [];
+  for (const [name, s] of syms ?? []) {
+    if (s.kind !== kind) continue;
+    if (kind === "fn") {
+      const m = c.members.find((x) => x.name === name);
+      items.push(`${name}(${m?.kind === "Fn" ? m.params.join(", ") : ""})`);
+    } else items.push(`${name}: ${show(s.ty)}`);
+  }
+  return items.join(", ") || "-";
+}
+
+function signature(c: ComponentDecl): string {
+  if (c.page) return `page ${c.name} ${JSON.stringify(c.path ?? "/" + c.name.toLowerCase())}`;
+  return `component ${c.name}(${c.params.map((p) => `${p.name}: ${p.type.name}${p.type.list ? "[]" : ""}${p.type.optional ? "?" : ""}`).join(", ")})`;
+}
+
+// Mapa del proyecto completo: una línea por declaración.
+export function projectMap(p: Program, a: Analysis, budget = Infinity): string {
+  const lines = [`# project: ${p.decls.length} decls`];
+  for (const d of p.decls) {
+    if (d.kind === "Model") lines.push(modelLine(d.name, p));
+  }
+  for (const d of p.decls) {
+    if (d.kind !== "Component") continue;
+    let l = signature(d);
+    const st = symList(d, a, "state"), cp = symList(d, a, "computed"), fn = symList(d, a, "fn"), us = uses(d);
+    if (st !== "-") l += ` state[${st}]`;
+    if (cp !== "-") l += ` computed[${cp}]`;
+    if (fn !== "-") l += ` fn[${fn}]`;
+    if (us.length) l += ` uses[${us.join(", ")}]`;
+    l += ` @${fmtLoc(d.loc)}`;
+    lines.push(l);
+  }
+  return fit(lines, budget);
+}
+
+// Contexto de una sola declaración: lo necesario para modificarla sin leer el resto.
+export function declContext(p: Program, a: Analysis, target: string, budget = Infinity): string | null {
+  const name = target.split("/").pop()!;
+  const d = p.decls.find((x) => x.name === name);
+  if (!d) return null;
+  const usedBy = p.decls.filter((x): x is ComponentDecl => x.kind === "Component" && uses(x).includes(name)).map((x) => x.name);
+
+  if (d.kind === "Model") {
+    const refs = p.decls.filter((x): x is ComponentDecl => x.kind === "Component" && modelDeps(x, a).includes(name)).map((x) => x.name);
+    return fit([`${modelLine(name, p)} @${fmtLoc(d.loc)}`, `used_by: ${refs.join(", ") || "-"}`], budget);
+  }
+
+  const lines = [`${signature(d)} @${fmtLoc(d.loc)}`];
+  if (!d.page) lines.push(`props: ${symList(d, a, "prop")}`);
+  lines.push(`state: ${symList(d, a, "state")}`, `computed: ${symList(d, a, "computed")}`, `fn: ${symList(d, a, "fn")}`);
+  lines.push(`uses: ${uses(d).join(", ") || "-"}`, `used_by: ${usedBy.join(", ") || "-"}`);
+  for (const m of modelDeps(d, a)) lines.push(modelLine(m, p));
+
+  const events: string[] = [];
+  walk(d.view, (n) => {
+    if (n.kind === "Element" && n.action) events.push(`  ${n.tag}${n.content ? " " + printExpr(n.content) : ""} -> ${n.action.map(printStmt).join("; ")}`);
+  });
+  if (events.length) lines.push("events:", ...events);
+
+  // El código fuente completo va al final: se incluye solo si entra en el presupuesto.
+  const source = ["source:", printDecl(d)];
+  const outline = ["outline:"];
+  walk(d.view, (n) => { if (n.kind === "Element") outline.push("  " + printElementHead(n)); });
+  const base = lines.join("\n");
+  if (estimateTokens(base + "\n" + source.join("\n")) <= budget) return base + "\n" + source.join("\n");
+  if (estimateTokens(base + "\n" + outline.join("\n")) <= budget) return base + "\n" + outline.join("\n");
+  return fit(lines, budget);
+}
+
+function fit(lines: string[], budget: number): string {
+  const out: string[] = [];
+  for (const l of lines) {
+    if (estimateTokens([...out, l].join("\n")) > budget) {
+      out.push(`… (${lines.length - out.length} líneas omitidas por --budget)`);
+      break;
+    }
+    out.push(l);
+  }
+  return out.join("\n");
+}

@@ -1,0 +1,42 @@
+model Todo {
+  id: ID
+  title: String
+  done: Bool
+}
+
+component TodoItem(todo: Todo, remove: Fn) {
+  row gap=2 {
+    input todo.done type=checkbox
+    text todo.title
+    button "x" danger small -> remove(todo.id)
+  }
+}
+
+page Todos "/" {
+  state todos: Todo[] = []
+  state draft = ""
+  computed pending = todos.filter(t => !t.done).length
+  fn add() {
+    if draft.trim() == "" {
+      return
+    }
+    todos.push({ id: crypto.randomUUID(), title: draft, done: false })
+    draft = ""
+  }
+
+  column gap=4 {
+    title "Tareas"
+    row gap=2 {
+      input draft placeholder="¿Qué hay que hacer?" -> add()
+      button "Agregar" primary -> add()
+    }
+    for todo in todos {
+      TodoItem todo=todo remove=(id => todos = todos.filter(t => t.id != id))
+    }
+    if todos.length == 0 {
+      text "No hay tareas" muted
+    } else {
+      text `${pending} pendientes` muted
+    }
+  }
+}

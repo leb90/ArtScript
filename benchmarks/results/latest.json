@@ -1,0 +1,41 @@
+{
+  "date": "2026-09-30T21:37:03.978Z",
+  "tokenizer": "o200k_base (js-tiktoken)",
+  "exact": true,
+  "results": {
+    "counter": {
+      "artscript": {
+        "bytes": 323,
+        "lines": 17,
+        "tokens": 92
+      },
+      "react": {
+        "bytes": 624,
+        "lines": 19,
+        "tokens": 181
+      },
+      "svelte": {
+        "bytes": 485,
+        "lines": 17,
+        "tokens": 154
+      }
+    },
+    "todo": {
+      "artscript": {
+        "bytes": 885,
+        "lines": 42,
+        "tokens": 245
+      },
+      "react": {
+        "bytes": 1655,
+        "lines": 44,
+        "tokens": 471
+      },
+      "svelte": {
+        "bytes": 1354,
+        "lines": 43,
+        "tokens": 400
+      }
+    }
+  }
+}
