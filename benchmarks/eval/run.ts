@@ -82,6 +82,7 @@ function usd(u: Usage): number {
 type RunResult = {
   task: string; stack: Stack; run: number; ok: boolean; attempts: number; usage: Usage; usd: number;
   codeTokens: number | null; errors: string[]; stop?: string;
+  attemptErrors: string[][]; // errors fed back after each failed attempt, to improve the spec
 };
 
 let spent = 0;
@@ -93,6 +94,7 @@ async function runOne(client: Anthropic, task: Task, stack: Stack, run: number):
   let errors: string[] = [];
   let files: Files = {};
   let stop: string | undefined;
+  const attemptErrors: string[][] = [];
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     if (spent >= MAX_USD) { errors = [`presupuesto agotado (--max-usd ${MAX_USD})`]; return done(false, attempt - 1); }
@@ -121,6 +123,7 @@ async function runOne(client: Anthropic, task: Task, stack: Stack, run: number):
     files = extractFiles(text);
     errors = await validate(stack, files);
     if (!errors.length) return done(true, attempt);
+    attemptErrors.push(errors.slice(0, 10));
     messages.push({ role: "user", content: `El código tiene errores:\n${errors.join("\n")}\n\nDevolvé los archivos completos corregidos.` });
   }
   return done(false, MAX_ATTEMPTS);
@@ -128,7 +131,7 @@ async function runOne(client: Anthropic, task: Task, stack: Stack, run: number):
   async function done(ok: boolean, attempts: number): Promise<RunResult> {
     let codeTokens: number | null = null;
     if (ok) codeTokens = await countCodeTokens(client, files);
-    return { task: task.id, stack, run, ok, attempts, usage, usd: usd(usage), codeTokens, errors: ok ? [] : errors.slice(0, 5), stop };
+    return { task: task.id, stack, run, ok, attempts, usage, usd: usd(usage), codeTokens, errors: ok ? [] : errors.slice(0, 5), stop, attemptErrors };
   }
 }
 
@@ -234,7 +237,7 @@ async function main() {
     } catch (e) {
       const msg = e instanceof Anthropic.APIError ? `API ${e.status}: ${e.message}` : String(e);
       console.log(`✗ ${t.id}/${s}#${r + 1}  ${msg}`);
-      return { task: t.id, stack: s, run: r + 1, ok: false, attempts: 0, usage: zero(), usd: 0, codeTokens: null, errors: [msg] } as RunResult;
+      return { task: t.id, stack: s, run: r + 1, ok: false, attempts: 0, usage: zero(), usd: 0, codeTokens: null, errors: [msg], attemptErrors: [] } as RunResult;
     }
   })));
   console.log(`${jobs.length} corridas, modelo ${MODEL}, tope $${MAX_USD}\n`);

@@ -1,0 +1,66 @@
+{
+  "model": "claude-opus-5-5",
+  "effort": "medium",
+  "runs": 1,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 4,
+    "out": 20,
+    "cacheRead": 0.2,
+    "cacheWrite": 5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "counter",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 89,
+        "output": 151,
+        "cacheRead": 0,
+        "cacheWrite": 1783
+      },
+      "usd": 0.012291,
+      "codeTokens": 142,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 241,
+        "output": 529,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.011544,
+      "codeTokens": 518,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 257,
+        "output": 574,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.012508,
+      "codeTokens": 552,
+      "errors": [],
+      "stop": "end_turn"
+    }
+  ]
+}

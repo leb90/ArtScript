@@ -1,0 +1,1239 @@
+{
+  "model": "claude-opus-5-5",
+  "effort": "medium",
+  "runs": 3,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 4,
+    "out": 20,
+    "cacheRead": 0.2,
+    "cacheWrite": 5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "counter",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 89,
+        "output": 149,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0036926,
+      "codeTokens": 140,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 89,
+        "output": 151,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0037326,
+      "codeTokens": 142,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 89,
+        "output": 149,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0036926,
+      "codeTokens": 140,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 241,
+        "output": 529,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.011544,
+      "codeTokens": 518,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 241,
+        "output": 557,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.012104,
+      "codeTokens": 546,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 241,
+        "output": 555,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.012064,
+      "codeTokens": 544,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 257,
+        "output": 606,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.013148,
+      "codeTokens": 584,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 257,
+        "output": 453,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.010088,
+      "codeTokens": 442,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 257,
+        "output": 557,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.012168,
+      "codeTokens": 535,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 156,
+        "output": 803,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0170406,
+      "codeTokens": 435,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 2,
+      "usage": {
+        "input": 1341,
+        "output": 1483,
+        "cacheRead": 3566,
+        "cacheWrite": 0
+      },
+      "usd": 0.0357372,
+      "codeTokens": 489,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 2,
+      "usage": {
+        "input": 1222,
+        "output": 1380,
+        "cacheRead": 3566,
+        "cacheWrite": 0
+      },
+      "usd": 0.0332012,
+      "codeTokens": 490,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 308,
+        "output": 1475,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.030732,
+      "codeTokens": 1282,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 308,
+        "output": 1401,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.029252,
+      "codeTokens": 1249,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 308,
+        "output": 1420,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.029632,
+      "codeTokens": 1306,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 324,
+        "output": 1267,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.026636,
+      "codeTokens": 1128,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 324,
+        "output": 1212,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.025536,
+      "codeTokens": 1044,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 324,
+        "output": 1384,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.028976,
+      "codeTokens": 1154,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "login",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 112,
+        "output": 237,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0055446,
+      "codeTokens": 228,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "login",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 112,
+        "output": 237,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0055446,
+      "codeTokens": 228,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "login",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 112,
+        "output": 229,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.005384600000000001,
+      "codeTokens": 220,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "login",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 264,
+        "output": 1001,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.021076,
+      "codeTokens": 990,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "login",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 264,
+        "output": 926,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.019576,
+      "codeTokens": 915,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "login",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 264,
+        "output": 968,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.020416,
+      "codeTokens": 935,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "login",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 280,
+        "output": 896,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.01904,
+      "codeTokens": 872,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "login",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 280,
+        "output": 856,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.01824,
+      "codeTokens": 832,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "login",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 280,
+        "output": 1022,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.02156,
+      "codeTokens": 876,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "search",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 108,
+        "output": 421,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0092086,
+      "codeTokens": 412,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "search",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 108,
+        "output": 420,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0091886,
+      "codeTokens": 411,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "search",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 108,
+        "output": 411,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0090086,
+      "codeTokens": 402,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "search",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 260,
+        "output": 961,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.02026,
+      "codeTokens": 950,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "search",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 260,
+        "output": 1016,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.02136,
+      "codeTokens": 1005,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "search",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 260,
+        "output": 984,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.02072,
+      "codeTokens": 973,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "search",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 276,
+        "output": 977,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.020644,
+      "codeTokens": 870,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "search",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 276,
+        "output": 1017,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.021444,
+      "codeTokens": 900,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "search",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 276,
+        "output": 1049,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.022084,
+      "codeTokens": 901,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "cart",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 116,
+        "output": 1408,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0289806,
+      "codeTokens": 762,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "cart",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 116,
+        "output": 1314,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0271006,
+      "codeTokens": 840,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "cart",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 116,
+        "output": 1353,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0278806,
+      "codeTokens": 850,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "cart",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 268,
+        "output": 1723,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.035532,
+      "codeTokens": 1712,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "cart",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 268,
+        "output": 1690,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.034872,
+      "codeTokens": 1679,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "cart",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 268,
+        "output": 1735,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.035772,
+      "codeTokens": 1724,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "cart",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 284,
+        "output": 1845,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.038036,
+      "codeTokens": 1690,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "cart",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 284,
+        "output": 2022,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.041576,
+      "codeTokens": 1640,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "cart",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 284,
+        "output": 2114,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.043416,
+      "codeTokens": 1873,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "tabs",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 2,
+      "usage": {
+        "input": 737,
+        "output": 851,
+        "cacheRead": 3566,
+        "cacheWrite": 0
+      },
+      "usd": 0.0206812,
+      "codeTokens": 282,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "tabs",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 88,
+        "output": 289,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.006488600000000001,
+      "codeTokens": 280,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "tabs",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 88,
+        "output": 280,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0063086,
+      "codeTokens": 271,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "tabs",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 240,
+        "output": 1387,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.0287,
+      "codeTokens": 1376,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "tabs",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 240,
+        "output": 1425,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.02946,
+      "codeTokens": 1392,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "tabs",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 240,
+        "output": 1506,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.03108,
+      "codeTokens": 1443,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "tabs",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 256,
+        "output": 1534,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.031704,
+      "codeTokens": 1354,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "tabs",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 256,
+        "output": 994,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.020904,
+      "codeTokens": 971,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "tabs",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 256,
+        "output": 874,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.018504,
+      "codeTokens": 851,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter-mod",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 212,
+        "output": 304,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0072846000000000004,
+      "codeTokens": 234,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter-mod",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 212,
+        "output": 227,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.005744600000000001,
+      "codeTokens": 218,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter-mod",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 212,
+        "output": 332,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0078446,
+      "codeTokens": 250,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter-mod",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 471,
+        "output": 611,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.014104,
+      "codeTokens": 503,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter-mod",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 471,
+        "output": 655,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.014984,
+      "codeTokens": 503,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter-mod",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 471,
+        "output": 804,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.017964,
+      "codeTokens": 638,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter-mod",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 462,
+        "output": 898,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.019808,
+      "codeTokens": 576,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter-mod",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 462,
+        "output": 737,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.016588,
+      "codeTokens": 548,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "counter-mod",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 462,
+        "output": 721,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.016268,
+      "codeTokens": 485,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo-mod",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 466,
+        "output": 488,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.011980600000000001,
+      "codeTokens": 479,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo-mod",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 466,
+        "output": 488,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.011980600000000001,
+      "codeTokens": 479,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo-mod",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 466,
+        "output": 488,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.011980600000000001,
+      "codeTokens": 479,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo-mod",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 921,
+        "output": 1169,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.027064,
+      "codeTokens": 823,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo-mod",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 921,
+        "output": 1134,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.026364,
+      "codeTokens": 823,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo-mod",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 921,
+        "output": 819,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.020064,
+      "codeTokens": 806,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo-mod",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 862,
+        "output": 691,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.017268,
+      "codeTokens": 545,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo-mod",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 862,
+        "output": 736,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.018168,
+      "codeTokens": 710,
+      "errors": [],
+      "stop": "end_turn"
+    },
+    {
+      "task": "todo-mod",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 862,
+        "output": 720,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.017848,
+      "codeTokens": 545,
+      "errors": [],
+      "stop": "end_turn"
+    }
+  ]
+}
