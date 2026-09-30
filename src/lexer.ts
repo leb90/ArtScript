@@ -7,11 +7,11 @@ export type Token = {
   t: "id" | "num" | "str" | "tpl" | "op" | "nl" | "eof";
   v: string;
   loc: Loc;
-  quasis?: string[]; // solo para `tpl`
-  parts?: TplPart[]; // expresiones dentro de ${ } (fuente sin parsear)
+  quasis?: string[]; // only for `tpl`
+  parts?: TplPart[]; // expressions inside ${ } (unparsed source)
 };
 
-// Ordenados de más largo a más corto para que el match sea greedy.
+// Sorted longest first so matching is greedy.
 const OPS = [
   "...", "===", "!==", "**=", "??=",
   "=>", "->", "==", "!=", "<=", ">=", "&&", "||", "??", "?.", "++", "--", "+=", "-=", "*=", "/=", "%=", "**",
@@ -25,7 +25,7 @@ export function lex(src: string, file: string, startLine = 1, startCol = 1): Tok
   let i = 0;
   let line = startLine;
   let col = startCol;
-  // Dentro de ( ) y [ ] los saltos de línea no terminan sentencias.
+  // Inside ( ) and [ ] newlines don't end statements.
   const depth: string[] = [];
 
   const loc = (): Loc => ({ file, line, col });

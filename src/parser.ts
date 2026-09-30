@@ -12,7 +12,7 @@ const BINARY_PREC: Record<string, number> = {
   "+": 6, "-": 6, "*": 7, "/": 7, "%": 7, "**": 8,
 };
 const ASSIGN_OPS = new Set(["=", "+=", "-=", "*=", "/=", "%=", "**=", "??="]);
-// Formas equivalentes de JS que se aceptan y se normalizan a una sola forma canónica.
+// Equivalent JS forms that are accepted and normalized to one canonical form.
 const CANONICAL: Record<string, string> = { "===": "==", "!==": "!=" };
 
 export function parse(src: string, file: string): Program {
@@ -33,7 +33,7 @@ class Parser {
     this.toks = toks;
   }
 
-  // ---------- utilidades ----------
+  // ---------- utilities ----------
   get tok(): Token { return this.toks[this.i]; }
   peek(n = 1): Token { return this.toks[Math.min(this.i + n, this.toks.length - 1)]; }
   next(): Token { return this.toks[this.i++]; }
@@ -63,7 +63,7 @@ class Parser {
     if (this.tok.t !== "eof") this.fail("fin de expresión");
   }
 
-  // ---------- declaraciones ----------
+  // ---------- declarations ----------
   program(): Program {
     const decls: Decl[] = [];
     this.skipNl();
@@ -155,7 +155,7 @@ class Parser {
     return fn;
   }
 
-  // ---------- vista ----------
+  // ---------- view ----------
   viewBlock(): ViewNode[] {
     this.expect("{");
     const nodes: ViewNode[] = [];
@@ -193,7 +193,7 @@ class Parser {
     return this.element();
   }
 
-  // `}` seguido (quizá tras saltos de línea) de `else`.
+  // `}` followed (possibly after newlines) by `else`.
   elseAhead(): boolean {
     let j = this.i;
     while (this.toks[j].t === "nl") j++;
@@ -224,7 +224,7 @@ class Parser {
     return { kind: "Element", tag: tag.v, content, props, action, children, loc: tag.loc };
   }
 
-  // ---------- sentencias ----------
+  // ---------- statements ----------
   block(): Stmt[] {
     this.expect("{");
     const out: Stmt[] = [];
@@ -265,7 +265,7 @@ class Parser {
     return { kind: "ExprStmt", expr: this.expr(), loc: t.loc };
   }
 
-  // ---------- expresiones ----------
+  // ---------- expressions ----------
   expr(): Expr {
     if (this.arrowAhead()) return this.arrow();
     const left = this.ternary();
@@ -321,7 +321,7 @@ class Parser {
       const prec = t.t === "op" ? BINARY_PREC[t.v] : undefined;
       if (prec === undefined || prec <= min) break;
       this.next();
-      const right = this.binary(t.v === "**" ? prec - 1 : prec); // ** es asociativo a derecha
+      const right = this.binary(t.v === "**" ? prec - 1 : prec); // ** is right-associative
       left = { kind: "Binary", op: CANONICAL[t.v] ?? t.v, left, right, loc: left.loc };
     }
     return left;
@@ -366,7 +366,7 @@ class Parser {
     }
   }
 
-  // Lista de argumentos; el `(` ya fue consumido.
+  // Argument list; the `(` has already been consumed.
   args(): Expr[] {
     const out: Expr[] = [];
     while (!this.is(")")) {

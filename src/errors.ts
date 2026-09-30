@@ -1,4 +1,4 @@
-// Errores estructurados. Mismo objeto para humanos (`art check`) y para IA (`art check --ai`).
+// Structured errors. Same object for humans (`art check`) and AI (`art check --ai`).
 import type { Loc } from "./ast.ts";
 
 export type Diagnostic = {
@@ -6,32 +6,32 @@ export type Diagnostic = {
   type: string;
   msg: string;
   loc: Loc;
-  at?: string; // componente/modelo donde ocurre, ej. "UserCard"
+  at?: string; // component/model where it happens, e.g. "UserCard"
   expr?: string;
   expected?: string;
   actual?: string;
   fixes?: string[];
 };
 
-// Catálogo único de errores: fuente para la documentación (`docs/errors`).
+// Single error catalog: source for the docs (`docs/errors`).
 export const CATALOG: Record<string, { code: string; desc: string }> = {
-  // Sintaxis
+  // Syntax
   UNEXPECTED_CHAR: { code: "E0001", desc: "Carácter no válido en el código fuente." },
   UNTERMINATED_STRING: { code: "E0002", desc: "String sin cerrar." },
   UNEXPECTED_TOKEN: { code: "E0003", desc: "Token inesperado; se esperaba otra cosa." },
-  // Nombres
+  // Names
   UNDEFINED_NAME: { code: "E1001", desc: "Nombre no definido en este alcance." },
   DUPLICATE_NAME: { code: "E1002", desc: "Nombre declarado dos veces." },
   UNKNOWN_TYPE: { code: "E1003", desc: "Tipo desconocido." },
-  // Tipos
+  // Types
   TYPE_MISMATCH: { code: "E1010", desc: "El tipo del valor no coincide con el esperado." },
   UNKNOWN_FIELD: { code: "E1011", desc: "El modelo no tiene ese campo." },
   MISSING_FIELD: { code: "E1012", desc: "Falta un campo obligatorio del modelo." },
   POSSIBLY_EMPTY: { code: "E1023", desc: "El valor puede ser null; hay que manejar ese caso." },
   NOT_A_LIST: { code: "E1024", desc: "`for` necesita una lista." },
-  // Asignación
+  // Assignment
   ASSIGN_READONLY: { code: "E1030", desc: "Solo se puede asignar a `state` o variables `let`." },
-  // Vista
+  // View
   UNKNOWN_ELEMENT: { code: "E2001", desc: "Elemento de UI o componente desconocido." },
   UNKNOWN_PROP: { code: "E2002", desc: "Prop no válida para este elemento o componente." },
   MISSING_PROP: { code: "E2003", desc: "Falta una prop obligatoria del componente." },
@@ -57,7 +57,7 @@ export function fmtLoc(l: Loc): string {
   return `${l.file}:${l.line}:${l.col}`;
 }
 
-// Salida para humanos.
+// Human-readable output.
 export function formatHuman(d: Diagnostic): string {
   let s = `${fmtLoc(d.loc)} error ${d.code} ${d.type}: ${d.msg}`;
   if (d.expected) s += `\n  esperado: ${d.expected}`;
@@ -66,7 +66,7 @@ export function formatHuman(d: Diagnostic): string {
   return s;
 }
 
-// Salida para IA: una línea JSON por error, solo campos con valor, sin prosa redundante.
+// AI output: one JSON line per error, only non-empty fields, no redundant prose.
 export function formatAI(d: Diagnostic): string {
   const o: Record<string, unknown> = { code: d.code, type: d.type, loc: fmtLoc(d.loc) };
   if (d.at) o.at = d.at;
@@ -78,7 +78,7 @@ export function formatAI(d: Diagnostic): string {
   return JSON.stringify(o);
 }
 
-// Distancia de edición para sugerir nombres parecidos.
+// Edit distance, used to suggest similar names.
 export function suggest(name: string, candidates: Iterable<string>, max = 3): string[] {
   const scored: [string, number][] = [];
   for (const c of candidates) {

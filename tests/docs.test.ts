@@ -1,4 +1,4 @@
-// Los ejemplos de la spec se compilan en cada test: la IA nunca debe aprender de código roto.
+// Spec examples are compiled on every test run: the AI must never learn from broken code.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";

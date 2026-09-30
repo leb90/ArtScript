@@ -1,12 +1,12 @@
-// Eval de costo real: Claude resuelve las mismas tareas en ArtScript, React+TS y Svelte.
-// Métrica principal (ARTSCRIPT_VIABILIDAD.md §12): USD por tarea resuelta, contando la spec,
-// los reintentos y los tokens de pensamiento (se facturan como salida).
+// Real cost eval: Claude solves the same tasks in ArtScript, React+TS and Svelte.
+// Main metric (ARTSCRIPT_VIABILIDAD.md §12): USD per solved task, counting the spec,
+// retries and thinking tokens (billed as output).
 //
-//   npm run eval -- --dry-run                     valida el harness sin llamar a la API
-//   npm run eval -- --runs 3 --max-usd 10         corrida completa con claude-opus-5-5
+//   npm run eval -- --dry-run                     validates the harness without calling the API
+//   npm run eval -- --runs 3 --max-usd 10         full run with claude-opus-5-5
 //   npm run eval -- --model claude-sonnet-5-5 --tasks counter,todo --stacks artscript,react
 //
-// Credenciales: ANTHROPIC_API_KEY en el entorno o en un archivo .env en la raíz del repo.
+// Credentials: ANTHROPIC_API_KEY in the environment or in a .env file at the repo root.
 import Anthropic from "@anthropic-ai/sdk";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -18,8 +18,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..", "..");
 const STACKS: Stack[] = ["artscript", "react", "svelte"];
 
-// USD por millón de tokens. Fuente: tabla de modelos de la skill claude-api (cache 2026-09-25).
-// Escritura de caché (TTL 5 min) = 1.25x el precio de entrada.
+// USD per million tokens. Source: claude-api skill model table (cached 2026-09-25).
+// Cache writes (5 min TTL) = 1.25x the input price.
 const PRICES: Record<string, { in: number; out: number; cacheRead: number; cacheWrite: number }> = {
   "claude-opus-5-5": { in: 4, out: 20, cacheRead: 0.2, cacheWrite: 5 },
   "claude-sonnet-5-5": { in: 2, out: 10, cacheRead: 0.2, cacheWrite: 2.5 },
@@ -27,7 +27,7 @@ const PRICES: Record<string, { in: number; out: number; cacheRead: number; cache
 };
 const PRICES_DATE = "2026-09-25";
 
-// ---------- argumentos ----------
+// ---------- arguments ----------
 const args = process.argv.slice(2);
 const opt = (name: string, def: string) => {
   const i = args.indexOf(`--${name}`);
@@ -69,7 +69,7 @@ function userPrompt(task: Task, stack: Stack): string {
   return code ? `Código actual:\n\n${code}\n\nTarea: ${task.prompt}` : `Tarea: ${task.prompt}`;
 }
 
-// ---------- costo ----------
+// ---------- cost ----------
 type Usage = { input: number; output: number; cacheRead: number; cacheWrite: number };
 const zero = (): Usage => ({ input: 0, output: 0, cacheRead: 0, cacheWrite: 0 });
 
@@ -78,7 +78,7 @@ function usd(u: Usage): number {
   return (u.input * p.in + u.output * p.out + u.cacheRead * p.cacheRead + u.cacheWrite * p.cacheWrite) / 1e6;
 }
 
-// ---------- una corrida: tarea × stack ----------
+// ---------- one run: task × stack ----------
 type RunResult = {
   task: string; stack: Stack; run: number; ok: boolean; attempts: number; usage: Usage; usd: number;
   codeTokens: number | null; errors: string[]; stop?: string;
@@ -101,7 +101,7 @@ async function runOne(client: Anthropic, task: Task, stack: Stack, run: number):
       max_tokens: 16000,
       system,
       messages,
-      // Haiku 4.5 no acepta effort; los modelos 5.x sí (en Opus 5.5 el default es medium).
+      // Haiku 4.5 doesn't accept effort; 5.x models do (Opus 5.5 defaults to medium).
       ...(MODEL.startsWith("claude-haiku") ? {} : { output_config: { effort: EFFORT } }),
     });
     const u: Usage = {
@@ -115,7 +115,7 @@ async function runOne(client: Anthropic, task: Task, stack: Stack, run: number):
     stop = res.stop_reason ?? undefined;
     if (res.stop_reason === "refusal") { errors = ["refusal"]; return done(false, attempt); }
 
-    // Historial append-only con el contenido completo (incluye bloques de thinking).
+    // Append-only history with the full content (including thinking blocks).
     messages.push({ role: "assistant", content: res.content });
     const text = res.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map((b) => b.text).join("\n");
     files = extractFiles(text);
@@ -132,7 +132,7 @@ async function runOne(client: Anthropic, task: Task, stack: Stack, run: number):
   }
 }
 
-// Tokens del código final con el tokenizer real del modelo (endpoint count_tokens).
+// Final code tokens with the model's real tokenizer (count_tokens endpoint).
 let overhead: number | null = null;
 async function countCodeTokens(client: Anthropic, files: Files): Promise<number> {
   const count = async (text: string) => (await client.messages.countTokens({ model: MODEL, messages: [{ role: "user", content: text }] })).input_tokens;
@@ -140,7 +140,7 @@ async function countCodeTokens(client: Anthropic, files: Files): Promise<number>
   return (await count(Object.values(files).join("\n"))) - overhead + 1;
 }
 
-// ---------- ejecución ----------
+// ---------- execution ----------
 async function pool<T>(items: (() => Promise<T>)[], n: number): Promise<T[]> {
   const out: T[] = [];
   let i = 0;

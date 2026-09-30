@@ -1,6 +1,6 @@
 # ArtScript
 
-Lenguaje web AI-native que compila a JavaScript. Objetivo: que una IA construya y modifique apps web gastando **menos dinero** (menos tokens, menos contexto, menos reintentos) que con React/TypeScript.
+An AI-native web language that compiles to JavaScript. Goal: let an AI build and modify web apps for **less money** (fewer tokens, less context, fewer retries) than with React/TypeScript.
 
 ```
 page Counter "/" {
@@ -12,80 +12,83 @@ page Counter "/" {
     text count bold
     button "+" primary -> count++
   }
-  text `El doble es ${double}` muted
+  text `Double is ${double}` muted
 }
 ```
 
-Estado: **v0.1, MVP base**. Ver [ARTSCRIPT_VIABILIDAD.md](ARTSCRIPT_VIABILIDAD.md) para la visión, los riesgos y la hoja de ruta.
+Status: **v0.1, MVP foundation**. See [ARTSCRIPT_VIABILIDAD.md](ARTSCRIPT_VIABILIDAD.md) (Spanish) for the vision, risks and roadmap.
 
-## Uso
+## Usage
 
-Requiere Node 24+.
+Requires Node 24+.
 
 ```sh
 npm install
-npm run dev            # ejemplo todo en http://localhost:3000 (se recarga al guardar)
-npm run dev:counter    # ejemplo contador
+npm run dev            # todo example at http://localhost:3000 (reloads on save)
+npm run dev:counter    # counter example
 npm test               # tests
-npm run typecheck      # tipos del compilador
-npm run bench          # tokens y bytes vs React/Svelte
+npm run typecheck      # compiler types
+npm run bench          # tokens and bytes vs React/Svelte
 ```
 
-Crear un proyecto nuevo (queda con `npm run dev`, `npm run build` y `npm run check`):
+Create a new project (it comes with `npm run dev`, `npm run build` and `npm run check`):
 
 ```sh
-node src/cli.ts init mi-app
-cd mi-app && npm install && npm run dev
+node src/cli.ts init my-app
+cd my-app && npm install && npm run dev
 ```
 
-Otros comandos: `npm run art -- <comando>` (por ejemplo `npm run art -- check examples/todo --ai`). Lista completa: `npm run art -- help`.
+Other commands: `npm run art -- <command>` (for example `npm run art -- check examples/todo --ai`). Full list: `npm run art -- help`.
 
-Todavía no está publicado en npm (ver [docs/PUBLISHING.md](docs/PUBLISHING.md)).
+Not published on npm yet (see [docs/PUBLISHING.md](docs/PUBLISHING.md)).
 
-## Estructura
+## Layout
 
 ```
 src/
-  lexer.ts      fuente → tokens
-  parser.ts     tokens → AST (Pratt para expresiones JS)
-  ast.ts        tipos del AST (estable, serializable a JSON)
-  checker.ts    tipos, null-safety, errores con fixes
-  codegen.ts    AST → módulo ES que crea DOM directo (sin virtual DOM)
-  printer.ts    AST → código canónico (fmt, errores, context)
-  context.ts    contexto compacto para LLMs
-  elements.ts   tabla única de primitivas de UI
-  errors.ts     catálogo de errores y formatos humano / IA
-  compile.ts    pipeline completo
-  cli.ts        comando `art`
-runtime/runtime.js   signals + helpers de DOM (~2.3 KB brotli)
+  lexer.ts      source → tokens
+  parser.ts     tokens → AST (Pratt parser for JS expressions)
+  ast.ts        AST types (stable, JSON-serializable)
+  checker.ts    types, null safety, errors with fixes
+  codegen.ts    AST → ES module that builds the DOM directly (no virtual DOM)
+  printer.ts    AST → canonical code (fmt, errors, context)
+  context.ts    compact context for LLMs
+  elements.ts   single table of UI primitives
+  errors.ts     error catalog and human / AI output formats
+  compile.ts    full pipeline
+  cli.ts        the `art` command
+runtime/runtime.js   signals + DOM helpers (~2.3 KB brotli)
 examples/            counter, todo
-benchmarks/          tareas equivalentes en ArtScript / React / Svelte + medición
-docs/SPEC.md         spec compacta para dar a una IA (~1.1K tokens)
-templates/default/   proyecto base que crea `art init`
-tests/               parser, checker, runtime, e2e (DOM en memoria), tools, docs
+benchmarks/          equivalent tasks in ArtScript / React / Svelte + measurement
+docs/SPEC.md         compact spec to give an AI (~1.1K tokens)
+templates/default/   starter project created by `art init`
+tests/               parser, checker, runtime, e2e (in-memory DOM), tools, docs
 ```
 
-## Primeras mediciones
+## First measurements
 
-`node src/cli.ts bench`, tokenizer `o200k_base`:
+`npm run bench`, `o200k_base` tokenizer:
 
-| Tarea | ArtScript | React+TS | Svelte 5 |
+| Task | ArtScript | React+TS | Svelte 5 |
 |---|---|---|---|
 | counter | 92 | 181 | 154 |
 | todo | 245 | 471 | 400 |
 
-Esto solo mide el **tamaño del código fuente**. Todavía no mide la spec en contexto, las iteraciones de un agente ni el costo en USD. Sin eso no se puede afirmar ahorro real (ver §12 del documento de viabilidad). Además, `o200k_base` es el tokenizer de OpenAI; los de Claude difieren.
+This only measures **source code size**. It doesn't yet include the spec in context, agent iterations or USD cost, so no real savings can be claimed from it (see §12 of the viability document). Also, `o200k_base` is OpenAI's tokenizer; Claude's differs.
 
-## Eval de costo con agentes
+## Agent cost eval
 
-`benchmarks/eval/` pone a Claude a resolver las mismas 8 tareas (6 de crear, 2 de modificar) en ArtScript, React+TS y Svelte, y mide lo que importa (§12 del documento de viabilidad): **USD por tarea resuelta**. Incluye la spec en el contexto, los reintentos hasta que el código compila, y los tokens de pensamiento.
+`benchmarks/eval/` has Claude solve the same 8 tasks (6 create, 2 modify) in ArtScript, React+TS and Svelte, and measures what matters: **USD per solved task**. It counts the spec in context, retries until the code compiles, and thinking tokens.
 
 ```sh
-npm run eval -- --dry-run                         # valida el harness, no gasta nada
-echo "ANTHROPIC_API_KEY=sk-ant-..." > .env        # .env está en .gitignore
-npm run eval -- --runs 3 --max-usd 10             # corrida completa (claude-opus-5-5)
+npm run eval -- --dry-run                         # validates the harness, spends nothing
+echo "ANTHROPIC_API_KEY=sk-ant-..." > .env        # .env is gitignored
+npm run eval -- --runs 3 --max-usd 10             # full run (claude-opus-5-5)
 npm run eval -- --model claude-sonnet-5-5 --tasks counter,todo
 ```
 
-Validación: ArtScript con su compilador, React con `tsc` estricto, Svelte con su compilador (sin chequeo de tipos, lo que favorece a Svelte). Todavía no verifica el comportamiento en ejecución, solo que el código compile y tipe. Los resultados se guardan en `benchmarks/eval/results/`.
+Validation: ArtScript with its own compiler, React with strict `tsc`, Svelte with its compiler (no type checking, which favors Svelte). It doesn't check runtime behavior yet, only that the code compiles and typechecks. Results are saved to `benchmarks/eval/results/`.
 
+## License
+
+MIT

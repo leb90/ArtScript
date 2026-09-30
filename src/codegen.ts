@@ -1,9 +1,9 @@
-// Genera un módulo ES que construye el DOM directamente (sin virtual DOM) usando runtime.js.
+// Generates an ES module that builds the DOM directly (no virtual DOM) using runtime.js.
 import type { ComponentDecl, Element, Expr, Program, Stmt, ViewNode } from "./ast.ts";
 import { ELEMENTS, SPACING_PROPS } from "./elements.ts";
 
 type Kind = "state" | "computed" | "prop" | "fn" | "let" | "loop" | "param";
-type Sym = { kind: Kind; sig?: string }; // sig: signal que hay que notificar al mutar (loops sobre un state)
+type Sym = { kind: Kind; sig?: string }; // sig: signal to notify on mutation (loops over a state)
 
 class Scope {
   vars = new Map<string, Sym>();
@@ -19,7 +19,7 @@ class Scope {
   }
 }
 
-// Métodos que mutan in-place: tras llamarlos hay que notificar al state dueño.
+// In-place mutating methods: after calling them, the owning state must be notified.
 const MUTATORS = new Set(["push", "pop", "shift", "unshift", "splice", "sort", "reverse", "fill", "copyWithin", "set", "delete", "add", "clear"]);
 const ALIGN: Record<string, string> = { start: "flex-start", end: "flex-end", center: "center", stretch: "stretch", between: "space-between", around: "space-around" };
 const JS_OPS: Record<string, string> = { "==": "===", "!=": "!==" };
@@ -79,7 +79,7 @@ class ComponentGen {
     return `function ${c.name}($p, $parent) {\n${this.lines.join("\n")}\n}`;
   }
 
-  // ---------- vista ----------
+  // ---------- view ----------
   view(nodes: ViewNode[], parent: string, scope: Scope) {
     for (const node of nodes) {
       if (node.kind === "IfView") {
@@ -101,7 +101,7 @@ class ComponentGen {
         this.nested(() => this.view(node.body, f, s));
         this.emit("});");
       } else if (/^[A-Z]/.test(node.tag)) {
-        // Si la prop viene de un state, se pasa su signal para que el hijo pueda notificar mutaciones.
+        // If the prop comes from a state, pass its signal so the child can notify mutations.
         const props = node.props.filter((p) => p.value).map((p) => {
           const get = `() => ${this.expr(p.value!, scope)}`;
           const sig = this.signalOf(p.value!, scope);
@@ -181,7 +181,7 @@ class ComponentGen {
     else this.emit(`$.$attr(${v}, "${name}", () => ${wrap(this.expr(val, scope))});`);
   }
 
-  // ---------- sentencias ----------
+  // ---------- statements ----------
   stmts(list: Stmt[], scope: Scope) {
     for (const s of list) {
       if (s.kind === "ExprStmt") this.emit(this.expr(s.expr, scope) + ";");
@@ -201,8 +201,8 @@ class ComponentGen {
     }
   }
 
-  // ---------- expresiones ----------
-  // Signal a notificar si se muta la expresión: el state raíz, o el state sobre el que itera un loop.
+  // ---------- expressions ----------
+  // Signal to notify when the expression is mutated: the root state, or the state a loop iterates over.
   signalOf(e: Expr, scope: Scope): string | undefined {
     while (e.kind === "Member" || e.kind === "Index" || (e.kind === "Call" && e.callee.kind === "Member")) {
       e = e.kind === "Call" ? (e.callee as Expr & { kind: "Member" }).object : e.object;
@@ -267,7 +267,7 @@ class ComponentGen {
     return e.kind === "Ident" || e.kind === "Member" || e.kind === "Index" || e.kind === "Call" ? s : `(${s})`;
   }
 
-  // Asignación directa a un state usa su setter; mutaciones anidadas notifican al signal raíz.
+  // Direct assignment to a state uses its setter; nested mutations notify the root signal.
   mutation(target: Expr, code: string, scope: Scope): string {
     if (target.kind === "Ident") return code;
     const sig = this.signalOf(target, scope);

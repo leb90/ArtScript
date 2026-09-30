@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// CLI de ArtScript: `art <comando>`. Salida corta; con --ai, machine-readable.
+// ArtScript CLI: `art <command>`. Short output; machine-readable with --ai.
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, watch, writeFileSync } from "node:fs";
 import { createServer, type ServerResponse } from "node:http";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
@@ -32,7 +32,7 @@ const HELP = `art ${PKG.version} — compilador de ArtScript
   [ruta] por defecto: ./src si existe, si no el directorio actual.
 `;
 
-// ---------- argumentos ----------
+// ---------- arguments ----------
 const argv = process.argv.slice(2);
 const cmd = argv[0];
 const flags = new Map<string, string | true>();
@@ -47,7 +47,7 @@ for (let i = 1; i < argv.length; i++) {
 }
 const flag = (name: string) => flags.get(name);
 
-// ---------- utilidades ----------
+// ---------- utilities ----------
 function findArt(dir: string): string[] {
   const out: string[] = [];
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -59,10 +59,10 @@ function findArt(dir: string): string[] {
   return out.sort();
 }
 
-// Convención de proyecto: el código vive en ./src; si no existe, en el directorio actual.
+// Project convention: code lives in ./src; if missing, in the current directory.
 const defaultTarget = () => (existsSync("src") && statSync("src").isDirectory() ? "src" : ".");
 const isDir = (p: string) => existsSync(p) && statSync(p).isDirectory();
-// Raíz del proyecto: el padre de `src/`, o el directorio indicado.
+// Project root: the parent of `src/`, or the given directory.
 function projectRoot(target: string): string {
   const dir = isDir(target) ? target : dirname(target);
   return basename(resolve(dir)) === "src" ? dirname(dir) : dir;
@@ -100,14 +100,14 @@ function sizes(files: Record<string, string>): string {
   return [header, ...rows.map((r) => line(...r)), line("total", ...total)].join("\n");
 }
 
-// Compila en memoria: { "index.html", "app.js", "runtime.js" } o los diagnósticos.
+// Compiles in memory: { "index.html", "app.js", "runtime.js" } or the diagnostics.
 function buildFiles(target: string): { files: Record<string, string> } | { diagnostics: Diagnostic[] } {
   const r = compile(sources(target));
   if (!r.js) return { diagnostics: r.diagnostics };
   return { files: { "index.html": htmlShell(), "app.js": r.js, "runtime.js": readFileSync(RUNTIME, "utf8") } };
 }
 
-// ---------- comandos ----------
+// ---------- commands ----------
 switch (cmd) {
   case "init": {
     const name = pos[0];
@@ -115,10 +115,10 @@ switch (cmd) {
     if (existsSync(name) && readdirSync(name).length) die(`'${name}' ya existe y no está vacío`);
     const tpl = join(ROOT, "templates", "default");
     cpSync(tpl, name, { recursive: true });
-    // npm no publica archivos llamados .gitignore: en el template se guarda como `gitignore`.
+    // npm doesn't publish files named .gitignore, so the template stores it as `gitignore`.
     renameSync(join(name, "gitignore"), join(name, ".gitignore"));
     cpSync(join(ROOT, "docs", "SPEC.md"), join(name, "ARTSCRIPT.md"));
-    // Mientras no esté publicado en npm, el proyecto usa esta copia local de ArtScript.
+    // Until it's published on npm, the project uses this local copy of ArtScript.
     const local = !ROOT.split(/[\\/]/).includes("node_modules");
     const pkgPath = join(name, "package.json");
     const pkg = readFileSync(pkgPath, "utf8")
@@ -167,7 +167,7 @@ switch (cmd) {
       }
       if (!write) { process.stdout.write(out); continue; }
       if (out === s.src) continue;
-      // El AST todavía no conserva comentarios: no reescribir archivos que los tengan.
+      // The AST doesn't keep comments yet: don't rewrite files that have them.
       if (/\/\/|\/\*/.test(s.src)) { console.error(`omitido ${s.file}: tiene comentarios (fmt aún no los preserva)`); continue; }
       writeFileSync(s.file, out);
       console.log(`formateado ${s.file}`);
@@ -201,7 +201,7 @@ switch (cmd) {
     const target = pos[0] ?? defaultTarget();
     const pub = join(projectRoot(target), "public");
     const clients = new Set<ServerResponse>();
-    // Recarga automática + overlay de errores de compilación en el navegador.
+    // Live reload + compile error overlay in the browser.
     const client = `<script>(()=>{const s=new EventSource("/__art");s.onmessage=e=>{if(e.data==="reload")return location.reload();let o=document.getElementById("__art_err");if(!o){o=document.createElement("pre");o.id="__art_err";o.style.cssText="position:fixed;inset:0;margin:0;padding:24px;background:#1a0000ee;color:#ffb4b4;font:14px/1.5 monospace;white-space:pre-wrap;z-index:99999";document.body.appendChild(o)}o.textContent=JSON.parse(e.data)}})()</script>`;
     let files: Record<string, string> = {};
     let lastError: string | null = null;
@@ -234,7 +234,7 @@ switch (cmd) {
         res.writeHead(200, { "content-type": types[extname(name)] ?? "text/plain", "cache-control": "no-store" }).end(body);
         return;
       }
-      // Archivos estáticos de ./public (imágenes, íconos...). Bloquea rutas fuera de esa carpeta.
+      // Static files from ./public (images, icons...). Blocks paths outside that folder.
       const base = resolve(pub);
       const file = resolve(base, "." + url);
       if (file.startsWith(base + "/") && existsSync(file) && !statSync(file).isDirectory()) {
@@ -244,7 +244,7 @@ switch (cmd) {
       res.writeHead(404).end("404");
     });
 
-    // Si el puerto está ocupado, prueba el siguiente (como Vite).
+    // If the port is busy, try the next one (like Vite).
     let port = Number(flag("--port") ?? 3000);
     server.on("error", (e: NodeJS.ErrnoException) => {
       if (e.code === "EADDRINUSE" && port < Number(flag("--port") ?? 3000) + 20) server.listen(++port);

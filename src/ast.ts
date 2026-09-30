@@ -1,10 +1,10 @@
-// AST de ArtScript. Estable y serializable a JSON (sin ciclos, sin clases).
+// ArtScript AST. Stable and JSON-serializable (no cycles, no classes).
 
 export type Loc = { file: string; line: number; col: number };
 
 export type TypeRef = { name: string; list: boolean; optional: boolean; loc: Loc };
 
-// ---------- Declaraciones de nivel superior ----------
+// ---------- Top-level declarations ----------
 
 export type Program = { kind: "Program"; decls: Decl[] };
 
@@ -13,7 +13,7 @@ export type Decl = ModelDecl | ComponentDecl;
 export type ModelDecl = { kind: "Model"; name: string; fields: Field[]; loc: Loc };
 export type Field = { name: string; type: TypeRef; loc: Loc };
 
-// `page` y `component` comparten estructura; una página tiene ruta y no tiene params.
+// `page` and `component` share a shape; a page has a route and no params.
 export type ComponentDecl = {
   kind: "Component";
   page: boolean;
@@ -32,7 +32,7 @@ export type StateDecl = { kind: "State"; name: string; type: TypeRef | null; ini
 export type ComputedDecl = { kind: "Computed"; name: string; expr: Expr; loc: Loc };
 export type FnDecl = { kind: "Fn"; name: string; params: string[]; body: Stmt[]; loc: Loc };
 
-// ---------- Vista ----------
+// ---------- View ----------
 
 export type ViewNode = Element | IfView | ForView;
 
@@ -51,7 +51,7 @@ export type Element = {
 export type IfView = { kind: "IfView"; cond: Expr; then: ViewNode[]; else: ViewNode[] | null; loc: Loc };
 export type ForView = { kind: "ForView"; item: string; index: string | null; list: Expr; body: ViewNode[]; loc: Loc };
 
-// ---------- Sentencias (cuerpos de fn y acciones) ----------
+// ---------- Statements (fn bodies and actions) ----------
 
 export type Stmt =
   | { kind: "ExprStmt"; expr: Expr; loc: Loc }
@@ -59,7 +59,7 @@ export type Stmt =
   | { kind: "If"; cond: Expr; then: Stmt[]; else: Stmt[] | null; loc: Loc }
   | { kind: "Return"; value: Expr | null; loc: Loc };
 
-// ---------- Expresiones (subconjunto de JavaScript) ----------
+// ---------- Expressions (a JavaScript subset) ----------
 
 export type Expr =
   | { kind: "Num"; value: number; loc: Loc }

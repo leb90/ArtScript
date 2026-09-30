@@ -1,10 +1,10 @@
-// Tabla única de primitivas de UI. La usan checker, codegen y la documentación.
+// Single table of UI primitives. Used by the checker, codegen and docs.
 
 export type ElementSpec = {
   html: string;
   cls?: string;
-  content: "text" | "bind" | "src" | null; // qué significa la expresión posicional
-  action: "click" | "submit" | "enter" | null; // evento que dispara `->`
+  content: "text" | "bind" | "src" | null; // what the positional expression means
+  action: "click" | "submit" | "enter" | null; // event that fires `->`
   children: boolean;
   props: string[];
   flags: string[];
@@ -29,12 +29,12 @@ export const ELEMENTS: Record<string, ElementSpec> = {
 
 for (const spec of Object.values(ELEMENTS)) spec.props = [...spec.props, ...COMMON];
 
-// Props cuyo valor es una palabra clave (se escribe sin comillas: `align=center`).
+// Props whose value is a keyword (written without quotes: `align=center`).
 export const ENUM_PROPS: Record<string, string[]> = {
   align: ["start", "center", "end", "stretch"],
   justify: ["start", "center", "end", "between", "around"],
   type: ["text", "number", "email", "password", "checkbox", "date"],
 };
 
-// Props numéricas de espaciado: 1 unidad = 4px.
+// Numeric spacing props: 1 unit = 4px.
 export const SPACING_PROPS = new Set(["gap", "pad"]);

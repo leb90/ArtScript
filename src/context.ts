@@ -1,10 +1,10 @@
-// `art context`: contexto compacto y determinista para LLMs, en vez de archivos completos.
+// `art context`: compact, deterministic context for LLMs instead of whole files.
 import type { ComponentDecl, ModelDecl, Program, ViewNode } from "./ast.ts";
 import { show, type Analysis } from "./checker.ts";
 import { fmtLoc } from "./errors.ts";
 import { printDecl, printElementHead, printExpr, printStmt, printType } from "./printer.ts";
 
-// Estimación grosera (≈4 caracteres por token). NO es una medición: ver benchmarks/ para medir en serio.
+// Rough estimate (≈4 chars per token). NOT a measurement: see benchmarks/ for real numbers.
 export const estimateTokens = (s: string) => Math.ceil(s.length / 4);
 
 function walk(nodes: ViewNode[], fn: (n: ViewNode) => void) {
@@ -31,7 +31,7 @@ function modelDeps(c: ComponentDecl, a: Analysis): string[] {
   return [...out];
 }
 
-// Usa los tipos tal como se declararon (ID, Email), no su representación interna.
+// Uses types as declared (ID, Email), not their internal representation.
 function modelLine(name: string, p: Program): string {
   const m = p.decls.find((d): d is ModelDecl => d.kind === "Model" && d.name === name)!;
   return `model ${name} { ${m.fields.map((f) => `${f.name}: ${printType(f.type)}`).join(", ")} }`;
@@ -55,7 +55,7 @@ function signature(c: ComponentDecl): string {
   return `component ${c.name}(${c.params.map((p) => `${p.name}: ${p.type.name}${p.type.list ? "[]" : ""}${p.type.optional ? "?" : ""}`).join(", ")})`;
 }
 
-// Mapa del proyecto completo: una línea por declaración.
+// Whole-project map: one line per declaration.
 export function projectMap(p: Program, a: Analysis, budget = Infinity): string {
   const lines = [`# project: ${p.decls.length} decls`];
   for (const d of p.decls) {
@@ -75,7 +75,7 @@ export function projectMap(p: Program, a: Analysis, budget = Infinity): string {
   return fit(lines, budget);
 }
 
-// Contexto de una sola declaración: lo necesario para modificarla sin leer el resto.
+// Context for a single declaration: what's needed to change it without reading the rest.
 export function declContext(p: Program, a: Analysis, target: string, budget = Infinity): string | null {
   const name = target.split("/").pop()!;
   const d = p.decls.find((x) => x.name === name);
@@ -99,7 +99,7 @@ export function declContext(p: Program, a: Analysis, target: string, budget = In
   });
   if (events.length) lines.push("events:", ...events);
 
-  // El código fuente completo va al final: se incluye solo si entra en el presupuesto.
+  // Full source goes last: included only if it fits the budget.
   const source = ["source:", printDecl(d)];
   const outline = ["outline:"];
   walk(d.view, (n) => { if (n.kind === "Element") outline.push("  " + printElementHead(n)); });

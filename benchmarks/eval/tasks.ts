@@ -1,5 +1,5 @@
-// Tareas del eval de costo. El mismo pedido funcional para todos los stacks.
-// `base`: tarea de benchmarks/tasks/ cuyo código es el punto de partida (tareas de modificación).
+// Cost eval tasks. The same functional request for every stack.
+// `base`: a benchmarks/tasks/ task whose code is the starting point (modification tasks).
 
 export type Task = { id: string; prompt: string; base?: string };
 

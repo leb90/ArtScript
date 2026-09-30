@@ -1,6 +1,6 @@
-// Validadores por stack: devuelven la lista de errores (vacía = el código compila/tipa).
-// ArtScript: compilador completo con tipos. React: tsc estricto. Svelte: compilador de Svelte
-// (sin chequeo de tipos TS: es más permisivo que los otros dos, lo que favorece a Svelte).
+// Per-stack validators: return the list of errors (empty = the code compiles/typechecks).
+// ArtScript: full compiler with types. React: strict tsc. Svelte: the Svelte compiler
+// (no TS type checking: more lenient than the other two, which favors Svelte).
 import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -13,7 +13,7 @@ export type Files = Record<string, string>;
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..", "..");
-// Dentro del repo, para que tsc encuentre @types/react en node_modules.
+// Inside the repo, so tsc finds @types/react in node_modules.
 const WORK = join(HERE, ".work");
 
 export async function validate(stack: Stack, files: Files): Promise<string[]> {
@@ -75,7 +75,7 @@ async function validateSvelte(files: Files): Promise<string[]> {
   return errs;
 }
 
-// Extrae archivos de bloques ```<nombre.ext> ... ```.
+// Extracts files from ```<name.ext> ... ``` blocks.
 export function extractFiles(text: string): Files {
   const out: Files = {};
   for (const m of text.matchAll(/```([\w./-]+\.(?:art|tsx|ts|svelte))[^\n]*\n([\s\S]*?)```/g)) out[m[1]] = m[2];

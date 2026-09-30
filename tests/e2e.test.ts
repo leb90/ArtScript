@@ -1,4 +1,4 @@
-// Compila .art → JS, lo monta en un DOM en memoria e interactúa como un usuario.
+// Compiles .art → JS, mounts it in an in-memory DOM and interacts like a user.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
@@ -32,17 +32,17 @@ test("todo: input, enter, lista, checkbox en componente hijo y borrar", async ()
   input.typeText("Estudiar");
   addBtn.click();
   input.typeText("   ");
-  addBtn.click(); // vacío: se ignora
+  addBtn.click(); // empty: ignored
 
   const items = () => all(root, "span").slice(0, -1).map((s) => s.textContent);
   assert.deepEqual(items(), ["Comprar pan", "Estudiar"]);
   assert.equal(footer(), "2 pendientes");
 
-  // checkbox dentro de TodoItem muta todo.done → notifica al state del padre
+  // checkbox inside TodoItem mutates todo.done → notifies the parent state
   all(root, "input").filter((i) => i.type === "checkbox")[0].toggle();
   assert.equal(footer(), "1 pendientes");
 
-  // borrar vía callback pasado como prop
+  // delete via a callback passed as a prop
   all(root, "button").filter((b) => b.textContent === "x")[0].click();
   assert.deepEqual(items(), ["Estudiar"]);
   assert.equal(footer(), "1 pendientes");
@@ -65,7 +65,7 @@ test("if/else y for desmontan effects de ramas removidas", async () => {
   assert.equal(all(root, "span")[0].textContent, "1");
   toggle.click();
   assert.equal(all(root, "span")[0].textContent, "oculto");
-  inc.click(); // no debe revivir la rama removida
+  inc.click(); // must not revive the removed branch
   assert.equal(all(root, "span").length, 1);
   toggle.click();
   assert.equal(all(root, "span")[0].textContent, "2");

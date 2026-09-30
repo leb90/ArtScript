@@ -1,4 +1,4 @@
-// DOM mínimo en memoria para tests end-to-end (sin dependencias como jsdom).
+// Minimal in-memory DOM for end-to-end tests (no dependencies like jsdom).
 import { copyFileSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -78,7 +78,7 @@ export class FElement extends FNode {
   dispatch(t: string, extra: Record<string, unknown> = {}) {
     for (const f of this.listeners[t] ?? []) f({ type: t, preventDefault() {}, ...extra });
   }
-  // Helpers de test
+  // Test helpers
   click() { this.dispatch("click"); }
   typeText(v: string) { this.value = v; this.dispatch("input"); }
   toggle() { this.checked = !this.checked; this.dispatch("change"); }
@@ -106,7 +106,7 @@ export function all(n: FNode, tag?: string): FElement[] {
   return out;
 }
 
-// Compila, escribe app.js + runtime.js a un directorio temporal y monta la primera página.
+// Compiles, writes app.js + runtime.js to a temp dir and mounts the first page.
 export async function mountApp(src: string) {
   installDom();
   const r = compile([{ file: "test.art", src }]);

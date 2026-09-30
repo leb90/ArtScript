@@ -1,4 +1,4 @@
-// Imprime AST como código ArtScript canónico. Base de `art fmt`, errores y `art context`.
+// Prints the AST as canonical ArtScript. Basis for `art fmt`, errors and `art context`.
 import type { Decl, Element, Expr, Program, Stmt, TypeRef, ViewNode } from "./ast.ts";
 
 const PREC: Record<string, number> = {
@@ -85,7 +85,7 @@ export function printBlockInline(stmts: Stmt[]): string {
   return stmts.length ? `{ ${stmts.map(printStmt).join("; ")} }` : "{}";
 }
 
-// ---------- Programa completo (formato canónico) ----------
+// ---------- Full program (canonical format) ----------
 
 const IND = "  ";
 

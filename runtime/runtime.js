@@ -1,7 +1,7 @@
-// ArtScript runtime: reactividad con signals + helpers mínimos de DOM. Sin dependencias.
+// ArtScript runtime: signal-based reactivity + minimal DOM helpers. No dependencies.
 
-let listener = null; // computación que está registrando dependencias
-let owner = null; // disposers del scope actual
+let listener = null; // computation currently tracking dependencies
+let owner = null; // disposers of the current scope
 let depth = 0;
 let flushing = false;
 const queue = new Set();
@@ -27,7 +27,7 @@ class Signal {
   notify() { batch(() => { for (const s of [...this.subs]) s.mark(); }); }
 }
 
-// Lazy: se marca sucio cuando cambia una dependencia y se recalcula al leerse.
+// Lazy: marked dirty when a dependency changes, recomputed on read.
 class Computed {
   constructor(fn) { this.fn = fn; this.subs = new Set(); this.deps = new Set(); this.dirty = true; }
   get v() {
@@ -77,7 +77,7 @@ export function effect(fn) {
   e.run();
   onDispose(() => { e.alive = false; unsub(e); });
 }
-// Crea un scope aislado; devuelve la función que lo destruye.
+// Creates an isolated scope; returns the function that disposes it.
 export function root(fn) {
   const o = [], po = owner, pl = listener;
   owner = o;
@@ -85,9 +85,9 @@ export function root(fn) {
   try { fn(); } finally { owner = po; listener = pl; }
   return () => { for (const f of o.splice(0)) f(); };
 }
-// Notifica una mutación in-place (ej. `todos.push(x)`) y devuelve su resultado.
+// Notifies an in-place mutation (e.g. `todos.push(x)`) and returns its result.
 export function $m(sig, value) { if (sig) sig.notify(); return value; }
-// Prop que referencia un state del padre: mutar sus campos notifica al dueño.
+// Prop that references a parent state: mutating its fields notifies the owner.
 export function $ref(get, sig) { get.sig = sig; return get; }
 
 // ---------- DOM ----------
@@ -118,7 +118,7 @@ export function $on(n, kind, fn) {
     batch(() => fn(e));
   });
 }
-// Enlace bidireccional de inputs. `mode`: "value" | "number" | "checked".
+// Two-way input binding. `mode`: "value" | "number" | "checked".
 export function $bind(n, get, set, mode) {
   const prop = mode === "checked" ? "checked" : "value";
   effect(() => {
@@ -131,7 +131,7 @@ export function $bind(n, get, set, mode) {
   });
 }
 
-// Renderiza fragmentos antes de un ancla; los destruye al cambiar.
+// Renders fragments before an anchor; disposes them on change.
 function region(parent) {
   const anchor = document.createComment("");
   parent.appendChild(anchor);
@@ -165,7 +165,7 @@ export function $if(parent, cond, a, b) {
   });
 }
 
-// TODO: reconciliación con key. Hoy re-renderiza la lista completa al cambiar.
+// TODO: keyed reconciliation. For now the whole list re-renders on change.
 export function $for(parent, list, render) {
   const r = region(parent);
   effect(() => {

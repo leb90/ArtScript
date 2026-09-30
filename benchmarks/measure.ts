@@ -1,6 +1,6 @@
-// Mide el código fuente de tareas equivalentes en ArtScript, React+TS y Svelte.
-// Solo mide tamaño de fuente. NO mide todavía: tokens de la spec, iteraciones de un agente ni costo en USD
-// (ver ARTSCRIPT_VIABILIDAD.md §12). Esos números salen del eval con agentes, que es el próximo paso.
+// Measures the source code of equivalent tasks in ArtScript, React+TS and Svelte.
+// Source size only. It does NOT measure spec tokens, agent iterations or USD cost
+// (see ARTSCRIPT_VIABILIDAD.md §12). Those numbers come from the agent eval (benchmarks/eval).
 import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,7 +11,7 @@ const STACKS = ["artscript", "react", "svelte"] as const;
 
 type Counter = { name: string; count: (s: string) => number; exact: boolean };
 
-// Usa un tokenizer real si está instalado (`npm i -D js-tiktoken`); si no, estima chars/4 y lo marca.
+// Uses a real tokenizer if installed (`npm i -D js-tiktoken`); otherwise estimates chars/4 and says so.
 async function tokenizer(): Promise<Counter> {
   try {
     const mod: any = await import("js-tiktoken" as string);

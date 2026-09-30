@@ -1,4 +1,4 @@
-// Pipeline: fuente → lexer → parser → AST → checker → codegen → JS.
+// Pipeline: source → lexer → parser → AST → checker → codegen → JS.
 import type { Program } from "./ast.ts";
 import { check } from "./checker.ts";
 import { generate } from "./codegen.ts";
@@ -8,7 +8,7 @@ import { parse } from "./parser.ts";
 export type Source = { file: string; src: string };
 export type Result = { program: Program; diagnostics: Diagnostic[]; js: string | null };
 
-// Un proyecto es un solo Program aunque esté repartido en varios archivos.
+// A project is a single Program even when split across several files.
 export function parseProject(sources: Source[]): { program: Program; diagnostics: Diagnostic[] } {
   const program: Program = { kind: "Program", decls: [] };
   const diagnostics: Diagnostic[] = [];

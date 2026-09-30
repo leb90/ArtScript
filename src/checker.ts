@@ -1,4 +1,4 @@
-// Type checker: sistema de tipos chico, null-safety y errores con fixes.
+// Type checker: small type system, null safety and errors with fixes.
 import type { ComponentDecl, Element, Expr, Loc, Program, Stmt, TypeRef, ViewNode } from "./ast.ts";
 import { ELEMENTS, ENUM_PROPS } from "./elements.ts";
 import { CATALOG, diag, suggest, type Diagnostic } from "./errors.ts";
@@ -17,7 +17,7 @@ const fn = (ret: Ty): Ty => ({ k: "fn", ret });
 const list = (of: Ty): Ty => ({ k: "list", of });
 const opt = (of: Ty): Ty => (of.k === "opt" || of.k === "any" || of.k === "null" ? of : { k: "opt", of });
 
-// Tipos primitivos del lenguaje. ID y Email son strings con semántica (validación futura).
+// Built-in types. ID and Email are strings with semantics (validation to come).
 export const BUILTIN_TYPES: Record<string, Ty> = { String: STR, Number: NUM, Bool: BOOL, ID: STR, Email: STR, Date: ANY, Fn: fn(ANY), Any: ANY };
 
 export const GLOBALS = new Set([
@@ -43,7 +43,7 @@ export function show(t: Ty): string {
   }
 }
 
-// Métodos de listas y strings más usados, con su tipo de retorno.
+// Most common list and string methods, with their return types.
 function listMethod(name: string, elem: Ty, self: Ty): Ty | null {
   switch (name) {
     case "length": return NUM;
@@ -106,8 +106,8 @@ class Checker {
   models: ModelInfo = new Map();
   comps: CompInfo = new Map();
   at = "";
-  types = new WeakMap<Expr, Ty>(); // tipo inferido de cada expresión
-  symbols = new Map<string, Map<string, Sym>>(); // símbolos de nivel componente, para `art context`
+  types = new WeakMap<Expr, Ty>(); // inferred type of every expression
+  symbols = new Map<string, Map<string, Sym>>(); // component-level symbols, for `art context`
   constructor(program: Program) {
     this.program = program;
   }
@@ -155,7 +155,7 @@ class Checker {
     return ty;
   }
 
-  // ---------- componentes ----------
+  // ---------- components ----------
   component(c: ComponentDecl) {
     this.at = c.name;
     const scope = new Scope(null);
@@ -167,7 +167,7 @@ class Checker {
       declare(p.name, { kind: "prop", ty: this.resolve(p.type) }, p.loc);
       if (p.default) this.expectTy(p.default, this.infer(p.default, scope), scope.get(p.name)!.ty);
     }
-    // Primero se declaran todos (permite referencias hacia adelante), después se infieren tipos en orden.
+    // Declare everything first (allows forward references), then infer types in order.
     for (const m of c.members) declare(m.name, { kind: m.kind === "State" ? "state" : m.kind === "Computed" ? "computed" : "fn", ty: m.kind === "Fn" ? fn(ANY) : ANY }, m.loc);
     for (const m of c.members) {
       const sym = scope.vars.get(m.name)!;
@@ -296,7 +296,7 @@ class Checker {
     if (el.children.length) this.err("NO_CHILDREN", `'${el.tag}' no acepta hijos`, el.loc, { expr: el.tag });
   }
 
-  // ---------- sentencias ----------
+  // ---------- statements ----------
   stmts(list: Stmt[], scope: Scope) {
     for (const s of list) {
       if (s.kind === "ExprStmt") this.infer(s.expr, scope);
@@ -310,7 +310,7 @@ class Checker {
     }
   }
 
-  // ---------- expresiones ----------
+  // ---------- expressions ----------
   rootIdent(e: Expr): Expr & { kind: "Ident" } | null {
     while (e.kind === "Member" || e.kind === "Index") e = e.object;
     return e.kind === "Ident" ? e : null;
@@ -320,11 +320,11 @@ class Checker {
     const root = this.rootIdent(e);
     if (!root) return false;
     const sym = scope.get(root.name);
-    if (!sym) return true; // ya se reporta como UNDEFINED_NAME
+    if (!sym) return true; // already reported as UNDEFINED_NAME
     return sym.kind === "state" || (e.kind !== "Ident" && (sym.kind === "loop" || sym.kind === "prop"));
   }
 
-  // Valida el destino de una asignación y devuelve su tipo.
+  // Validates an assignment target and returns its type.
   target(t: Expr, scope: Scope): Ty {
     const root = this.rootIdent(t);
     if (!root) {
@@ -343,7 +343,7 @@ class Checker {
     return ty;
   }
 
-  // Chequea que `actual` sea asignable a `expected`; reporta el error más específico posible.
+  // Checks that `actual` is assignable to `expected`; reports the most specific error possible.
   expectTy(e: Expr, actual: Ty, expected: Ty) {
     const inner = expected.k === "opt" ? expected.of : expected;
     if (inner.k === "model" && e.kind === "Object") return this.modelLiteral(e, inner.name);
@@ -365,7 +365,7 @@ class Checker {
     const fields = this.models.get(model)!;
     const given = new Set<string>();
     for (const p of e.props) {
-      if ("spread" in p) return; // con spread no se puede verificar completitud
+      if ("spread" in p) return; // completeness can't be verified with a spread
       given.add(p.key);
       if (!(p.key in fields)) {
         this.err("UNKNOWN_FIELD", `${model} no tiene el campo '${p.key}'`, p.value.loc, { expr: p.key, expected: Object.keys(fields).join("|"), fixes: suggest(p.key, Object.keys(fields)) });
@@ -440,7 +440,7 @@ class Checker {
       case "Call": {
         const t = this.infer(e.callee, scope);
         const argTys = e.args.map((a) => this.infer(a, scope));
-        // push/unshift en listas de modelos: validar el objeto contra el modelo.
+        // push/unshift on lists of models: validate the object against the model.
         if (e.callee.kind === "Member" && (e.callee.prop === "push" || e.callee.prop === "unshift")) {
           const lt = this.types.get(e.callee.object) ?? ANY;
           if (lt.k === "list") e.args.forEach((a, i) => this.expectTy(a, argTys[i], lt.of));

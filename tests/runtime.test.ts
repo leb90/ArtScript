@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-// @ts-ignore: runtime en JS plano
+// @ts-ignore: runtime is plain JS
 import { $m, batch, computed, effect, root, signal } from "../runtime/runtime.js";
 
 test("effect se re-ejecuta al cambiar un signal", () => {
@@ -8,7 +8,7 @@ test("effect se re-ejecuta al cambiar un signal", () => {
   const seen: number[] = [];
   root(() => effect(() => seen.push(a.v)));
   a.v = 2;
-  a.v = 2; // mismo valor: no notifica
+  a.v = 2; // same value: no notification
   a.v = 3;
   assert.deepEqual(seen, [1, 2, 3]);
 });
@@ -57,7 +57,7 @@ test("effects solo siguen las dependencias leídas en la última ejecución", ()
   const seen: string[] = [];
   root(() => effect(() => seen.push(flag.v ? a.v : b.v)));
   flag.v = false;
-  a.v = "A"; // ya no es dependencia
+  a.v = "A"; // no longer a dependency
   b.v = "B";
   assert.deepEqual(seen, ["a", "b", "B"]);
 });
