@@ -1,0 +1,40 @@
+{
+  "model": "claude-sonnet-5-5",
+  "effort": "medium",
+  "runs": 1,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 2,
+    "out": 10,
+    "cacheRead": 0.2,
+    "cacheWrite": 2.5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "cart",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 116,
+        "output": 798,
+        "cacheRead": 0,
+        "cacheWrite": 1941
+      },
+      "usd": 0.0130645,
+      "codeTokens": 789,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model Product {\n  id: ID\n  name: String\n  price: Number\n}\n\nmodel CartItem {\n  id: ID\n  name: String\n  price: Number\n  qty: Number\n}\n\npage Cart \"/\" {\n  state products: Product[] = [\n    { id: \"1\", name: \"Remera\", price: 15.5 },\n    { id: \"2\", name: \"Zapatillas\", price: 89.99 },\n    { id: \"3\", name: \"Gorra\", price: 12 }\n  ]\n  state cart: CartItem[] = []\n\n  computed total = cart.reduce((sum, i) => sum + i.price * i.qty, 0)\n\n  fn add(p) {\n    let found = cart.find(i => i.id == p.id)\n    if found {\n      cart = cart.map(i => i.id == p.id ? { id: i.id, name: i.name, price: i.price, qty: i.qty + 1 } : i)\n    } else {\n      cart = [...cart, { id: p.id, name: p.name, price: p.price, qty: 1 }]\n    }\n  }\n\n  fn change(id, delta) {\n    cart = cart\n      .map(i => i.id == id ? { id: i.id, name: i.name, price: i.price, qty: i.qty + delta } : i)\n      .filter(i => i.qty > 0)\n  }\n\n  column gap=6 pad=6 {\n    title \"Tienda\" large\n    column gap=2 {\n      for p in products {\n        card pad=3 {\n          row gap=4 align=center justify=between {\n            column gap=1 {\n              text p.name bold\n              text `$${p.price.toFixed(2)}` muted\n            }\n            button \"Agregar\" primary -> add(p)\n          }\n        }\n      }\n    }\n    title \"Carrito\"\n    if cart.length == 0 {\n      text \"El carrito está vacío\" muted\n    } else {\n      column gap=2 {\n        for i in cart {\n          card pad=3 {\n            row gap=4 align=center justify=between {\n              column gap=1 {\n                text i.name bold\n                text `$${i.price.toFixed(2)} c/u` muted small\n              }\n              row gap=2 align=center {\n                button \"-\" small -> change(i.id, -1)\n                text `${i.qty}`\n                button \"+\" small -> change(i.id, 1)\n              }\n            }\n          }\n        }\n      }\n    }\n    text `Total: $${total.toFixed(2)}` bold large\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    }
+  ]
+}

@@ -53,6 +53,7 @@
     "bench": "node src/cli.ts bench",
     "eval": "node benchmarks/eval/run.ts",
     "eval:report": "node benchmarks/eval/report.ts",
+    "eval:retries": "node benchmarks/eval/retries.ts",
     "art": "node src/cli.ts",
     "prepack": "npm run build",
     "prepublishOnly": "npm test && npm run typecheck"
