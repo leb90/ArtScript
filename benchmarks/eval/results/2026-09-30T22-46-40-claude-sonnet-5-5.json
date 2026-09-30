@@ -1,0 +1,93 @@
+{
+  "model": "claude-sonnet-5-5",
+  "effort": "medium",
+  "runs": 3,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 2,
+    "out": 10,
+    "cacheRead": 0.2,
+    "cacheWrite": 2.5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "counter-mod",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 258,
+        "output": 164,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0026254,
+      "codeTokens": 225,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Counter \"/\" {\n  state count = 0\n  computed double = count * 2\n  fn inc() {\n    if count < 10 {\n      count++\n    }\n  }\n  fn dec() {\n    if count > 0 {\n      count--\n    }\n  }\n\n  column gap=4 align=center {\n    title \"Contador\"\n    row gap=2 {\n      button \"-\" disabled=(count <= 0) -> dec()\n      text count bold\n      button \"+\" primary disabled=(count >= 10) -> inc()\n    }\n    button \"Reset\" danger small -> count = 0\n    text `El doble es ${double}` muted\n    if count > 5 {\n      text \"¡Más de 5!\"\n    }\n  }\n}\n"
+          },
+          "errors": [],
+          "edit": "```patch\nappend Counter\n  fn inc() {\n    if count < 10 { count++ }\n  }\n  fn dec() {\n    if count > 0 { count-- }\n  }\nreplace Counter/column/row/button[0]\n  button \"-\" -> dec() disabled=(count <= 0)\nreplace Counter/column/row/button[1]\n  button \"+\" primary -> inc() disabled=(count >= 10)\ninsert after Counter/column/row\n  button \"Reset\" danger small -> count = 0\n```"
+        }
+      ]
+    },
+    {
+      "task": "counter-mod",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 258,
+        "output": 190,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0028854,
+      "codeTokens": 241,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Counter \"/\" {\n  state count = 0\n  computed double = count * 2\n  fn inc() {\n    if count < 10 {\n      count++\n    }\n  }\n  fn dec() {\n    if count > 0 {\n      count--\n    }\n  }\n  fn reset() {\n    count = 0\n  }\n\n  column gap=4 align=center {\n    title \"Contador\"\n    row gap=2 {\n      button \"-\" disabled=(count <= 0) -> dec()\n      text count bold\n      button \"+\" primary disabled=(count >= 10) -> inc()\n    }\n    button \"Reset\" danger small -> reset()\n    text `El doble es ${double}` muted\n    if count > 5 {\n      text \"¡Más de 5!\"\n    }\n  }\n}\n"
+          },
+          "errors": [],
+          "edit": "```patch\nappend Counter\n  fn inc() {\n    if count < 10 { count++ }\n  }\nappend Counter\n  fn dec() {\n    if count > 0 { count-- }\n  }\nappend Counter\n  fn reset() {\n    count = 0\n  }\nreplace Counter/column/row/button[0]\n  button \"-\" -> dec() disabled=(count <= 0)\nreplace Counter/column/row/button[1]\n  button \"+\" primary -> inc() disabled=(count >= 10)\ninsert after Counter/column/row\n  button \"Reset\" danger small -> reset()\n```"
+        }
+      ]
+    },
+    {
+      "task": "counter-mod",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 258,
+        "output": 156,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0025454,
+      "codeTokens": 217,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Counter \"/\" {\n  state count = 0\n  computed double = count * 2\n  fn inc() {\n    if count < 10 {\n      count++\n    }\n  }\n  fn dec() {\n    if count > 0 {\n      count--\n    }\n  }\n  fn reset() {\n    count = 0\n  }\n\n  column gap=4 align=center {\n    title \"Contador\"\n    row gap=2 {\n      button \"-\" -> dec()\n      text count bold\n      button \"+\" primary -> inc()\n    }\n    button \"Reset\" small -> reset()\n    text `El doble es ${double}` muted\n    if count > 5 {\n      text \"¡Más de 5!\"\n    }\n  }\n}\n"
+          },
+          "errors": [],
+          "edit": "```patch\nappend Counter\n  fn inc() {\n    if count < 10 { count++ }\n  }\n  fn dec() {\n    if count > 0 { count-- }\n  }\n  fn reset() {\n    count = 0\n  }\nreplace Counter/column/row/button[0]\n  button \"-\" -> dec()\nreplace Counter/column/row/button[1]\n  button \"+\" primary -> inc()\ninsert after Counter/column/row\n  button \"Reset\" small -> reset()\n```"
+        }
+      ]
+    }
+  ]
+}

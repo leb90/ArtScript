@@ -224,13 +224,20 @@ class Parser {
     const takesContent = !isComponent && !(spec && spec.content === null);
 
     if (takesContent && !atEnd() && !propAhead()) content = this.ternary();
-    while (!atEnd()) {
-      const p = this.ident("una prop (nombre=valor) o flag");
-      if (this.eat("=")) props.push({ name: p.v, value: this.unary(), loc: p.loc });
-      else props.push({ name: p.v, value: null, loc: p.loc });
-    }
+    const readProps = () => {
+      while (!atEnd()) {
+        const p = this.ident("una prop (nombre=valor) o flag");
+        if (this.eat("=")) props.push({ name: p.v, value: this.unary(), loc: p.loc });
+        else props.push({ name: p.v, value: null, loc: p.loc });
+      }
+    };
+    readProps();
     let action: Stmt[] | null = null;
-    if (this.eat("->")) action = this.is("{") ? this.block() : [this.stmt()];
+    if (this.eat("->")) {
+      action = this.is("{") ? this.block() : [this.stmt()];
+      // LLMs often write props after the action (`-> dec() disabled=x`); accept it, fmt moves them first.
+      readProps();
+    }
     const children = this.is("{") ? this.viewBlock() : [];
     return { kind: "Element", tag: tag.v, content, props, action, children, loc: tag.loc };
   }

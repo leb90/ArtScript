@@ -126,3 +126,10 @@ test("lexer: spread at the start of a line is not a continuation", () => {
   const p = parse("page P {\n  state a = [1]\n  state b = [\n    ...a\n  ]\n}", "t");
   assert.equal((p.decls[0] as ComponentDecl).members.length, 2);
 });
+
+test("parser: props and flags after the action are accepted and printed first", () => {
+  const src = 'page P {\n  state n = 0\n  button "-" -> n-- disabled=(n <= 0) small\n}';
+  const el = (parse(src, "t").decls[0] as ComponentDecl).view[0] as Element;
+  assert.deepEqual(el.props.map((p) => p.name), ["disabled", "small"]);
+  assert.equal(el.action!.length, 1);
+});

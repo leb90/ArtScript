@@ -1,0 +1,1863 @@
+{
+  "model": "claude-sonnet-5-5",
+  "effort": "medium",
+  "runs": 3,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 2,
+    "out": 10,
+    "cacheRead": 0.2,
+    "cacheWrite": 2.5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "counter",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 89,
+        "output": 146,
+        "cacheRead": 0,
+        "cacheWrite": 2347
+      },
+      "usd": 0.0075055,
+      "codeTokens": 137,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Contador \"/\" {\n  state count = 0\n  computed doble = count * 2\n\n  column gap=4 align=center {\n    title \"Contador\"\n    row gap=4 align=center {\n      button \"-\" -> count--\n      text `${count}` bold\n      button \"+\" primary -> count++\n    }\n    text `El doble es ${doble}`\n    if count > 5 {\n      text \"¡Más de 5!\"\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "counter",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 89,
+        "output": 146,
+        "cacheRead": 0,
+        "cacheWrite": 2347
+      },
+      "usd": 0.0075055,
+      "codeTokens": 137,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Contador \"/\" {\n  state count = 0\n  computed doble = count * 2\n\n  column gap=4 align=center {\n    title \"Contador\"\n    row gap=4 align=center {\n      button \"-\" -> count--\n      text `${count}` bold\n      button \"+\" primary -> count++\n    }\n    text `El doble es ${doble}`\n    if count > 5 {\n      text \"¡Más de 5!\"\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "counter",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 89,
+        "output": 146,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0021074,
+      "codeTokens": 137,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Contador \"/\" {\n  state count = 0\n  computed doble = count * 2\n\n  column gap=4 align=center {\n    title \"Contador\"\n    row gap=4 align=center {\n      button \"-\" -> count--\n      text `${count}` bold\n      button \"+\" primary -> count++\n    }\n    text `El doble es ${doble}`\n    if count > 5 {\n      text \"¡Más de 5!\"\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "counter",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 241,
+        "output": 474,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.005222,
+      "codeTokens": 463,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState } from \"react\";\n\nexport default function App() {\n  const [count, setCount] = useState<number>(0);\n\n  return (\n    <div className=\"min-h-screen flex items-center justify-center bg-gray-100\">\n      <div className=\"bg-white rounded-xl shadow-md p-8 flex flex-col items-center gap-4\">\n        <h1 className=\"text-2xl font-semibold text-gray-800\">Contador</h1>\n\n        <div className=\"flex items-center gap-6\">\n          <button\n            type=\"button\"\n            onClick={() => setCount((c) => c - 1)}\n            className=\"w-10 h-10 rounded-full bg-blue-600 text-white text-xl hover:bg-blue-700 transition-colors\"\n          >\n            -\n          </button>\n          <span className=\"text-3xl font-bold min-w-[3ch] text-center\">\n            {count}\n          </span>\n          <button\n            type=\"button\"\n            onClick={() => setCount((c) => c + 1)}\n            className=\"w-10 h-10 rounded-full bg-blue-600 text-white text-xl hover:bg-blue-700 transition-colors\"\n          >\n            +\n          </button>\n        </div>\n\n        <p className=\"text-gray-600\">El doble es {count * 2}</p>\n\n        {count > 5 && (\n          <p className=\"text-green-600 font-medium\">¡Más de 5!</p>\n        )}\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "counter",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 241,
+        "output": 507,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.005552,
+      "codeTokens": 496,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState } from \"react\";\n\nexport default function App() {\n  const [count, setCount] = useState<number>(0);\n\n  return (\n    <div className=\"min-h-screen flex items-center justify-center bg-gray-100\">\n      <div className=\"bg-white rounded-xl shadow-md p-8 flex flex-col items-center gap-4\">\n        <h1 className=\"text-3xl font-bold text-gray-800\">Contador</h1>\n\n        <div className=\"flex items-center gap-6\">\n          <button\n            type=\"button\"\n            onClick={() => setCount((c) => c - 1)}\n            className=\"w-12 h-12 rounded-full bg-blue-600 text-white text-2xl hover:bg-blue-700 active:scale-95 transition\"\n            aria-label=\"Restar\"\n          >\n            -\n          </button>\n\n          <span className=\"text-4xl font-bold min-w-[3ch] text-center\">\n            {count}\n          </span>\n\n          <button\n            type=\"button\"\n            onClick={() => setCount((c) => c + 1)}\n            className=\"w-12 h-12 rounded-full bg-blue-600 text-white text-2xl hover:bg-blue-700 active:scale-95 transition\"\n            aria-label=\"Sumar\"\n          >\n            +\n          </button>\n        </div>\n\n        <p className=\"text-gray-700\">El doble es {count * 2}</p>\n\n        {count > 5 && (\n          <p className=\"text-green-600 font-semibold\">¡Más de 5!</p>\n        )}\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "counter",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 241,
+        "output": 474,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.005222,
+      "codeTokens": 463,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState } from \"react\";\n\nexport default function App() {\n  const [count, setCount] = useState<number>(0);\n\n  return (\n    <div className=\"min-h-screen flex items-center justify-center bg-gray-100\">\n      <div className=\"bg-white rounded-xl shadow-md p-8 flex flex-col items-center gap-4\">\n        <h1 className=\"text-2xl font-semibold text-gray-800\">Contador</h1>\n\n        <div className=\"flex items-center gap-6\">\n          <button\n            type=\"button\"\n            onClick={() => setCount((c) => c - 1)}\n            className=\"w-10 h-10 rounded-full bg-blue-600 text-white text-xl hover:bg-blue-700 transition-colors\"\n          >\n            -\n          </button>\n\n          <span className=\"text-3xl font-bold min-w-[3ch] text-center\">\n            {count}\n          </span>\n\n          <button\n            type=\"button\"\n            onClick={() => setCount((c) => c + 1)}\n            className=\"w-10 h-10 rounded-full bg-blue-600 text-white text-xl hover:bg-blue-700 transition-colors\"\n          >\n            +\n          </button>\n        </div>\n\n        <p className=\"text-gray-600\">El doble es {count * 2}</p>\n\n        {count > 5 && (\n          <p className=\"text-green-600 font-medium\">¡Más de 5!</p>\n        )}\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "counter",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 257,
+        "output": 374,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.004254,
+      "codeTokens": 363,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  let count = $state(0);\n  let double = $derived(count * 2);\n</script>\n\n<main class=\"min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50 text-gray-900\">\n  <h1 class=\"text-3xl font-semibold\">Contador</h1>\n\n  <div class=\"flex items-center gap-6\">\n    <button\n      class=\"w-10 h-10 rounded bg-blue-600 text-white text-xl hover:bg-blue-700\"\n      onclick={() => count--}\n    >\n      -\n    </button>\n\n    <span class=\"text-3xl font-bold min-w-[3ch] text-center\">{count}</span>\n\n    <button\n      class=\"w-10 h-10 rounded bg-blue-600 text-white text-xl hover:bg-blue-700\"\n      onclick={() => count++}\n    >\n      +\n    </button>\n  </div>\n\n  <p class=\"text-lg\">El doble es {double}</p>\n\n  {#if count > 5}\n    <p class=\"text-lg text-green-600\">¡Más de 5!</p>\n  {/if}\n</main>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "counter",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 257,
+        "output": 399,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.004504,
+      "codeTokens": 388,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  let count = $state(0);\n  let double = $derived(count * 2);\n</script>\n\n<main class=\"min-h-screen flex items-center justify-center bg-gray-100\">\n  <div class=\"bg-white rounded-xl shadow p-8 flex flex-col items-center gap-4\">\n    <h1 class=\"text-2xl font-semibold\">Contador</h1>\n\n    <div class=\"flex items-center gap-6\">\n      <button\n        class=\"w-10 h-10 rounded bg-gray-200 hover:bg-gray-300 text-xl\"\n        onclick={() => count--}\n      >\n        -\n      </button>\n\n      <span class=\"text-3xl font-bold min-w-[3ch] text-center\">{count}</span>\n\n      <button\n        class=\"w-10 h-10 rounded bg-gray-200 hover:bg-gray-300 text-xl\"\n        onclick={() => count++}\n      >\n        +\n      </button>\n    </div>\n\n    <p class=\"text-gray-700\">El doble es {double}</p>\n\n    {#if count > 5}\n      <p class=\"text-green-600 font-medium\">¡Más de 5!</p>\n    {/if}\n  </div>\n</main>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "counter",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 257,
+        "output": 374,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.004254,
+      "codeTokens": 363,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  let count = $state(0);\n  let double = $derived(count * 2);\n</script>\n\n<main class=\"min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50 p-4\">\n  <h1 class=\"text-3xl font-bold\">Contador</h1>\n\n  <div class=\"flex items-center gap-6\">\n    <button\n      class=\"w-12 h-12 rounded bg-blue-600 text-white text-2xl hover:bg-blue-700\"\n      onclick={() => count--}\n    >\n      -\n    </button>\n\n    <span class=\"text-4xl font-bold min-w-12 text-center\">{count}</span>\n\n    <button\n      class=\"w-12 h-12 rounded bg-blue-600 text-white text-2xl hover:bg-blue-700\"\n      onclick={() => count++}\n    >\n      +\n    </button>\n  </div>\n\n  <p class=\"text-lg\">El doble es {double}</p>\n\n  {#if count > 5}\n    <p class=\"text-lg font-semibold text-green-600\">¡Más de 5!</p>\n  {/if}\n</main>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "todo",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 156,
+        "output": 447,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0052514,
+      "codeTokens": 438,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model Todo {\n  id: ID\n  title: String\n  done: Bool\n}\n\ncomponent TodoItem(todo: Todo, onDelete: Fn) {\n  row gap=2 align=center {\n    input todo.done type=checkbox\n    text todo.title muted=todo.done\n    button \"x\" danger small -> onDelete(todo.id)\n  }\n}\n\npage Todos \"/\" {\n  state todos: Todo[] = []\n  state draft = \"\"\n  computed pending = todos.filter(t => !t.done).length\n\n  fn add() {\n    let title = draft.trim()\n    if title == \"\" { return }\n    todos.push({ id: crypto.randomUUID(), title: title, done: false })\n    draft = \"\"\n  }\n\n  fn remove(id) {\n    todos = todos.filter(t => t.id != id)\n  }\n\n  column gap=4 pad=4 {\n    title \"Tareas\"\n    row gap=2 align=center {\n      input draft placeholder=\"¿Qué hay que hacer?\" -> add()\n      button \"Agregar\" primary -> add()\n    }\n    column gap=2 {\n      for t in todos {\n        TodoItem todo=t onDelete=remove\n      }\n    }\n    if todos.length == 0 {\n      text \"No hay tareas\" muted\n    } else {\n      text `${pending} pendientes` small\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "todo",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 156,
+        "output": 448,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.005261399999999999,
+      "codeTokens": 439,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model Todo {\n  id: ID\n  title: String\n  done: Bool\n}\n\ncomponent TodoItem(todo: Todo, onDelete: Fn) {\n  row gap=2 align=center {\n    input todo.done type=checkbox\n    text todo.title muted=todo.done\n    button \"x\" danger small -> onDelete(todo.id)\n  }\n}\n\npage Todos \"/\" {\n  state todos: Todo[] = []\n  state draft = \"\"\n  computed pending = todos.filter(t => !t.done).length\n\n  fn add() {\n    let title = draft.trim()\n    if title == \"\" { return }\n    todos.push({ id: crypto.randomUUID(), title: title, done: false })\n    draft = \"\"\n  }\n\n  fn remove(id) {\n    todos = todos.filter(t => t.id != id)\n  }\n\n  column gap=4 pad=4 {\n    title \"Tareas\"\n    row gap=2 align=center {\n      input draft placeholder=\"¿Qué hay que hacer?\" -> add()\n      button \"Agregar\" primary -> add()\n    }\n    column gap=2 {\n      for t in todos {\n        TodoItem todo=t onDelete=remove\n      }\n    }\n    if todos.length == 0 {\n      text \"No hay tareas\" muted\n    } else {\n      text `${pending} pendientes` muted\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "todo",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 156,
+        "output": 448,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.005261399999999999,
+      "codeTokens": 439,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model Todo {\n  id: ID\n  title: String\n  done: Bool\n}\n\ncomponent TodoItem(todo: Todo, onDelete: Fn) {\n  row gap=2 align=center {\n    input todo.done type=checkbox\n    text todo.title muted=todo.done\n    button \"x\" danger small -> onDelete(todo.id)\n  }\n}\n\npage Todos \"/\" {\n  state todos: Todo[] = []\n  state draft = \"\"\n  computed pending = todos.filter(t => !t.done).length\n\n  fn add() {\n    let title = draft.trim()\n    if title == \"\" { return }\n    todos.push({ id: crypto.randomUUID(), title: title, done: false })\n    draft = \"\"\n  }\n\n  fn remove(id) {\n    todos = todos.filter(t => t.id != id)\n  }\n\n  column gap=4 pad=4 {\n    title \"Tareas\"\n    row gap=2 align=center {\n      input draft placeholder=\"¿Qué hay que hacer?\" -> add()\n      button \"Agregar\" primary -> add()\n    }\n    column gap=2 {\n      for t in todos {\n        TodoItem todo=t onDelete=remove\n      }\n    }\n    if todos.length == 0 {\n      text \"No hay tareas\" muted\n    } else {\n      text `${pending} pendientes` muted\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "todo",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 308,
+        "output": 1251,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.013126,
+      "codeTokens": 1240,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState, type FormEvent } from \"react\";\n\ntype Todo = {\n  id: number;\n  title: string;\n  completed: boolean;\n};\n\ntype TodoItemProps = {\n  todo: Todo;\n  onToggle: (id: number) => void;\n  onDelete: (id: number) => void;\n};\n\nfunction TodoItem({ todo, onToggle, onDelete }: TodoItemProps) {\n  return (\n    <li className=\"flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm\">\n      <input\n        type=\"checkbox\"\n        checked={todo.completed}\n        onChange={() => onToggle(todo.id)}\n        aria-label={`Completar ${todo.title}`}\n        className=\"h-5 w-5 cursor-pointer accent-blue-600\"\n      />\n      <span\n        className={`flex-1 break-words ${\n          todo.completed ? \"text-gray-400 line-through\" : \"text-gray-800\"\n        }`}\n      >\n        {todo.title}\n      </span>\n      <button\n        type=\"button\"\n        onClick={() => onDelete(todo.id)}\n        aria-label={`Borrar ${todo.title}`}\n        className=\"rounded px-2 text-lg font-bold text-gray-400 hover:bg-red-50 hover:text-red-600\"\n      >\n        x\n      </button>\n    </li>\n  );\n}\n\nexport default function App() {\n  const [todos, setTodos] = useState<Todo[]>([]);\n  const [text, setText] = useState(\"\");\n\n  const addTodo = (e: FormEvent) => {\n    e.preventDefault();\n    const title = text.trim();\n    if (!title) return;\n    setTodos((prev) => [\n      ...prev,\n      { id: Date.now() + Math.random(), title, completed: false },\n    ]);\n    setText(\"\");\n  };\n\n  const toggleTodo = (id: number) =>\n    setTodos((prev) =>\n      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))\n    );\n\n  const deleteTodo = (id: number) =>\n    setTodos((prev) => prev.filter((t) => t.id !== id));\n\n  const pending = todos.filter((t) => !t.completed).length;\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 px-4 py-10\">\n      <div className=\"mx-auto max-w-md\">\n        <h1 className=\"mb-6 text-center text-3xl font-bold text-gray-800\">\n          Lista de tareas\n        </h1>\n\n        <form onSubmit={addTodo} className=\"mb-4 flex gap-2\">\n          <input\n            type=\"text\"\n            value={text}\n            onChange={(e) => setText(e.target.value)}\n            placeholder=\"¿Qué hay que hacer?\"\n            className=\"flex-1 rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200\"\n          />\n          <button\n            type=\"submit\"\n            className=\"rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700\"\n          >\n            Agregar\n          </button>\n        </form>\n\n        <ul className=\"space-y-2\">\n          {todos.map((todo) => (\n            <TodoItem\n              key={todo.id}\n              todo={todo}\n              onToggle={toggleTodo}\n              onDelete={deleteTodo}\n            />\n          ))}\n        </ul>\n\n        <p className=\"mt-4 text-center text-sm text-gray-500\">\n          {todos.length === 0 ? \"No hay tareas\" : `${pending} pendientes`}\n        </p>\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "todo",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 308,
+        "output": 1249,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.013106,
+      "codeTokens": 1238,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState, type FormEvent } from \"react\";\n\ntype Task = {\n  id: number;\n  title: string;\n  completed: boolean;\n};\n\ntype TaskItemProps = {\n  task: Task;\n  onToggle: (id: number) => void;\n  onDelete: (id: number) => void;\n};\n\nfunction TaskItem({ task, onToggle, onDelete }: TaskItemProps) {\n  return (\n    <li className=\"flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm\">\n      <input\n        type=\"checkbox\"\n        checked={task.completed}\n        onChange={() => onToggle(task.id)}\n        aria-label={`Completar ${task.title}`}\n        className=\"h-5 w-5 cursor-pointer accent-indigo-600\"\n      />\n      <span\n        className={`flex-1 break-words ${\n          task.completed ? \"text-gray-400 line-through\" : \"text-gray-800\"\n        }`}\n      >\n        {task.title}\n      </span>\n      <button\n        type=\"button\"\n        onClick={() => onDelete(task.id)}\n        aria-label={`Borrar ${task.title}`}\n        className=\"rounded px-2 text-lg font-bold leading-none text-gray-400 hover:bg-red-50 hover:text-red-600\"\n      >\n        x\n      </button>\n    </li>\n  );\n}\n\nexport default function App() {\n  const [tasks, setTasks] = useState<Task[]>([]);\n  const [text, setText] = useState(\"\");\n\n  const addTask = () => {\n    const title = text.trim();\n    if (!title) return;\n    setTasks((prev) => [...prev, { id: Date.now() + Math.random(), title, completed: false }]);\n    setText(\"\");\n  };\n\n  const handleSubmit = (e: FormEvent) => {\n    e.preventDefault();\n    addTask();\n  };\n\n  const toggleTask = (id: number) =>\n    setTasks((prev) =>\n      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))\n    );\n\n  const deleteTask = (id: number) =>\n    setTasks((prev) => prev.filter((t) => t.id !== id));\n\n  const pending = tasks.filter((t) => !t.completed).length;\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 px-4 py-10\">\n      <div className=\"mx-auto max-w-md\">\n        <h1 className=\"mb-4 text-2xl font-bold text-gray-800\">Lista de tareas</h1>\n\n        <form onSubmit={handleSubmit} className=\"mb-4 flex gap-2\">\n          <input\n            type=\"text\"\n            value={text}\n            onChange={(e) => setText(e.target.value)}\n            placeholder=\"¿Qué hay que hacer?\"\n            className=\"flex-1 rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200\"\n          />\n          <button\n            type=\"submit\"\n            className=\"rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700\"\n          >\n            Agregar\n          </button>\n        </form>\n\n        <ul className=\"space-y-2\">\n          {tasks.map((task) => (\n            <TaskItem\n              key={task.id}\n              task={task}\n              onToggle={toggleTask}\n              onDelete={deleteTask}\n            />\n          ))}\n        </ul>\n\n        <p className=\"mt-4 text-sm text-gray-600\">\n          {tasks.length === 0 ? \"No hay tareas\" : `${pending} pendientes`}\n        </p>\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "todo",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 308,
+        "output": 1215,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.012766,
+      "codeTokens": 1204,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState, type FormEvent } from \"react\";\n\ninterface Todo {\n  id: number;\n  title: string;\n  completed: boolean;\n}\n\ninterface TodoItemProps {\n  todo: Todo;\n  onToggle: (id: number) => void;\n  onDelete: (id: number) => void;\n}\n\nfunction TodoItem({ todo, onToggle, onDelete }: TodoItemProps) {\n  return (\n    <li className=\"flex items-center gap-3 rounded-lg bg-white px-3 py-2 shadow-sm\">\n      <input\n        type=\"checkbox\"\n        checked={todo.completed}\n        onChange={() => onToggle(todo.id)}\n        className=\"h-5 w-5 cursor-pointer accent-indigo-600\"\n        aria-label={`Completar ${todo.title}`}\n      />\n      <span\n        className={`flex-1 break-words ${\n          todo.completed ? \"text-gray-400 line-through\" : \"text-gray-800\"\n        }`}\n      >\n        {todo.title}\n      </span>\n      <button\n        type=\"button\"\n        onClick={() => onDelete(todo.id)}\n        className=\"rounded px-2 text-lg font-bold text-gray-400 hover:bg-red-50 hover:text-red-600\"\n        aria-label={`Borrar ${todo.title}`}\n      >\n        x\n      </button>\n    </li>\n  );\n}\n\nexport default function App() {\n  const [todos, setTodos] = useState<Todo[]>([]);\n  const [text, setText] = useState(\"\");\n\n  const addTodo = (e: FormEvent) => {\n    e.preventDefault();\n    const title = text.trim();\n    if (!title) return;\n    setTodos((prev) => [...prev, { id: Date.now() + Math.random(), title, completed: false }]);\n    setText(\"\");\n  };\n\n  const toggleTodo = (id: number) =>\n    setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));\n\n  const deleteTodo = (id: number) => setTodos((prev) => prev.filter((t) => t.id !== id));\n\n  const pending = todos.filter((t) => !t.completed).length;\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 px-4 py-10\">\n      <div className=\"mx-auto max-w-md\">\n        <h1 className=\"mb-6 text-center text-3xl font-bold text-gray-800\">Tareas</h1>\n\n        <form onSubmit={addTodo} className=\"mb-4 flex gap-2\">\n          <input\n            type=\"text\"\n            value={text}\n            onChange={(e) => setText(e.target.value)}\n            placeholder=\"¿Qué hay que hacer?\"\n            className=\"flex-1 rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200\"\n          />\n          <button\n            type=\"submit\"\n            className=\"rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700\"\n          >\n            Agregar\n          </button>\n        </form>\n\n        <ul className=\"space-y-2\">\n          {todos.map((todo) => (\n            <TodoItem key={todo.id} todo={todo} onToggle={toggleTodo} onDelete={deleteTodo} />\n          ))}\n        </ul>\n\n        <p className=\"mt-4 text-center text-sm text-gray-500\">\n          {todos.length === 0 ? \"No hay tareas\" : `${pending} pendientes`}\n        </p>\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "todo",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 324,
+        "output": 1053,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.011178,
+      "codeTokens": 1029,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  import TodoItem from './TodoItem.svelte';\n\n  type Todo = {\n    id: number;\n    title: string;\n    done: boolean;\n  };\n\n  let todos = $state<Todo[]>([]);\n  let text = $state('');\n  let nextId = 1;\n\n  let pending = $derived(todos.filter((t) => !t.done).length);\n\n  function addTodo() {\n    const title = text.trim();\n    if (!title) return;\n    todos.push({ id: nextId++, title, done: false });\n    text = '';\n  }\n\n  function removeTodo(id: number) {\n    todos = todos.filter((t) => t.id !== id);\n  }\n\n  function handleKeydown(e: KeyboardEvent) {\n    if (e.key === 'Enter') addTodo();\n  }\n</script>\n\n<main class=\"min-h-screen bg-gray-100 flex items-start justify-center p-6\">\n  <div class=\"w-full max-w-md bg-white rounded-xl shadow p-6\">\n    <h1 class=\"text-2xl font-bold mb-4 text-gray-800\">Lista de tareas</h1>\n\n    <div class=\"flex gap-2 mb-4\">\n      <input\n        type=\"text\"\n        placeholder=\"¿Qué hay que hacer?\"\n        bind:value={text}\n        onkeydown={handleKeydown}\n        class=\"flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500\"\n      />\n      <button\n        type=\"button\"\n        onclick={addTodo}\n        class=\"bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg\"\n      >\n        Agregar\n      </button>\n    </div>\n\n    <ul class=\"divide-y divide-gray-200\">\n      {#each todos as todo (todo.id)}\n        <TodoItem bind:todo={todos[todos.indexOf(todo)]} onremove={() => removeTodo(todo.id)} />\n      {/each}\n    </ul>\n\n    <p class=\"mt-4 text-sm text-gray-500\">\n      {#if todos.length === 0}\n        No hay tareas\n      {:else}\n        {pending} pendientes\n      {/if}\n    </p>\n  </div>\n</main>\n",
+            "TodoItem.svelte": "<script lang=\"ts\">\n  type Todo = {\n    id: number;\n    title: string;\n    done: boolean;\n  };\n\n  let { todo = $bindable(), onremove }: { todo: Todo; onremove: () => void } = $props();\n</script>\n\n<li class=\"flex items-center gap-3 py-2\">\n  <input type=\"checkbox\" bind:checked={todo.done} class=\"h-4 w-4 cursor-pointer\" />\n  <span class=\"flex-1 text-gray-800 {todo.done ? 'line-through text-gray-400' : ''}\">\n    {todo.title}\n  </span>\n  <button\n    type=\"button\"\n    onclick={onremove}\n    aria-label=\"Borrar tarea\"\n    class=\"text-gray-400 hover:text-red-600 px-2\"\n  >\n    x\n  </button>\n</li>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "todo",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 324,
+        "output": 1027,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.010918,
+      "codeTokens": 1003,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  import TodoItem from './TodoItem.svelte';\n\n  type Todo = {\n    id: number;\n    title: string;\n    done: boolean;\n  };\n\n  let todos = $state<Todo[]>([]);\n  let text = $state('');\n  let nextId = 1;\n\n  let pending = $derived(todos.filter((t) => !t.done).length);\n\n  function addTodo() {\n    const title = text.trim();\n    if (!title) return;\n    todos.push({ id: nextId++, title, done: false });\n    text = '';\n  }\n\n  function removeTodo(id: number) {\n    todos = todos.filter((t) => t.id !== id);\n  }\n\n  function handleKeydown(e: KeyboardEvent) {\n    if (e.key === 'Enter') addTodo();\n  }\n</script>\n\n<main class=\"min-h-screen bg-gray-100 flex items-start justify-center p-6\">\n  <div class=\"w-full max-w-md bg-white rounded-lg shadow p-6\">\n    <h1 class=\"text-2xl font-bold mb-4\">Lista de tareas</h1>\n\n    <div class=\"flex gap-2 mb-4\">\n      <input\n        type=\"text\"\n        placeholder=\"¿Qué hay que hacer?\"\n        bind:value={text}\n        onkeydown={handleKeydown}\n        class=\"flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500\"\n      />\n      <button\n        onclick={addTodo}\n        class=\"bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700\"\n      >\n        Agregar\n      </button>\n    </div>\n\n    <ul class=\"divide-y divide-gray-200\">\n      {#each todos as todo (todo.id)}\n        <TodoItem bind:todo={todos[todos.findIndex((t) => t.id === todo.id)]} onremove={() => removeTodo(todo.id)} />\n      {/each}\n    </ul>\n\n    <p class=\"mt-4 text-sm text-gray-500\">\n      {#if todos.length === 0}\n        No hay tareas\n      {:else}\n        {pending} pendientes\n      {/if}\n    </p>\n  </div>\n</main>\n",
+            "TodoItem.svelte": "<script lang=\"ts\">\n  type Todo = {\n    id: number;\n    title: string;\n    done: boolean;\n  };\n\n  let { todo = $bindable(), onremove }: { todo: Todo; onremove: () => void } = $props();\n</script>\n\n<li class=\"flex items-center gap-3 py-2\">\n  <input type=\"checkbox\" bind:checked={todo.done} class=\"h-4 w-4\" />\n  <span class=\"flex-1 {todo.done ? 'line-through text-gray-400' : 'text-gray-800'}\">\n    {todo.title}\n  </span>\n  <button\n    onclick={onremove}\n    aria-label=\"Borrar tarea\"\n    class=\"text-red-500 hover:text-red-700 px-2\"\n  >\n    x\n  </button>\n</li>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "todo",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 324,
+        "output": 1008,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.010728,
+      "codeTokens": 984,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  import TodoItem from './TodoItem.svelte';\n\n  type Todo = {\n    id: number;\n    title: string;\n    done: boolean;\n  };\n\n  let todos = $state<Todo[]>([]);\n  let text = $state('');\n  let nextId = 1;\n\n  let pending = $derived(todos.filter((t) => !t.done).length);\n\n  function addTodo() {\n    const title = text.trim();\n    if (!title) return;\n    todos.push({ id: nextId++, title, done: false });\n    text = '';\n  }\n\n  function removeTodo(id: number) {\n    todos = todos.filter((t) => t.id !== id);\n  }\n\n  function handleKeydown(e: KeyboardEvent) {\n    if (e.key === 'Enter') addTodo();\n  }\n</script>\n\n<main class=\"min-h-screen bg-gray-100 flex items-start justify-center p-6\">\n  <div class=\"w-full max-w-md bg-white rounded-lg shadow p-4\">\n    <h1 class=\"text-2xl font-bold mb-4\">Lista de tareas</h1>\n\n    <div class=\"flex gap-2 mb-4\">\n      <input\n        type=\"text\"\n        class=\"flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400\"\n        placeholder=\"¿Qué hay que hacer?\"\n        bind:value={text}\n        onkeydown={handleKeydown}\n      />\n      <button\n        class=\"bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded\"\n        onclick={addTodo}\n      >\n        Agregar\n      </button>\n    </div>\n\n    <ul class=\"divide-y divide-gray-200\">\n      {#each todos as todo (todo.id)}\n        <TodoItem\n          title={todo.title}\n          bind:done={todo.done}\n          onremove={() => removeTodo(todo.id)}\n        />\n      {/each}\n    </ul>\n\n    <p class=\"mt-4 text-sm text-gray-500\">\n      {#if todos.length === 0}\n        No hay tareas\n      {:else}\n        {pending} pendientes\n      {/if}\n    </p>\n  </div>\n</main>\n",
+            "TodoItem.svelte": "<script lang=\"ts\">\n  type Props = {\n    title: string;\n    done: boolean;\n    onremove: () => void;\n  };\n\n  let { title, done = $bindable(), onremove }: Props = $props();\n</script>\n\n<li class=\"flex items-center gap-3 py-2\">\n  <input type=\"checkbox\" class=\"h-4 w-4\" bind:checked={done} />\n  <span class=\"flex-1 {done ? 'line-through text-gray-400' : 'text-gray-800'}\">\n    {title}\n  </span>\n  <button\n    class=\"text-red-500 hover:text-red-700 px-2 font-bold\"\n    aria-label=\"Borrar tarea\"\n    onclick={onremove}\n  >\n    x\n  </button>\n</li>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "login",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 112,
+        "output": 265,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0033434000000000003,
+      "codeTokens": 256,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Login \"/login\" {\n  state email = \"\"\n  state password = \"\"\n  state logged = false\n\n  computed valid = email.includes(\"@\") && password.length >= 8\n\n  fn submit() {\n    if !valid { return }\n    logged = true\n  }\n\n  column gap=4 pad=6 align=center {\n    if logged {\n      title `Bienvenido, ${email}`\n    } else {\n      card pad=6 {\n        form gap=4 -> submit() {\n          title \"Iniciar sesión\"\n          input email type=email placeholder=\"Email\"\n          input password type=password placeholder=\"Contraseña\"\n          text \"La contraseña debe tener al menos 8 caracteres\" muted small\n          button \"Entrar\" primary disabled=(!valid) -> submit()\n        }\n      }\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "login",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 112,
+        "output": 240,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0030934,
+      "codeTokens": 231,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Login \"/login\" {\n  state email = \"\"\n  state password = \"\"\n  state loggedIn = false\n  computed valid = email.includes(\"@\") && password.length >= 8\n\n  fn submit() {\n    if !valid { return }\n    loggedIn = true\n  }\n\n  column gap=4 pad=6 align=center {\n    if loggedIn {\n      title `Bienvenido, ${email}`\n    } else {\n      title \"Iniciar sesión\"\n      form gap=3 pad=4 -> submit() {\n        input email type=email placeholder=\"Email\"\n        input password type=password placeholder=\"Contraseña\"\n        button \"Entrar\" primary disabled=(!valid) -> submit()\n      }\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "login",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 112,
+        "output": 237,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0030634,
+      "codeTokens": 228,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Login \"/\" {\n  state email = \"\"\n  state password = \"\"\n  state logged = false\n\n  computed valid = email.includes(\"@\") && password.length >= 8\n\n  fn submit() {\n    if !valid { return }\n    logged = true\n  }\n\n  column gap=4 pad=6 align=center {\n    if logged {\n      title `Bienvenido, ${email}`\n    } else {\n      card pad=6 {\n        form gap=3 -> submit() {\n          title \"Iniciar sesión\"\n          input email type=email placeholder=\"Email\"\n          input password type=password placeholder=\"Contraseña\"\n          button \"Entrar\" primary disabled=(!valid) -> submit()\n        }\n      }\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "login",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 264,
+        "output": 923,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.009758,
+      "codeTokens": 912,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState, type FormEvent } from \"react\";\n\nexport default function App() {\n  const [email, setEmail] = useState(\"\");\n  const [password, setPassword] = useState(\"\");\n  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);\n\n  const isValid = email.includes(\"@\") && password.length >= 8;\n\n  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {\n    e.preventDefault();\n    if (!isValid) return;\n    setSubmittedEmail(email);\n  };\n\n  return (\n    <div className=\"min-h-screen flex items-center justify-center bg-gray-100 p-4\">\n      <div className=\"w-full max-w-sm bg-white rounded-xl shadow-md p-6\">\n        {submittedEmail !== null ? (\n          <p className=\"text-center text-xl font-semibold text-gray-800\">\n            Bienvenido, {submittedEmail}\n          </p>\n        ) : (\n          <form onSubmit={handleSubmit} className=\"flex flex-col gap-4\">\n            <h1 className=\"text-2xl font-bold text-gray-800 text-center\">\n              Iniciar sesión\n            </h1>\n\n            <div className=\"flex flex-col gap-1\">\n              <label htmlFor=\"email\" className=\"text-sm font-medium text-gray-700\">\n                Email\n              </label>\n              <input\n                id=\"email\"\n                type=\"email\"\n                value={email}\n                onChange={(e) => setEmail(e.target.value)}\n                placeholder=\"tu@email.com\"\n                autoComplete=\"email\"\n                className=\"border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500\"\n              />\n            </div>\n\n            <div className=\"flex flex-col gap-1\">\n              <label htmlFor=\"password\" className=\"text-sm font-medium text-gray-700\">\n                Contraseña\n              </label>\n              <input\n                id=\"password\"\n                type=\"password\"\n                value={password}\n                onChange={(e) => setPassword(e.target.value)}\n                placeholder=\"Mínimo 8 caracteres\"\n                autoComplete=\"current-password\"\n                className=\"border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500\"\n              />\n            </div>\n\n            <button\n              type=\"submit\"\n              disabled={!isValid}\n              className=\"bg-blue-600 text-white font-semibold rounded-lg py-2 transition-colors hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed\"\n            >\n              Entrar\n            </button>\n          </form>\n        )}\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "login",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 264,
+        "output": 896,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.009488,
+      "codeTokens": 885,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState, FormEvent } from \"react\";\n\nexport default function App() {\n  const [email, setEmail] = useState(\"\");\n  const [password, setPassword] = useState(\"\");\n  const [submitted, setSubmitted] = useState(false);\n\n  const isValid = email.includes(\"@\") && password.length >= 8;\n\n  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {\n    e.preventDefault();\n    if (!isValid) return;\n    setSubmitted(true);\n  };\n\n  return (\n    <div className=\"min-h-screen flex items-center justify-center bg-gray-100 p-4\">\n      <div className=\"w-full max-w-sm bg-white rounded-xl shadow-md p-6\">\n        {submitted ? (\n          <p className=\"text-center text-xl font-semibold text-gray-800\">\n            Bienvenido, {email}\n          </p>\n        ) : (\n          <form onSubmit={handleSubmit} className=\"flex flex-col gap-4\">\n            <h1 className=\"text-2xl font-bold text-gray-800 text-center\">\n              Iniciar sesión\n            </h1>\n\n            <div className=\"flex flex-col gap-1\">\n              <label htmlFor=\"email\" className=\"text-sm font-medium text-gray-700\">\n                Email\n              </label>\n              <input\n                id=\"email\"\n                type=\"text\"\n                value={email}\n                onChange={(e) => setEmail(e.target.value)}\n                placeholder=\"tu@email.com\"\n                autoComplete=\"email\"\n                className=\"border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500\"\n              />\n            </div>\n\n            <div className=\"flex flex-col gap-1\">\n              <label htmlFor=\"password\" className=\"text-sm font-medium text-gray-700\">\n                Contraseña\n              </label>\n              <input\n                id=\"password\"\n                type=\"password\"\n                value={password}\n                onChange={(e) => setPassword(e.target.value)}\n                placeholder=\"Mínimo 8 caracteres\"\n                autoComplete=\"current-password\"\n                className=\"border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500\"\n              />\n            </div>\n\n            <button\n              type=\"submit\"\n              disabled={!isValid}\n              className=\"bg-blue-600 text-white font-medium rounded-lg py-2 transition-colors hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed\"\n            >\n              Entrar\n            </button>\n          </form>\n        )}\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "login",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 264,
+        "output": 920,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.009728,
+      "codeTokens": 909,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState, type FormEvent } from \"react\";\n\nexport default function App() {\n  const [email, setEmail] = useState(\"\");\n  const [password, setPassword] = useState(\"\");\n  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);\n\n  const isValid = email.includes(\"@\") && password.length >= 8;\n\n  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {\n    e.preventDefault();\n    if (!isValid) return;\n    setSubmittedEmail(email);\n  };\n\n  return (\n    <div className=\"min-h-screen flex items-center justify-center bg-gray-100 p-4\">\n      <div className=\"w-full max-w-sm bg-white rounded-xl shadow-md p-6\">\n        {submittedEmail !== null ? (\n          <p className=\"text-center text-lg font-semibold text-gray-800\">\n            Bienvenido, {submittedEmail}\n          </p>\n        ) : (\n          <form onSubmit={handleSubmit} className=\"flex flex-col gap-4\">\n            <h1 className=\"text-2xl font-bold text-gray-800 text-center\">\n              Iniciar sesión\n            </h1>\n\n            <div className=\"flex flex-col gap-1\">\n              <label htmlFor=\"email\" className=\"text-sm font-medium text-gray-700\">\n                Email\n              </label>\n              <input\n                id=\"email\"\n                type=\"email\"\n                value={email}\n                onChange={(e) => setEmail(e.target.value)}\n                placeholder=\"tu@email.com\"\n                autoComplete=\"email\"\n                className=\"border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500\"\n              />\n            </div>\n\n            <div className=\"flex flex-col gap-1\">\n              <label htmlFor=\"password\" className=\"text-sm font-medium text-gray-700\">\n                Contraseña\n              </label>\n              <input\n                id=\"password\"\n                type=\"password\"\n                value={password}\n                onChange={(e) => setPassword(e.target.value)}\n                placeholder=\"Mínimo 8 caracteres\"\n                autoComplete=\"current-password\"\n                className=\"border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500\"\n              />\n            </div>\n\n            <button\n              type=\"submit\"\n              disabled={!isValid}\n              className=\"bg-blue-600 text-white font-semibold rounded-lg py-2 transition hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed\"\n            >\n              Entrar\n            </button>\n          </form>\n        )}\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "login",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 280,
+        "output": 760,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.00816,
+      "codeTokens": 749,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  let email = $state('');\n  let password = $state('');\n  let submitted = $state(false);\n\n  let isValid = $derived(email.includes('@') && password.length >= 8);\n\n  function handleSubmit(event: SubmitEvent) {\n    event.preventDefault();\n    if (!isValid) return;\n    submitted = true;\n  }\n</script>\n\n<main class=\"min-h-screen flex items-center justify-center bg-gray-100 p-4\">\n  <div class=\"w-full max-w-sm bg-white rounded-lg shadow-md p-6\">\n    {#if submitted}\n      <p class=\"text-center text-xl font-semibold text-gray-800\">\n        Bienvenido, {email}\n      </p>\n    {:else}\n      <form onsubmit={handleSubmit} class=\"flex flex-col gap-4\">\n        <h1 class=\"text-2xl font-bold text-gray-800 text-center\">Iniciar sesión</h1>\n\n        <label class=\"flex flex-col gap-1\">\n          <span class=\"text-sm font-medium text-gray-700\">Email</span>\n          <input\n            type=\"email\"\n            bind:value={email}\n            placeholder=\"tu@correo.com\"\n            autocomplete=\"email\"\n            class=\"border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500\"\n          />\n        </label>\n\n        <label class=\"flex flex-col gap-1\">\n          <span class=\"text-sm font-medium text-gray-700\">Contraseña</span>\n          <input\n            type=\"password\"\n            bind:value={password}\n            placeholder=\"Mínimo 8 caracteres\"\n            autocomplete=\"current-password\"\n            class=\"border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500\"\n          />\n        </label>\n\n        <button\n          type=\"submit\"\n          disabled={!isValid}\n          class=\"bg-blue-600 text-white font-semibold rounded px-4 py-2 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600\"\n        >\n          Entrar\n        </button>\n      </form>\n    {/if}\n  </div>\n</main>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "login",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 280,
+        "output": 785,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.00841,
+      "codeTokens": 774,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  let email = $state('');\n  let password = $state('');\n  let submitted = $state(false);\n\n  let isValid = $derived(email.includes('@') && password.length >= 8);\n\n  function handleSubmit(event: SubmitEvent) {\n    event.preventDefault();\n    if (!isValid) return;\n    submitted = true;\n  }\n</script>\n\n<main class=\"min-h-screen bg-gray-100 flex items-center justify-center p-4\">\n  <div class=\"w-full max-w-sm bg-white rounded-xl shadow-md p-6\">\n    {#if submitted}\n      <p class=\"text-center text-xl font-semibold text-gray-800\">\n        Bienvenido, {email}\n      </p>\n    {:else}\n      <form onsubmit={handleSubmit} class=\"flex flex-col gap-4\">\n        <h1 class=\"text-2xl font-bold text-gray-800 text-center\">Iniciar sesión</h1>\n\n        <div class=\"flex flex-col gap-1\">\n          <label for=\"email\" class=\"text-sm font-medium text-gray-700\">Email</label>\n          <input\n            id=\"email\"\n            type=\"text\"\n            bind:value={email}\n            autocomplete=\"email\"\n            placeholder=\"tu@email.com\"\n            class=\"border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500\"\n          />\n        </div>\n\n        <div class=\"flex flex-col gap-1\">\n          <label for=\"password\" class=\"text-sm font-medium text-gray-700\">Contraseña</label>\n          <input\n            id=\"password\"\n            type=\"password\"\n            bind:value={password}\n            autocomplete=\"current-password\"\n            placeholder=\"Mínimo 8 caracteres\"\n            class=\"border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500\"\n          />\n        </div>\n\n        <button\n          type=\"submit\"\n          disabled={!isValid}\n          class=\"bg-blue-600 text-white font-semibold rounded-lg py-2 transition hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed\"\n        >\n          Entrar\n        </button>\n      </form>\n    {/if}\n  </div>\n</main>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "login",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 280,
+        "output": 785,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.00841,
+      "codeTokens": 774,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  let email = $state('');\n  let password = $state('');\n  let submittedEmail = $state<string | null>(null);\n\n  let isValid = $derived(email.includes('@') && password.length >= 8);\n\n  function handleSubmit(event: SubmitEvent) {\n    event.preventDefault();\n    if (!isValid) return;\n    submittedEmail = email;\n  }\n</script>\n\n<main class=\"min-h-screen flex items-center justify-center bg-gray-100 p-4\">\n  <div class=\"w-full max-w-sm bg-white rounded-lg shadow-md p-6\">\n    {#if submittedEmail !== null}\n      <p class=\"text-center text-xl font-semibold text-gray-800\">\n        Bienvenido, {submittedEmail}\n      </p>\n    {:else}\n      <form onsubmit={handleSubmit} class=\"flex flex-col gap-4\">\n        <h1 class=\"text-2xl font-bold text-gray-800 text-center\">Iniciar sesión</h1>\n\n        <label class=\"flex flex-col gap-1\">\n          <span class=\"text-sm font-medium text-gray-700\">Email</span>\n          <input\n            type=\"email\"\n            bind:value={email}\n            placeholder=\"tu@email.com\"\n            autocomplete=\"email\"\n            class=\"border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500\"\n          />\n        </label>\n\n        <label class=\"flex flex-col gap-1\">\n          <span class=\"text-sm font-medium text-gray-700\">Contraseña</span>\n          <input\n            type=\"password\"\n            bind:value={password}\n            placeholder=\"Mínimo 8 caracteres\"\n            autocomplete=\"current-password\"\n            class=\"border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500\"\n          />\n        </label>\n\n        <button\n          type=\"submit\"\n          disabled={!isValid}\n          class=\"bg-blue-600 text-white font-semibold rounded px-4 py-2 transition-colors hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed\"\n        >\n          Entrar\n        </button>\n      </form>\n    {/if}\n  </div>\n</main>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "search",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 108,
+        "output": 392,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0046054,
+      "codeTokens": 383,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model User {\n  id: ID\n  name: String\n  email: Email\n}\n\ncomponent UserCard(user: User) {\n  card pad=4 gap=1 {\n    text user.name bold\n    text user.email muted\n  }\n}\n\npage Users \"/users\" {\n  state query = \"\"\n  state users: User[] = [\n    { id: \"1\", name: \"Ana García\", email: \"ana@example.com\" },\n    { id: \"2\", name: \"Bruno Díaz\", email: \"bruno@example.com\" },\n    { id: \"3\", name: \"Carla Gómez\", email: \"carla@example.com\" },\n    { id: \"4\", name: \"Diego Fernández\", email: \"diego@example.com\" }\n  ]\n  computed results = users.filter(u => u.name.toLowerCase().includes(query.toLowerCase()))\n\n  column gap=4 pad=6 {\n    title \"Usuarios\"\n    input query placeholder=\"Buscar por nombre\"\n    text `Resultados: ${results.length}` muted\n    if results.length == 0 {\n      text \"Sin resultados\" muted\n    } else {\n      column gap=3 {\n        for u in results {\n          UserCard user=u\n        }\n      }\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "search",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 108,
+        "output": 396,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0046454,
+      "codeTokens": 387,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model User {\n  id: ID\n  name: String\n  email: Email\n}\n\ncomponent UserCard(user: User) {\n  card pad=4 gap=1 {\n    text user.name bold\n    text user.email muted\n  }\n}\n\npage Users \"/users\" {\n  state query = \"\"\n  state users: User[] = [\n    { id: \"1\", name: \"Ana García\", email: \"ana@example.com\" },\n    { id: \"2\", name: \"Bruno Pérez\", email: \"bruno@example.com\" },\n    { id: \"3\", name: \"Carla Gómez\", email: \"carla@example.com\" },\n    { id: \"4\", name: \"Diego Fernández\", email: \"diego@example.com\" }\n  ]\n  computed results = users.filter(u => u.name.toLowerCase().includes(query.toLowerCase()))\n\n  column gap=4 pad=4 {\n    title \"Usuarios\"\n    input query placeholder=\"Buscar por nombre\"\n    text `Resultados: ${results.length}` muted\n    if results.length == 0 {\n      text \"No se encontraron usuarios\" muted\n    } else {\n      column gap=3 {\n        for u in results {\n          UserCard user=u\n        }\n      }\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "search",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 108,
+        "output": 392,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0046054,
+      "codeTokens": 383,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model User {\n  id: ID\n  name: String\n  email: Email\n}\n\ncomponent UserCard(user: User) {\n  card pad=4 gap=1 {\n    text user.name bold\n    text user.email muted\n  }\n}\n\npage Users \"/users\" {\n  state query = \"\"\n  state users: User[] = [\n    { id: \"1\", name: \"Ana García\", email: \"ana@example.com\" },\n    { id: \"2\", name: \"Bruno Pérez\", email: \"bruno@example.com\" },\n    { id: \"3\", name: \"Carla Gómez\", email: \"carla@example.com\" },\n    { id: \"4\", name: \"Diego Fernández\", email: \"diego@example.com\" }\n  ]\n  computed results = users.filter(u => u.name.toLowerCase().includes(query.toLowerCase()))\n\n  column gap=4 pad=6 {\n    title \"Usuarios\"\n    input query placeholder=\"Buscar por nombre\"\n    text `Resultados: ${results.length}` muted\n    if results.length == 0 {\n      text \"Sin resultados\" muted\n    } else {\n      column gap=3 {\n        for u in results {\n          UserCard user=u\n        }\n      }\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "search",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 260,
+        "output": 905,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.00957,
+      "codeTokens": 894,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useMemo, useState } from \"react\";\n\ninterface User {\n  id: number;\n  name: string;\n  email: string;\n}\n\nconst INITIAL_USERS: User[] = [\n  { id: 1, name: \"Lucía Fernández\", email: \"lucia.fernandez@example.com\" },\n  { id: 2, name: \"Martín Gómez\", email: \"martin.gomez@example.com\" },\n  { id: 3, name: \"Sofía Rodríguez\", email: \"sofia.rodriguez@example.com\" },\n  { id: 4, name: \"Mateo Álvarez\", email: \"mateo.alvarez@example.com\" },\n];\n\nexport default function App() {\n  const [users] = useState<User[]>(INITIAL_USERS);\n  const [query, setQuery] = useState<string>(\"\");\n\n  const filteredUsers = useMemo(() => {\n    const normalized = query.trim().toLowerCase();\n    if (!normalized) return users;\n    return users.filter((user) =>\n      user.name.toLowerCase().includes(normalized)\n    );\n  }, [users, query]);\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 px-4 py-10\">\n      <div className=\"mx-auto max-w-2xl\">\n        <h1 className=\"mb-6 text-3xl font-bold text-gray-800\">Usuarios</h1>\n\n        <input\n          type=\"text\"\n          value={query}\n          onChange={(e) => setQuery(e.target.value)}\n          placeholder=\"Buscar por nombre...\"\n          className=\"w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-800 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200\"\n        />\n\n        <p className=\"mt-3 text-sm text-gray-600\">\n          {filteredUsers.length}{\" \"}\n          {filteredUsers.length === 1 ? \"resultado\" : \"resultados\"}\n        </p>\n\n        <div className=\"mt-4 grid gap-4 sm:grid-cols-2\">\n          {filteredUsers.map((user) => (\n            <div\n              key={user.id}\n              className=\"rounded-xl bg-white p-4 shadow transition hover:shadow-md\"\n            >\n              <h2 className=\"text-lg font-semibold text-gray-900\">\n                {user.name}\n              </h2>\n              <p className=\"text-sm text-gray-600\">{user.email}</p>\n            </div>\n          ))}\n        </div>\n\n        {filteredUsers.length === 0 && (\n          <p className=\"mt-6 text-center text-gray-500\">\n            No se encontraron usuarios.\n          </p>\n        )}\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "search",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 260,
+        "output": 889,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.00941,
+      "codeTokens": 878,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useMemo, useState } from \"react\";\n\ninterface User {\n  id: number;\n  name: string;\n  email: string;\n}\n\nconst INITIAL_USERS: User[] = [\n  { id: 1, name: \"Lucía Fernández\", email: \"lucia.fernandez@example.com\" },\n  { id: 2, name: \"Mateo Gómez\", email: \"mateo.gomez@example.com\" },\n  { id: 3, name: \"Valentina Rossi\", email: \"valentina.rossi@example.com\" },\n  { id: 4, name: \"Santiago Pérez\", email: \"santiago.perez@example.com\" },\n];\n\nexport default function App() {\n  const [users] = useState<User[]>(INITIAL_USERS);\n  const [query, setQuery] = useState<string>(\"\");\n\n  const filteredUsers = useMemo(() => {\n    const q = query.trim().toLowerCase();\n    if (!q) return users;\n    return users.filter((user) => user.name.toLowerCase().includes(q));\n  }, [users, query]);\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 p-6\">\n      <div className=\"mx-auto max-w-2xl\">\n        <h1 className=\"mb-4 text-2xl font-bold text-gray-800\">Usuarios</h1>\n\n        <input\n          type=\"text\"\n          value={query}\n          onChange={(e) => setQuery(e.target.value)}\n          placeholder=\"Buscar por nombre...\"\n          className=\"w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-800 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200\"\n        />\n\n        <p className=\"mt-3 text-sm text-gray-600\">\n          {filteredUsers.length}{\" \"}\n          {filteredUsers.length === 1 ? \"resultado\" : \"resultados\"}\n        </p>\n\n        <ul className=\"mt-4 grid gap-4 sm:grid-cols-2\">\n          {filteredUsers.map((user) => (\n            <li\n              key={user.id}\n              className=\"rounded-xl bg-white p-4 shadow transition hover:shadow-md\"\n            >\n              <h2 className=\"text-lg font-semibold text-gray-900\">\n                {user.name}\n              </h2>\n              <p className=\"text-sm text-gray-600\">{user.email}</p>\n            </li>\n          ))}\n        </ul>\n\n        {filteredUsers.length === 0 && (\n          <p className=\"mt-6 text-center text-gray-500\">\n            No se encontraron usuarios.\n          </p>\n        )}\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "search",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 260,
+        "output": 923,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.00975,
+      "codeTokens": 912,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useMemo, useState } from \"react\";\n\ninterface User {\n  id: number;\n  name: string;\n  email: string;\n}\n\nconst INITIAL_USERS: User[] = [\n  { id: 1, name: \"Martina Gómez\", email: \"martina.gomez@ejemplo.com\" },\n  { id: 2, name: \"Santiago Rodríguez\", email: \"santiago.rodriguez@ejemplo.com\" },\n  { id: 3, name: \"Lucía Fernández\", email: \"lucia.fernandez@ejemplo.com\" },\n  { id: 4, name: \"Mateo Martínez\", email: \"mateo.martinez@ejemplo.com\" },\n];\n\nexport default function App() {\n  const [users] = useState<User[]>(INITIAL_USERS);\n  const [query, setQuery] = useState<string>(\"\");\n\n  const filteredUsers = useMemo(() => {\n    const normalized = query.trim().toLowerCase();\n    if (!normalized) return users;\n    return users.filter((user) =>\n      user.name.toLowerCase().includes(normalized)\n    );\n  }, [users, query]);\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 px-4 py-10\">\n      <div className=\"mx-auto max-w-2xl\">\n        <h1 className=\"mb-6 text-3xl font-bold text-gray-800\">Usuarios</h1>\n\n        <input\n          type=\"text\"\n          value={query}\n          onChange={(e) => setQuery(e.target.value)}\n          placeholder=\"Buscar por nombre...\"\n          className=\"w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-800 shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200\"\n        />\n\n        <p className=\"mt-3 text-sm text-gray-600\">\n          {filteredUsers.length}{\" \"}\n          {filteredUsers.length === 1 ? \"resultado\" : \"resultados\"}\n        </p>\n\n        <ul className=\"mt-4 grid gap-4 sm:grid-cols-2\">\n          {filteredUsers.map((user) => (\n            <li\n              key={user.id}\n              className=\"rounded-xl bg-white p-4 shadow transition hover:shadow-md\"\n            >\n              <h2 className=\"text-lg font-semibold text-gray-800\">\n                {user.name}\n              </h2>\n              <p className=\"text-sm text-gray-500\">{user.email}</p>\n            </li>\n          ))}\n        </ul>\n\n        {filteredUsers.length === 0 && (\n          <p className=\"mt-6 text-center text-gray-500\">\n            No se encontraron usuarios.\n          </p>\n        )}\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "search",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 276,
+        "output": 797,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.008522,
+      "codeTokens": 766,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  import UserCard from './UserCard.svelte';\n  import type { User } from './types';\n\n  const users: User[] = [\n    { id: 1, name: 'Ana García', email: 'ana.garcia@example.com' },\n    { id: 2, name: 'Carlos Pérez', email: 'carlos.perez@example.com' },\n    { id: 3, name: 'Lucía Fernández', email: 'lucia.fernandez@example.com' },\n    { id: 4, name: 'Martín Rodríguez', email: 'martin.rodriguez@example.com' }\n  ];\n\n  let query = $state('');\n\n  const filteredUsers = $derived(\n    users.filter((user) =>\n      user.name.toLowerCase().includes(query.trim().toLowerCase())\n    )\n  );\n</script>\n\n<main class=\"min-h-screen bg-gray-100 p-6\">\n  <div class=\"mx-auto max-w-2xl\">\n    <h1 class=\"mb-4 text-2xl font-bold text-gray-800\">Usuarios</h1>\n\n    <input\n      type=\"text\"\n      bind:value={query}\n      placeholder=\"Buscar por nombre...\"\n      class=\"w-full rounded-lg border border-gray-300 bg-white px-4 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200\"\n    />\n\n    <p class=\"mt-3 text-sm text-gray-600\">\n      {filteredUsers.length}\n      {filteredUsers.length === 1 ? 'resultado' : 'resultados'}\n    </p>\n\n    <div class=\"mt-4 grid gap-4 sm:grid-cols-2\">\n      {#each filteredUsers as user (user.id)}\n        <UserCard {user} />\n      {/each}\n    </div>\n  </div>\n</main>\n",
+            "types.ts": "export interface User {\n  id: number;\n  name: string;\n  email: string;\n}\n",
+            "UserCard.svelte": "<script lang=\"ts\">\n  import type { User } from './types';\n\n  let { user }: { user: User } = $props();\n</script>\n\n<div class=\"rounded-lg bg-white p-4 shadow\">\n  <h2 class=\"text-lg font-semibold text-gray-900\">{user.name}</h2>\n  <p class=\"text-sm text-gray-600\">{user.email}</p>\n</div>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "search",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 276,
+        "output": 782,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.008372,
+      "codeTokens": 751,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  import UserCard from './UserCard.svelte';\n  import type { User } from './types';\n\n  const users: User[] = [\n    { id: 1, name: 'Lucía Fernández', email: 'lucia.fernandez@example.com' },\n    { id: 2, name: 'Martín Gómez', email: 'martin.gomez@example.com' },\n    { id: 3, name: 'Carolina Pérez', email: 'carolina.perez@example.com' },\n    { id: 4, name: 'Mateo Rodríguez', email: 'mateo.rodriguez@example.com' }\n  ];\n\n  let query = $state('');\n\n  const filtered = $derived(\n    users.filter((u) =>\n      u.name.toLowerCase().includes(query.trim().toLowerCase())\n    )\n  );\n</script>\n\n<main class=\"min-h-screen bg-gray-100 p-6\">\n  <div class=\"mx-auto max-w-xl\">\n    <h1 class=\"mb-4 text-2xl font-bold text-gray-800\">Usuarios</h1>\n\n    <input\n      type=\"text\"\n      bind:value={query}\n      placeholder=\"Buscar por nombre...\"\n      class=\"w-full rounded-lg border border-gray-300 bg-white px-4 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200\"\n    />\n\n    <p class=\"mt-3 text-sm text-gray-600\">\n      {filtered.length}\n      {filtered.length === 1 ? 'resultado' : 'resultados'}\n    </p>\n\n    <div class=\"mt-4 flex flex-col gap-3\">\n      {#each filtered as user (user.id)}\n        <UserCard {user} />\n      {/each}\n    </div>\n  </div>\n</main>\n",
+            "types.ts": "export interface User {\n  id: number;\n  name: string;\n  email: string;\n}\n",
+            "UserCard.svelte": "<script lang=\"ts\">\n  import type { User } from './types';\n\n  let { user }: { user: User } = $props();\n</script>\n\n<div class=\"rounded-lg bg-white p-4 shadow\">\n  <h2 class=\"text-lg font-semibold text-gray-900\">{user.name}</h2>\n  <p class=\"text-sm text-gray-600\">{user.email}</p>\n</div>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "search",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 276,
+        "output": 828,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.008832,
+      "codeTokens": 797,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  import UserCard from './UserCard.svelte';\n  import type { User } from './types';\n\n  const users: User[] = [\n    { id: 1, name: 'Ana García', email: 'ana.garcia@example.com' },\n    { id: 2, name: 'Bruno Fernández', email: 'bruno.fernandez@example.com' },\n    { id: 3, name: 'Carla Rodríguez', email: 'carla.rodriguez@example.com' },\n    { id: 4, name: 'Diego Martínez', email: 'diego.martinez@example.com' }\n  ];\n\n  let query = $state('');\n\n  const filtered = $derived(\n    users.filter((u) =>\n      u.name.toLowerCase().includes(query.trim().toLowerCase())\n    )\n  );\n</script>\n\n<main class=\"min-h-screen bg-gray-100 p-6\">\n  <div class=\"mx-auto max-w-xl\">\n    <h1 class=\"mb-4 text-2xl font-bold text-gray-800\">Usuarios</h1>\n\n    <input\n      type=\"text\"\n      bind:value={query}\n      placeholder=\"Buscar por nombre...\"\n      class=\"w-full rounded-lg border border-gray-300 bg-white px-4 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200\"\n    />\n\n    <p class=\"mt-3 text-sm text-gray-600\">\n      {filtered.length} {filtered.length === 1 ? 'resultado' : 'resultados'}\n    </p>\n\n    <div class=\"mt-4 grid gap-3\">\n      {#each filtered as user (user.id)}\n        <UserCard {user} />\n      {:else}\n        <p class=\"rounded-lg bg-white p-4 text-center text-gray-500 shadow\">\n          No se encontraron usuarios.\n        </p>\n      {/each}\n    </div>\n  </div>\n</main>\n",
+            "types.ts": "export interface User {\n  id: number;\n  name: string;\n  email: string;\n}\n",
+            "UserCard.svelte": "<script lang=\"ts\">\n  import type { User } from './types';\n\n  let { user }: { user: User } = $props();\n</script>\n\n<div class=\"rounded-lg bg-white p-4 shadow\">\n  <h2 class=\"text-lg font-semibold text-gray-900\">{user.name}</h2>\n  <p class=\"text-sm text-gray-600\">{user.email}</p>\n</div>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "cart",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 116,
+        "output": 991,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0106114,
+      "codeTokens": 982,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model Product {\n  id: ID\n  name: String\n  price: Number\n}\n\nmodel CartItem {\n  id: ID\n  name: String\n  price: Number\n  qty: Number\n}\n\ncomponent ProductRow(product: Product, onAdd: Fn) {\n  card pad=3 {\n    row gap=4 align=center justify=between {\n      column gap=1 {\n        text product.name bold\n        text `$${product.price.toFixed(2)}` muted\n      }\n      button \"Agregar\" primary -> onAdd(product)\n    }\n  }\n}\n\ncomponent CartRow(item: CartItem, onInc: Fn, onDec: Fn) {\n  card pad=3 {\n    row gap=4 align=center justify=between {\n      column gap=1 {\n        text item.name bold\n        text `$${item.price.toFixed(2)} c/u` muted small\n      }\n      row gap=2 align=center {\n        button \"-\" small -> onDec(item.id)\n        text `${item.qty}` bold\n        button \"+\" small -> onInc(item.id)\n      }\n      text `$${(item.price * item.qty).toFixed(2)}`\n    }\n  }\n}\n\npage Shop \"/\" {\n  state products: Product[] = [\n    { id: \"p1\", name: \"Remera\", price: 19.99 },\n    { id: \"p2\", name: \"Gorra\", price: 9.5 },\n    { id: \"p3\", name: \"Zapatillas\", price: 59.9 }\n  ]\n  state cart: CartItem[] = []\n\n  computed total = cart.reduce((sum, i) => sum + i.price * i.qty, 0)\n\n  fn add(p) {\n    let found = cart.find(i => i.id == p.id)\n    if found {\n      cart = cart.map(i => i.id == p.id ? { id: i.id, name: i.name, price: i.price, qty: i.qty + 1 } : i)\n    } else {\n      cart = [...cart, { id: p.id, name: p.name, price: p.price, qty: 1 }]\n    }\n  }\n\n  fn inc(id) {\n    cart = cart.map(i => i.id == id ? { id: i.id, name: i.name, price: i.price, qty: i.qty + 1 } : i)\n  }\n\n  fn dec(id) {\n    cart = cart\n      .map(i => i.id == id ? { id: i.id, name: i.name, price: i.price, qty: i.qty - 1 } : i)\n      .filter(i => i.qty > 0)\n  }\n\n  column gap=6 pad=6 {\n    title \"Tienda\"\n    column gap=2 {\n      for p in products {\n        ProductRow product=p onAdd=add\n      }\n    }\n    title \"Carrito\" small\n    if cart.length == 0 {\n      text \"El carrito está vacío\" muted\n    } else {\n      column gap=2 {\n        for item in cart {\n          CartRow item=item onInc=inc onDec=dec\n        }\n      }\n    }\n    text `Total: $${total.toFixed(2)}` bold large\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "cart",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 116,
+        "output": 807,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0087714,
+      "codeTokens": 798,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model Product {\n  id: ID\n  name: String\n  price: Number\n}\n\nmodel CartItem {\n  id: ID\n  name: String\n  price: Number\n  qty: Number\n}\n\npage Shop \"/\" {\n  state products: Product[] = [\n    { id: \"1\", name: \"Remera\", price: 15.5 },\n    { id: \"2\", name: \"Pantalón\", price: 40 },\n    { id: \"3\", name: \"Zapatillas\", price: 89.99 }\n  ]\n  state cart: CartItem[] = []\n  computed total = cart.reduce((sum, i) => sum + i.price * i.qty, 0)\n  computed totalText = total.toFixed(2)\n\n  fn add(p) {\n    let found = cart.find(i => i.id == p.id)\n    if found {\n      found.qty = found.qty + 1\n    } else {\n      cart.push({ id: p.id, name: p.name, price: p.price, qty: 1 })\n    }\n  }\n\n  fn inc(id) {\n    cart = cart.map(i => i.id == id ? { ...i, qty: i.qty + 1 } : i)\n  }\n\n  fn dec(id) {\n    cart = cart\n      .map(i => i.id == id ? { ...i, qty: i.qty - 1 } : i)\n      .filter(i => i.qty > 0)\n  }\n\n  column gap=6 pad=6 {\n    title \"Tienda\"\n    column gap=2 {\n      title \"Productos\" small\n      for p in products {\n        card pad=3 {\n          row gap=4 align=center justify=between {\n            column gap=1 {\n              text p.name bold\n              text `$${p.price.toFixed(2)}` muted\n            }\n            button \"Agregar\" primary -> add(p)\n          }\n        }\n      }\n    }\n    column gap=2 {\n      title \"Carrito\" small\n      if cart.length == 0 {\n        text \"El carrito está vacío\" muted\n      } else {\n        for item in cart {\n          card pad=3 {\n            row gap=4 align=center justify=between {\n              column gap=1 {\n                text item.name bold\n                text `$${item.price.toFixed(2)} c/u` muted small\n              }\n              row gap=2 align=center {\n                button \"-\" small -> dec(item.id)\n                text `${item.qty}`\n                button \"+\" small -> inc(item.id)\n              }\n            }\n          }\n        }\n      }\n      text `Total: $${totalText}` bold large\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "cart",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 116,
+        "output": 927,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0099714,
+      "codeTokens": 918,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model Product {\n  id: ID\n  name: String\n  price: Number\n}\n\nmodel CartItem {\n  id: ID\n  name: String\n  price: Number\n  qty: Number\n}\n\ncomponent ProductCard(product: Product, onAdd: Fn) {\n  card pad=3 {\n    row gap=4 align=center justify=between {\n      column gap=1 {\n        text product.name bold\n        text `$${product.price.toFixed(2)}` muted\n      }\n      button \"Agregar\" primary -> onAdd(product)\n    }\n  }\n}\n\ncomponent CartRow(item: CartItem, onInc: Fn, onDec: Fn) {\n  row gap=4 align=center justify=between {\n    column gap=1 {\n      text item.name bold\n      text `$${item.price.toFixed(2)} c/u` muted small\n    }\n    row gap=2 align=center {\n      button \"-\" small -> onDec(item.id)\n      text `${item.qty}`\n      button \"+\" small -> onInc(item.id)\n      text `$${(item.price * item.qty).toFixed(2)}`\n    }\n  }\n}\n\npage Shop \"/\" {\n  state products: Product[] = [\n    { id: \"1\", name: \"Remera\", price: 12.5 },\n    { id: \"2\", name: \"Zapatillas\", price: 59.99 },\n    { id: \"3\", name: \"Gorra\", price: 8.75 }\n  ]\n  state cart: CartItem[] = []\n\n  computed total = cart.reduce((sum, i) => sum + i.price * i.qty, 0)\n\n  fn addProduct(p) {\n    let existing = cart.find(i => i.id == p.id)\n    if existing {\n      existing.qty = existing.qty + 1\n    } else {\n      cart = [...cart, { id: p.id, name: p.name, price: p.price, qty: 1 }]\n    }\n  }\n\n  fn inc(id) {\n    cart = cart.map(i => i.id == id ? { ...i, qty: i.qty + 1 } : i)\n  }\n\n  fn dec(id) {\n    cart = cart\n      .map(i => i.id == id ? { ...i, qty: i.qty - 1 } : i)\n      .filter(i => i.qty > 0)\n  }\n\n  column gap=6 pad=6 {\n    title \"Tienda\"\n    column gap=3 {\n      for p in products {\n        ProductCard product=p onAdd=addProduct\n      }\n    }\n    title \"Carrito\" small\n    if cart.length == 0 {\n      text \"El carrito está vacío\" muted\n    } else {\n      card pad=3 {\n        column gap=3 {\n          for item in cart {\n            CartRow item=item onInc=inc onDec=dec\n          }\n        }\n      }\n    }\n    text `Total: $${total.toFixed(2)}` bold large\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "cart",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 268,
+        "output": 1556,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.016096,
+      "codeTokens": 1545,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState } from \"react\";\n\ntype Product = {\n  id: number;\n  nombre: string;\n  precio: number;\n};\n\nconst PRODUCTS: Product[] = [\n  { id: 1, nombre: \"Auriculares Bluetooth\", precio: 49.99 },\n  { id: 2, nombre: \"Teclado mecánico\", precio: 89.5 },\n  { id: 3, nombre: \"Mouse inalámbrico\", precio: 25.75 },\n];\n\nexport default function App() {\n  const [cart, setCart] = useState<Record<number, number>>({});\n\n  const agregar = (id: number) => {\n    setCart((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }));\n  };\n\n  const cambiar = (id: number, delta: number) => {\n    setCart((prev) => {\n      const nueva = (prev[id] ?? 0) + delta;\n      const { [id]: _omit, ...resto } = prev;\n      return nueva > 0 ? { ...resto, [id]: nueva } : resto;\n    });\n  };\n\n  const items = PRODUCTS.filter((p) => cart[p.id] > 0).map((p) => ({\n    ...p,\n    cantidad: cart[p.id],\n  }));\n\n  const total = items.reduce((acc, i) => acc + i.precio * i.cantidad, 0);\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 p-6\">\n      <div className=\"mx-auto grid max-w-4xl gap-6 md:grid-cols-2\">\n        <section className=\"rounded-xl bg-white p-5 shadow\">\n          <h2 className=\"mb-4 text-xl font-bold text-gray-800\">Productos</h2>\n          <ul className=\"space-y-3\">\n            {PRODUCTS.map((p) => (\n              <li\n                key={p.id}\n                className=\"flex items-center justify-between rounded-lg border border-gray-200 p-3\"\n              >\n                <div>\n                  <p className=\"font-medium text-gray-800\">{p.nombre}</p>\n                  <p className=\"text-sm text-gray-500\">${p.precio.toFixed(2)}</p>\n                </div>\n                <button\n                  onClick={() => agregar(p.id)}\n                  className=\"rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700\"\n                >\n                  Agregar\n                </button>\n              </li>\n            ))}\n          </ul>\n        </section>\n\n        <section className=\"rounded-xl bg-white p-5 shadow\">\n          <h2 className=\"mb-4 text-xl font-bold text-gray-800\">Carrito</h2>\n          {items.length === 0 ? (\n            <p className=\"text-gray-500\">El carrito está vacío.</p>\n          ) : (\n            <ul className=\"space-y-3\">\n              {items.map((i) => (\n                <li\n                  key={i.id}\n                  className=\"flex items-center justify-between rounded-lg border border-gray-200 p-3\"\n                >\n                  <div>\n                    <p className=\"font-medium text-gray-800\">{i.nombre}</p>\n                    <p className=\"text-sm text-gray-500\">\n                      ${i.precio.toFixed(2)} c/u · Subtotal: $\n                      {(i.precio * i.cantidad).toFixed(2)}\n                    </p>\n                  </div>\n                  <div className=\"flex items-center gap-2\">\n                    <button\n                      onClick={() => cambiar(i.id, -1)}\n                      className=\"h-8 w-8 rounded-md bg-gray-200 font-bold hover:bg-gray-300\"\n                      aria-label={`Quitar uno de ${i.nombre}`}\n                    >\n                      -\n                    </button>\n                    <span className=\"w-6 text-center font-medium\">\n                      {i.cantidad}\n                    </span>\n                    <button\n                      onClick={() => cambiar(i.id, 1)}\n                      className=\"h-8 w-8 rounded-md bg-gray-200 font-bold hover:bg-gray-300\"\n                      aria-label={`Agregar uno de ${i.nombre}`}\n                    >\n                      +\n                    </button>\n                  </div>\n                </li>\n              ))}\n            </ul>\n          )}\n          <div className=\"mt-5 flex items-center justify-between border-t border-gray-200 pt-4\">\n            <span className=\"text-lg font-semibold text-gray-800\">Total</span>\n            <span className=\"text-lg font-bold text-gray-900\">\n              ${total.toFixed(2)}\n            </span>\n          </div>\n        </section>\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "cart",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 268,
+        "output": 1468,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.015216,
+      "codeTokens": 1457,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState } from \"react\";\n\ntype Product = {\n  id: number;\n  nombre: string;\n  precio: number;\n};\n\nconst PRODUCTS: Product[] = [\n  { id: 1, nombre: \"Auriculares\", precio: 49.99 },\n  { id: 2, nombre: \"Teclado mecánico\", precio: 89.5 },\n  { id: 3, nombre: \"Mouse inalámbrico\", precio: 25.9 },\n];\n\nexport default function App() {\n  const [cart, setCart] = useState<Record<number, number>>({});\n\n  const add = (id: number) =>\n    setCart((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }));\n\n  const remove = (id: number) =>\n    setCart((prev) => {\n      const qty = (prev[id] ?? 0) - 1;\n      const next = { ...prev };\n      if (qty <= 0) delete next[id];\n      else next[id] = qty;\n      return next;\n    });\n\n  const cartItems = PRODUCTS.filter((p) => cart[p.id] > 0).map((p) => ({\n    ...p,\n    cantidad: cart[p.id],\n  }));\n\n  const total = cartItems.reduce((acc, i) => acc + i.precio * i.cantidad, 0);\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 p-6\">\n      <div className=\"mx-auto grid max-w-4xl gap-6 md:grid-cols-2\">\n        <section className=\"rounded-lg bg-white p-4 shadow\">\n          <h2 className=\"mb-4 text-xl font-bold text-gray-800\">Productos</h2>\n          <ul className=\"space-y-3\">\n            {PRODUCTS.map((p) => (\n              <li\n                key={p.id}\n                className=\"flex items-center justify-between rounded border border-gray-200 p-3\"\n              >\n                <div>\n                  <p className=\"font-medium text-gray-800\">{p.nombre}</p>\n                  <p className=\"text-sm text-gray-500\">${p.precio.toFixed(2)}</p>\n                </div>\n                <button\n                  onClick={() => add(p.id)}\n                  className=\"rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700\"\n                >\n                  Agregar\n                </button>\n              </li>\n            ))}\n          </ul>\n        </section>\n\n        <section className=\"rounded-lg bg-white p-4 shadow\">\n          <h2 className=\"mb-4 text-xl font-bold text-gray-800\">Carrito</h2>\n          {cartItems.length === 0 ? (\n            <p className=\"text-gray-500\">El carrito está vacío.</p>\n          ) : (\n            <ul className=\"space-y-3\">\n              {cartItems.map((i) => (\n                <li\n                  key={i.id}\n                  className=\"flex items-center justify-between rounded border border-gray-200 p-3\"\n                >\n                  <div>\n                    <p className=\"font-medium text-gray-800\">{i.nombre}</p>\n                    <p className=\"text-sm text-gray-500\">\n                      ${i.precio.toFixed(2)} x {i.cantidad} = $\n                      {(i.precio * i.cantidad).toFixed(2)}\n                    </p>\n                  </div>\n                  <div className=\"flex items-center gap-2\">\n                    <button\n                      onClick={() => remove(i.id)}\n                      className=\"h-8 w-8 rounded bg-gray-200 font-bold hover:bg-gray-300\"\n                      aria-label={`Quitar una unidad de ${i.nombre}`}\n                    >\n                      -\n                    </button>\n                    <span className=\"w-6 text-center\">{i.cantidad}</span>\n                    <button\n                      onClick={() => add(i.id)}\n                      className=\"h-8 w-8 rounded bg-gray-200 font-bold hover:bg-gray-300\"\n                      aria-label={`Agregar una unidad de ${i.nombre}`}\n                    >\n                      +\n                    </button>\n                  </div>\n                </li>\n              ))}\n            </ul>\n          )}\n          <div className=\"mt-4 flex items-center justify-between border-t pt-4 text-lg font-bold text-gray-800\">\n            <span>Total</span>\n            <span>${total.toFixed(2)}</span>\n          </div>\n        </section>\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "cart",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 268,
+        "output": 1471,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.015246,
+      "codeTokens": 1460,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState } from \"react\";\n\ntype Product = {\n  id: number;\n  nombre: string;\n  precio: number;\n};\n\nconst PRODUCTS: Product[] = [\n  { id: 1, nombre: \"Auriculares\", precio: 49.99 },\n  { id: 2, nombre: \"Teclado mecánico\", precio: 89.5 },\n  { id: 3, nombre: \"Mouse inalámbrico\", precio: 25.9 },\n];\n\nexport default function App() {\n  const [cart, setCart] = useState<Record<number, number>>({});\n\n  const add = (id: number) =>\n    setCart((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }));\n\n  const remove = (id: number) =>\n    setCart((prev) => {\n      const qty = (prev[id] ?? 0) - 1;\n      const next = { ...prev };\n      if (qty <= 0) delete next[id];\n      else next[id] = qty;\n      return next;\n    });\n\n  const cartItems = PRODUCTS.filter((p) => cart[p.id] > 0).map((p) => ({\n    ...p,\n    cantidad: cart[p.id],\n  }));\n\n  const total = cartItems.reduce((acc, i) => acc + i.precio * i.cantidad, 0);\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 p-6\">\n      <div className=\"mx-auto grid max-w-4xl gap-6 md:grid-cols-2\">\n        <section className=\"rounded-lg bg-white p-4 shadow\">\n          <h2 className=\"mb-4 text-xl font-bold text-gray-800\">Productos</h2>\n          <ul className=\"space-y-3\">\n            {PRODUCTS.map((p) => (\n              <li\n                key={p.id}\n                className=\"flex items-center justify-between rounded border border-gray-200 p-3\"\n              >\n                <div>\n                  <p className=\"font-medium text-gray-800\">{p.nombre}</p>\n                  <p className=\"text-sm text-gray-500\">\n                    ${p.precio.toFixed(2)}\n                  </p>\n                </div>\n                <button\n                  onClick={() => add(p.id)}\n                  className=\"rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700\"\n                >\n                  Agregar\n                </button>\n              </li>\n            ))}\n          </ul>\n        </section>\n\n        <section className=\"rounded-lg bg-white p-4 shadow\">\n          <h2 className=\"mb-4 text-xl font-bold text-gray-800\">Carrito</h2>\n          {cartItems.length === 0 ? (\n            <p className=\"text-gray-500\">El carrito está vacío.</p>\n          ) : (\n            <ul className=\"space-y-3\">\n              {cartItems.map((i) => (\n                <li\n                  key={i.id}\n                  className=\"flex items-center justify-between rounded border border-gray-200 p-3\"\n                >\n                  <div>\n                    <p className=\"font-medium text-gray-800\">{i.nombre}</p>\n                    <p className=\"text-sm text-gray-500\">\n                      ${i.precio.toFixed(2)} × {i.cantidad} = $\n                      {(i.precio * i.cantidad).toFixed(2)}\n                    </p>\n                  </div>\n                  <div className=\"flex items-center gap-2\">\n                    <button\n                      onClick={() => remove(i.id)}\n                      className=\"h-8 w-8 rounded bg-gray-200 font-bold hover:bg-gray-300\"\n                      aria-label={`Quitar uno de ${i.nombre}`}\n                    >\n                      -\n                    </button>\n                    <span className=\"w-6 text-center\">{i.cantidad}</span>\n                    <button\n                      onClick={() => add(i.id)}\n                      className=\"h-8 w-8 rounded bg-gray-200 font-bold hover:bg-gray-300\"\n                      aria-label={`Agregar uno de ${i.nombre}`}\n                    >\n                      +\n                    </button>\n                  </div>\n                </li>\n              ))}\n            </ul>\n          )}\n          <div className=\"mt-4 flex items-center justify-between border-t pt-4 text-lg font-bold text-gray-800\">\n            <span>Total</span>\n            <span>${total.toFixed(2)}</span>\n          </div>\n        </section>\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "cart",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 284,
+        "output": 1547,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.016038,
+      "codeTokens": 1513,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  import ProductList from './ProductList.svelte';\n  import Cart from './Cart.svelte';\n\n  type Product = { id: number; name: string; price: number };\n  type CartItem = { product: Product; qty: number };\n\n  const products: Product[] = [\n    { id: 1, name: 'Remera', price: 12500.5 },\n    { id: 2, name: 'Zapatillas', price: 48999.99 },\n    { id: 3, name: 'Gorra', price: 7800 }\n  ];\n\n  let cart = $state<CartItem[]>([]);\n\n  const total = $derived(\n    cart.reduce((sum, item) => sum + item.product.price * item.qty, 0)\n  );\n\n  function add(product: Product) {\n    const existing = cart.find((i) => i.product.id === product.id);\n    if (existing) {\n      existing.qty += 1;\n    } else {\n      cart.push({ product, qty: 1 });\n    }\n  }\n\n  function increment(id: number) {\n    const item = cart.find((i) => i.product.id === id);\n    if (item) item.qty += 1;\n  }\n\n  function decrement(id: number) {\n    const item = cart.find((i) => i.product.id === id);\n    if (!item) return;\n    item.qty -= 1;\n    if (item.qty <= 0) {\n      cart = cart.filter((i) => i.product.id !== id);\n    }\n  }\n</script>\n\n<main class=\"mx-auto grid max-w-3xl gap-8 p-6 md:grid-cols-2\">\n  <ProductList {products} onAdd={add} />\n  <Cart items={cart} {total} onIncrement={increment} onDecrement={decrement} />\n</main>\n",
+            "ProductList.svelte": "<script lang=\"ts\">\n  type Product = { id: number; name: string; price: number };\n\n  let { products, onAdd }: { products: Product[]; onAdd: (p: Product) => void } = $props();\n</script>\n\n<section>\n  <h2 class=\"mb-4 text-xl font-bold\">Productos</h2>\n  <ul class=\"space-y-3\">\n    {#each products as product (product.id)}\n      <li class=\"flex items-center justify-between rounded border border-gray-200 p-3 shadow-sm\">\n        <div>\n          <p class=\"font-medium\">{product.name}</p>\n          <p class=\"text-sm text-gray-600\">${product.price.toFixed(2)}</p>\n        </div>\n        <button\n          class=\"rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700\"\n          onclick={() => onAdd(product)}\n        >\n          Agregar\n        </button>\n      </li>\n    {/each}\n  </ul>\n</section>\n",
+            "Cart.svelte": "<script lang=\"ts\">\n  type Product = { id: number; name: string; price: number };\n  type CartItem = { product: Product; qty: number };\n\n  let {\n    items,\n    total,\n    onIncrement,\n    onDecrement\n  }: {\n    items: CartItem[];\n    total: number;\n    onIncrement: (id: number) => void;\n    onDecrement: (id: number) => void;\n  } = $props();\n</script>\n\n<section>\n  <h2 class=\"mb-4 text-xl font-bold\">Carrito</h2>\n  {#if items.length === 0}\n    <p class=\"text-gray-500\">El carrito está vacío.</p>\n  {:else}\n    <ul class=\"space-y-3\">\n      {#each items as item (item.product.id)}\n        <li class=\"flex items-center justify-between rounded border border-gray-200 p-3\">\n          <div>\n            <p class=\"font-medium\">{item.product.name}</p>\n            <p class=\"text-sm text-gray-600\">\n              ${item.product.price.toFixed(2)} × {item.qty}\n            </p>\n          </div>\n          <div class=\"flex items-center gap-2\">\n            <button\n              class=\"h-8 w-8 rounded bg-gray-200 hover:bg-gray-300\"\n              aria-label=\"Quitar uno\"\n              onclick={() => onDecrement(item.product.id)}\n            >\n              -\n            </button>\n            <span class=\"w-6 text-center\">{item.qty}</span>\n            <button\n              class=\"h-8 w-8 rounded bg-gray-200 hover:bg-gray-300\"\n              aria-label=\"Agregar uno\"\n              onclick={() => onIncrement(item.product.id)}\n            >\n              +\n            </button>\n          </div>\n        </li>\n      {/each}\n    </ul>\n  {/if}\n  <p class=\"mt-4 text-right text-lg font-bold\">Total: ${total.toFixed(2)}</p>\n</section>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "cart",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 284,
+        "output": 1682,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.017388,
+      "codeTokens": 1648,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  import ProductList from './ProductList.svelte';\n  import Cart from './Cart.svelte';\n\n  type Product = { id: number; name: string; price: number };\n  type CartItem = { id: number; quantity: number };\n\n  const products: Product[] = [\n    { id: 1, name: 'Teclado mecánico', price: 49.99 },\n    { id: 2, name: 'Mouse inalámbrico', price: 25.5 },\n    { id: 3, name: 'Monitor 24\"', price: 159.9 }\n  ];\n\n  let cart = $state<CartItem[]>([]);\n\n  const items = $derived(\n    cart\n      .map((c) => {\n        const product = products.find((p) => p.id === c.id)!;\n        return { ...product, quantity: c.quantity };\n      })\n  );\n\n  const total = $derived(\n    items.reduce((sum, i) => sum + i.price * i.quantity, 0)\n  );\n\n  function add(id: number) {\n    const existing = cart.find((c) => c.id === id);\n    if (existing) {\n      existing.quantity += 1;\n    } else {\n      cart.push({ id, quantity: 1 });\n    }\n  }\n\n  function increase(id: number) {\n    add(id);\n  }\n\n  function decrease(id: number) {\n    const existing = cart.find((c) => c.id === id);\n    if (!existing) return;\n    existing.quantity -= 1;\n    if (existing.quantity <= 0) {\n      cart = cart.filter((c) => c.id !== id);\n    }\n  }\n</script>\n\n<main class=\"min-h-screen bg-gray-100 p-6\">\n  <div class=\"mx-auto grid max-w-4xl gap-6 md:grid-cols-2\">\n    <ProductList {products} onAdd={add} />\n    <Cart {items} {total} onIncrease={increase} onDecrease={decrease} />\n  </div>\n</main>\n",
+            "ProductList.svelte": "<script lang=\"ts\">\n  type Product = { id: number; name: string; price: number };\n\n  let { products, onAdd }: { products: Product[]; onAdd: (id: number) => void } = $props();\n</script>\n\n<section class=\"rounded-lg bg-white p-4 shadow\">\n  <h2 class=\"mb-4 text-xl font-bold\">Productos</h2>\n  <ul class=\"space-y-3\">\n    {#each products as product (product.id)}\n      <li class=\"flex items-center justify-between rounded border border-gray-200 p-3\">\n        <div>\n          <p class=\"font-medium\">{product.name}</p>\n          <p class=\"text-sm text-gray-600\">${product.price.toFixed(2)}</p>\n        </div>\n        <button\n          class=\"rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700\"\n          onclick={() => onAdd(product.id)}\n        >\n          Agregar\n        </button>\n      </li>\n    {/each}\n  </ul>\n</section>\n",
+            "Cart.svelte": "<script lang=\"ts\">\n  type Item = { id: number; name: string; price: number; quantity: number };\n\n  let {\n    items,\n    total,\n    onIncrease,\n    onDecrease\n  }: {\n    items: Item[];\n    total: number;\n    onIncrease: (id: number) => void;\n    onDecrease: (id: number) => void;\n  } = $props();\n</script>\n\n<section class=\"rounded-lg bg-white p-4 shadow\">\n  <h2 class=\"mb-4 text-xl font-bold\">Carrito</h2>\n\n  {#if items.length === 0}\n    <p class=\"text-gray-500\">El carrito está vacío.</p>\n  {:else}\n    <ul class=\"space-y-3\">\n      {#each items as item (item.id)}\n        <li class=\"flex items-center justify-between rounded border border-gray-200 p-3\">\n          <div>\n            <p class=\"font-medium\">{item.name}</p>\n            <p class=\"text-sm text-gray-600\">\n              ${item.price.toFixed(2)} × {item.quantity} = ${(item.price * item.quantity).toFixed(2)}\n            </p>\n          </div>\n          <div class=\"flex items-center gap-2\">\n            <button\n              class=\"h-8 w-8 rounded bg-gray-200 hover:bg-gray-300\"\n              onclick={() => onDecrease(item.id)}\n              aria-label=\"Quitar uno\"\n            >\n              -\n            </button>\n            <span class=\"w-6 text-center\">{item.quantity}</span>\n            <button\n              class=\"h-8 w-8 rounded bg-gray-200 hover:bg-gray-300\"\n              onclick={() => onIncrease(item.id)}\n              aria-label=\"Agregar uno\"\n            >\n              +\n            </button>\n          </div>\n        </li>\n      {/each}\n    </ul>\n  {/if}\n\n  <div class=\"mt-4 flex justify-between border-t border-gray-200 pt-3 text-lg font-bold\">\n    <span>Total</span>\n    <span>${total.toFixed(2)}</span>\n  </div>\n</section>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "cart",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 284,
+        "output": 1673,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.017298,
+      "codeTokens": 1639,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  import ProductList from './ProductList.svelte';\n  import Cart from './Cart.svelte';\n\n  type Product = { id: number; name: string; price: number };\n  type CartItem = { id: number; quantity: number };\n\n  const products: Product[] = [\n    { id: 1, name: 'Auriculares', price: 59.99 },\n    { id: 2, name: 'Teclado mecánico', price: 89.5 },\n    { id: 3, name: 'Mouse inalámbrico', price: 24.9 }\n  ];\n\n  let cart = $state<CartItem[]>([]);\n\n  const cartLines = $derived(\n    cart\n      .map((item) => {\n        const product = products.find((p) => p.id === item.id)!;\n        return { ...product, quantity: item.quantity };\n      })\n  );\n\n  const total = $derived(\n    cartLines.reduce((sum, line) => sum + line.price * line.quantity, 0)\n  );\n\n  function add(id: number) {\n    const existing = cart.find((i) => i.id === id);\n    if (existing) {\n      existing.quantity += 1;\n    } else {\n      cart.push({ id, quantity: 1 });\n    }\n  }\n\n  function decrease(id: number) {\n    const index = cart.findIndex((i) => i.id === id);\n    if (index === -1) return;\n    cart[index].quantity -= 1;\n    if (cart[index].quantity <= 0) {\n      cart.splice(index, 1);\n    }\n  }\n</script>\n\n<main class=\"min-h-screen bg-gray-100 p-6\">\n  <div class=\"mx-auto grid max-w-4xl gap-6 md:grid-cols-2\">\n    <ProductList {products} onAdd={add} />\n    <Cart lines={cartLines} {total} onIncrease={add} onDecrease={decrease} />\n  </div>\n</main>\n",
+            "ProductList.svelte": "<script lang=\"ts\">\n  type Product = { id: number; name: string; price: number };\n\n  let { products, onAdd }: { products: Product[]; onAdd: (id: number) => void } = $props();\n</script>\n\n<section class=\"rounded-lg bg-white p-4 shadow\">\n  <h2 class=\"mb-4 text-xl font-bold\">Productos</h2>\n  <ul class=\"space-y-3\">\n    {#each products as product (product.id)}\n      <li class=\"flex items-center justify-between rounded border border-gray-200 p-3\">\n        <div>\n          <p class=\"font-medium\">{product.name}</p>\n          <p class=\"text-sm text-gray-600\">${product.price.toFixed(2)}</p>\n        </div>\n        <button\n          class=\"rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700\"\n          onclick={() => onAdd(product.id)}\n        >\n          Agregar\n        </button>\n      </li>\n    {/each}\n  </ul>\n</section>\n",
+            "Cart.svelte": "<script lang=\"ts\">\n  type Line = { id: number; name: string; price: number; quantity: number };\n\n  let {\n    lines,\n    total,\n    onIncrease,\n    onDecrease\n  }: {\n    lines: Line[];\n    total: number;\n    onIncrease: (id: number) => void;\n    onDecrease: (id: number) => void;\n  } = $props();\n</script>\n\n<section class=\"rounded-lg bg-white p-4 shadow\">\n  <h2 class=\"mb-4 text-xl font-bold\">Carrito</h2>\n\n  {#if lines.length === 0}\n    <p class=\"text-gray-500\">El carrito está vacío.</p>\n  {:else}\n    <ul class=\"space-y-3\">\n      {#each lines as line (line.id)}\n        <li class=\"flex items-center justify-between rounded border border-gray-200 p-3\">\n          <div>\n            <p class=\"font-medium\">{line.name}</p>\n            <p class=\"text-sm text-gray-600\">\n              ${line.price.toFixed(2)} × {line.quantity} = ${(line.price * line.quantity).toFixed(2)}\n            </p>\n          </div>\n          <div class=\"flex items-center gap-2\">\n            <button\n              class=\"h-8 w-8 rounded bg-gray-200 hover:bg-gray-300\"\n              onclick={() => onDecrease(line.id)}\n              aria-label=\"Quitar uno\"\n            >\n              -\n            </button>\n            <span class=\"w-6 text-center\">{line.quantity}</span>\n            <button\n              class=\"h-8 w-8 rounded bg-gray-200 hover:bg-gray-300\"\n              onclick={() => onIncrease(line.id)}\n              aria-label=\"Agregar uno\"\n            >\n              +\n            </button>\n          </div>\n        </li>\n      {/each}\n    </ul>\n  {/if}\n\n  <div class=\"mt-4 flex justify-between border-t border-gray-200 pt-4 text-lg font-bold\">\n    <span>Total</span>\n    <span>${total.toFixed(2)}</span>\n  </div>\n</section>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "tabs",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 88,
+        "output": 324,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0038854000000000002,
+      "codeTokens": 315,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Tabs \"/tabs\" {\n  state active = \"Perfil\"\n\n  fn select(name) {\n    active = name\n  }\n\n  column gap=4 pad=4 {\n    title \"Pestañas\"\n    row gap=2 {\n      button \"Perfil\" primary=(active == \"Perfil\") -> select(\"Perfil\")\n      button \"Ajustes\" primary=(active == \"Ajustes\") -> select(\"Ajustes\")\n      button \"Ayuda\" primary=(active == \"Ayuda\") -> select(\"Ayuda\")\n    }\n    card pad=4 {\n      if active == \"Perfil\" {\n        text \"Este es tu perfil: acá ves y editás tus datos personales.\"\n      } else {\n        if active == \"Ajustes\" {\n          text \"Ajustes: configurá las preferencias de tu cuenta.\"\n        } else {\n          text \"Ayuda: consultá las preguntas frecuentes o contactá a soporte.\"\n        }\n      }\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "tabs",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 88,
+        "output": 310,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0037454000000000003,
+      "codeTokens": 301,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Tabs \"/tabs\" {\n  state active = \"perfil\"\n\n  column gap=4 pad=4 {\n    title \"Mi cuenta\"\n    row gap=2 {\n      button \"Perfil\" primary=(active == \"perfil\") -> active = \"perfil\"\n      button \"Ajustes\" primary=(active == \"ajustes\") -> active = \"ajustes\"\n      button \"Ayuda\" primary=(active == \"ayuda\") -> active = \"ayuda\"\n    }\n    card pad=4 {\n      if active == \"perfil\" {\n        text \"Este es tu perfil: acá ves tu nombre, tu foto y tus datos personales.\"\n      } else {\n        if active == \"ajustes\" {\n          text \"Ajustes: configurá notificaciones, idioma y privacidad.\"\n        } else {\n          text \"Ayuda: escribinos a soporte si tenés alguna consulta.\"\n        }\n      }\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "tabs",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 88,
+        "output": 315,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0037954,
+      "codeTokens": 306,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Tabs \"/tabs\" {\n  state active = \"Perfil\"\n\n  fn select(name) {\n    active = name\n  }\n\n  column gap=4 pad=4 {\n    title \"Mi cuenta\"\n    row gap=2 {\n      button \"Perfil\" primary=(active == \"Perfil\") -> select(\"Perfil\")\n      button \"Ajustes\" primary=(active == \"Ajustes\") -> select(\"Ajustes\")\n      button \"Ayuda\" primary=(active == \"Ayuda\") -> select(\"Ayuda\")\n    }\n    card pad=4 {\n      if active == \"Perfil\" {\n        text \"Acá ves y editás tu información de perfil.\"\n      } else {\n        if active == \"Ajustes\" {\n          text \"Acá configurás las preferencias de tu cuenta.\"\n        } else {\n          text \"Acá encontrás respuestas a las preguntas frecuentes y soporte.\"\n        }\n      }\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "tabs",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 240,
+        "output": 908,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.00956,
+      "codeTokens": 897,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState } from \"react\";\n\ntype TabId = \"perfil\" | \"ajustes\" | \"ayuda\";\n\nconst TABS: { id: TabId; label: string; content: string }[] = [\n  {\n    id: \"perfil\",\n    label: \"Perfil\",\n    content:\n      \"Acá podés ver y editar tu información personal: nombre, foto y datos de contacto.\",\n  },\n  {\n    id: \"ajustes\",\n    label: \"Ajustes\",\n    content:\n      \"Configurá las preferencias de la aplicación: notificaciones, idioma y privacidad.\",\n  },\n  {\n    id: \"ayuda\",\n    label: \"Ayuda\",\n    content:\n      \"¿Necesitás asistencia? Consultá las preguntas frecuentes o contactá a nuestro equipo de soporte.\",\n  },\n];\n\nexport default function App() {\n  const [active, setActive] = useState<TabId>(\"perfil\");\n  const current = TABS.find((t) => t.id === active)!;\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 flex items-center justify-center p-4\">\n      <div className=\"w-full max-w-lg bg-white rounded-xl shadow-md p-6\">\n        <h1 className=\"text-2xl font-bold text-gray-800 mb-4\">Mi cuenta</h1>\n\n        <div\n          role=\"tablist\"\n          aria-label=\"Secciones\"\n          className=\"flex gap-2 border-b border-gray-200\"\n        >\n          {TABS.map((tab) => {\n            const isActive = tab.id === active;\n            return (\n              <button\n                key={tab.id}\n                id={`tab-${tab.id}`}\n                role=\"tab\"\n                type=\"button\"\n                aria-selected={isActive}\n                aria-controls={`panel-${tab.id}`}\n                onClick={() => setActive(tab.id)}\n                className={\n                  \"px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 -mb-px transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 \" +\n                  (isActive\n                    ? \"border-indigo-600 text-indigo-700 bg-indigo-50\"\n                    : \"border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50\")\n                }\n              >\n                {tab.label}\n              </button>\n            );\n          })}\n        </div>\n\n        <div\n          id={`panel-${current.id}`}\n          role=\"tabpanel\"\n          aria-labelledby={`tab-${current.id}`}\n          className=\"pt-5 text-gray-700 leading-relaxed\"\n        >\n          {current.content}\n        </div>\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "tabs",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 240,
+        "output": 956,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.01004,
+      "codeTokens": 945,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState } from \"react\";\n\ntype TabId = \"perfil\" | \"ajustes\" | \"ayuda\";\n\ninterface Tab {\n  id: TabId;\n  label: string;\n  content: string;\n}\n\nconst tabs: Tab[] = [\n  {\n    id: \"perfil\",\n    label: \"Perfil\",\n    content:\n      \"Acá podés ver y editar tu información personal: nombre, foto, correo electrónico y otros datos de tu cuenta.\",\n  },\n  {\n    id: \"ajustes\",\n    label: \"Ajustes\",\n    content:\n      \"Configurá las preferencias de la aplicación: notificaciones, idioma, privacidad y apariencia.\",\n  },\n  {\n    id: \"ayuda\",\n    label: \"Ayuda\",\n    content:\n      \"¿Necesitás ayuda? Consultá las preguntas frecuentes o escribinos a soporte y te respondemos a la brevedad.\",\n  },\n];\n\nexport default function App() {\n  const [activeTab, setActiveTab] = useState<TabId>(\"perfil\");\n  const current = tabs.find((t) => t.id === activeTab)!;\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 flex items-center justify-center p-4\">\n      <div className=\"w-full max-w-xl bg-white rounded-2xl shadow-lg p-6\">\n        <h1 className=\"text-2xl font-bold text-gray-800 mb-6\">Mi cuenta</h1>\n\n        <div\n          role=\"tablist\"\n          aria-label=\"Secciones\"\n          className=\"flex gap-2 border-b border-gray-200\"\n        >\n          {tabs.map((tab) => {\n            const isActive = tab.id === activeTab;\n            return (\n              <button\n                key={tab.id}\n                role=\"tab\"\n                id={`tab-${tab.id}`}\n                aria-selected={isActive}\n                aria-controls={`panel-${tab.id}`}\n                onClick={() => setActiveTab(tab.id)}\n                className={`px-4 py-2 -mb-px text-sm font-medium rounded-t-lg border-b-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${\n                  isActive\n                    ? \"border-indigo-600 text-indigo-600 bg-indigo-50\"\n                    : \"border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50\"\n                }`}\n              >\n                {tab.label}\n              </button>\n            );\n          })}\n        </div>\n\n        <div\n          role=\"tabpanel\"\n          id={`panel-${current.id}`}\n          aria-labelledby={`tab-${current.id}`}\n          className=\"pt-6 text-gray-700 leading-relaxed\"\n        >\n          {current.content}\n        </div>\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "tabs",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 240,
+        "output": 947,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.00995,
+      "codeTokens": 936,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState } from \"react\";\n\ntype TabId = \"perfil\" | \"ajustes\" | \"ayuda\";\n\nconst tabs: { id: TabId; label: string; content: string }[] = [\n  {\n    id: \"perfil\",\n    label: \"Perfil\",\n    content:\n      \"Bienvenido a tu perfil. Acá podés ver y editar tu información personal, como tu nombre, tu foto y tu correo electrónico.\",\n  },\n  {\n    id: \"ajustes\",\n    label: \"Ajustes\",\n    content:\n      \"En esta sección podés configurar las preferencias de la aplicación: notificaciones, idioma, privacidad y mucho más.\",\n  },\n  {\n    id: \"ayuda\",\n    label: \"Ayuda\",\n    content:\n      \"¿Necesitás ayuda? Consultá las preguntas frecuentes o contactate con nuestro equipo de soporte y te respondemos a la brevedad.\",\n  },\n];\n\nexport default function App() {\n  const [active, setActive] = useState<TabId>(\"perfil\");\n  const current = tabs.find((t) => t.id === active)!;\n\n  return (\n    <div className=\"min-h-screen bg-slate-100 flex items-center justify-center p-4\">\n      <div className=\"w-full max-w-lg bg-white rounded-xl shadow-lg overflow-hidden\">\n        <div\n          role=\"tablist\"\n          aria-label=\"Secciones\"\n          className=\"flex border-b border-slate-200 bg-slate-50\"\n        >\n          {tabs.map((tab) => {\n            const isActive = tab.id === active;\n            return (\n              <button\n                key={tab.id}\n                role=\"tab\"\n                id={`tab-${tab.id}`}\n                aria-selected={isActive}\n                aria-controls={`panel-${tab.id}`}\n                onClick={() => setActive(tab.id)}\n                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 border-b-2 ${\n                  isActive\n                    ? \"border-indigo-600 text-indigo-600 bg-white\"\n                    : \"border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100\"\n                }`}\n              >\n                {tab.label}\n              </button>\n            );\n          })}\n        </div>\n\n        <div\n          role=\"tabpanel\"\n          id={`panel-${current.id}`}\n          aria-labelledby={`tab-${current.id}`}\n          className=\"p-6\"\n        >\n          <h2 className=\"text-xl font-semibold text-slate-800 mb-2\">\n            {current.label}\n          </h2>\n          <p className=\"text-slate-600 leading-relaxed\">{current.content}</p>\n        </div>\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "tabs",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 256,
+        "output": 823,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.008742,
+      "codeTokens": 812,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  type Tab = { id: string; label: string; content: string };\n\n  const tabs: Tab[] = [\n    {\n      id: 'perfil',\n      label: 'Perfil',\n      content:\n        'Acá podés ver y editar tu información personal, como tu nombre, tu foto y tu correo electrónico.'\n    },\n    {\n      id: 'ajustes',\n      label: 'Ajustes',\n      content:\n        'Configurá las preferencias de la aplicación: notificaciones, idioma, tema y privacidad.'\n    },\n    {\n      id: 'ayuda',\n      label: 'Ayuda',\n      content:\n        '¿Necesitás ayuda? Consultá las preguntas frecuentes o contactá con nuestro equipo de soporte.'\n    }\n  ];\n\n  let activeTab = $state<string>('perfil');\n  let current = $derived(tabs.find((t) => t.id === activeTab) ?? tabs[0]);\n</script>\n\n<main class=\"min-h-screen bg-gray-100 flex items-start justify-center p-6\">\n  <div class=\"w-full max-w-xl bg-white rounded-xl shadow-md p-6 mt-10\">\n    <h1 class=\"text-2xl font-bold text-gray-800 mb-4\">Mi cuenta</h1>\n\n    <div class=\"flex gap-2 border-b border-gray-200\" role=\"tablist\">\n      {#each tabs as tab (tab.id)}\n        <button\n          type=\"button\"\n          role=\"tab\"\n          aria-selected={activeTab === tab.id}\n          onclick={() => (activeTab = tab.id)}\n          class=\"px-4 py-2 -mb-px text-sm font-medium border-b-2 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-t\n            {activeTab === tab.id\n            ? 'border-blue-600 text-blue-600 bg-blue-50'\n            : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}\"\n        >\n          {tab.label}\n        </button>\n      {/each}\n    </div>\n\n    <div class=\"pt-4 text-gray-700\" role=\"tabpanel\">\n      <h2 class=\"text-lg font-semibold mb-2\">{current.label}</h2>\n      <p>{current.content}</p>\n    </div>\n  </div>\n</main>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "tabs",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 256,
+        "output": 721,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.007722,
+      "codeTokens": 710,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  type Tab = { id: string; label: string; content: string };\n\n  const tabs: Tab[] = [\n    {\n      id: 'perfil',\n      label: 'Perfil',\n      content:\n        'Acá podés ver y editar tu información personal: nombre, foto y datos de contacto.'\n    },\n    {\n      id: 'ajustes',\n      label: 'Ajustes',\n      content:\n        'Configurá las preferencias de la aplicación: idioma, notificaciones y privacidad.'\n    },\n    {\n      id: 'ayuda',\n      label: 'Ayuda',\n      content:\n        '¿Tenés dudas? Consultá las preguntas frecuentes o contactá con nuestro equipo de soporte.'\n    }\n  ];\n\n  let activeTab = $state<string>('perfil');\n  const current = $derived(tabs.find((t) => t.id === activeTab) ?? tabs[0]);\n</script>\n\n<main class=\"min-h-screen bg-gray-100 flex items-center justify-center p-4\">\n  <div class=\"w-full max-w-md bg-white rounded-xl shadow-md p-6\">\n    <div class=\"flex gap-2 border-b border-gray-200 pb-2\" role=\"tablist\">\n      {#each tabs as tab (tab.id)}\n        <button\n          type=\"button\"\n          role=\"tab\"\n          aria-selected={activeTab === tab.id}\n          class=\"px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer\n            {activeTab === tab.id\n            ? 'bg-blue-600 text-white shadow'\n            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}\"\n          onclick={() => (activeTab = tab.id)}\n        >\n          {tab.label}\n        </button>\n      {/each}\n    </div>\n\n    <div class=\"pt-4\" role=\"tabpanel\">\n      <h2 class=\"text-lg font-semibold text-gray-800 mb-2\">{current.label}</h2>\n      <p class=\"text-gray-600\">{current.content}</p>\n    </div>\n  </div>\n</main>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "tabs",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 256,
+        "output": 861,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.009122,
+      "codeTokens": 850,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  type Tab = {\n    id: string;\n    label: string;\n    content: string;\n  };\n\n  const tabs: Tab[] = [\n    {\n      id: 'perfil',\n      label: 'Perfil',\n      content:\n        'Este es tu perfil. Acá podés ver y editar tu información personal, como tu nombre, tu foto y tus datos de contacto.'\n    },\n    {\n      id: 'ajustes',\n      label: 'Ajustes',\n      content:\n        'Estos son los ajustes. Podés configurar las notificaciones, la privacidad, el idioma y otras preferencias de la aplicación.'\n    },\n    {\n      id: 'ayuda',\n      label: 'Ayuda',\n      content:\n        'Esta es la sección de ayuda. Encontrá respuestas a preguntas frecuentes o contactá con soporte si necesitás asistencia.'\n    }\n  ];\n\n  let activeTab = $state<string>('perfil');\n\n  const current = $derived(tabs.find((t) => t.id === activeTab) ?? tabs[0]);\n</script>\n\n<main class=\"min-h-screen bg-gray-100 flex items-center justify-center p-4\">\n  <div class=\"w-full max-w-xl bg-white rounded-xl shadow-md p-6\">\n    <h1 class=\"text-2xl font-bold text-gray-800 mb-4\">Mi cuenta</h1>\n\n    <div class=\"flex gap-2 border-b border-gray-200\" role=\"tablist\">\n      {#each tabs as tab (tab.id)}\n        <button\n          type=\"button\"\n          role=\"tab\"\n          aria-selected={activeTab === tab.id}\n          class=\"px-4 py-2 -mb-px text-sm font-medium rounded-t-lg border-b-2 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 {activeTab === tab.id\n            ? 'border-indigo-600 text-indigo-600 bg-indigo-50'\n            : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}\"\n          onclick={() => (activeTab = tab.id)}\n        >\n          {tab.label}\n        </button>\n      {/each}\n    </div>\n\n    <div class=\"pt-4 text-gray-700\" role=\"tabpanel\">\n      <h2 class=\"text-lg font-semibold mb-2\">{current.label}</h2>\n      <p>{current.content}</p>\n    </div>\n  </div>\n</main>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "counter-mod",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 2,
+      "usage": {
+        "input": 785,
+        "output": 775,
+        "cacheRead": 4694,
+        "cacheWrite": 0
+      },
+      "usd": 0.010258799999999998,
+      "codeTokens": 239,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {},
+          "errors": [
+            "{\"code\":\"E0003\",\"type\":\"UNEXPECTED_TOKEN\",\"loc\":\"patch:12:29\",\"expected\":\"una expresión\",\"actual\":\"'='\"}"
+          ],
+          "edit": "```patch\nappend Counter\n  fn inc() {\n    if count < 10 { count++ }\n  }\n  fn dec() {\n    if count > 0 { count-- }\n  }\n  fn reset() {\n    count = 0\n  }\nreplace Counter/column/row/button[0]\n  button \"-\" -> dec() disabled=(count <= 0)\nreplace Counter/column/row/button[1]\n  button \"+\" primary -> inc() disabled=(count >= 10)\ninsert after Counter/column/row\n  button \"Reset\" small -> reset()\n```"
+        },
+        {
+          "files": {
+            "app.art": "page Counter \"/\" {\n  state count = 0\n  computed double = count * 2\n  fn inc() {\n    if count < 10 {\n      count++\n    }\n  }\n  fn dec() {\n    if count > 0 {\n      count--\n    }\n  }\n  fn reset() {\n    count = 0\n  }\n\n  column gap=4 align=center {\n    title \"Contador\"\n    row gap=2 {\n      button \"-\" disabled=(count <= 0) -> dec()\n      text count bold\n      button \"+\" primary disabled=(count >= 10) -> inc()\n    }\n    button \"Reset\" small -> reset()\n    text `El doble es ${double}` muted\n    if count > 5 {\n      text \"¡Más de 5!\"\n    }\n  }\n}\n"
+          },
+          "errors": [],
+          "edit": "```patch\nappend Counter\n  fn inc() {\n    if count < 10 { count++ }\n  }\n  fn dec() {\n    if count > 0 { count-- }\n  }\n  fn reset() {\n    count = 0\n  }\nreplace Counter/column/row/button[0]\n  button \"-\" disabled=(count <= 0) -> dec()\nreplace Counter/column/row/button[1]\n  button \"+\" primary disabled=(count >= 10) -> inc()\ninsert after Counter/column/row\n  button \"Reset\" small -> reset()\n```"
+        }
+      ]
+    },
+    {
+      "task": "counter-mod",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 2,
+      "usage": {
+        "input": 787,
+        "output": 766,
+        "cacheRead": 4694,
+        "cacheWrite": 0
+      },
+      "usd": 0.0101728,
+      "codeTokens": 241,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {},
+          "errors": [
+            "{\"code\":\"E0003\",\"type\":\"UNEXPECTED_TOKEN\",\"loc\":\"patch:12:29\",\"expected\":\"una expresión\",\"actual\":\"'='\"}"
+          ],
+          "edit": "```patch\nappend Counter\n  fn inc() {\n    if count < 10 { count++ }\n  }\n  fn dec() {\n    if count > 0 { count-- }\n  }\n  fn reset() {\n    count = 0\n  }\nreplace Counter/column/row/button[0]\n  button \"-\" -> dec() disabled=(count <= 0)\nreplace Counter/column/row/button[1]\n  button \"+\" primary -> inc() disabled=(count >= 10)\ninsert after Counter/column/row\n  button \"Reset\" danger small -> reset()\n```"
+        },
+        {
+          "files": {
+            "app.art": "page Counter \"/\" {\n  state count = 0\n  computed double = count * 2\n  fn inc() {\n    if count < 10 {\n      count++\n    }\n  }\n  fn dec() {\n    if count > 0 {\n      count--\n    }\n  }\n  fn reset() {\n    count = 0\n  }\n\n  column gap=4 align=center {\n    title \"Contador\"\n    row gap=2 {\n      button \"-\" disabled=(count <= 0) -> dec()\n      text count bold\n      button \"+\" primary disabled=(count >= 10) -> inc()\n    }\n    button \"Reset\" danger small -> reset()\n    text `El doble es ${double}` muted\n    if count > 5 {\n      text \"¡Más de 5!\"\n    }\n  }\n}\n"
+          },
+          "errors": [],
+          "edit": "```patch\nappend Counter\n  fn inc() {\n    if count < 10 { count++ }\n  }\n  fn dec() {\n    if count > 0 { count-- }\n  }\n  fn reset() {\n    count = 0\n  }\nreplace Counter/column/row/button[0]\n  button \"-\" disabled=(count <= 0) -> dec()\nreplace Counter/column/row/button[1]\n  button \"+\" primary disabled=(count >= 10) -> inc()\ninsert after Counter/column/row\n  button \"Reset\" danger small -> reset()\n```"
+        }
+      ]
+    },
+    {
+      "task": "counter-mod",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 2,
+      "usage": {
+        "input": 787,
+        "output": 677,
+        "cacheRead": 4694,
+        "cacheWrite": 0
+      },
+      "usd": 0.009282799999999999,
+      "codeTokens": 241,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {},
+          "errors": [
+            "{\"code\":\"E0003\",\"type\":\"UNEXPECTED_TOKEN\",\"loc\":\"patch:12:29\",\"expected\":\"una expresión\",\"actual\":\"'='\"}"
+          ],
+          "edit": "```patch\nappend Counter\n  fn inc() {\n    if count < 10 { count++ }\n  }\n  fn dec() {\n    if count > 0 { count-- }\n  }\n  fn reset() {\n    count = 0\n  }\nreplace Counter/column/row/button[0]\n  button \"-\" -> dec() disabled=(count <= 0)\nreplace Counter/column/row/button[1]\n  button \"+\" primary -> inc() disabled=(count >= 10)\ninsert after Counter/column/row\n  button \"Reset\" danger small -> reset()\n```"
+        },
+        {
+          "files": {
+            "app.art": "page Counter \"/\" {\n  state count = 0\n  computed double = count * 2\n  fn inc() {\n    if count < 10 {\n      count++\n    }\n  }\n  fn dec() {\n    if count > 0 {\n      count--\n    }\n  }\n  fn reset() {\n    count = 0\n  }\n\n  column gap=4 align=center {\n    title \"Contador\"\n    row gap=2 {\n      button \"-\" disabled=(count <= 0) -> dec()\n      text count bold\n      button \"+\" primary disabled=(count >= 10) -> inc()\n    }\n    button \"Reset\" danger small -> reset()\n    text `El doble es ${double}` muted\n    if count > 5 {\n      text \"¡Más de 5!\"\n    }\n  }\n}\n"
+          },
+          "errors": [],
+          "edit": "```patch\nappend Counter\n  fn inc() {\n    if count < 10 { count++ }\n  }\n  fn dec() {\n    if count > 0 { count-- }\n  }\n  fn reset() {\n    count = 0\n  }\nreplace Counter/column/row/button[0]\n  button \"-\" disabled=(count <= 0) -> dec()\nreplace Counter/column/row/button[1]\n  button \"+\" primary disabled=(count >= 10) -> inc()\ninsert after Counter/column/row\n  button \"Reset\" danger small -> reset()\n```"
+        }
+      ]
+    },
+    {
+      "task": "counter-mod",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 582,
+        "output": 680,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.007964,
+      "codeTokens": 451,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState } from \"react\";\n\nconst MIN = 0;\nconst MAX = 10;\n\nexport default function App() {\n  const [count, setCount] = useState(0);\n  const double = count * 2;\n\n  const decrement = () => setCount((c) => Math.max(MIN, c - 1));\n  const increment = () => setCount((c) => Math.min(MAX, c + 1));\n  const reset = () => setCount(0);\n\n  return (\n    <div className=\"flex flex-col gap-4 items-center\">\n      <h2>Contador</h2>\n      <div className=\"flex items-center gap-2\">\n        <button\n          className=\"disabled:opacity-50 disabled:cursor-not-allowed\"\n          onClick={decrement}\n          disabled={count <= MIN}\n        >\n          -\n        </button>\n        <span className=\"font-semibold\">{count}</span>\n        <button\n          className=\"primary disabled:opacity-50 disabled:cursor-not-allowed\"\n          onClick={increment}\n          disabled={count >= MAX}\n        >\n          +\n        </button>\n      </div>\n      <button onClick={reset}>Reset</button>\n      <span className=\"text-gray-500\">El doble es {double}</span>\n      {count > 5 && <span>¡Más de 5!</span>}\n      {count >= MAX && <span className=\"text-red-500\">Máximo alcanzado</span>}\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "counter-mod",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 582,
+        "output": 758,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.008744,
+      "codeTokens": 450,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState } from \"react\";\n\nconst MIN = 0;\nconst MAX = 10;\n\nexport default function App() {\n  const [count, setCount] = useState(0);\n  const double = count * 2;\n\n  const decrement = () => setCount((c) => Math.max(MIN, c - 1));\n  const increment = () => setCount((c) => Math.min(MAX, c + 1));\n  const reset = () => setCount(0);\n\n  return (\n    <div className=\"flex flex-col gap-4 items-center\">\n      <h2>Contador</h2>\n      <div className=\"flex items-center gap-2\">\n        <button\n          className=\"disabled:opacity-50 disabled:cursor-not-allowed\"\n          onClick={decrement}\n          disabled={count <= MIN}\n        >\n          -\n        </button>\n        <span className=\"font-semibold\">{count}</span>\n        <button\n          className=\"primary disabled:opacity-50 disabled:cursor-not-allowed\"\n          onClick={increment}\n          disabled={count >= MAX}\n        >\n          +\n        </button>\n      </div>\n      <button onClick={reset}>Reset</button>\n      <span className=\"text-gray-500\">El doble es {double}</span>\n      {count > 5 && <span>¡Más de 5!</span>}\n      {count >= MAX && <span>Llegaste al máximo ({MAX})</span>}\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "counter-mod",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 582,
+        "output": 755,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.008714,
+      "codeTokens": 497,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState } from \"react\";\n\nconst MIN = 0;\nconst MAX = 10;\n\nexport default function App() {\n  const [count, setCount] = useState(0);\n  const double = count * 2;\n\n  const decrement = () => setCount((c) => Math.max(MIN, c - 1));\n  const increment = () => setCount((c) => Math.min(MAX, c + 1));\n  const reset = () => setCount(0);\n\n  return (\n    <div className=\"flex flex-col gap-4 items-center\">\n      <h2>Contador</h2>\n      <div className=\"flex items-center gap-2\">\n        <button\n          className=\"disabled:opacity-50 disabled:cursor-not-allowed\"\n          onClick={decrement}\n          disabled={count <= MIN}\n        >\n          -\n        </button>\n        <span className=\"font-semibold\">{count}</span>\n        <button\n          className=\"primary disabled:opacity-50 disabled:cursor-not-allowed\"\n          onClick={increment}\n          disabled={count >= MAX}\n        >\n          +\n        </button>\n      </div>\n      <button\n        className=\"disabled:opacity-50 disabled:cursor-not-allowed\"\n        onClick={reset}\n        disabled={count === 0}\n      >\n        Reset\n      </button>\n      <span className=\"text-gray-500\">El doble es {double}</span>\n      {count > 5 && <span>¡Más de 5!</span>}\n      {count >= MAX && <span>Llegaste al máximo ({MAX})</span>}\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "counter-mod",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 573,
+        "output": 361,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.004756,
+      "codeTokens": 348,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "Counter.svelte": "<script lang=\"ts\">\n  const MIN = 0;\n  const MAX = 10;\n\n  let count = $state(0);\n  let double = $derived(count * 2);\n\n  function decrement() {\n    count = Math.max(MIN, count - 1);\n  }\n\n  function increment() {\n    count = Math.min(MAX, count + 1);\n  }\n\n  function reset() {\n    count = 0;\n  }\n</script>\n\n<div class=\"flex flex-col gap-4 items-center\">\n  <h2>Contador</h2>\n  <div class=\"flex items-center gap-2\">\n    <button onclick={decrement} disabled={count <= MIN}>-</button>\n    <span class=\"font-semibold\">{count}</span>\n    <button class=\"primary\" onclick={increment} disabled={count >= MAX}>+</button>\n  </div>\n  <button onclick={reset} disabled={count === 0}>Reset</button>\n  <span class=\"text-gray-500\">El doble es {double}</span>\n  {#if count > 5}\n    <span>¡Más de 5!</span>\n  {/if}\n</div>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "counter-mod",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 573,
+        "output": 361,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.004756,
+      "codeTokens": 348,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "Counter.svelte": "<script lang=\"ts\">\n  const MIN = 0;\n  const MAX = 10;\n\n  let count = $state(0);\n  let double = $derived(count * 2);\n\n  function decrement() {\n    count = Math.max(MIN, count - 1);\n  }\n\n  function increment() {\n    count = Math.min(MAX, count + 1);\n  }\n\n  function reset() {\n    count = 0;\n  }\n</script>\n\n<div class=\"flex flex-col gap-4 items-center\">\n  <h2>Contador</h2>\n  <div class=\"flex items-center gap-2\">\n    <button onclick={decrement} disabled={count <= MIN}>-</button>\n    <span class=\"font-semibold\">{count}</span>\n    <button class=\"primary\" onclick={increment} disabled={count >= MAX}>+</button>\n  </div>\n  <button onclick={reset} disabled={count === 0}>Reset</button>\n  <span class=\"text-gray-500\">El doble es {double}</span>\n  {#if count > 5}\n    <span>¡Más de 5!</span>\n  {/if}\n</div>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "counter-mod",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 573,
+        "output": 390,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.005046,
+      "codeTokens": 377,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "Counter.svelte": "<script lang=\"ts\">\n  const MIN = 0;\n  const MAX = 10;\n\n  let count = $state(0);\n  let double = $derived(count * 2);\n\n  function decrement() {\n    if (count > MIN) count--;\n  }\n\n  function increment() {\n    if (count < MAX) count++;\n  }\n\n  function reset() {\n    count = 0;\n  }\n</script>\n\n<div class=\"flex flex-col gap-4 items-center\">\n  <h2>Contador</h2>\n  <div class=\"flex items-center gap-2\">\n    <button onclick={decrement} disabled={count <= MIN} class=\"disabled:opacity-50 disabled:cursor-not-allowed\">-</button>\n    <span class=\"font-semibold\">{count}</span>\n    <button class=\"primary disabled:opacity-50 disabled:cursor-not-allowed\" onclick={increment} disabled={count >= MAX}>+</button>\n  </div>\n  <button onclick={reset}>Reset</button>\n  <span class=\"text-gray-500\">El doble es {double}</span>\n  {#if count > 5}\n    <span>¡Más de 5!</span>\n  {/if}\n</div>\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "todo-mod",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 512,
+        "output": 118,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0026734000000000003,
+      "codeTokens": 480,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model Todo {\n  id: ID\n  title: String\n  done: Bool\n}\n\ncomponent TodoItem(todo: Todo, remove: Fn) {\n  row gap=2 {\n    input todo.done type=checkbox\n    text todo.title\n    button \"x\" danger small -> remove(todo.id)\n  }\n}\n\npage Todos \"/\" {\n  state todos: Todo[] = []\n  state draft = \"\"\n  computed pending = todos.filter(t => !t.done).length\n  fn add() {\n    if draft.trim() == \"\" {\n      return\n    }\n    todos.push({ id: crypto.randomUUID(), title: draft, done: false })\n    draft = \"\"\n  }\n  computed doneCount = todos.filter(t => t.done).length\n  fn clearDone() {\n    todos = todos.filter(t => !t.done)\n  }\n\n  column gap=4 {\n    title \"Tareas\"\n    row gap=2 {\n      input draft placeholder=\"¿Qué hay que hacer?\" -> add()\n      button \"Agregar\" primary -> add()\n    }\n    for todo in todos {\n      TodoItem todo=todo remove=(id => todos = todos.filter(t => t.id != id))\n    }\n    if todos.length == 0 {\n      text \"No hay tareas\" muted\n    } else {\n      text `${pending} pendientes` muted\n    }\n    if doneCount > 0 {\n      button \"Borrar completadas\" danger small -> clearDone()\n    }\n  }\n}\n"
+          },
+          "errors": [],
+          "edit": "```patch\nappend Todos\n  computed doneCount = todos.filter(t => t.done).length\nappend Todos\n  fn clearDone() {\n    todos = todos.filter(t => !t.done)\n  }\ninsert after Todos/column/if\n  if doneCount > 0 {\n    button \"Borrar completadas\" danger small -> clearDone()\n  }\n```"
+        }
+      ]
+    },
+    {
+      "task": "todo-mod",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 512,
+        "output": 118,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0026734000000000003,
+      "codeTokens": 480,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model Todo {\n  id: ID\n  title: String\n  done: Bool\n}\n\ncomponent TodoItem(todo: Todo, remove: Fn) {\n  row gap=2 {\n    input todo.done type=checkbox\n    text todo.title\n    button \"x\" danger small -> remove(todo.id)\n  }\n}\n\npage Todos \"/\" {\n  state todos: Todo[] = []\n  state draft = \"\"\n  computed pending = todos.filter(t => !t.done).length\n  fn add() {\n    if draft.trim() == \"\" {\n      return\n    }\n    todos.push({ id: crypto.randomUUID(), title: draft, done: false })\n    draft = \"\"\n  }\n  computed doneCount = todos.filter(t => t.done).length\n  fn clearDone() {\n    todos = todos.filter(t => !t.done)\n  }\n\n  column gap=4 {\n    title \"Tareas\"\n    row gap=2 {\n      input draft placeholder=\"¿Qué hay que hacer?\" -> add()\n      button \"Agregar\" primary -> add()\n    }\n    for todo in todos {\n      TodoItem todo=todo remove=(id => todos = todos.filter(t => t.id != id))\n    }\n    if todos.length == 0 {\n      text \"No hay tareas\" muted\n    } else {\n      text `${pending} pendientes` muted\n    }\n    if doneCount > 0 {\n      button \"Borrar completadas\" danger small -> clearDone()\n    }\n  }\n}\n"
+          },
+          "errors": [],
+          "edit": "```patch\nappend Todos\n  computed doneCount = todos.filter(t => t.done).length\nappend Todos\n  fn clearDone() {\n    todos = todos.filter(t => !t.done)\n  }\ninsert after Todos/column/if\n  if doneCount > 0 {\n    button \"Borrar completadas\" danger small -> clearDone()\n  }\n```"
+        }
+      ]
+    },
+    {
+      "task": "todo-mod",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 512,
+        "output": 117,
+        "cacheRead": 2347,
+        "cacheWrite": 0
+      },
+      "usd": 0.0026634000000000002,
+      "codeTokens": 476,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model Todo {\n  id: ID\n  title: String\n  done: Bool\n}\n\ncomponent TodoItem(todo: Todo, remove: Fn) {\n  row gap=2 {\n    input todo.done type=checkbox\n    text todo.title\n    button \"x\" danger small -> remove(todo.id)\n  }\n}\n\npage Todos \"/\" {\n  state todos: Todo[] = []\n  state draft = \"\"\n  computed pending = todos.filter(t => !t.done).length\n  fn add() {\n    if draft.trim() == \"\" {\n      return\n    }\n    todos.push({ id: crypto.randomUUID(), title: draft, done: false })\n    draft = \"\"\n  }\n  computed completed = todos.filter(t => t.done).length\n  fn clearDone() {\n    todos = todos.filter(t => !t.done)\n  }\n\n  column gap=4 {\n    title \"Tareas\"\n    row gap=2 {\n      input draft placeholder=\"¿Qué hay que hacer?\" -> add()\n      button \"Agregar\" primary -> add()\n    }\n    for todo in todos {\n      TodoItem todo=todo remove=(id => todos = todos.filter(t => t.id != id))\n    }\n    if todos.length == 0 {\n      text \"No hay tareas\" muted\n    } else {\n      text `${pending} pendientes` muted\n    }\n    if completed > 0 {\n      button \"Borrar completadas\" danger small -> clearDone()\n    }\n  }\n}\n"
+          },
+          "errors": [],
+          "edit": "```patch\nappend Todos\n  computed completed = todos.filter(t => t.done).length\nappend Todos\n  fn clearDone() {\n    todos = todos.filter(t => !t.done)\n  }\ninsert after Todos/column/if[0]\n  if completed > 0 {\n    button \"Borrar completadas\" danger small -> clearDone()\n  }\n```"
+        }
+      ]
+    },
+    {
+      "task": "todo-mod",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 1032,
+        "output": 1076,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.012824,
+      "codeTokens": 792,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState } from \"react\";\n\ntype Todo = { id: string; title: string; done: boolean };\n\nfunction TodoItem({ todo, onToggle, onRemove }: { todo: Todo; onToggle: (id: string) => void; onRemove: (id: string) => void }) {\n  return (\n    <div className=\"flex items-center gap-2\">\n      <input type=\"checkbox\" checked={todo.done} onChange={() => onToggle(todo.id)} />\n      <span>{todo.title}</span>\n      <button className=\"danger small\" onClick={() => onRemove(todo.id)}>x</button>\n    </div>\n  );\n}\n\nexport default function App() {\n  const [todos, setTodos] = useState<Todo[]>([]);\n  const [draft, setDraft] = useState(\"\");\n  const pending = todos.filter((t) => !t.done).length;\n  const completed = todos.length - pending;\n\n  function add() {\n    if (draft.trim() === \"\") return;\n    setTodos([...todos, { id: crypto.randomUUID(), title: draft, done: false }]);\n    setDraft(\"\");\n  }\n\n  function clearCompleted() {\n    setTodos(todos.filter((t) => !t.done));\n  }\n\n  return (\n    <div className=\"flex flex-col gap-4\">\n      <h2>Tareas</h2>\n      <div className=\"flex items-center gap-2\">\n        <input value={draft} placeholder=\"¿Qué hay que hacer?\" onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === \"Enter\" && add()} />\n        <button className=\"primary\" onClick={add}>Agregar</button>\n      </div>\n      {todos.map((todo) => (\n        <TodoItem\n          key={todo.id}\n          todo={todo}\n          onToggle={(id) => setTodos(todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t)))}\n          onRemove={(id) => setTodos(todos.filter((t) => t.id !== id))}\n        />\n      ))}\n      {todos.length === 0 ? <span className=\"text-gray-500\">No hay tareas</span> : <span className=\"text-gray-500\">{pending} pendientes</span>}\n      {completed > 0 && (\n        <div>\n          <button className=\"danger\" onClick={clearCompleted}>Borrar completadas</button>\n        </div>\n      )}\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "todo-mod",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 1032,
+        "output": 1075,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.012814,
+      "codeTokens": 786,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState } from \"react\";\n\ntype Todo = { id: string; title: string; done: boolean };\n\nfunction TodoItem({ todo, onToggle, onRemove }: { todo: Todo; onToggle: (id: string) => void; onRemove: (id: string) => void }) {\n  return (\n    <div className=\"flex items-center gap-2\">\n      <input type=\"checkbox\" checked={todo.done} onChange={() => onToggle(todo.id)} />\n      <span>{todo.title}</span>\n      <button className=\"danger small\" onClick={() => onRemove(todo.id)}>x</button>\n    </div>\n  );\n}\n\nexport default function App() {\n  const [todos, setTodos] = useState<Todo[]>([]);\n  const [draft, setDraft] = useState(\"\");\n  const pending = todos.filter((t) => !t.done).length;\n  const completed = todos.length - pending;\n\n  function add() {\n    if (draft.trim() === \"\") return;\n    setTodos([...todos, { id: crypto.randomUUID(), title: draft, done: false }]);\n    setDraft(\"\");\n  }\n\n  function clearCompleted() {\n    setTodos(todos.filter((t) => !t.done));\n  }\n\n  return (\n    <div className=\"flex flex-col gap-4\">\n      <h2>Tareas</h2>\n      <div className=\"flex items-center gap-2\">\n        <input value={draft} placeholder=\"¿Qué hay que hacer?\" onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === \"Enter\" && add()} />\n        <button className=\"primary\" onClick={add}>Agregar</button>\n      </div>\n      {todos.map((todo) => (\n        <TodoItem\n          key={todo.id}\n          todo={todo}\n          onToggle={(id) => setTodos(todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t)))}\n          onRemove={(id) => setTodos(todos.filter((t) => t.id !== id))}\n        />\n      ))}\n      {todos.length === 0 ? <span className=\"text-gray-500\">No hay tareas</span> : <span className=\"text-gray-500\">{pending} pendientes</span>}\n      {completed > 0 && (\n        <button className=\"danger small self-start\" onClick={clearCompleted}>Borrar completadas</button>\n      )}\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "todo-mod",
+      "stack": "react",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 1032,
+        "output": 1037,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.012434,
+      "codeTokens": 795,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState } from \"react\";\n\ntype Todo = { id: string; title: string; done: boolean };\n\nfunction TodoItem({ todo, onToggle, onRemove }: { todo: Todo; onToggle: (id: string) => void; onRemove: (id: string) => void }) {\n  return (\n    <div className=\"flex items-center gap-2\">\n      <input type=\"checkbox\" checked={todo.done} onChange={() => onToggle(todo.id)} />\n      <span>{todo.title}</span>\n      <button className=\"danger small\" onClick={() => onRemove(todo.id)}>x</button>\n    </div>\n  );\n}\n\nexport default function Todos() {\n  const [todos, setTodos] = useState<Todo[]>([]);\n  const [draft, setDraft] = useState(\"\");\n  const pending = todos.filter((t) => !t.done).length;\n  const completed = todos.length - pending;\n\n  function add() {\n    if (draft.trim() === \"\") return;\n    setTodos([...todos, { id: crypto.randomUUID(), title: draft, done: false }]);\n    setDraft(\"\");\n  }\n\n  function clearCompleted() {\n    setTodos(todos.filter((t) => !t.done));\n  }\n\n  return (\n    <div className=\"flex flex-col gap-4\">\n      <h2>Tareas</h2>\n      <div className=\"flex items-center gap-2\">\n        <input value={draft} placeholder=\"¿Qué hay que hacer?\" onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === \"Enter\" && add()} />\n        <button className=\"primary\" onClick={add}>Agregar</button>\n      </div>\n      {todos.map((todo) => (\n        <TodoItem\n          key={todo.id}\n          todo={todo}\n          onToggle={(id) => setTodos(todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t)))}\n          onRemove={(id) => setTodos(todos.filter((t) => t.id !== id))}\n        />\n      ))}\n      {todos.length === 0 ? <span className=\"text-gray-500\">No hay tareas</span> : <span className=\"text-gray-500\">{pending} pendientes</span>}\n      {completed > 0 && (\n        <div>\n          <button className=\"danger small\" onClick={clearCompleted}>Borrar completadas</button>\n        </div>\n      )}\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "todo-mod",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 973,
+        "output": 307,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.005016,
+      "codeTokens": 711,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "TodoItem.svelte": "<script lang=\"ts\" module>\n  export type Todo = { id: string; title: string; done: boolean };\n</script>\n\n<script lang=\"ts\">\n  let { todo, onRemove }: { todo: Todo; onRemove: (id: string) => void } = $props();\n</script>\n\n<div class=\"flex items-center gap-2\">\n  <input type=\"checkbox\" bind:checked={todo.done} />\n  <span>{todo.title}</span>\n  <button class=\"danger small\" onclick={() => onRemove(todo.id)}>x</button>\n</div>\n",
+            "Todos.svelte": "<script lang=\"ts\">\n  import TodoItem, { type Todo } from \"./TodoItem.svelte\";\n\n  let todos = $state<Todo[]>([]);\n  let draft = $state(\"\");\n  let pending = $derived(todos.filter((t) => !t.done).length);\n  let completed = $derived(todos.length - pending);\n\n  function clearCompleted() {\n    todos = todos.filter((t) => !t.done);\n  }\n\n  function add() {\n    if (draft.trim() === \"\") return;\n    todos.push({ id: crypto.randomUUID(), title: draft, done: false });\n    draft = \"\";\n  }\n</script>\n\n<div class=\"flex flex-col gap-4\">\n  <h2>Tareas</h2>\n  <div class=\"flex items-center gap-2\">\n    <input bind:value={draft} placeholder=\"¿Qué hay que hacer?\" onkeydown={(e) => e.key === \"Enter\" && add()} />\n    <button class=\"primary\" onclick={add}>Agregar</button>\n  </div>\n  {#each todos as todo (todo.id)}\n    <TodoItem {todo} onRemove={(id) => (todos = todos.filter((t) => t.id !== id))} />\n  {/each}\n  {#if todos.length === 0}\n    <span class=\"text-gray-500\">No hay tareas</span>\n  {:else}\n    <span class=\"text-gray-500\">{pending} pendientes</span>\n  {/if}\n  {#if completed > 0}\n    <div>\n      <button class=\"danger small\" onclick={clearCompleted}>Borrar completadas</button>\n    </div>\n  {/if}\n</div>\n"
+          },
+          "errors": [],
+          "edit": "```edit Todos.svelte\n<<<<<<< SEARCH\n  let pending = $derived(todos.filter((t) => !t.done).length);\n=======\n  let pending = $derived(todos.filter((t) => !t.done).length);\n  let completed = $derived(todos.length - pending);\n\n  function clearCompleted() {\n    todos = todos.filter((t) => !t.done);\n  }\n>>>>>>> REPLACE\n```\n\n```edit Todos.svelte\n<<<<<<< SEARCH\n    <span class=\"text-gray-500\">{pending} pendientes</span>\n  {/if}\n=======\n    <span class=\"text-gray-500\">{pending} pendientes</span>\n  {/if}\n  {#if completed > 0}\n    <div>\n      <button class=\"danger small\" onclick={clearCompleted}>Borrar completadas</button>\n    </div>\n  {/if}\n>>>>>>> REPLACE\n```"
+        }
+      ]
+    },
+    {
+      "task": "todo-mod",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 973,
+        "output": 307,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.005016,
+      "codeTokens": 711,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "TodoItem.svelte": "<script lang=\"ts\" module>\n  export type Todo = { id: string; title: string; done: boolean };\n</script>\n\n<script lang=\"ts\">\n  let { todo, onRemove }: { todo: Todo; onRemove: (id: string) => void } = $props();\n</script>\n\n<div class=\"flex items-center gap-2\">\n  <input type=\"checkbox\" bind:checked={todo.done} />\n  <span>{todo.title}</span>\n  <button class=\"danger small\" onclick={() => onRemove(todo.id)}>x</button>\n</div>\n",
+            "Todos.svelte": "<script lang=\"ts\">\n  import TodoItem, { type Todo } from \"./TodoItem.svelte\";\n\n  let todos = $state<Todo[]>([]);\n  let draft = $state(\"\");\n  let pending = $derived(todos.filter((t) => !t.done).length);\n  let completed = $derived(todos.length - pending);\n\n  function clearCompleted() {\n    todos = todos.filter((t) => !t.done);\n  }\n\n  function add() {\n    if (draft.trim() === \"\") return;\n    todos.push({ id: crypto.randomUUID(), title: draft, done: false });\n    draft = \"\";\n  }\n</script>\n\n<div class=\"flex flex-col gap-4\">\n  <h2>Tareas</h2>\n  <div class=\"flex items-center gap-2\">\n    <input bind:value={draft} placeholder=\"¿Qué hay que hacer?\" onkeydown={(e) => e.key === \"Enter\" && add()} />\n    <button class=\"primary\" onclick={add}>Agregar</button>\n  </div>\n  {#each todos as todo (todo.id)}\n    <TodoItem {todo} onRemove={(id) => (todos = todos.filter((t) => t.id !== id))} />\n  {/each}\n  {#if todos.length === 0}\n    <span class=\"text-gray-500\">No hay tareas</span>\n  {:else}\n    <span class=\"text-gray-500\">{pending} pendientes</span>\n  {/if}\n  {#if completed > 0}\n    <div>\n      <button class=\"danger small\" onclick={clearCompleted}>Borrar completadas</button>\n    </div>\n  {/if}\n</div>\n"
+          },
+          "errors": [],
+          "edit": "```edit Todos.svelte\n<<<<<<< SEARCH\n  let pending = $derived(todos.filter((t) => !t.done).length);\n=======\n  let pending = $derived(todos.filter((t) => !t.done).length);\n  let completed = $derived(todos.length - pending);\n\n  function clearCompleted() {\n    todos = todos.filter((t) => !t.done);\n  }\n>>>>>>> REPLACE\n```\n\n```edit Todos.svelte\n<<<<<<< SEARCH\n    <span class=\"text-gray-500\">{pending} pendientes</span>\n  {/if}\n=======\n    <span class=\"text-gray-500\">{pending} pendientes</span>\n  {/if}\n  {#if completed > 0}\n    <div>\n      <button class=\"danger small\" onclick={clearCompleted}>Borrar completadas</button>\n    </div>\n  {/if}\n>>>>>>> REPLACE\n```"
+        }
+      ]
+    },
+    {
+      "task": "todo-mod",
+      "stack": "svelte",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 973,
+        "output": 307,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.005016,
+      "codeTokens": 711,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "TodoItem.svelte": "<script lang=\"ts\" module>\n  export type Todo = { id: string; title: string; done: boolean };\n</script>\n\n<script lang=\"ts\">\n  let { todo, onRemove }: { todo: Todo; onRemove: (id: string) => void } = $props();\n</script>\n\n<div class=\"flex items-center gap-2\">\n  <input type=\"checkbox\" bind:checked={todo.done} />\n  <span>{todo.title}</span>\n  <button class=\"danger small\" onclick={() => onRemove(todo.id)}>x</button>\n</div>\n",
+            "Todos.svelte": "<script lang=\"ts\">\n  import TodoItem, { type Todo } from \"./TodoItem.svelte\";\n\n  let todos = $state<Todo[]>([]);\n  let draft = $state(\"\");\n  let pending = $derived(todos.filter((t) => !t.done).length);\n  let completed = $derived(todos.length - pending);\n\n  function clearCompleted() {\n    todos = todos.filter((t) => !t.done);\n  }\n\n  function add() {\n    if (draft.trim() === \"\") return;\n    todos.push({ id: crypto.randomUUID(), title: draft, done: false });\n    draft = \"\";\n  }\n</script>\n\n<div class=\"flex flex-col gap-4\">\n  <h2>Tareas</h2>\n  <div class=\"flex items-center gap-2\">\n    <input bind:value={draft} placeholder=\"¿Qué hay que hacer?\" onkeydown={(e) => e.key === \"Enter\" && add()} />\n    <button class=\"primary\" onclick={add}>Agregar</button>\n  </div>\n  {#each todos as todo (todo.id)}\n    <TodoItem {todo} onRemove={(id) => (todos = todos.filter((t) => t.id !== id))} />\n  {/each}\n  {#if todos.length === 0}\n    <span class=\"text-gray-500\">No hay tareas</span>\n  {:else}\n    <span class=\"text-gray-500\">{pending} pendientes</span>\n  {/if}\n  {#if completed > 0}\n    <div>\n      <button class=\"danger small\" onclick={clearCompleted}>Borrar completadas</button>\n    </div>\n  {/if}\n</div>\n"
+          },
+          "errors": [],
+          "edit": "```edit Todos.svelte\n<<<<<<< SEARCH\n  let pending = $derived(todos.filter((t) => !t.done).length);\n=======\n  let pending = $derived(todos.filter((t) => !t.done).length);\n  let completed = $derived(todos.length - pending);\n\n  function clearCompleted() {\n    todos = todos.filter((t) => !t.done);\n  }\n>>>>>>> REPLACE\n```\n\n```edit Todos.svelte\n<<<<<<< SEARCH\n    <span class=\"text-gray-500\">{pending} pendientes</span>\n  {/if}\n=======\n    <span class=\"text-gray-500\">{pending} pendientes</span>\n  {/if}\n  {#if completed > 0}\n    <div>\n      <button class=\"danger small\" onclick={clearCompleted}>Borrar completadas</button>\n    </div>\n  {/if}\n>>>>>>> REPLACE\n```"
+        }
+      ]
+    }
+  ]
+}
