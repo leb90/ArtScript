@@ -77,8 +77,13 @@ class Scope {
   constructor(parent: Scope | null) {
     this.parent = parent;
   }
+  // Paths (`x`, `user.profile`) known to be non-null here, with their narrowed type.
+  narrowed = new Map<string, Ty>();
   get(name: string): Sym | undefined {
     return this.vars.get(name) ?? this.parent?.get(name);
+  }
+  getNarrowed(path: string): Ty | undefined {
+    return this.narrowed.get(path) ?? this.parent?.getNarrowed(path);
   }
   names(): string[] {
     return [...this.vars.keys(), ...(this.parent?.names() ?? [])];
@@ -193,8 +198,8 @@ class Checker {
     for (const n of nodes) {
       if (n.kind === "IfView") {
         this.infer(n.cond, scope);
-        this.view(n.then, scope);
-        if (n.else) this.view(n.else, scope);
+        this.view(n.then, this.narrow(n.cond, true, scope));
+        if (n.else) this.view(n.else, this.narrow(n.cond, false, scope));
       } else if (n.kind === "ForView") {
         let lt = this.infer(n.list, scope);
         if (lt.k === "opt") {
@@ -309,9 +314,54 @@ class Checker {
       else if (s.kind === "Return") { if (s.value) this.infer(s.value, scope); }
       else {
         this.infer(s.cond, scope);
-        this.stmts(s.then, new Scope(scope));
-        if (s.else) this.stmts(s.else, new Scope(scope));
+        this.stmts(s.then, this.narrow(s.cond, true, scope));
+        if (s.else) this.stmts(s.else, this.narrow(s.cond, false, scope));
+        // Early exit (`if !x { return }`): the rest of the block runs only when the condition was false.
+        const last = s.then[s.then.length - 1];
+        if (!s.else && last?.kind === "Return") this.applyNarrowing(s.cond, false, scope, scope);
       }
+    }
+  }
+
+  // ---------- narrowing ----------
+  // Dotted path of an expression (`x`, `user.profile`), or null if it isn't a plain path.
+  pathOf(e: Expr): string | null {
+    if (e.kind === "Ident") return e.name;
+    if (e.kind === "Member") {
+      const base = this.pathOf(e.object);
+      return base === null ? null : `${base}.${e.prop}`;
+    }
+    return null;
+  }
+
+  // Paths proven non-null when `cond` evaluates to `truthy`.
+  facts(cond: Expr, truthy: boolean): Expr[] {
+    if (cond.kind === "Unary" && cond.op === "!") return this.facts(cond.arg, !truthy);
+    if (cond.kind === "Binary") {
+      if (cond.op === "&&") return truthy ? [...this.facts(cond.left, true), ...this.facts(cond.right, true)] : [];
+      if (cond.op === "||") return truthy ? [] : [...this.facts(cond.left, false), ...this.facts(cond.right, false)];
+      const other = cond.left.kind === "Null" ? cond.right : cond.right.kind === "Null" ? cond.left : null;
+      if (other && this.pathOf(other) !== null) {
+        if ((cond.op === "!=" && truthy) || (cond.op === "==" && !truthy)) return [other];
+      }
+      return [];
+    }
+    return truthy && this.pathOf(cond) !== null ? [cond] : [];
+  }
+
+  // New child scope where the facts of `cond` hold.
+  narrow(cond: Expr, truthy: boolean, scope: Scope): Scope {
+    const s = new Scope(scope);
+    this.applyNarrowing(cond, truthy, scope, s);
+    return s;
+  }
+
+  applyNarrowing(cond: Expr, truthy: boolean, from: Scope, into: Scope) {
+    for (const e of this.facts(cond, truthy)) {
+      const n = this.diags.length;
+      const t = this.infer(e, from);
+      this.diags.length = n; // only reading the type; errors were already reported
+      if (t.k === "opt") into.narrowed.set(this.pathOf(e)!, t.of);
     }
   }
 
@@ -411,12 +461,15 @@ class Checker {
       case "Null": return NULL;
       case "Ident": {
         const sym = scope.get(e.name);
-        if (sym) return sym.ty;
+        if (sym) return scope.getNarrowed(e.name) ?? sym.ty;
         if (GLOBALS.has(e.name)) return ANY;
         this.err("UNDEFINED_NAME", `'${e.name}' no está definido`, e.loc, { expr: e.name, fixes: suggest(e.name, scope.names()) });
         return ANY;
       }
       case "Member": {
+        const path = this.pathOf(e);
+        const known = path === null ? undefined : scope.getNarrowed(path);
+        if (known) { this.infer(e.object, scope); return known; }
         let t = this.infer(e.object, scope);
         let wrapOpt = false;
         if (t.k === "opt") {
@@ -426,7 +479,8 @@ class Checker {
             });
           }
           t = t.of;
-          wrapOpt = true;
+          // `a?.b` can be null; after reporting `a.b`, keep checking as if it weren't (no cascading errors).
+          wrapOpt = e.optional;
         }
         const r = this.memberTy(t, e.prop, e);
         return wrapOpt ? opt(r) : r;
@@ -469,7 +523,7 @@ class Checker {
       case "Binary": return this.binary(e, scope);
       case "Cond": {
         this.infer(e.test, scope);
-        const a = this.infer(e.then, scope), b = this.infer(e.else, scope);
+        const a = this.infer(e.then, this.narrow(e.test, true, scope)), b = this.infer(e.else, this.narrow(e.test, false, scope));
         if (a.k === "null") return opt(b);
         if (b.k === "null") return opt(a);
         return this.assignable(a, b) && this.assignable(b, a) ? a : ANY;
@@ -521,7 +575,10 @@ class Checker {
   }
 
   binary(e: Expr & { kind: "Binary" }, scope: Scope): Ty {
-    const l = this.infer(e.left, scope), r = this.infer(e.right, scope);
+    const l = this.infer(e.left, scope);
+    // `x && x.a` / `x == null || x.a`: the right side only runs when the left allows it.
+    const rightScope = e.op === "&&" ? this.narrow(e.left, true, scope) : e.op === "||" ? this.narrow(e.left, false, scope) : scope;
+    const r = this.infer(e.right, rightScope);
     switch (e.op) {
       case "+":
         if (l.k === "str" || r.k === "str") return STR;

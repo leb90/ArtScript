@@ -107,3 +107,28 @@ test("suggestions never repeat the wrong name itself", () => {
   assert.equal(d.type, "UNKNOWN_PROP");
   assert.ok(!(d.fixes ?? []).includes("muted"));
 });
+
+const CART = "model Item {\n  id: Number\n  qty: Number\n}\n";
+
+test("narrowing: `if x` and `if x != null` make x non-null inside the branch", () => {
+  const fn = (cond: string) => `${CART}page P {\n  state cart: Item[] = []\n  fn add(id) {\n    let found = cart.find(i => i.id == id)\n    if ${cond} {\n      found.qty++\n    }\n  }\n}`;
+  assert.deepEqual(types(fn("found")), []);
+  assert.deepEqual(types(fn("found != null")), []);
+  assert.deepEqual(types(fn("null !== found")), []);
+  assert.deepEqual(types(fn("found && found.qty > 0")), []);
+  assert.deepEqual(types(fn("true")), ["POSSIBLY_EMPTY"]);
+});
+
+test("narrowing: else branch and early return", () => {
+  const body = (b: string) => `${CART}page P {\n  state cart: Item[] = []\n  fn add(id) {\n    let found = cart.find(i => i.id == id)\n${b}\n  }\n}`;
+  assert.deepEqual(types(body("    if found == null {\n      return\n    } else {\n      found.qty++\n    }")), []);
+  assert.deepEqual(types(body("    if !found {\n      cart.push({ id: id, qty: 1 })\n      return\n    }\n    found.qty++")), []);
+  // without the return, the rest of the block is not narrowed
+  assert.deepEqual(types(body("    if !found {\n      cart.push({ id: id, qty: 1 })\n    }\n    found.qty++")), ["POSSIBLY_EMPTY"]);
+});
+
+test("narrowing: ternary, && in expressions, if in views and nested paths", () => {
+  const src = `model Profile {\n  name: String\n}\nmodel User {\n  profile: Profile?\n}\ncomponent C(u: User?) {\n  text u ? u.profile?.name : "-"\n  text u && u.profile && u.profile.name\n  if u?.profile {\n    text u.profile.name\n  } else {\n    text "none"\n  }\n}`;
+  assert.deepEqual(types(src), []);
+  assert.deepEqual(types(src.replace('text u ? u.profile?.name : "-"', 'text u.profile?.name ?? "-"')), ["POSSIBLY_EMPTY"]);
+});

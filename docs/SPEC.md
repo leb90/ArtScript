@@ -89,6 +89,7 @@ JavaScript: literales, `` `template ${x}` ``, `a.b`, `a?.b`, `a[i]`, `f(x)`, `x 
 ## Reglas que el compilador verifica
 
 - `lista[i]` es `T?`: usar `lista[i]?.campo` o `?? valor`.
+- Dentro de `if x { }`, `if x != null`, `x && ...`, `x ? ... : ...` o después de `if !x { return }`, `x` ya no es null.
 - Objetos pasados a un `model` deben tener todos sus campos no opcionales y ningún campo extra.
 - No se puede asignar a `computed` ni a props directamente.
 - Nombres, elementos, props y flags desconocidos → error con sugerencia.
