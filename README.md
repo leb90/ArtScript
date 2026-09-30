@@ -75,3 +75,17 @@ tests/               parser, checker, runtime, e2e (DOM en memoria), tools, docs
 | todo | 245 | 471 | 400 |
 
 Esto solo mide el **tamaño del código fuente**. Todavía no mide la spec en contexto, las iteraciones de un agente ni el costo en USD. Sin eso no se puede afirmar ahorro real (ver §12 del documento de viabilidad). Además, `o200k_base` es el tokenizer de OpenAI; los de Claude difieren.
+
+## Eval de costo con agentes
+
+`benchmarks/eval/` pone a Claude a resolver las mismas 8 tareas (6 de crear, 2 de modificar) en ArtScript, React+TS y Svelte, y mide lo que importa (§12 del documento de viabilidad): **USD por tarea resuelta**. Incluye la spec en el contexto, los reintentos hasta que el código compila, y los tokens de pensamiento.
+
+```sh
+npm run eval -- --dry-run                         # valida el harness, no gasta nada
+echo "ANTHROPIC_API_KEY=sk-ant-..." > .env        # .env está en .gitignore
+npm run eval -- --runs 3 --max-usd 10             # corrida completa (claude-opus-5-5)
+npm run eval -- --model claude-sonnet-5-5 --tasks counter,todo
+```
+
+Validación: ArtScript con su compilador, React con `tsc` estricto, Svelte con su compilador (sin chequeo de tipos, lo que favorece a Svelte). Todavía no verifica el comportamiento en ejecución, solo que el código compile y tipe. Los resultados se guardan en `benchmarks/eval/results/`.
+

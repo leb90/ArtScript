@@ -3,20 +3,46 @@
   "version": "0.1.0",
   "private": true,
   "description": "Lenguaje web AI-native que compila a JavaScript. Menos tokens, menos contexto, menos errores.",
-  "keywords": ["artscript", "language", "compiler", "web", "ai", "llm", "reactive", "signals"],
+  "keywords": [
+    "artscript",
+    "language",
+    "compiler",
+    "web",
+    "ai",
+    "llm",
+    "reactive",
+    "signals"
+  ],
   "author": "Leandro Bisceglie",
   "license": "MIT",
   "homepage": "https://github.com/leb90/ArtScript#readme",
-  "repository": { "type": "git", "url": "git+https://github.com/leb90/ArtScript.git" },
-  "bugs": { "url": "https://github.com/leb90/ArtScript/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leb90/ArtScript.git"
+  },
+  "bugs": {
+    "url": "https://github.com/leb90/ArtScript/issues"
+  },
   "type": "module",
-  "bin": { "art": "lib/cli.js" },
+  "bin": {
+    "art": "lib/cli.js"
+  },
   "exports": {
-    ".": { "types": "./lib/compile.d.ts", "default": "./lib/compile.js" },
+    ".": {
+      "types": "./lib/compile.d.ts",
+      "default": "./lib/compile.js"
+    },
     "./runtime": "./runtime/runtime.js"
   },
-  "files": ["lib", "runtime", "templates", "docs/SPEC.md"],
-  "engines": { "node": ">=24" },
+  "files": [
+    "lib",
+    "runtime",
+    "templates",
+    "docs/SPEC.md"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "node src/cli.ts dev examples/todo",
     "start": "node src/cli.ts dev examples/todo",
@@ -25,13 +51,17 @@
     "typecheck": "tsc -p .",
     "build": "rm -rf lib && tsc -p tsconfig.build.json",
     "bench": "node src/cli.ts bench",
+    "eval": "node benchmarks/eval/run.ts",
     "art": "node src/cli.ts",
     "prepack": "npm run build",
     "prepublishOnly": "npm test && npm run typecheck"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.130.0",
     "@types/node": "^26.6.3",
+    "@types/react": "^19.3.0",
     "js-tiktoken": "^1.0.21",
+    "svelte": "^5.57.1",
     "typescript": "^7.0.2"
   }
 }

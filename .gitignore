@@ -2,3 +2,5 @@ node_modules/
 dist/
 lib/
 *.tgz
+.env
+benchmarks/eval/.work/
