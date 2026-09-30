@@ -39,6 +39,12 @@ export const CATALOG: Record<string, { code: string; desc: string }> = {
   NO_CONTENT: { code: "E2005", desc: "Este elemento no acepta contenido." },
   NOT_BINDABLE: { code: "E2006", desc: "`input` necesita un `state` (o campo de un state) para enlazar." },
   NO_CHILDREN: { code: "E2007", desc: "Este elemento no acepta hijos `{ }`." },
+  // art patch
+  PATCH_SYNTAX: { code: "E3001", desc: "Línea de patch inválida: se esperaba una operación." },
+  TARGET_NOT_FOUND: { code: "E3002", desc: "La ruta del patch no existe." },
+  AMBIGUOUS_TARGET: { code: "E3003", desc: "La ruta coincide con varios nodos: agregar un índice `[n]`." },
+  PATCH_BODY: { code: "E3004", desc: "El contenido del patch no es válido para ese destino." },
+  PATCH_COMMENTS: { code: "E3005", desc: "El archivo tiene comentarios, que el patch todavía no preserva." },
 };
 
 export function diag(type: keyof typeof CATALOG, msg: string, loc: Loc, extra: Partial<Diagnostic> = {}): Diagnostic {

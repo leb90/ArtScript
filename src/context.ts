@@ -2,6 +2,7 @@
 import type { ComponentDecl, ModelDecl, Program, ViewNode } from "./ast.ts";
 import { show, type Analysis } from "./checker.ts";
 import { fmtLoc } from "./errors.ts";
+import { viewPaths } from "./patch.ts";
 import { printDecl, printElementHead, printExpr, printStmt, printType } from "./printer.ts";
 
 // Rough estimate (≈4 chars per token). NOT a measurement: see benchmarks/ for real numbers.
@@ -99,14 +100,19 @@ export function declContext(p: Program, a: Analysis, target: string, budget = In
   });
   if (events.length) lines.push("events:", ...events);
 
+  // View paths, as `art patch` addresses them.
+  const paths = ["paths:"];
+  for (const { path, node } of viewPaths(d)) {
+    const head = node.kind === "Element" ? printElementHead(node) : node.kind === "IfView" ? `if ${printExpr(node.cond)}` : `for ${node.item} in ${printExpr(node.list)}`;
+    paths.push(`  ${path}  ${head}`);
+  }
   // Full source goes last: included only if it fits the budget.
   const source = ["source:", printDecl(d)];
-  const outline = ["outline:"];
-  walk(d.view, (n) => { if (n.kind === "Element") outline.push("  " + printElementHead(n)); });
   const base = lines.join("\n");
-  if (estimateTokens(base + "\n" + source.join("\n")) <= budget) return base + "\n" + source.join("\n");
-  if (estimateTokens(base + "\n" + outline.join("\n")) <= budget) return base + "\n" + outline.join("\n");
-  return fit(lines, budget);
+  const withPaths = base + "\n" + paths.join("\n");
+  if (estimateTokens(withPaths + "\n" + source.join("\n")) <= budget) return withPaths + "\n" + source.join("\n");
+  if (estimateTokens(withPaths) <= budget) return withPaths;
+  return fit([...lines, ...paths], budget);
 }
 
 function fit(lines: string[], budget: number): string {

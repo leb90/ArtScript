@@ -11,6 +11,7 @@ import { htmlShell } from "./codegen.ts";
 import { declContext, projectMap } from "./context.ts";
 import { formatAI, formatHuman, type Diagnostic } from "./errors.ts";
 import { parse } from "./parser.ts";
+import { applyPatch } from "./patch.ts";
 import { printProgram } from "./printer.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -24,6 +25,8 @@ const HELP = `art ${PKG.version} — compilador de ArtScript
   art build [ruta] [--out dist]     compila para producción
   art check [ruta] [--ai]           verifica tipos; --ai = JSON por línea
   art fmt [ruta] [--write]          formato canónico (sin --write solo muestra)
+  art patch [archivo|-] [--dir ruta] [--dry-run] [--ai]
+                                    aplica cambios estructurados (lee stdin sin archivo)
   art context [Nombre] [--dir ruta] [--budget N]
                                     contexto compacto para IA (sin nombre: mapa del proyecto)
   art ast <archivo>                 AST en JSON
@@ -180,6 +183,23 @@ switch (cmd) {
     const loc = flags.has("--loc");
     const program = parse(readFileSync(pos[0], "utf8"), pos[0]);
     console.log(JSON.stringify(program, (k, v) => (k === "loc" && !loc ? undefined : v), 1));
+    break;
+  }
+
+  case "patch": {
+    const ai = flags.has("--ai");
+    const target = (flag("--dir") as string) ?? defaultTarget();
+    const text = pos[0] && pos[0] !== "-" ? readFileSync(pos[0], "utf8") : readFileSync(0, "utf8");
+    const r = applyPatch(sources(target), text);
+    if (r.diagnostics.length) { report(r.diagnostics, ai); process.exit(1); }
+    if (flags.has("--dry-run")) {
+      for (const f of r.changed) console.log(`--- ${f}\n${r.files[f]}`);
+      break;
+    }
+    // New files from `add file.art` go next to the project's other sources.
+    const base = isDir(target) ? target : dirname(target);
+    for (const f of r.changed) writeFileSync(existsSync(f) || f.includes("/") ? f : join(base, f), r.files[f]);
+    console.log(ai ? JSON.stringify({ ok: true, changed: r.changed }) : r.changed.length ? `ok: ${r.changed.join(", ")} actualizado(s)` : "ok: sin cambios");
     break;
   }
 

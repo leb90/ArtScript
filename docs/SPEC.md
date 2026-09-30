@@ -94,6 +94,27 @@ JavaScript: literales, `` `template ${x}` ``, `a.b`, `a?.b`, `a[i]`, `f(x)`, `x 
 - No se puede asignar a `computed` ni a props directamente.
 - Nombres, elementos, props y flags desconocidos → error con sugerencia.
 
+## Modificar código existente: `art patch`
+
+Para cambiar código que ya existe, respondé con un bloque ```` ```patch ```` en vez de reescribir archivos:
+
+```patch
+replace Todos/column/title
+  title "Mis tareas"
+insert after Todos/column/row
+  text "Escribí y presioná Enter" muted
+append Todos
+  fn clearDone() {
+    todos = todos.filter(t => !t.done)
+  }
+set Todos/column gap=6 -align
+remove Todos/column/if/else/text
+```
+
+- Operaciones: `replace`, `insert before`, `insert after`, `append` (hijos de un nodo, o miembros/vista de un componente, o campos de un model), `remove`, `set` (props en la misma línea; `-nombre` quita), `add [archivo.art]` (declaraciones nuevas).
+- Rutas: `Componente/tag/tag[n]` (n = índice desde 0 entre hermanos con el mismo tag; también `if`, `for`, `if/else`), `Componente.miembro`, `Modelo.campo`. `art context Componente` lista las rutas.
+- Se aplica en orden y es atómico: si algo falla, no cambia nada.
+
 ## Herramientas
 
 ```

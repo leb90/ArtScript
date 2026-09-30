@@ -74,6 +74,7 @@ function section(files: { path: string; data: ResultFile }[]): string {
   }
   out.push("### Methodology and limitations", "",
     "- Each task is the same functional request for every stack (6 create, 2 modify). Claude gets the task, returns files, and the harness validates them: ArtScript with its compiler, React with strict `tsc`, Svelte with its compiler. Errors are fed back, up to 3 attempts.",
+    "- In the 2 modify tasks each stack may use its cheapest edit format: ArtScript an `art patch`, React and Svelte search/replace edit blocks (like a coding agent's Edit tool). Full files are also accepted. Runs before 2026-10-01 had no edit formats: every stack returned full files.",
     "- Cost is computed from the real `usage` the API returns: the ArtScript spec in the system prompt, retries and thinking tokens (billed as output) all count.",
     "- ArtScript's system prompt includes its ~1.2K-token spec, which is served from the prompt cache after the first request; the \"without prompt cache\" column prices those tokens at the full input rate.",
     "- Validation checks that code compiles and typechecks, not runtime behavior. Svelte is validated without TypeScript type checking, which favors it.",

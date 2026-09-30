@@ -81,3 +81,32 @@ export function extractFiles(text: string): Files {
   for (const m of text.matchAll(/```([\w./-]+\.(?:art|tsx|ts|svelte))[^\n]*\n([\s\S]*?)```/g)) out[m[1]] = m[2];
   return out;
 }
+
+// Extracts an `art patch` from a ```patch block.
+export function extractPatch(text: string): string | null {
+  return /```patch\n([\s\S]*?)```/.exec(text)?.[1] ?? null;
+}
+
+// Applies search/replace edit blocks (the way agents edit React/Svelte files):
+//   ```edit App.tsx
+//   <<<<<<< SEARCH
+//   old text (must appear exactly once)
+//   =======
+//   new text
+//   >>>>>>> REPLACE
+//   ```
+export function applyEdits(base: Files, text: string): { files: Files } | { errors: string[] } {
+  const files = { ...base };
+  const errors: string[] = [];
+  for (const block of text.matchAll(/```edit ([\w./-]+)\n([\s\S]*?)```/g)) {
+    const name = block[1];
+    if (!(name in files)) { errors.push(`edit: no existe el archivo ${name}; archivos: ${Object.keys(files).join(", ")}`); continue; }
+    for (const pair of block[2].matchAll(/<<<<<<< SEARCH\n([\s\S]*?)\n?=======\n([\s\S]*?)\n?>>>>>>> REPLACE/g)) {
+      const [, search, replace] = pair;
+      const count = files[name].split(search).length - 1;
+      if (count !== 1) { errors.push(`edit ${name}: el texto SEARCH aparece ${count} veces (debe aparecer exactamente una):\n${search}`); continue; }
+      files[name] = files[name].replace(search, () => replace);
+    }
+  }
+  return errors.length ? { errors } : { files };
+}

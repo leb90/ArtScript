@@ -40,6 +40,18 @@ node src/cli.ts init my-app
 cd my-app && npm install && npm run dev
 ```
 
+To change existing code, an AI can send a small `art patch` instead of rewriting files; the whole patch is typechecked and applied atomically:
+
+```
+replace Todos/column/title
+  title "My tasks"
+insert after Todos/column/row
+  text "Type and press Enter" muted
+set Todos/column gap=6
+```
+
+`art context <Component>` lists every addressable path.
+
 Other commands: `npm run art -- <command>` (for example `npm run art -- check examples/todo --ai`). Full list: `npm run art -- help`.
 
 Not published on npm yet (see [docs/PUBLISHING.md](docs/PUBLISHING.md)).
@@ -55,6 +67,7 @@ src/
   codegen.ts    AST → ES module that builds the DOM directly (no virtual DOM)
   printer.ts    AST → canonical code (fmt, errors, context)
   context.ts    compact context for LLMs
+  patch.ts      `art patch`: structured AST edits, atomic and typechecked
   elements.ts   single table of UI primitives
   errors.ts     error catalog and human / AI output formats
   compile.ts    full pipeline

@@ -1,5 +1,5 @@
 import type {
-  ComponentDecl, Decl, Element, Expr, FnDecl, Loc, Member, ModelDecl, ObjProp, Param, Program, Prop, Stmt, TypeRef, ViewNode,
+  ComponentDecl, Decl, Element, Expr, Field, FnDecl, Loc, Member, ModelDecl, ObjProp, Param, Program, Prop, Stmt, TypeRef, ViewNode,
 } from "./ast.ts";
 import { ELEMENTS } from "./elements.ts";
 import { CompileError, diag } from "./errors.ts";
@@ -15,8 +15,19 @@ const ASSIGN_OPS = new Set(["=", "+=", "-=", "*=", "/=", "%=", "**=", "??="]);
 // Equivalent JS forms that are accepted and normalized to one canonical form.
 const CANONICAL: Record<string, string> = { "===": "==", "!==": "!=" };
 
-export function parse(src: string, file: string): Program {
-  return new Parser(lex(src, file)).program();
+export function parse(src: string, file: string, startLine = 1): Program {
+  return new Parser(lex(src, file, startLine)).program();
+}
+
+// Fragment parsers for `art patch`. `line` is the source line where the fragment starts,
+// so errors point at the right line of the patch.
+export function parseComponentBody(src: string, file: string, line: number): { members: Member[]; view: ViewNode[] } {
+  const c = parse(`page __Patch {\n${src}\n}`, file, line - 1).decls[0] as ComponentDecl;
+  return { members: c.members, view: c.view };
+}
+
+export function parseFields(src: string, file: string, line: number): Field[] {
+  return (parse(`model __Patch {\n${src}\n}`, file, line - 1).decls[0] as ModelDecl).fields;
 }
 
 export function parseExpression(src: string, file = "<expr>"): Expr {

@@ -12,7 +12,9 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { TASKS, type Task } from "./tasks.ts";
-import { extractFiles, validate, type Files, type Stack } from "./validate.ts";
+import { formatAI } from "../../src/errors.ts";
+import { applyPatch } from "../../src/patch.ts";
+import { applyEdits, extractFiles, extractPatch, validate, type Files, type Stack } from "./validate.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..", "..");
@@ -63,10 +65,32 @@ function baseFiles(task: Task, stack: Stack): Files {
   return Object.fromEntries(readdirSync(dir).map((f) => [f, readFileSync(join(dir, f), "utf8")]));
 }
 
+// Modification tasks: each stack may answer with its cheapest edit format instead of full files.
+// ArtScript uses `art patch` (documented in its spec); React/Svelte use search/replace blocks,
+// like the Edit tool of coding agents.
+const EDIT_HINT: Record<Stack, string> = {
+  artscript: "Respondé con un bloque ```patch (art patch, ver la spec) con los cambios, o con los archivos completos si lo preferís.",
+  react: "Respondé con bloques de edición, o con los archivos completos si lo preferís. Formato de edición (el texto SEARCH debe coincidir exactamente y una sola vez):\n```edit App.tsx\n<<<<<<< SEARCH\ntexto original\n=======\ntexto nuevo\n>>>>>>> REPLACE\n```",
+  svelte: "Respondé con bloques de edición, o con los archivos completos si lo preferís. Formato de edición (el texto SEARCH debe coincidir exactamente y una sola vez):\n```edit App.svelte\n<<<<<<< SEARCH\ntexto original\n=======\ntexto nuevo\n>>>>>>> REPLACE\n```",
+};
+
 function userPrompt(task: Task, stack: Stack): string {
   const base = baseFiles(task, stack);
   const code = Object.entries(base).map(([n, s]) => `\`\`\`${n}\n${s}\`\`\``).join("\n\n");
-  return code ? `Código actual:\n\n${code}\n\nTarea: ${task.prompt}` : `Tarea: ${task.prompt}`;
+  return code ? `Código actual:\n\n${code}\n\nTarea: ${task.prompt}\n\n${EDIT_HINT[stack]}` : `Tarea: ${task.prompt}`;
+}
+
+// Applies a patch / edit answer to the task's base files; null if the answer has none.
+function applyEditAnswer(task: Task, stack: Stack, text: string): { files: Files } | { errors: string[] } | null {
+  if (!task.base) return null;
+  const base = baseFiles(task, stack);
+  if (stack === "artscript") {
+    const patch = extractPatch(text);
+    if (patch === null) return null;
+    const r = applyPatch(Object.entries(base).map(([file, src]) => ({ file, src })), patch);
+    return r.diagnostics.length ? { errors: r.diagnostics.map(formatAI) } : { files: r.files };
+  }
+  return text.includes("```edit ") ? applyEdits(base, text) : null;
 }
 
 // ---------- cost ----------
@@ -84,7 +108,7 @@ type RunResult = {
   codeTokens: number | null; errors: string[]; stop?: string;
   // Every attempt: the files Claude returned and the errors fed back (empty on the last successful one).
   // Lets retries be diagnosed exactly: `npm run eval:retries -- <results.json>`.
-  history: { files: Files; errors: string[] }[];
+  history: { files: Files; errors: string[]; edit?: string }[]; // `edit`: the patch/edit answer, when used
 };
 
 let spent = 0;
@@ -96,7 +120,7 @@ async function runOne(client: Anthropic, task: Task, stack: Stack, run: number):
   let errors: string[] = [];
   let files: Files = {};
   let stop: string | undefined;
-  const history: { files: Files; errors: string[] }[] = [];
+  const history: { files: Files; errors: string[]; edit?: string }[] = [];
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     if (spent >= MAX_USD) { errors = [`presupuesto agotado (--max-usd ${MAX_USD})`]; return done(false, attempt - 1); }
@@ -122,11 +146,13 @@ async function runOne(client: Anthropic, task: Task, stack: Stack, run: number):
     // Append-only history with the full content (including thinking blocks).
     messages.push({ role: "assistant", content: res.content });
     const text = res.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map((b) => b.text).join("\n");
-    files = extractFiles(text);
-    errors = await validate(stack, files);
-    history.push({ files, errors: errors.slice(0, 10) });
+    const edited = applyEditAnswer(task, stack, text);
+    if (edited && "errors" in edited) { files = {}; errors = edited.errors; }
+    else { files = edited ? edited.files : extractFiles(text); errors = await validate(stack, files); }
+    history.push({ files, errors: errors.slice(0, 10), ...(edited ? { edit: text } : {}) });
     if (!errors.length) return done(true, attempt);
-    messages.push({ role: "user", content: `El código tiene errores:\n${errors.join("\n")}\n\nDevolvé los archivos completos corregidos.` });
+    const fix = edited ? "Devolvé el cambio corregido (se aplica sobre el código original)." : "Devolvé los archivos completos corregidos.";
+    messages.push({ role: "user", content: `El código tiene errores:\n${errors.join("\n")}\n\n${fix}` });
   }
   return done(false, MAX_ATTEMPTS);
 
@@ -214,6 +240,19 @@ async function dryRun() {
     const errs = await validate(stack, broken[stack]);
     console.log(`${errs.length ? "✓" : "✗"} detecta error en ${stack}: ${errs[0] ?? "NO DETECTÓ"}`);
   }
+  const todoMod = TASKS.find((t) => t.id === "todo-mod")!;
+  const answers: Record<Stack, string> = {
+    artscript: "```patch\ninsert after Todos/column/for\n  button \"Borrar completadas\" -> todos = todos.filter(t => !t.done)\n```",
+    react: "```edit Todos.tsx\n<<<<<<< SEARCH\n      <h2>Tareas</h2>\n=======\n      <h2>Tareas</h2>\n      <button onClick={() => setTodos([])}>Borrar</button>\n>>>>>>> REPLACE\n```",
+    svelte: "```edit Todos.svelte\n<<<<<<< SEARCH\n  <h2>Tareas</h2>\n=======\n  <h2>Tareas</h2>\n  <button onclick={() => (todos = [])}>Borrar</button>\n>>>>>>> REPLACE\n```",
+  };
+  for (const stack of STACK_IDS) {
+    const r = applyEditAnswer(todoMod, stack, answers[stack]);
+    const errs = !r ? ["no se detectó la edición"] : "errors" in r ? r.errors : await validate(stack, r.files);
+    console.log(`${errs.length ? "✗" : "✓"} edición aplicada y válida en ${stack}${errs.length ? ": " + errs[0] : ""}`);
+  }
+  const bad = applyEditAnswer(todoMod, "react", "```edit Todos.tsx\n<<<<<<< SEARCH\nno existe\n=======\nx\n>>>>>>> REPLACE\n```");
+  console.log(`${bad && "errors" in bad ? "✓" : "✗"} detecta SEARCH inexistente`);
   const text = "```app.art\npage A {\n}\n```\nnada\n```App.tsx\nx\n```";
   console.log(`✓ extracción de archivos: ${Object.keys(extractFiles(text)).join(", ")}`);
   const calls = TASK_IDS.length * STACK_IDS.length * RUNS;
