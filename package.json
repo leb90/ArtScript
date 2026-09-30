@@ -52,6 +52,7 @@
     "build": "rm -rf lib && tsc -p tsconfig.build.json",
     "bench": "node src/cli.ts bench",
     "eval": "node benchmarks/eval/run.ts",
+    "eval:report": "node benchmarks/eval/report.ts",
     "art": "node src/cli.ts",
     "prepack": "npm run build",
     "prepublishOnly": "npm test && npm run typecheck"
