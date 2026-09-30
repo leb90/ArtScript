@@ -14,9 +14,9 @@
 ## Checklist antes de publicar
 
 1. [ ] MVP estable: `api`/backend, `art patch`, `for` con key, `fmt` que preserve comentarios.
-2. [ ] Eval de costo con agentes con resultado favorable (ver `ARTSCRIPT_VIABILIDAD.md` §12).
+2. [ ] Eval de costo con agentes (`npm run eval`) con resultado favorable.
 3. [ ] Decidir versión inicial (`0.1.0` señala "experimental"; semver 0.x permite cambios que rompen).
-4. [ ] README en inglés (o bilingüe) para alcance global.
+4. [x] README en inglés.
 5. [ ] Crear el paquete `create-artscript` para que funcione `npm create artscript@latest mi-app` (hoy existe `npx art init mi-app`).
 6. [ ] Quitar `"private": true` de `package.json`.
 7. [ ] `npm login` (cuenta npm del autor, con 2FA).

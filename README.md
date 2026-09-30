@@ -16,7 +16,7 @@ page Counter "/" {
 }
 ```
 
-Status: **v0.1, MVP foundation**. See [ARTSCRIPT_VIABILIDAD.md](ARTSCRIPT_VIABILIDAD.md) (Spanish) for the vision, risks and roadmap.
+Status: **v0.1, MVP foundation**.
 
 ## Usage
 
@@ -74,7 +74,7 @@ tests/               parser, checker, runtime, e2e (in-memory DOM), tools, docs
 | counter | 92 | 181 | 154 |
 | todo | 245 | 471 | 400 |
 
-This only measures **source code size**. It doesn't yet include the spec in context, agent iterations or USD cost, so no real savings can be claimed from it (see §12 of the viability document). Also, `o200k_base` is OpenAI's tokenizer; Claude's differs.
+This only measures **source code size**. It doesn't yet include the spec in context, agent iterations or USD cost, so no real savings can be claimed from it (that's what the agent cost eval below is for). Also, `o200k_base` is OpenAI's tokenizer; Claude's differs.
 
 ## Agent cost eval
 

@@ -1,6 +1,6 @@
 // Measures the source code of equivalent tasks in ArtScript, React+TS and Svelte.
 // Source size only. It does NOT measure spec tokens, agent iterations or USD cost
-// (see ARTSCRIPT_VIABILIDAD.md §12). Those numbers come from the agent eval (benchmarks/eval).
+// Those numbers come from the agent eval (benchmarks/eval).
 import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -46,7 +46,7 @@ export async function runBench() {
       console.log(`${task.padEnd(10)} ${stack.padEnd(10)} ${String(x.bytes).padStart(7)} ${String(x.lines).padStart(7)} ${String(x.tokens).padStart(7)} ${vs.padStart(9)}`);
     }
   }
-  console.log("\nSolo tamaño de fuente. Falta: spec en contexto, iteraciones de agente y costo USD (ver §12).");
+  console.log("\nSolo tamaño de fuente. Falta: spec en contexto, iteraciones de agente y costo USD (ver npm run eval).");
 
   const out = join(HERE, "results");
   mkdirSync(out, { recursive: true });

@@ -1,5 +1,5 @@
 // Real cost eval: Claude solves the same tasks in ArtScript, React+TS and Svelte.
-// Main metric (ARTSCRIPT_VIABILIDAD.md §12): USD per solved task, counting the spec,
+// Main metric: USD per solved task, counting the spec,
 // retries and thinking tokens (billed as output).
 //
 //   npm run eval -- --dry-run                     validates the harness without calling the API

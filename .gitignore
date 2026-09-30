@@ -4,3 +4,8 @@ lib/
 *.tgz
 .env
 benchmarks/eval/.work/
+
+# Local-only docs (never committed)
+/CLAUDE.md
+/ARTSCRIPT_VIABILIDAD.md
+/resume.MD
