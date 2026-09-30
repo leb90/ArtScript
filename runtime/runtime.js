@@ -109,6 +109,7 @@ export function $attr(n, name, fn) {
     else n.setAttribute(name, v === true ? "" : v);
   });
 }
+export function $class(n, cls, fn) { effect(() => { n.classList.toggle(cls, !!fn()); }); }
 export function $style(n, prop, fn) { effect(() => { n.style[prop] = str(fn()); }); }
 export function $on(n, kind, fn) {
   const type = kind === "enter" ? "keydown" : kind;

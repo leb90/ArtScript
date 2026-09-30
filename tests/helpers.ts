@@ -68,6 +68,13 @@ export class FElement extends FNode {
   src = "";
   alt = "";
   id = "";
+  classList = {
+    toggle: (c: string, on: boolean) => {
+      const set = new Set(this.className.split(" ").filter(Boolean));
+      if (on) set.add(c); else set.delete(c);
+      this.className = [...set].join(" ");
+    },
+  };
   constructor(tag: string) {
     super();
     this.tagName = tag;

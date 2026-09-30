@@ -73,6 +73,7 @@ column gap=4 align=center {
 | `form` | — | submit | gap pad align justify | |
 
 - Todos aceptan `class style id`.
+- Flag condicional: `text t.title muted=t.done` aplica el flag mientras el valor sea `true`.
 - `gap=4` y `pad=4`: 1 unidad = 4px. `align=start|center|end|stretch`. `justify=start|center|end|between|around`. `cols=3`.
 - `type=text|number|email|password|checkbox|date`. Con `type=checkbox`, `input` enlaza un Bool.
 - Valores de prop: literal, nombre, `a.b`, llamada o `( expresión )` entre paréntesis.
@@ -83,7 +84,7 @@ column gap=4 align=center {
 ## Expresiones
 
 JavaScript: literales, `` `template ${x}` ``, `a.b`, `a?.b`, `a[i]`, `f(x)`, `x => x * 2`, `{ a, ...b }`, `[...xs]`, `? :`, `??`, `&&`, `||`.
-`==` y `!=` compilan a `===` y `!==`. Globales JS disponibles: `Math JSON Date crypto fetch console localStorage`, etc.
+`==` y `!=` compilan a `===` y `!==`. Una línea que empieza con `?`, `:`, `.`, `&&`, `||` o `??` continúa la expresión anterior (ternarios y cadenas en varias líneas). Globales JS disponibles: `Math JSON Date crypto fetch console localStorage`, etc.
 
 ## Reglas que el compilador verifica
 

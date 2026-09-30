@@ -242,6 +242,11 @@ class Checker {
         }
         continue;
       }
+      // Conditional flag: `text title muted=todo.done` applies the flag while the value is true.
+      if (spec.flags.includes(p.name)) {
+        this.expectTy(p.value, this.infer(p.value, scope), BOOL);
+        continue;
+      }
       if (!spec.props.includes(p.name)) {
         this.err("UNKNOWN_PROP", `'${el.tag}' no acepta la prop '${p.name}'`, p.loc, {
           expr: p.name, expected: spec.props.join("|"), fixes: suggest(p.name, [...spec.props, ...spec.flags]),

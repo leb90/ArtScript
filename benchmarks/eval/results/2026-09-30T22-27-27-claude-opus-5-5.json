@@ -1,0 +1,131 @@
+{
+  "model": "claude-opus-5-5",
+  "effort": "medium",
+  "runs": 3,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 4,
+    "out": 20,
+    "cacheRead": 0.2,
+    "cacheWrite": 5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "todo",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 156,
+        "output": 726,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0155006,
+      "codeTokens": 434,
+      "errors": [],
+      "stop": "end_turn",
+      "attemptErrors": []
+    },
+    {
+      "task": "todo",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 156,
+        "output": 1103,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.023040599999999998,
+      "codeTokens": 432,
+      "errors": [],
+      "stop": "end_turn",
+      "attemptErrors": []
+    },
+    {
+      "task": "todo",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 2,
+      "usage": {
+        "input": 1243,
+        "output": 1377,
+        "cacheRead": 3566,
+        "cacheWrite": 0
+      },
+      "usd": 0.033225199999999996,
+      "codeTokens": 491,
+      "errors": [],
+      "stop": "end_turn",
+      "attemptErrors": [
+        [
+          "{\"code\":\"E2002\",\"type\":\"UNKNOWN_PROP\",\"loc\":\"app.art:11:23\",\"at\":\"TodoItem\",\"expr\":\"muted\",\"expected\":\"class|style|id\",\"fixes\":[\"muted\"]}"
+        ]
+      ]
+    },
+    {
+      "task": "tabs",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 2,
+      "usage": {
+        "input": 815,
+        "output": 879,
+        "cacheRead": 3566,
+        "cacheWrite": 0
+      },
+      "usd": 0.0215532,
+      "codeTokens": 331,
+      "errors": [],
+      "stop": "end_turn",
+      "attemptErrors": [
+        [
+          "{\"code\":\"E0003\",\"type\":\"UNEXPECTED_TOKEN\",\"loc\":\"app.art:6:5\",\"expected\":\"un elemento de UI, 'if' o 'for'\",\"actual\":\"'?'\"}"
+        ]
+      ]
+    },
+    {
+      "task": "tabs",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 88,
+        "output": 573,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.0121686,
+      "codeTokens": 327,
+      "errors": [],
+      "stop": "end_turn",
+      "attemptErrors": []
+    },
+    {
+      "task": "tabs",
+      "stack": "artscript",
+      "run": 3,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 88,
+        "output": 676,
+        "cacheRead": 1783,
+        "cacheWrite": 0
+      },
+      "usd": 0.014228600000000001,
+      "codeTokens": 307,
+      "errors": [],
+      "stop": "end_turn",
+      "attemptErrors": []
+    }
+  ]
+}

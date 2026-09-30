@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { analyze } from "../src/checker.ts";
 import { parseProject } from "../src/compile.ts";
 import { declContext, estimateTokens, projectMap } from "../src/context.ts";
-import { formatAI } from "../src/errors.ts";
+import { formatAI, suggest } from "../src/errors.ts";
 import { parse } from "../src/parser.ts";
 import { printProgram } from "../src/printer.ts";
 
@@ -56,4 +56,8 @@ test("context: --budget recorta a outline y luego a líneas", () => {
 test("errores --ai: una línea JSON sin campos vacíos", () => {
   const line = formatAI({ code: "E1001", type: "UNDEFINED_NAME", msg: "x", loc: { file: "a.art", line: 3, col: 8 }, expr: "cont", fixes: ["count"] });
   assert.equal(line, '{"code":"E1001","type":"UNDEFINED_NAME","loc":"a.art:3:8","expr":"cont","fixes":["count"]}');
+});
+
+test("suggest: never offers the same name as a fix", () => {
+  assert.deepEqual(suggest("muted", ["muted", "mute", "bold"]), ["mute"]);
 });

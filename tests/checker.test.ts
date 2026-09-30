@@ -95,3 +95,15 @@ test("nombres duplicados y tipos desconocidos", () => {
   assert.deepEqual(types("page P {\n  state a = 1\n  state a = 2\n}"), ["DUPLICATE_NAME"]);
   assert.deepEqual(types("model M {\n  x: Strng\n}")[0], "UNKNOWN_TYPE");
 });
+
+test("conditional flags take a Bool", () => {
+  const src = "model T {\n  title: String\n  done: Bool\n}\ncomponent C(t: T) {\n  text t.title muted=t.done\n}";
+  assert.deepEqual(types(src), []);
+  assert.deepEqual(types('page P {\n  text "a" muted="yes"\n}'), ["TYPE_MISMATCH"]);
+});
+
+test("suggestions never repeat the wrong name itself", () => {
+  const [d] = errs('page P {\n  row muted=true {\n  }\n}');
+  assert.equal(d.type, "UNKNOWN_PROP");
+  assert.ok(!(d.fixes ?? []).includes("muted"));
+});

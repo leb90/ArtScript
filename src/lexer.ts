@@ -18,6 +18,10 @@ const OPS = [
   "+", "-", "*", "/", "%", "<", ">", "=", "!", "?", ":", ".", ",", ";", "(", ")", "[", "]", "{", "}",
 ];
 
+// A line starting with one of these continues the previous expression (multi-line ternaries,
+// method chains, long conditions), as LLMs often write it that way.
+const CONTINUATION = /^[ \t\r]*(\?(?!\?)|:|\.(?!\.\.)|&&|\|\||\?\?)/;
+
 const ESCAPES: Record<string, string> = { n: "\n", t: "\t", r: "\r", "\\": "\\", '"': '"', "'": "'", "`": "`", $: "$", "0": "\0" };
 
 export function lex(src: string, file: string, startLine = 1, startCol = 1): Token[] {
@@ -42,7 +46,8 @@ export function lex(src: string, file: string, startLine = 1, startCol = 1): Tok
     if (c === "\n") {
       const l = loc();
       adv();
-      if (depth.length === 0 || depth[depth.length - 1] === "{") {
+      const continues = CONTINUATION.test(src.slice(i));
+      if (!continues && (depth.length === 0 || depth[depth.length - 1] === "{")) {
         if (out.length && out[out.length - 1].t !== "nl") out.push({ t: "nl", v: "\n", loc: l });
       }
       continue;

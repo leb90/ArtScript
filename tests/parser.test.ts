@@ -101,3 +101,28 @@ test("parser: error con ubicación, esperado y actual", () => {
     return d.type === "UNEXPECTED_TOKEN" && d.loc.line === 2 && d.expected === "un nombre" && d.actual === "'='";
   });
 });
+
+test("parser: a line starting with ? : . && || ?? continues the expression", () => {
+  const p = parse(`page P {
+  state tab = "a"
+  text tab == "a"
+    ? "Perfil"
+    : "Ajustes"
+  text [1, 2, 3]
+    .filter(x => x > 1)
+    .length
+  if tab == "a"
+    && tab != "b" {
+    text "ok"
+  }
+}`, "t");
+  const c = p.decls[0] as ComponentDecl;
+  assert.equal(c.view.length, 3);
+  assert.equal(printExpr((c.view[0] as Element).content!), 'tab == "a" ? "Perfil" : "Ajustes"');
+  assert.equal(printExpr((c.view[1] as Element).content!), "[1, 2, 3].filter(x => x > 1).length");
+});
+
+test("lexer: spread at the start of a line is not a continuation", () => {
+  const p = parse("page P {\n  state a = [1]\n  state b = [\n    ...a\n  ]\n}", "t");
+  assert.equal((p.decls[0] as ComponentDecl).members.length, 2);
+});

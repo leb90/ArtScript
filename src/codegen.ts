@@ -122,6 +122,7 @@ class ComponentGen {
     const spec = ELEMENTS[el.tag];
     const v = this.v();
     const classes = [spec.cls, ...el.props.filter((p) => !p.value).map((p) => "a-" + p.name)].filter(Boolean).join(" ");
+    const isFlag = (name: string) => spec.flags.includes(name);
     this.emit(`const ${v} = $.$el(${parent}, "${spec.html}"${classes ? `, "${classes}"` : ""});`);
 
     const typeProp = el.props.find((p) => p.name === "type")?.value;
@@ -132,7 +133,9 @@ class ComponentGen {
       const val = p.value;
       const lit = literal(val);
       const word = val.kind === "Ident" && !scope.get(val.name) ? val.name : lit !== null ? String(lit) : null;
-      if (SPACING_PROPS.has(p.name)) {
+      if (isFlag(p.name)) {
+        this.emit(`$.$class(${v}, "a-${p.name}", () => ${this.expr(val, scope)});`);
+      } else if (SPACING_PROPS.has(p.name)) {
         const css = p.name === "pad" ? "padding" : "gap";
         if (typeof lit === "number") this.emit(`${v}.style.${css} = "${lit * 4}px";`);
         else this.emit(`$.$style(${v}, "${css}", () => ${this.expr(val, scope)} * 4 + "px");`);

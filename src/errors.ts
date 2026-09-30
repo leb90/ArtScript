@@ -82,6 +82,7 @@ export function formatAI(d: Diagnostic): string {
 export function suggest(name: string, candidates: Iterable<string>, max = 3): string[] {
   const scored: [string, number][] = [];
   for (const c of candidates) {
+    if (c === name) continue; // suggesting the same name is never a fix
     const d = levenshtein(name.toLowerCase(), c.toLowerCase());
     if (d <= Math.max(2, Math.floor(name.length / 3))) scored.push([c, d]);
   }

@@ -83,3 +83,17 @@ test("props de layout y flags se traducen a estilos y clases", async () => {
   assert.deepEqual(grid.style, { gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "8px", padding: "16px" });
   assert.equal(all(root, "button")[0].className, "a-primary");
 });
+
+test("conditional flag toggles its class reactively", async () => {
+  const { root } = await mountApp(`page P {
+  state done = false
+  text "task" bold muted=done
+  button "t" -> done = !done
+}`);
+  const span = all(root, "span")[0];
+  assert.equal(span.className, "a-bold");
+  all(root, "button")[0].click();
+  assert.equal(span.className, "a-bold a-muted");
+  all(root, "button")[0].click();
+  assert.equal(span.className, "a-bold");
+});
