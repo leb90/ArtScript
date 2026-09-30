@@ -20,18 +20,27 @@ Estado: **v0.1, MVP base**. Ver [ARTSCRIPT_VIABILIDAD.md](ARTSCRIPT_VIABILIDAD.m
 
 ## Uso
 
-Requiere Node 24+ (ejecuta TypeScript nativamente; el compilador no tiene dependencias de runtime).
+Requiere Node 24+.
 
 ```sh
-npm install                          # solo herramientas de desarrollo (tsc, tokenizer)
-node src/cli.ts dev examples/todo    # http://localhost:3000 con recarga automática
-node src/cli.ts build examples/todo  # → examples/todo/dist/
-node src/cli.ts check examples/todo --ai
-node src/cli.ts context TodoItem --dir examples/todo
-node src/cli.ts fmt examples/todo --write
-node src/cli.ts bench
-npm test && npm run typecheck
+npm install
+npm run dev            # ejemplo todo en http://localhost:3000 (se recarga al guardar)
+npm run dev:counter    # ejemplo contador
+npm test               # tests
+npm run typecheck      # tipos del compilador
+npm run bench          # tokens y bytes vs React/Svelte
 ```
+
+Crear un proyecto nuevo (queda con `npm run dev`, `npm run build` y `npm run check`):
+
+```sh
+node src/cli.ts init mi-app
+cd mi-app && npm install && npm run dev
+```
+
+Otros comandos: `npm run art -- <comando>` (por ejemplo `npm run art -- check examples/todo --ai`). Lista completa: `npm run art -- help`.
+
+Todavía no está publicado en npm (ver [docs/PUBLISHING.md](docs/PUBLISHING.md)).
 
 ## Estructura
 
@@ -52,6 +61,7 @@ runtime/runtime.js   signals + helpers de DOM (~2.3 KB brotli)
 examples/            counter, todo
 benchmarks/          tareas equivalentes en ArtScript / React / Svelte + medición
 docs/SPEC.md         spec compacta para dar a una IA (~1.1K tokens)
+templates/default/   proyecto base que crea `art init`
 tests/               parser, checker, runtime, e2e (DOM en memoria), tools, docs
 ```
 

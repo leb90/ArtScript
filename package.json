@@ -1,20 +1,33 @@
 {
   "name": "artscript",
   "version": "0.1.0",
+  "private": true,
   "description": "Lenguaje web AI-native que compila a JavaScript. Menos tokens, menos contexto, menos errores.",
-  "type": "module",
+  "keywords": ["artscript", "language", "compiler", "web", "ai", "llm", "reactive", "signals"],
+  "author": "Leandro Bisceglie",
   "license": "MIT",
-  "bin": {
-    "art": "src/cli.ts"
+  "homepage": "https://github.com/leb90/ArtScript#readme",
+  "repository": { "type": "git", "url": "git+https://github.com/leb90/ArtScript.git" },
+  "bugs": { "url": "https://github.com/leb90/ArtScript/issues" },
+  "type": "module",
+  "bin": { "art": "lib/cli.js" },
+  "exports": {
+    ".": { "types": "./lib/compile.d.ts", "default": "./lib/compile.js" },
+    "./runtime": "./runtime/runtime.js"
   },
-  "engines": {
-    "node": ">=24"
-  },
+  "files": ["lib", "runtime", "templates", "docs/SPEC.md"],
+  "engines": { "node": ">=24" },
   "scripts": {
+    "dev": "node src/cli.ts dev examples/todo",
+    "start": "node src/cli.ts dev examples/todo",
+    "dev:counter": "node src/cli.ts dev examples/counter",
     "test": "node --test tests/*.test.ts",
     "typecheck": "tsc -p .",
+    "build": "rm -rf lib && tsc -p tsconfig.build.json",
+    "bench": "node src/cli.ts bench",
     "art": "node src/cli.ts",
-    "bench": "node src/cli.ts bench"
+    "prepack": "npm run build",
+    "prepublishOnly": "npm test && npm run typecheck"
   },
   "devDependencies": {
     "@types/node": "^26.6.3",

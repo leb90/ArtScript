@@ -1,0 +1,13 @@
+page Home "/" {
+  state count = 0
+
+  column gap=4 align=center pad=8 {
+    title "Hola ArtScript"
+    text "Editá src/app.art y guardá: la página se recarga sola." muted
+    row gap=2 {
+      button "-" -> count--
+      text count bold
+      button "+" primary -> count++
+    }
+  }
+}

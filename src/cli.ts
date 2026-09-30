@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // CLI de ArtScript: `art <comando>`. Salida corta; con --ai, machine-readable.
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, watch, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, watch, writeFileSync } from "node:fs";
 import { createServer, type ServerResponse } from "node:http";
-import { dirname, extname, join, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { basename, dirname, extname, join, relative, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { brotliCompressSync, gzipSync } from "node:zlib";
 import { analyze } from "./checker.ts";
 import { compile, parseProject, type Source } from "./compile.ts";
@@ -15,17 +15,21 @@ import { printProgram } from "./printer.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const RUNTIME = join(ROOT, "runtime", "runtime.js");
+const PKG = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
 
-const HELP = `art — compilador de ArtScript
+const HELP = `art ${PKG.version} — compilador de ArtScript
 
-  art build [ruta] [--out dir]      compila a dist/ (index.html, app.js, runtime.js)
+  art init <nombre>                 crea un proyecto nuevo
   art dev [ruta] [--port 3000]      servidor de desarrollo con recarga automática
+  art build [ruta] [--out dist]     compila para producción
   art check [ruta] [--ai]           verifica tipos; --ai = JSON por línea
   art fmt [ruta] [--write]          formato canónico (sin --write solo muestra)
-  art ast <archivo>                 AST en JSON
   art context [Nombre] [--dir ruta] [--budget N]
                                     contexto compacto para IA (sin nombre: mapa del proyecto)
-  art bench                         benchmarks de tamaño y tokens (estimados)
+  art ast <archivo>                 AST en JSON
+  art bench                         benchmarks (solo dentro del repo de ArtScript)
+
+  [ruta] por defecto: ./src si existe, si no el directorio actual.
 `;
 
 // ---------- argumentos ----------
@@ -55,9 +59,18 @@ function findArt(dir: string): string[] {
   return out.sort();
 }
 
-function sources(target = "."): Source[] {
+// Convención de proyecto: el código vive en ./src; si no existe, en el directorio actual.
+const defaultTarget = () => (existsSync("src") && statSync("src").isDirectory() ? "src" : ".");
+const isDir = (p: string) => existsSync(p) && statSync(p).isDirectory();
+// Raíz del proyecto: el padre de `src/`, o el directorio indicado.
+function projectRoot(target: string): string {
+  const dir = isDir(target) ? target : dirname(target);
+  return basename(resolve(dir)) === "src" ? dirname(dir) : dir;
+}
+
+function sources(target: string): Source[] {
   if (!existsSync(target)) die(`no existe: ${target}`);
-  const files = statSync(target).isDirectory() ? findArt(target) : [target];
+  const files = isDir(target) ? findArt(target) : [target];
   if (!files.length) die(`no hay archivos .art en ${target}`);
   return files.map((f) => {
     const rel = relative(process.cwd(), f);
@@ -87,38 +100,51 @@ function sizes(files: Record<string, string>): string {
   return [header, ...rows.map((r) => line(...r)), line("total", ...total)].join("\n");
 }
 
-function build(target: string, outDir: string, quiet = false): boolean {
+// Compila en memoria: { "index.html", "app.js", "runtime.js" } o los diagnósticos.
+function buildFiles(target: string): { files: Record<string, string> } | { diagnostics: Diagnostic[] } {
   const r = compile(sources(target));
-  if (!r.js) {
-    report(r.diagnostics, false);
-    return false;
-  }
-  mkdirSync(outDir, { recursive: true });
-  const runtime = readFileSync(RUNTIME, "utf8");
-  const html = htmlShell();
-  writeFileSync(join(outDir, "app.js"), r.js);
-  writeFileSync(join(outDir, "runtime.js"), runtime);
-  writeFileSync(join(outDir, "index.html"), html);
-  if (!quiet) console.log(`build ok → ${relative(process.cwd(), outDir) || outDir}\n${sizes({ "app.js": r.js, "runtime.js": runtime, "index.html": html })}`);
-  return true;
-}
-
-function defaultOut(target: string): string {
-  const base = existsSync(target) && statSync(target).isDirectory() ? target : dirname(target);
-  return join(base, "dist");
+  if (!r.js) return { diagnostics: r.diagnostics };
+  return { files: { "index.html": htmlShell(), "app.js": r.js, "runtime.js": readFileSync(RUNTIME, "utf8") } };
 }
 
 // ---------- comandos ----------
 switch (cmd) {
+  case "init": {
+    const name = pos[0];
+    if (!name) die("uso: art init <nombre>");
+    if (existsSync(name) && readdirSync(name).length) die(`'${name}' ya existe y no está vacío`);
+    const tpl = join(ROOT, "templates", "default");
+    cpSync(tpl, name, { recursive: true });
+    // npm no publica archivos llamados .gitignore: en el template se guarda como `gitignore`.
+    renameSync(join(name, "gitignore"), join(name, ".gitignore"));
+    cpSync(join(ROOT, "docs", "SPEC.md"), join(name, "ARTSCRIPT.md"));
+    // Mientras no esté publicado en npm, el proyecto usa esta copia local de ArtScript.
+    const local = !ROOT.split(/[\\/]/).includes("node_modules");
+    const pkgPath = join(name, "package.json");
+    const pkg = readFileSync(pkgPath, "utf8")
+      .replace("__NAME__", basename(resolve(name)).toLowerCase().replace(/[^a-z0-9-]/g, "-"))
+      .replace("__ARTSCRIPT__", local ? `file:${ROOT}` : `^${PKG.version}`);
+    writeFileSync(pkgPath, pkg);
+    console.log(`proyecto creado en ${name}/\n\n  cd ${name}\n  npm install\n  npm run dev\n`);
+    break;
+  }
+
   case "build": {
-    const target = pos[0] ?? ".";
-    if (!build(target, (flag("--out") as string) ?? defaultOut(target))) process.exit(1);
+    const target = pos[0] ?? defaultTarget();
+    const outDir = (flag("--out") as string) ?? join(projectRoot(target), "dist");
+    const r = buildFiles(target);
+    if ("diagnostics" in r) { report(r.diagnostics, false); process.exit(1); }
+    mkdirSync(outDir, { recursive: true });
+    for (const [f, s] of Object.entries(r.files)) writeFileSync(join(outDir, f), s);
+    const pub = join(projectRoot(target), "public");
+    if (isDir(pub)) cpSync(pub, outDir, { recursive: true });
+    console.log(`build ok → ${relative(process.cwd(), outDir) || outDir}\n${sizes(r.files)}`);
     break;
   }
 
   case "check": {
     const ai = flags.has("--ai");
-    const src = sources(pos[0] ?? ".");
+    const src = sources(pos[0] ?? defaultTarget());
     const { program, diagnostics } = parseProject(src);
     const diags = diagnostics.length ? diagnostics : analyze(program).diagnostics;
     report(diags, ai);
@@ -129,7 +155,7 @@ switch (cmd) {
   case "fmt": {
     const write = flags.has("--write");
     let failed = false;
-    for (const s of sources(pos[0] ?? ".")) {
+    for (const s of sources(pos[0] ?? defaultTarget())) {
       let out: string;
       try {
         out = printProgram(parse(s.src, s.file));
@@ -158,7 +184,7 @@ switch (cmd) {
   }
 
   case "context": {
-    const { program, diagnostics } = parseProject(sources((flag("--dir") as string) ?? "."));
+    const { program, diagnostics } = parseProject(sources((flag("--dir") as string) ?? defaultTarget()));
     if (diagnostics.length) { report(diagnostics, true); process.exit(1); }
     const a = analyze(program);
     const budget = flag("--budget") ? Number(flag("--budget")) : Infinity;
@@ -172,49 +198,87 @@ switch (cmd) {
   }
 
   case "dev": {
-    const target = pos[0] ?? ".";
-    const outDir = (flag("--out") as string) ?? defaultOut(target);
-    const port = Number(flag("--port") ?? 3000);
+    const target = pos[0] ?? defaultTarget();
+    const pub = join(projectRoot(target), "public");
     const clients = new Set<ServerResponse>();
-    const reload = `<script>new EventSource("/__art").onmessage=()=>location.reload()</script>`;
-    build(target, outDir);
-    const types: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
-    createServer((req, res) => {
-      const url = (req.url ?? "/").split("?")[0];
+    // Recarga automática + overlay de errores de compilación en el navegador.
+    const client = `<script>(()=>{const s=new EventSource("/__art");s.onmessage=e=>{if(e.data==="reload")return location.reload();let o=document.getElementById("__art_err");if(!o){o=document.createElement("pre");o.id="__art_err";o.style.cssText="position:fixed;inset:0;margin:0;padding:24px;background:#1a0000ee;color:#ffb4b4;font:14px/1.5 monospace;white-space:pre-wrap;z-index:99999";document.body.appendChild(o)}o.textContent=JSON.parse(e.data)}})()</script>`;
+    let files: Record<string, string> = {};
+    let lastError: string | null = null;
+    const rebuild = (): boolean => {
+      const r = buildFiles(target);
+      if ("diagnostics" in r) {
+        lastError = r.diagnostics.map(formatHuman).join("\n\n");
+        console.log(lastError);
+        return false;
+      }
+      files = r.files;
+      lastError = null;
+      return true;
+    };
+    rebuild();
+
+    const types: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".ico": "image/x-icon" };
+    const server = createServer((req, res) => {
+      const url = decodeURIComponent((req.url ?? "/").split("?")[0]);
       if (url === "/__art") {
         res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache" });
         clients.add(res);
+        if (lastError) res.write(`data: ${JSON.stringify(lastError)}\n\n`);
         req.on("close", () => clients.delete(res));
         return;
       }
-      const base = resolve(outDir);
-      const file = resolve(base, "." + decodeURIComponent(url === "/" ? "/index.html" : url));
-      if (!file.startsWith(base + "/")) { res.writeHead(403).end(); return; }
-      if (!existsSync(file) || statSync(file).isDirectory()) { res.writeHead(404).end("404"); return; }
-      let body: string | Buffer = readFileSync(file);
-      if (file.endsWith(".html")) body = body.toString().replace("</body>", reload + "</body>");
-      res.writeHead(200, { "content-type": types[extname(file)] ?? "application/octet-stream" }).end(body);
-    }).listen(port, () => console.log(`dev → http://localhost:${port}`));
-    const watchDir = existsSync(target) && statSync(target).isDirectory() ? target : dirname(target);
+      const name = url === "/" ? "index.html" : url.slice(1);
+      if (name in files) {
+        const body = name === "index.html" ? files[name].replace("</body>", client + "</body>") : files[name];
+        res.writeHead(200, { "content-type": types[extname(name)] ?? "text/plain", "cache-control": "no-store" }).end(body);
+        return;
+      }
+      // Archivos estáticos de ./public (imágenes, íconos...). Bloquea rutas fuera de esa carpeta.
+      const base = resolve(pub);
+      const file = resolve(base, "." + url);
+      if (file.startsWith(base + "/") && existsSync(file) && !statSync(file).isDirectory()) {
+        res.writeHead(200, { "content-type": types[extname(file)] ?? "application/octet-stream" }).end(readFileSync(file));
+        return;
+      }
+      res.writeHead(404).end("404");
+    });
+
+    // Si el puerto está ocupado, prueba el siguiente (como Vite).
+    let port = Number(flag("--port") ?? 3000);
+    server.on("error", (e: NodeJS.ErrnoException) => {
+      if (e.code === "EADDRINUSE" && port < Number(flag("--port") ?? 3000) + 20) server.listen(++port);
+      else die(e.message);
+    });
+    server.on("listening", () => console.log(`\n  ArtScript dev → http://localhost:${port}\n  editá ${target}/ y se recarga solo · Ctrl+C para salir\n`));
+    server.listen(port);
+
+    const watchDir = isDir(target) ? target : dirname(target);
     let timer: ReturnType<typeof setTimeout> | undefined;
-    watch(watchDir, { recursive: true }, (_e, name) => {
-      if (!name || !String(name).endsWith(".art")) return;
+    watch(watchDir, { recursive: true }, (_e, changed) => {
+      if (!changed || !String(changed).endsWith(".art")) return;
       clearTimeout(timer);
       timer = setTimeout(() => {
-        if (build(target, outDir, true)) {
-          console.log(`recompilado (${String(name)})`);
-          for (const c of clients) c.write("data: reload\n\n");
-        }
+        const ok = rebuild();
+        if (ok) console.log(`recompilado (${String(changed)})`);
+        const msg = ok ? "reload" : JSON.stringify(lastError);
+        for (const c of clients) c.write(`data: ${msg}\n\n`);
       }, 50);
     });
     break;
   }
 
   case "bench": {
-    const { runBench } = await import("../benchmarks/measure.ts");
-    runBench();
+    const script = join(ROOT, "benchmarks", "measure.ts");
+    if (!existsSync(script)) die("art bench solo está disponible dentro del repo de ArtScript");
+    const { runBench } = await import(pathToFileURL(script).href);
+    await runBench();
     break;
   }
+
+  case "--version": case "-v": case "version":
+    console.log(PKG.version);
+    break;
 
   default:
     console.log(HELP);
