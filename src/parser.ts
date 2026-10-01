@@ -161,6 +161,13 @@ class Parser {
 
   serverFn(): ServerFnDecl {
     const loc = this.next().loc;
+    if (this.eat("job")) {
+      const name = this.ident("a job name").v;
+      if (!this.eat("every")) this.fail("`every \"1h\"` (s, m, h or d)");
+      if (this.tok.t !== "str") this.fail("an interval like \"30s\", \"5m\", \"1h\" or \"1d\"");
+      const every = this.next().v;
+      return { kind: "ServerFn", name, params: [], every, body: this.block(), loc };
+    }
     this.expect("fn");
     const name = this.ident("a function name").v;
     const { params, defaults } = this.fnParams();

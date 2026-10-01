@@ -34,7 +34,9 @@ export type ApiDecl = { kind: "Api"; name: string; model: string; access: ApiAcc
 export type AuthDecl = { kind: "Auth"; name: string; api: string; loc: Loc };
 
 // `server fn name(params) { ... }`: runs on the server with `db`, `me` and `fail`; called as `server.name()`.
-export type ServerFnDecl = { kind: "ServerFn"; name: string; params: string[]; defaults?: (Expr | null)[]; body: Stmt[]; loc: Loc };
+// `every`: a scheduled job (`server job cleanup every "1h" { ... }`): runs on the server on that
+// interval, isn't callable from the client, has `db` and `fail` but no `me`.
+export type ServerFnDecl = { kind: "ServerFn"; name: string; params: string[]; defaults?: (Expr | null)[]; every?: string; body: Stmt[]; loc: Loc };
 
 // `page` and `component` share a shape; a page has a route and no params.
 export type ComponentDecl = {

@@ -388,13 +388,17 @@ class Checker {
     const fields: Record<string, Ty> = {};
     for (const [name, model] of this.apis) fields[name] = { k: "api", name, model, sync: true };
     scope.vars.set("db", { kind: "global", ty: { k: "obj", fields } });
-    if (this.authModel) scope.vars.set("me", { kind: "let", ty: opt({ k: "model", name: this.authModel }) });
+    if (this.authModel && !d.every) scope.vars.set("me", { kind: "let", ty: opt({ k: "model", name: this.authModel }) });
+    if (d.every !== undefined && !/^\d+(s|m|h|d)$/.test(d.every)) {
+      this.err("TYPE_MISMATCH", `invalid interval "${d.every}"`, d.loc, { expr: d.every, expected: '"30s", "5m", "1h" or "1d"' });
+    }
     scope.vars.set("fail", { kind: "global", ty: fn({ k: "void" }) });
     for (const p of d.params) scope.vars.set(p, { kind: "param", ty: ANY });
     this.returns = [];
     this.stmts(d.body, scope);
     const rs = this.returns.filter((t) => t.k !== "void");
     this.returns = null;
+    if (d.every) return; // a job isn't callable from the client
     this.serverFns.set(d.name, !rs.length ? { k: "void" } : rs.every((t) => show(t) === show(rs[0])) ? rs[0] : ANY);
   }
 
@@ -1046,6 +1050,7 @@ class Checker {
       signup: fn({ k: "async", of: user }),
       login: fn({ k: "async", of: user }),
       logout: fn({ k: "async", of: { k: "void" } }),
+      logoutAll: fn({ k: "async", of: { k: "void" } }),
       me: fn({ k: "async", of: opt(user) }),
     };
     if (prop in methods) return methods[prop];
@@ -1055,7 +1060,7 @@ class Checker {
   }
 
   authArgs(t: Ty & { k: "auth" }, method: string, args: Expr[], tys: Ty[], loc: Loc) {
-    const sig: Record<string, [number, string]> = { signup: [1, "signup(obj)"], login: [2, "login(email, password)"], logout: [0, "logout()"], me: [0, "me()"] };
+    const sig: Record<string, [number, string]> = { signup: [1, "signup(obj)"], login: [2, "login(email, password)"], logout: [0, "logout()"], logoutAll: [0, "logoutAll()"], me: [0, "me()"] };
     if (!sig[method]) return;
     if (args.length !== sig[method][0]) {
       this.err("TYPE_MISMATCH", `auth.${sig[method][1]} takes ${sig[method][0]} argument(s)`, loc, { expected: sig[method][1], actual: `${args.length} argument(s)` });

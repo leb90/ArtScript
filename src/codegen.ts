@@ -120,7 +120,16 @@ function serverFnsModule(program: Program, fns: ServerFnDecl[]): string {
   const host: ComponentDecl = { kind: "Component", page: false, name: "server", path: null, params: [], members: [], view: [], loc: { file: "", line: 0, col: 0 } };
   // Server fns import only the `use` names they mention (client-only libraries stay out).
   const out = [...importLines(program, fns.map((f) => printDecl(f)).join("\n")), "export const fns = {"];
-  for (const f of fns) {
+  const body = (f: ServerFnDecl) => {
+    const g = new ComponentGen(host);
+    g.ind = 2;
+    const scope = new Scope(null);
+    for (const name of ["db", "me", "fail", ...f.params]) scope.vars.set(name, { kind: "param" });
+    g.stmts(f.body, scope);
+    return { g, scope };
+  };
+  const jobs = fns.filter((f) => f.every);
+  for (const f of fns.filter((x) => !x.every)) {
     const g = new ComponentGen(host);
     g.ind = 2;
     const scope = new Scope(null);
@@ -129,12 +138,20 @@ function serverFnsModule(program: Program, fns: ServerFnDecl[]): string {
     out.push(`  async ${f.name}({ db, me, fail }${f.params.map((p, i) => `, ${p}${f.defaults?.[i] ? ` = ${g.expr(f.defaults[i]!, scope)}` : ""}`).join("")}) {`, ...g.lines, "  },");
   }
   out.push("};");
+  // Scheduled jobs: { name: { every: ms, run } }.
+  const ms = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 } as Record<string, number>;
+  out.push("export const jobs = {");
+  for (const f of jobs) {
+    const { g } = body(f);
+    out.push(`  ${f.name}: { every: ${Number(f.every!.slice(0, -1)) * ms[f.every!.slice(-1)]}, async run({ db, fail }) {`, ...g.lines, "  } },");
+  }
+  out.push("};");
   return out.join("\n");
 }
 
 export function serverEntry(schema: ServerSchema): string {
   const { fns, ...rest } = schema;
-  return `import { serve } from "./server-runtime.js";\n\n${fns}\n\nserve(${JSON.stringify(rest)}, fns, new URL(".", import.meta.url));\n`;
+  return `import { serve } from "./server-runtime.js";\n\n${fns}\n\nserve(${JSON.stringify(rest)}, fns, new URL(".", import.meta.url), undefined, jobs);\n`;
 }
 
 export function htmlShell(title = "ArtScript"): string {

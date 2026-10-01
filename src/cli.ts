@@ -247,7 +247,7 @@ switch (cmd) {
     // Apis run in this same process; dev data lives in <project>/.art/data.
     const { createApi } = await import(pathToFileURL(SERVER_RUNTIME).href);
     const dataDir = join(projectRoot(target), ".art", "data");
-    let api: ((req: unknown, res: unknown) => Promise<boolean>) | null = null;
+    let api: (((req: unknown, res: unknown) => Promise<boolean>) & { stop?: () => void }) | null = null;
     let apiSchema = "";
     const rebuild = async (): Promise<boolean> => {
       const r = await buildFiles(target, false);
@@ -262,16 +262,17 @@ switch (cmd) {
       if (schema !== apiSchema) {
         apiSchema = schema;
         // Server fns are written next to the project so their `use` imports resolve like the app's.
-        let fns = {};
+        let fns = {}, jobs = {};
         if (r.server) {
           const file = join(projectRoot(target), ".art", `server-fns-${Date.now()}.mjs`);
           mkdirSync(dirname(file), { recursive: true });
           writeFileSync(file, r.server.fns);
-          fns = (await import(pathToFileURL(file).href)).fns;
+          ({ fns, jobs } = await import(pathToFileURL(file).href));
           rmSync(file, { force: true });
         }
         try {
-          api = r.server ? createApi(r.server, dataDir, fns) : null;
+          api?.stop?.(); // the previous build's jobs
+          api = r.server ? createApi(r.server, dataDir, fns, jobs) : null;
         } catch (e) {
           // A migration that can't run (a new required field without a default): shown like a
           // compile error, retried on the next save.

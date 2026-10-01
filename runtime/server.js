@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const COOKIE = "art_session";
 const MIN_PASSWORD = 8;
+const SESSION_DAYS = 30;
 // Largest upload accepted (bytes); a `File` field's `max=` can only lower it.
 const MAX_UPLOAD = Number(process.env.ART_MAX_UPLOAD ?? 10 * 1024 * 1024);
 // Uploaded files shown inline; anything else is downloaded (an uploaded page can't run here).
@@ -84,11 +85,15 @@ export function checkPassword(password, stored) {
 function openDb(dataDir) {
   mkdirSync(dataDir, { recursive: true });
   const db = new DatabaseSync(join(dataDir, "art.db"));
-  db.exec("PRAGMA journal_mode = WAL; CREATE TABLE IF NOT EXISTS _sessions (token TEXT PRIMARY KEY, user TEXT NOT NULL)");
+  db.exec("PRAGMA journal_mode = WAL; CREATE TABLE IF NOT EXISTS _sessions (token TEXT PRIMARY KEY, user TEXT NOT NULL, expires INTEGER)");
+  // Databases from before sessions expired get the column; their sessions expire like new ones.
+  if (!db.prepare("PRAGMA table_info(_sessions)").all().some((c) => c.name === "expires")) {
+    db.exec(`ALTER TABLE _sessions ADD COLUMN expires INTEGER; UPDATE _sessions SET expires = ${Date.now() + SESSION_DAYS * 86_400_000}`);
+  }
   db.exec("CREATE TABLE IF NOT EXISTS _files (id TEXT PRIMARY KEY, name TEXT NOT NULL, type TEXT NOT NULL, size INTEGER NOT NULL)");
   const legacy = join(dataDir, "_sessions.json");
   if (existsSync(legacy)) {
-    for (const [token, user] of Object.entries(JSON.parse(readFileSync(legacy, "utf8")))) db.prepare("INSERT OR IGNORE INTO _sessions VALUES (?, ?)").run(token, user);
+    for (const [token, user] of Object.entries(JSON.parse(readFileSync(legacy, "utf8")))) db.prepare("INSERT OR IGNORE INTO _sessions VALUES (?, ?, ?)").run(token, user, Date.now() + SESSION_DAYS * 86_400_000);
     renameSync(legacy, legacy + ".imported");
   }
   return db;
@@ -409,7 +414,8 @@ const cookieOf = (req) => Object.fromEntries((req.headers.cookie ?? "").split(";
 
 // Returns an async (req, res) => boolean handler; true when the request was an /api/ call.
 // `fns`: the compiled server functions ({ name: async ({ db, me, fail }, ...args) => any }).
-export function createApi(schema, dataDir, fns = {}) {
+// `jobs`: scheduled `server job`s ({ name: { every: ms, run } }); `handler.stop()` cancels them.
+export function createApi(schema, dataDir, fns = {}, jobs = {}) {
   const sql = openDb(dataDir);
   let saved = false; // one backup per start, before the first migration
   const backup = () => {
@@ -426,16 +432,21 @@ export function createApi(schema, dataDir, fns = {}) {
   const hasRoles = !!users && "role" in (schema.models[users.model] ?? {});
   const isAdmin = (me) => hasRoles && me?.role === "admin";
 
+  // Sessions expire after SESSION_DAYS on the server too (not only the cookie).
   const currentUser = (req) => {
     const token = cookieOf(req);
-    const row = token && sql.prepare("SELECT user FROM _sessions WHERE token = ?").get(token);
+    const row = token && sql.prepare("SELECT user, expires FROM _sessions WHERE token = ?").get(token);
     if (!row || !users) return null;
+    if (row.expires !== null && row.expires < Date.now()) {
+      sql.prepare("DELETE FROM _sessions WHERE token = ?").run(token);
+      return null;
+    }
     try { return users.find(row.user, ALL); } catch { return null; }
   };
   const startSession = (user) => {
     const token = randomBytes(24).toString("hex");
-    sql.prepare("INSERT INTO _sessions VALUES (?, ?)").run(token, String(user[users.key]));
-    return { "set-cookie": `${COOKIE}=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000` };
+    sql.prepare("INSERT INTO _sessions VALUES (?, ?, ?)").run(token, String(user[users.key]), Date.now() + SESSION_DAYS * 86_400_000);
+    return { "set-cookie": `${COOKIE}=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_DAYS * 86_400}` };
   };
   // Server fns get unscoped, synchronous tables; `me` is the logged-in user without password.
   const db = Object.fromEntries(Object.entries(tables).map(([n, t]) => [n, {
@@ -448,7 +459,19 @@ export function createApi(schema, dataDir, fns = {}) {
   }]));
   const fail = (message, status = 400) => { throw new HttpError(status, "FAILED", String(message)); };
 
-  return async (req, res) => {
+  // A job never overlaps itself; a failure is logged and the next run happens as scheduled.
+  const timers = Object.entries(jobs).map(([name, job]) => {
+    let running = false;
+    const timer = setInterval(async () => {
+      if (running) return;
+      running = true;
+      try { await job.run({ db, fail }); } catch (e) { console.error(`server job ${name}:`, e?.message ?? e); } finally { running = false; }
+    }, job.every);
+    timer.unref?.();
+    return timer;
+  });
+
+  const handler = async (req, res) => {
     const url = new URL(req.url ?? "/", "http://localhost");
     if (!url.pathname.startsWith("/api/")) return false;
     try {
@@ -467,10 +490,15 @@ export function createApi(schema, dataDir, fns = {}) {
       const body = req.method === "POST" || req.method === "PATCH" || req.method === "PUT" ? await readJson(req) : undefined;
 
       // ---------- auth ----------
-      const a = /^\/api\/_auth\/(signup|login|logout|me)$/.exec(url.pathname);
+      const a = /^\/api\/_auth\/(signup|login|logout|logout-all|me)$/.exec(url.pathname);
       if (a) {
         if (!users) throw new HttpError(404, "NOT_FOUND", "auth is not enabled");
         if (a[1] === "me") return send(res, 200, publicMe), true;
+        // Every session of this user, on every device.
+        if (a[1] === "logout-all") {
+          if (me) sql.prepare("DELETE FROM _sessions WHERE user = ?").run(String(me[users.key]));
+          return send(res, 204, undefined, { "set-cookie": `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0` }), true;
+        }
         if (a[1] === "logout") {
           sql.prepare("DELETE FROM _sessions WHERE token = ?").run(cookieOf(req) ?? "");
           return send(res, 204, undefined, { "set-cookie": `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0` }), true;
@@ -521,7 +549,12 @@ export function createApi(schema, dataDir, fns = {}) {
         return send(res, 200, id === null ? t.list(me, q) : t.get(id, me)), true;
       }
       if (req.method === "POST" && id === null) return send(res, 201, t.create(body, me)), true;
-      if ((req.method === "PATCH" || req.method === "PUT") && id !== null) return send(res, 200, t.update(id, body, me, req.method === "PUT")), true;
+      if ((req.method === "PATCH" || req.method === "PUT") && id !== null) {
+        const row = t.update(id, body, me, req.method === "PUT");
+        // A new password signs out that user's other sessions.
+        if (t.isAuth && body.password !== undefined) sql.prepare("DELETE FROM _sessions WHERE user = ? AND token != ?").run(String(row[t.key]), cookieOf(req) ?? "");
+        return send(res, 200, row), true;
+      }
       if (req.method === "DELETE" && id !== null) return send(res, 204, t.remove(id, me) ?? undefined), true;
       throw new HttpError(405, "METHOD_NOT_ALLOWED", `${req.method} not allowed here`);
     } catch (e) {
@@ -530,16 +563,18 @@ export function createApi(schema, dataDir, fns = {}) {
       return send(res, 500, { error: "SERVER_ERROR", message: String(e?.message ?? e) }), true;
     }
   };
+  handler.stop = () => timers.forEach(clearInterval);
+  return handler;
 }
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".ico": "image/x-icon" };
 const PRIVATE = new Set(["server.js", "server-runtime.js"]);
 
 // Production server: the apis plus the built static files. Data lives in ART_DATA_DIR (default ./data).
-export function serve(schema, fns, rootUrl, port = Number(process.env.PORT ?? 3000)) {
+export function serve(schema, fns, rootUrl, port = Number(process.env.PORT ?? 3000), jobs = {}) {
   const root = resolve(fileURLToPath(rootUrl));
   const dataDir = resolve(process.env.ART_DATA_DIR ?? join(root, "data"));
-  const api = createApi(schema, dataDir, fns);
+  const api = createApi(schema, dataDir, fns, jobs);
   const server = createServer(async (req, res) => {
     if (await api(req, res)) return;
     const path = decodeURIComponent(new URL(req.url ?? "/", "http://localhost").pathname);

@@ -82,9 +82,10 @@ api users: User                    // REST at /api/users: validated against the 
 - `users.loading` is true until the first response; `users.error` is the last error's message or `null`; `users.reload()` fetches again.
 - `await` and `try { } catch (e) { }` work as in JS; `e.message` explains a validation error.
 - Access: `api notes: Note login` requires a session; `private` also scopes rows per user (the model needs `owner: ID`, filled in automatically); `admin`: anyone reads, only admins write (the accounts model needs `role: String`; the first account is "admin", later ones "user"; only admins change roles).
-- `auth users` (the model needs `email: Email` and `password: String`): `auth.signup(obj)`, `auth.login(email, password)`, `auth.logout()`, `data me = auth.me()` (`T?`). Passwords are stored hashed and never returned.
+- `auth users` (the model needs `email: Email` and `password: String`): `auth.signup(obj)`, `auth.login(email, password)`, `auth.logout()`, `auth.logoutAll()` (every device), `data me = auth.me()` (`T?`). Passwords are stored hashed and never returned. Sessions last 30 days; a new password ends the user's other sessions.
 - `server fn name(a, b) { ... }` runs on the server; call it as `server.name(a, b)` (also in `data`). Inside: `db.<api>` (no `await`, not scoped per user), `me` (logged-in user or `null`) and `fail("message", status?)`.
-- After any write, login or logout, every `data` reloads.
+- After any write, login or logout, every `data` reloads. `data msgs = api.msgs.list() live` also reloads when someone else writes (chats, dashboards).
+- `server job cleanup every "1h" { ... }` (`s m h d`) runs on the server on that interval, with `db` and `fail`.
 - Data is stored in SQLite (built into Node). `art dev` serves the api; `art build` emits `dist/server.js` (`node dist/server.js`).
 
 ## View
