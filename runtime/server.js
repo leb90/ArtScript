@@ -17,6 +17,7 @@ const SESSION_DAYS = 30;
 const MAX_JSON = Number(process.env.ART_MAX_JSON ?? 1024 * 1024);
 // Failed logins allowed per email and address in LOGIN_WINDOW before answering 429.
 const LOGIN_TRIES = 10;
+
 const LOGIN_WINDOW = 15 * 60_000;
 // Largest upload accepted (bytes); a `File` field's `max=` can only lower it.
 const MAX_UPLOAD = Number(process.env.ART_MAX_UPLOAD ?? 10 * 1024 * 1024);
@@ -542,10 +543,36 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
     return timer;
   });
 
+  // Api requests allowed per address per minute (ART_RATE_LIMIT, 0 = no limit); the counts of the
+  // current minute, and counters for /api/_metrics.
+  const RATE_LIMIT = Number(process.env.ART_RATE_LIMIT ?? 600);
+  let window = { start: Date.now(), hits: new Map() };
+  const metrics = { requests: new Map(), seconds: 0, count: 0 };
   const handler = async (req, res) => {
     const url = new URL(req.url ?? "/", "http://localhost");
     if (!url.pathname.startsWith("/api/")) return false;
+    const t0 = performance.now();
+    res.on?.("finish", () => {
+      const key = `${req.method}|${res.statusCode}`;
+      metrics.requests.set(key, (metrics.requests.get(key) ?? 0) + 1);
+      metrics.seconds += (performance.now() - t0) / 1000;
+      metrics.count++;
+    });
     try {
+      if (url.pathname === "/api/_metrics") {
+        const lines = ["# TYPE art_requests_total counter", ...[...metrics.requests].map(([k, n]) => { const [m, s] = k.split("|"); return `art_requests_total{method="${m}",status="${s}"} ${n}`; }),
+          "# TYPE art_request_seconds_sum counter", `art_request_seconds_sum ${metrics.seconds.toFixed(3)}`, "# TYPE art_request_seconds_count counter", `art_request_seconds_count ${metrics.count}`,
+          "# TYPE art_live_streams gauge", `art_live_streams ${streams.size}`];
+        res.writeHead(200, { "content-type": "text/plain; version=0.0.4" }).end(lines.join("\n") + "\n");
+        return true;
+      }
+      if (RATE_LIMIT && url.pathname !== "/api/_events") {
+        if (Date.now() - window.start > 60_000) window = { start: Date.now(), hits: new Map() };
+        const who = req.headers["x-forwarded-for"]?.split(",")[0].trim() ?? req.socket?.remoteAddress ?? "";
+        const n = (window.hits.get(who) ?? 0) + 1;
+        window.hits.set(who, n);
+        if (n > RATE_LIMIT) throw new HttpError(429, "TOO_MANY_REQUESTS", "too many requests; try again in a minute");
+      }
       if (url.pathname === "/api/_events" && req.method === "GET") {
         res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
         res.write(": live\n\n");

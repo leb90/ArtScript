@@ -73,3 +73,24 @@ test("runtime: URLs from data can't run code", async () => {
     await GlobalRegistrator.unregister();
   }
 });
+
+test("server: general rate limit per address, and Prometheus metrics", async () => {
+  const { createApi } = await import("../runtime/server.js" as string);
+  const { createServer } = await import("node:http");
+  process.env.ART_RATE_LIMIT = "5";
+  try {
+    const api = createApi(compile([{ file: "a.art", src: SRC }]).server!, mkdtempSync(join(tmpdir(), "art-rl-")));
+    const server = createServer(async (req: any, res: any) => { if (!(await api(req, res))) res.writeHead(404).end(); });
+    servers.push(server as unknown as Server);
+    await new Promise<void>((ok) => server.listen(0, ok));
+    const base = `http://localhost:${(server.address() as AddressInfo).port}/api`;
+    const codes = [];
+    for (let i = 0; i < 7; i++) codes.push((await fetch(`${base}/_health`)).status);
+    assert.deepEqual(codes, [200, 200, 200, 200, 200, 429, 429]);
+    const metrics = await (await fetch(`${base}/_metrics`)).text();
+    assert.match(metrics, /art_requests_total\{method="GET",status="200"\} 5/);
+    assert.match(metrics, /art_requests_total\{method="GET",status="429"\} 2/);
+  } finally {
+    delete process.env.ART_RATE_LIMIT;
+  }
+});
