@@ -107,7 +107,19 @@ class Parser {
     while (!this.is("}")) {
       const f = this.ident("a field name");
       this.expect(":");
-      fields.push({ name: f.v, type: this.type(), loc: f.loc });
+      const type = this.type();
+      const rules: Record<string, number | string | boolean> = {};
+      while (this.tok.t === "id") {
+        if (!["min", "max", "match", "unique"].includes(this.tok.v)) this.fail("min=, max=, match=\"regex\" or unique");
+        const r = this.next().v;
+        if (r === "unique") { rules.unique = true; continue; }
+        this.expect("=");
+        const neg = this.eat("-");
+        if ((this.tok.t as string) !== (r === "match" ? "str" : "num")) this.fail(r === "match" ? "a string" : "a number");
+        const v = this.next().v;
+        rules[r] = r === "match" ? v : (neg ? -1 : 1) * Number(v);
+      }
+      fields.push({ name: f.v, type, ...(Object.keys(rules).length ? { rules } : {}), loc: f.loc });
       this.skipSep();
     }
     this.expect("}");

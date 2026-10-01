@@ -31,6 +31,7 @@ export const CATALOG: Record<string, { code: string; desc: string }> = {
   NOT_A_LIST: { code: "E1024", desc: "`for` needs a list." },
   // Assignment
   ASSIGN_READONLY: { code: "E1030", desc: "Only `state` and `let` variables can be assigned." },
+  TEXT_BRACES: { code: "E1060", desc: "`{name}` inside a plain string isn't interpolated; use a template `${name}`." },
   UNKNOWN_MODULE: { code: "E1050", desc: "The module of a `use` can't be found (not installed, or a wrong path)." },
   UNKNOWN_EXPORT: { code: "E1051", desc: "The module doesn't export that name." },
   AUTH_REQUIRED: { code: "E1040", desc: "`login` and `private` need an `auth` declaration." },

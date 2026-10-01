@@ -158,6 +158,21 @@ function makeTable(schema, db, dataDir, name, { model, access }) {
   const check = (row) => {
     const e = validate(schema, model, row);
     if (e) throw new HttpError(400, "VALIDATION", `invalid ${e.field}: expected ${e.expected}, got ${e.actual}`, e);
+    // Field rules: min/max (length of text or lists, value of numbers), match, unique.
+    for (const [f, r] of Object.entries(schema.rules?.[model] ?? {})) {
+      const v = row[f];
+      if (v === null || v === undefined) continue;
+      const size = typeof v === "number" ? v : v.length;
+      const unit = typeof v === "number" ? "" : Array.isArray(v) ? " items" : " characters";
+      const bad = (expected, actual) => { throw new HttpError(400, "VALIDATION", `invalid ${f}: expected ${expected}, got ${actual}`, { field: f, expected, actual }); };
+      if (r.min !== undefined && size < r.min) bad(`at least ${r.min}${unit}`, `${size}${unit}`);
+      if (r.max !== undefined && size > r.max) bad(`at most ${r.max}${unit}`, `${size}${unit}`);
+      if (r.match !== undefined && !new RegExp(r.match).test(v)) bad(`text matching /${r.match}/`, JSON.stringify(v));
+      if (r.unique) {
+        const other = parse(db.prepare(`SELECT data FROM ${T} WHERE json_extract(data, '$.${f}') = ?`).get(sqlValue(v)));
+        if (other && other[key] !== row[key]) throw new HttpError(409, "CONFLICT", `${f} ${JSON.stringify(v)} is already used`, { field: f });
+      }
+    }
     if (isAuth && !isHashed(row.password)) {
       if (row.password.length < MIN_PASSWORD) throw new HttpError(400, "VALIDATION", `invalid password: expected at least ${MIN_PASSWORD} characters`, { field: "password", expected: `String (min ${MIN_PASSWORD})`, actual: `${row.password.length} characters` });
       row.password = hashPassword(row.password);

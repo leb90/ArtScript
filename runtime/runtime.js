@@ -407,14 +407,24 @@ export function $server() {
 
 // `data x = expr`: runs `expr` tracking its dependencies and stores the result when it resolves.
 // Re-runs when a dependency changes; responses that arrive out of order are ignored.
+// `x.loading` is true until the first response arrives (reloads keep showing the current data, so
+// `if x.loading { spinner }` never flashes); `x.error` holds the last failure's message (null once
+// a request succeeds); `x.reload()` requests it again.
 export function $data(fn, initial) {
   const s = signal(initial);
+  s.loading = new Signal(true);
+  s.error = new Signal(null);
+  const again = new Signal(0);
+  s.reload = () => { again.v = again._v + 1; };
   let seq = 0;
   effect(() => {
+    again.v;
     const id = ++seq;
-    Promise.resolve(fn()).then(
-      (v) => { if (id === seq) s.v = v ?? initial; },
-      (e) => { if (id === seq) console.error(e); },
+    let p; // fn runs inside the effect, so what it reads (states, the data version) is tracked
+    try { p = Promise.resolve(fn()); } catch (e) { p = Promise.reject(e); }
+    p.then(
+      (v) => { if (id === seq) batch(() => { s.v = v ?? initial; s.error.v = null; s.loading.v = false; }); },
+      (e) => { if (id === seq) batch(() => { s.error.v = e?.message ?? String(e); s.loading.v = false; }); },
     );
   });
   return s;

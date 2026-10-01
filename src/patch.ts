@@ -30,21 +30,24 @@ const PATCH_FILE = "patch";
 export function parsePatch(text: string): Op[] {
   const ops: Op[] = [];
   const lines = text.replace(/\r/g, "").split("\n");
-  let cur: (Op & { lines: string[] }) | null = null;
+  let cur: (Op & { lines: string[]; braced?: boolean }) | null = null;
   const flush = () => {
     if (!cur) return;
     while (cur.lines.length && !cur.lines[cur.lines.length - 1].trim()) cur.lines.pop();
+    if (cur.braced && cur.lines.length && /^\}\s*$/.test(cur.lines[cur.lines.length - 1])) cur.lines.pop();
     const indent = Math.min(...cur.lines.filter((l) => l.trim()).map((l) => l.match(/^\s*/)![0].length));
     cur.body = cur.lines.map((l) => l.slice(Number.isFinite(indent) ? indent : 0)).join("\n");
-    const { lines: _, ...op } = cur;
+    const { lines: _, braced: __, ...op } = cur;
     ops.push(op);
   };
   lines.forEach((raw, i) => {
     const m = OP_LINE.exec(raw);
     if (m) {
       flush();
-      const [target = "", ...args] = m[2].trim().split(/\s+/);
-      cur = { op: m[1], target, args: args.join(" "), body: "", line: i + 1, bodyLine: i + 2, lines: [] };
+      // `replace X/column {` ... `}`: the body wrapped in braces, as a block.
+      const braced = /\s\{$/.test(m[2].trim());
+      const [target = "", ...args] = m[2].trim().replace(/\s*\{$/, "").split(/\s+/);
+      cur = { op: m[1], target, args: args.join(" "), body: "", line: i + 1, bodyLine: i + 2, lines: [], braced };
     } else if (cur) {
       // Blank lines before the body are skipped; remember where the body really starts.
       if (!cur.lines.length && !raw.trim()) { cur.bodyLine = i + 2; return; }
@@ -321,6 +324,13 @@ function applyOp(p: Program, op: Op, firstFile: string) {
 
   // `replace Catalog` (or `append Catalog`) followed by members and/or view instead of the whole
   // declaration: members replace those with the same name, a view replaces the view.
+  // A body that is only the component's first line (`component Row(item: Item, onRemove: Fn) {`):
+  // a change of props.
+  const header = /^(?:component|page|layout)\s+\w+(?:\s+"[^"]*")?\s*\(([^)]*)\)\s*\{?\s*$/.exec(op.body.trim());
+  if (t.kind === "decl" && t.decl.kind === "Component" && header && op.op === "replace") {
+    t.decl.params = header[1].trim() ? parseParams(header[1], PATCH_FILE, bodyLine) : [];
+    return;
+  }
   if (t.kind === "decl" && t.decl.kind === "Component" && op.sig !== undefined) {
     t.decl.params = op.sig.trim() ? parseParams(op.sig, PATCH_FILE, loc.line) : [];
     if (!op.body.trim()) return;

@@ -1,5 +1,5 @@
 // Generates an ES module that builds the DOM directly (no virtual DOM) using runtime.js.
-import type { ApiAccess, ComponentDecl, Element, Expr, Program, ServerFnDecl, Stmt, ViewNode } from "./ast.ts";
+import type { ApiAccess, ComponentDecl, FieldRules, Element, Expr, Program, ServerFnDecl, Stmt, ViewNode } from "./ast.ts";
 import { specifier } from "./modules.ts";
 import { printDecl, printType } from "./printer.ts";
 import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
@@ -8,7 +8,7 @@ import { twoWayProps } from "./checker.ts";
 // Props each component assigns (bound two-way), for the program being generated.
 let twoWay = new Map<string, Set<string>>();
 
-type Kind = "state" | "computed" | "prop" | "fn" | "let" | "loop" | "param";
+type Kind = "state" | "data" | "computed" | "prop" | "fn" | "let" | "loop" | "param";
 type Sym = { kind: Kind; sig?: string }; // sig: signal to notify on mutation (loops over a state)
 
 class Scope {
@@ -73,6 +73,8 @@ export function generate(program: Program): string {
 // and the compiled `server fn`s (an ES module exporting `fns`).
 export type ServerSchema = {
   models: Record<string, Record<string, string>>;
+  // Field rules per model (`min`, `max`, `match`, `unique`), only for fields that have some.
+  rules: Record<string, Record<string, FieldRules>>;
   apis: Record<string, { model: string; access: ApiAccess }>;
   auth: string | null;
   fns: string;
@@ -82,14 +84,19 @@ export function serverSchema(program: Program): ServerSchema | null {
   const apis: ServerSchema["apis"] = {};
   const models: ServerSchema["models"] = {};
   let auth: string | null = null;
+  const rules: ServerSchema["rules"] = {};
   for (const d of program.decls) {
     if (d.kind === "Api") apis[d.name] = { model: d.model, access: d.access };
-    if (d.kind === "Model") models[d.name] = Object.fromEntries(d.fields.map((f) => [f.name, printType(f.type)]));
+    if (d.kind === "Model") {
+      models[d.name] = Object.fromEntries(d.fields.map((f) => [f.name, printType(f.type)]));
+      const withRules = d.fields.filter((f) => f.rules);
+      if (withRules.length) rules[d.name] = Object.fromEntries(withRules.map((f) => [f.name, f.rules!]));
+    }
     if (d.kind === "Auth") auth = d.api;
   }
   const fns = program.decls.filter((d) => d.kind === "ServerFn");
   if (!Object.keys(apis).length && !fns.length) return null;
-  return { models, apis, auth, fns: serverFnsModule(program, fns) };
+  return { models, rules, apis, auth, fns: serverFnsModule(program, fns) };
 }
 
 // Each server fn becomes `async name({ db, me, fail }, ...params)`.
@@ -143,7 +150,7 @@ class ComponentGen {
     }
     // `data` compiles to a signal, so it reads and mutates like a state.
     for (const m of c.members) {
-      if (m.kind !== "Mount" && m.kind !== "Effect") scope.vars.set(m.name, { kind: m.kind === "Computed" ? "computed" : m.kind === "Fn" ? "fn" : m.kind === "Ref" ? "let" : "state" });
+      if (m.kind !== "Mount" && m.kind !== "Effect") scope.vars.set(m.name, { kind: m.kind === "Computed" ? "computed" : m.kind === "Fn" ? "fn" : m.kind === "Ref" ? "let" : m.kind === "Data" ? "data" : "state" });
     }
     for (const p of c.params) {
       const def = p.default ? `(() => ${this.expr(p.default, scope)})` : "(() => undefined)";
@@ -419,7 +426,7 @@ class ComponentGen {
     }
     if (e.kind !== "Ident") return undefined;
     const sym = scope.get(e.name);
-    if (sym?.kind === "state" || sym?.kind === "computed") return e.name;
+    if (sym?.kind === "state" || sym?.kind === "data" || sym?.kind === "computed") return e.name;
     if (sym?.kind === "prop") return `${e.name}.sig`;
     return sym?.sig;
   }
@@ -434,11 +441,15 @@ class ComponentGen {
       case "Null": return "null";
       case "Ident": {
         const sym = scope.get(e.name);
-        if (sym?.kind === "state" || sym?.kind === "computed" || sym?.kind === "loop") return `${e.name}.v`;
+        if (sym?.kind === "state" || sym?.kind === "data" || sym?.kind === "computed" || sym?.kind === "loop") return `${e.name}.v`;
         if (sym?.kind === "prop") return `${e.name}()`;
         return e.name;
       }
-      case "Member": return `${this.wrapPostfix(e.object, scope)}${e.optional ? "?." : "."}${e.prop}`;
+      case "Member":
+        if (e.object.kind === "Ident" && scope.get(e.object.name)?.kind === "data" && ["loading", "error", "reload"].includes(e.prop)) {
+          return e.prop === "reload" ? `${e.object.name}.reload` : `${e.object.name}.${e.prop}.v`;
+        }
+        return `${this.wrapPostfix(e.object, scope)}${e.optional ? "?." : "."}${e.prop}`;
       case "Index": return `${this.wrapPostfix(e.object, scope)}${e.optional ? "?.[" : "["}${x(e.index)}]`;
       case "Call": {
         const call = `${this.wrapPostfix(e.callee, scope)}${e.optional ? "?.(" : "("}${e.args.map(x).join(", ")})`;

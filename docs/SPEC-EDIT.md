@@ -26,7 +26,7 @@ remove Todos/column/if/else/text
 - Operations: `replace`, `insert before|after`, `append` (children of a node; members or view of a component; fields of a model), `remove`, `set` (props on the same line, `-name` removes), `add` (new declarations, indented).
 - View paths: `Component/tag/tag[n]` (`n` = 0-based among siblings with the same tag; `if`, `else`, `for` are segments). Members: `Component.name`. Fields: `Model.field`.
 - `set Component name: Type` adds a prop to a component without rewriting it; then pass it where it's used.
-- Bodies are indented under their operation. Applied in order, all or nothing.
+- Bodies are indented under their operation (no `{ }` around them). Applied in order, all or nothing.
 
 ## Members
 
@@ -45,6 +45,7 @@ remove Todos/column/if/else/text
 - `button "x" -> action` (click), `input state -> action` (Enter; binds the state), `form { } -> action` (submit), `select x options=[...]`.
 - Flags: `text`/`title`: `bold muted small large danger primary success`; `button`: `primary danger small`. Conditional flag: `muted=t.done`.
 - Layout props: `gap=4 pad=4` (×4px), `align=start|center|end`, `justify=start|center|end|between`, `cols=3`.
+- Values in text use a template literal: ``text `Total: ${total}` `` (not `"Total: {total}"`).
 - Prop values: literal, name, `a.b`, call, or `(any expression)`. Multi-statement action: `-> { a(); b = 1 }`.
 - Control flow: `if cond { } else { }`, `for item, i in list { }`.
 - Unknown names, elements, props and flags are compile errors with a suggested fix.

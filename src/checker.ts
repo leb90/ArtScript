@@ -1,9 +1,9 @@
 // Type checker: small type system, null safety and errors with fixes.
-import type { ComponentDecl, Element, Expr, Loc, ModelDecl, Program, ServerFnDecl, Stmt, TypeRef, UseDecl, ViewNode } from "./ast.ts";
+import type { ComponentDecl, Element, Expr, Field, Loc, ModelDecl, Program, ServerFnDecl, Stmt, TypeRef, UseDecl, ViewNode } from "./ast.ts";
 import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, RESPONSIVE_PROPS } from "./elements.ts";
 import { CATALOG, diag, suggest, type Diagnostic } from "./errors.ts";
 import { inspectModule, isLocal, packageName } from "./modules.ts";
-import { printDecl, printExpr } from "./printer.ts";
+import { printDecl, printExpr, printType } from "./printer.ts";
 
 export type Ty =
   | { k: "num" } | { k: "str" } | { k: "bool" } | { k: "null" } | { k: "any" } | { k: "void" }
@@ -103,6 +103,8 @@ export type CompInfo = Map<string, { params: { name: string; ty: Ty; required: b
 // DOM events accepted by `on:<event>` (typos get the closest one).
 const EVENTS = ["click", "dblclick", "input", "change", "submit", "keydown", "keyup", "focus", "blur", "mouseenter", "mouseleave", "mousedown", "mouseup", "mousemove", "pointerdown", "pointerup", "pointermove", "touchstart", "touchend", "wheel", "scroll", "contextmenu", "dragstart", "dragover", "dragleave", "drop", "paste", "copy", "load", "error", "ended", "play", "pause", "timeupdate", "toggle", "close"];
 
+const DATA_STATE: Record<string, Ty> = { loading: BOOL, error: { k: "opt", of: STR }, reload: fn({ k: "void" }) };
+
 function walkNodes(x: unknown, fn: (n: any) => void) {
   if (Array.isArray(x)) for (const y of x) walkNodes(y, fn);
   else if (x && typeof x === "object") {
@@ -195,6 +197,7 @@ class Checker {
       for (const f of d.fields) {
         if (f.name in fields) this.err("DUPLICATE_NAME", `duplicate field '${f.name}'`, f.loc, { expr: f.name });
         fields[f.name] = this.resolve(f.type);
+        this.rules(f);
       }
       this.idFields.set(d.name, new Set(d.fields.filter((f) => f.type.name === "ID" && !f.type.list).map((f) => f.name)));
     }
@@ -253,6 +256,30 @@ class Checker {
     this.twoWay = twoWayProps(this.program);
     for (const d of this.program.decls) if (d.kind === "Component") this.component(d);
     return this.diags;
+  }
+
+  // `"Total: {total}"` (Svelte/Vue habit) shows the braces as they are: suggest a template.
+  braces(e: Expr & { kind: "Str" }, scope: Scope) {
+    const m = /\{\s*([A-Za-z_$][\w$]*)[^{}]*\}/.exec(e.value);
+    if (!m || !scope.get(m[1]) || scope.get(m[1])!.kind === "global") return;
+    const tpl = "`" + e.value.replace(/\{([^{}]*)\}/g, "${$1}").replace(/`/g, "\\`") + "`";
+    this.err("TEXT_BRACES", `'{${m[1]}...}' in a plain string is shown as is`, e.loc, { expr: JSON.stringify(e.value), expected: "a template", fixes: [tpl] });
+  }
+
+  // min/max: String, Email, Number or a list; match: String or Email; unique: a single value.
+  rules(f: Field) {
+    const r = f.rules;
+    if (!r) return;
+    const t = f.type;
+    const text = !t.list && (t.name === "String" || t.name === "Email");
+    const bad = (rule: string, expected: string) => this.err("TYPE_MISMATCH", `'${rule}' doesn't apply to ${printType(t)}`, f.loc, { expr: `${f.name}: ${printType(t)} ${rule}`, expected, actual: printType(t) });
+    if ((r.min !== undefined || r.max !== undefined) && !(text || t.list || t.name === "Number")) bad("min/max", "String, Number or a list");
+    if (r.min !== undefined && r.max !== undefined && r.min > r.max) this.err("TYPE_MISMATCH", `min (${r.min}) is greater than max (${r.max})`, f.loc, { expr: f.name });
+    if (r.match !== undefined) {
+      if (!text) bad("match", "String or Email");
+      try { new RegExp(r.match); } catch (e) { this.err("TYPE_MISMATCH", `invalid regular expression: ${(e as Error).message}`, f.loc, { expr: r.match, expected: "a JavaScript regular expression" }); }
+    }
+    if (r.unique && (t.list || this.models.has(t.name))) bad("unique", "a single String, Email, Number or ID");
   }
 
   resolve(t: TypeRef): Ty {
@@ -776,6 +803,7 @@ class Checker {
       case "Num": return NUM;
       case "Str": case "Template":
         if (e.kind === "Template") for (const x of e.exprs) this.infer(x, scope);
+        else this.braces(e, scope);
         return STR;
       case "Bool": return BOOL;
       case "Null": return NULL;
@@ -787,6 +815,8 @@ class Checker {
         return ANY;
       }
       case "Member": {
+        // `users.loading`, `users.error` and `users.reload()` on a `data`: the state of its request.
+        if (e.object.kind === "Ident" && DATA_STATE[e.prop] && scope.get(e.object.name)?.kind === "data") return DATA_STATE[e.prop];
         const path = this.pathOf(e);
         const known = path === null ? undefined : scope.getNarrowed(path);
         if (known) { this.infer(e.object, scope); return known; }

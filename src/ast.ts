@@ -15,7 +15,10 @@ export type Decl = ModelDecl | ComponentDecl | ApiDecl | AuthDecl | ServerFnDecl
 export type UseDecl = { kind: "Use"; name: string; source: string; default: string | null; names: string[]; loc: Loc };
 
 export type ModelDecl = { kind: "Model"; name: string; fields: Field[]; loc: Loc };
-export type Field = { name: string; type: TypeRef; loc: Loc };
+// Rules checked by the server on create/update: `name: String min=2 max=50`, `email: Email unique`,
+// `code: String match="^[A-Z]{3}$"`. min/max: length of a String or list, value of a Number.
+export type FieldRules = { min?: number; max?: number; match?: string; unique?: boolean };
+export type Field = { name: string; type: TypeRef; rules?: FieldRules; loc: Loc };
 
 // `api users: User [login|private]`: REST resource for a model (list, get, create, update, remove),
 // persisted on the server. `login` requires a session; `private` also scopes rows to their `owner`;

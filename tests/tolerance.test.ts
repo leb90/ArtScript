@@ -119,3 +119,16 @@ test("art patch accepts the variants models write", () => {
   // a path that skips intermediate elements when only one node matches
   assert.match(ok("set Shop/text muted\n"), /text `\$\{products\.length\}` id="count" muted/);
 });
+
+test("braces in a plain string with a known name suggest a template", () => {
+  const [d] = check(parse('page P {\n  state total = 1\n  text "Total: {total}"\n}', "t"));
+  assert.equal(d.type, "TEXT_BRACES");
+  assert.deepEqual(d.fixes, ["`Total: ${total}`"]);
+  assert.deepEqual(types('page P {\n  text "JSON looks like {a: 1}"\n}'), []);
+});
+
+test("art patch: braced op bodies and a header-only body", () => {
+  assert.match(ok("replace Shop/column/text {\n  text \"x\" id=\"count\"\n}\n"), /text "x" id="count"/);
+  const out = ok("replace Card\n  component Card(product: Product, onAdd: Fn, big: Bool = false) {\n");
+  assert.match(out, /component Card\(product: Product, onAdd: Fn, big: Bool = false\) \{\n  row/);
+});

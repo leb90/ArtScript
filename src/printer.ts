@@ -1,5 +1,5 @@
 // Prints the AST as canonical ArtScript. Basis for `art fmt`, errors and `art context`.
-import type { Decl, Element, Expr, Program, Stmt, TypeRef, ViewNode } from "./ast.ts";
+import type { Decl, Element, Expr, Field, Program, Stmt, TypeRef, ViewNode } from "./ast.ts";
 
 const PREC: Record<string, number> = {
   "??": 1, "||": 2, "&&": 3, "==": 4, "!=": 4, "<": 5, ">": 5, "<=": 5, ">=": 5, "+": 6, "-": 6, "*": 7, "/": 7, "%": 7, "**": 8,
@@ -95,6 +95,11 @@ export function printProgram(p: Program): string {
   return p.decls.map(printDecl).join("\n\n") + "\n";
 }
 
+export function printRules(r: Field["rules"]): string {
+  if (!r) return "";
+  return (r.min !== undefined ? ` min=${r.min}` : "") + (r.max !== undefined ? ` max=${r.max}` : "") + (r.match !== undefined ? ` match=${JSON.stringify(r.match)}` : "") + (r.unique ? " unique" : "");
+}
+
 export function printParams(f: { params: string[]; defaults?: (Expr | null)[] }): string {
   return f.params.map((p, i) => (f.defaults?.[i] ? `${p} = ${printExpr(f.defaults[i]!)}` : p)).join(", ");
 }
@@ -105,7 +110,7 @@ export function printDecl(d: Decl): string {
   if (d.kind === "Auth") return `auth ${d.api}`;
   if (d.kind === "ServerFn") return `server fn ${d.name}(${printParams(d)}) {\n${printStmts(d.body, 1).join("\n")}\n}`;
   if (d.kind === "Model") {
-    return `model ${d.name} {\n${d.fields.map((f) => `${IND}${f.name}: ${printType(f.type)}`).join("\n")}\n}`;
+    return `model ${d.name} {\n${d.fields.map((f) => `${IND}${f.name}: ${printType(f.type)}${printRules(f.rules)}`).join("\n")}\n}`;
   }
   let head = d.page ? `page ${d.name}` : d.layout ? `layout ${d.name}` : `component ${d.name}`;
   if (d.page && d.path) head += ` ${JSON.stringify(d.path)}`;
