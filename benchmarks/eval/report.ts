@@ -17,7 +17,7 @@ const START = "<!-- eval-results:start -->";
 const END = "<!-- eval-results:end -->";
 
 type Usage = { input: number; output: number; cacheRead: number; cacheWrite: number };
-type Run = { task: string; stack: string; ok: boolean; attempts: number; usage: Usage; usd: number; codeTokens: number | null };
+type Run = { task: string; stack: string; ok: boolean; attempts: number; usage: Usage; usd: number; codeTokens: number | null; size?: { raw: number; brotli: number } };
 type ResultFile = { model: string; effort: string; runs: number; prices: { in: number; out: number; cacheRead: number; cacheWrite: number }; pricesDate: string; results: Run[] };
 
 const STACKS = ["artscript", "react", "svelte"];
@@ -26,6 +26,7 @@ const PLAIN: Record<string, string> = { artscript: "ArtScript", react: "React + 
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 const usd = (n: number) => `$${n.toFixed(4)}`;
+const kb = (n: number) => (n ? `${(n / 1024).toFixed(1)} KB` : "—");
 const diff = (a: number, b: number) => `${Math.abs(Math.round((a / b - 1) * 100))}% ${a <= b ? "less" : "more"}`;
 const pct = (a: number, b: number) => `${a <= b ? "−" : "+"}${Math.abs(Math.round((a / b - 1) * 100))}%`;
 
@@ -43,6 +44,7 @@ function stats(f: ResultFile, stack: string, task?: string) {
     attempts: avg(rs.map((r) => r.attempts)),
     output: avg(rs.map((r) => r.usage.output)),
     code: avg(ok.map((r) => r.codeTokens ?? 0)),
+    brotli: avg(ok.filter((r) => r.size).map((r) => r.size!.brotli)),
     total: cost,
   };
 }
@@ -92,10 +94,11 @@ function projectTable(rs: Run[], what: string): string[] {
   };
   const out = [`#### Larger project: ${tasks.length} modifications to ${what}`, "",
     "Whole project in the prompt (\"full\") vs. what a good agent would read (\"focus\": ArtScript gets `art context` of the relevant parts, React/Svelte the file list plus the relevant files). Each change is applied to the whole project and the app is used in the simulated browser.", "",
-    "| Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus |", "|---|---|---|---|---|"];
+    "| Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus | App JS (brotli) |", "|---|---|---|---|---|---|"];
   for (const k of STACKS) {
     const full = cell(k, "full"), focus = cell(k, "focus");
-    out.push(`| ${NAMES[k]} | ${full.text} | ${focus.text} | ${Math.round(full.input)} | ${Math.round(focus.input)} |`);
+    const sized = rs.filter((r) => r.stack === k && r.ok && r.size);
+    out.push(`| ${NAMES[k]} | ${full.text} | ${focus.text} | ${Math.round(full.input)} | ${Math.round(focus.input)} | ${kb(avg(sized.map((r) => r.size!.brotli)))} |`);
   }
   out.push("", "Input tokens include ArtScript's ~1.9K-token spec in the system prompt (mostly billed at the cache rate) and every retry.");
   return out;
@@ -112,11 +115,11 @@ function section(loaded: Loaded[]): string {
     const date = basename(path).slice(0, 10);
     out.push(`### ${f.model} (effort ${f.effort})`, "");
     out.push(`With \`${f.model}\`, ArtScript cost **${diff(s.artscript.perSolved, s.react.perSolved)}** per solved task than React + TS and **${diff(s.artscript.perSolved, s.svelte.perSolved)}** than Svelte 5.`, "");
-    out.push("| Stack | Solved | USD per solved task | vs React | Without prompt cache | Avg attempts | Output tokens / run | Final code tokens |");
-    out.push("|---|---|---|---|---|---|---|---|");
+    out.push("| Stack | Solved | USD per solved task | vs React | Without prompt cache | Avg attempts | Output tokens / run | Final code tokens | App JS (brotli) |");
+    out.push("|---|---|---|---|---|---|---|---|---|");
     for (const k of STACKS) {
       const x = s[k];
-      out.push(`| ${NAMES[k]} | ${x.ok}/${x.n} | ${k === "artscript" ? `**${usd(x.perSolved)}**` : usd(x.perSolved)} | ${k === "react" ? "—" : pct(x.perSolved, s.react.perSolved)} | ${usd(x.perSolvedNoCache)} | ${x.attempts.toFixed(2)} | ${Math.round(x.output)} | ${Math.round(x.code)} |`);
+      out.push(`| ${NAMES[k]} | ${x.ok}/${x.n} | ${k === "artscript" ? `**${usd(x.perSolved)}**` : usd(x.perSolved)} | ${k === "react" ? "—" : pct(x.perSolved, s.react.perSolved)} | ${usd(x.perSolvedNoCache)} | ${x.attempts.toFixed(2)} | ${Math.round(x.output)} | ${Math.round(x.code)} | ${kb(x.brotli)} |`);
     }
     const max = Math.max(...STACKS.map((k) => s[k].perSolved));
     out.push("", "```mermaid", "xychart-beta", `    title "USD per solved task (${f.model})"`, `    x-axis [${STACKS.map((k) => `"${PLAIN[k]}"`).join(", ")}]`,
@@ -144,6 +147,7 @@ function section(loaded: Loaded[]): string {
     "- Full-stack tasks: React and Svelte also write their own `server.ts` (Node `http`, no dependencies); ArtScript uses `api`. Svelte is validated without TypeScript type checking of `.svelte` files, which favors it.",
     "- Each run uses the ArtScript spec as of its date; older runs are not redone when the spec improves. The runs above used the Spanish version of the spec; it has since been translated to English (about 6% fewer tokens).",
     "- Task prompts (and the feedback given to the model) are in Spanish; they are the fixed dataset these numbers were measured on.",
+    "- App JS: each working app bundled with esbuild (minified, production mode) and compressed with brotli: the JavaScript a browser downloads. ArtScript's includes its runtime; React's includes React DOM; Svelte's includes its client runtime.",
     "- 3 runs per task is an early signal, not a definitive benchmark. Reproduce it with `npm run eval`.",
     "", END);
   return out.join("\n");

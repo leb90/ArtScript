@@ -3,7 +3,7 @@
 // expected and what the screen showed; that message is fed back to the model.
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { BehaviorError, launch, type Page } from "./app.ts";
+import { BehaviorError, launch, type AppSize, type Page } from "./app.ts";
 import type { Task } from "./tasks.ts";
 import type { Files, Stack } from "./validate.ts";
 
@@ -239,25 +239,28 @@ const CHECKS: Record<string, Check> = {
 // Variants of a task (e.g. "shop-sort@focus") share its check.
 const checkFor = (task: Task) => CHECKS[task.id.split("@")[0]];
 
-async function runCheck(task: Task, stack: Stack, files: Files): Promise<string[]> {
+type Checked = { errors: string[]; size?: AppSize };
+
+async function runCheck(task: Task, stack: Stack, files: Files): Promise<Checked> {
   const check = checkFor(task);
-  if (!check) return [];
+  if (!check) return { errors: [] };
   let app: Awaited<ReturnType<typeof launch>> | null = null;
   try {
     app = await launch(stack, files, !!task.fullstack);
     await check(app.page);
-    return [];
+    return { errors: [], size: app.size };
   } catch (e: any) {
-    return [`Prueba de comportamiento: ${e instanceof BehaviorError ? e.message : `error en la app: ${String(e?.message ?? e).slice(0, 300)}`}`];
+    return { errors: [`Prueba de comportamiento: ${e instanceof BehaviorError ? e.message : `error en la app: ${String(e?.message ?? e).slice(0, 300)}`}`] };
   } finally {
     await app?.close();
   }
 }
 
 // Runs the check in a separate Node process, so the simulated browser's globals never touch the
-// eval's own fetch/timers and every run starts clean. Returns the failures (empty = it works).
-export function behave(task: Task, stack: Stack, files: Files): Promise<string[]> {
-  if (!checkFor(task)) return Promise.resolve([]);
+// eval's own fetch/timers and every run starts clean. Returns the failures (empty = it works) and,
+// when it works, the size of the app's JavaScript.
+export function behaveMeasured(task: Task, stack: Stack, files: Files): Promise<Checked> {
+  if (!checkFor(task)) return Promise.resolve({ errors: [] });
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [fileURLToPath(import.meta.url), "--worker"], { stdio: ["pipe", "pipe", "pipe"] });
     let out = "", err = "";
@@ -267,11 +270,13 @@ export function behave(task: Task, stack: Stack, files: Files): Promise<string[]
     child.on("close", () => {
       clearTimeout(timer);
       try { resolve(JSON.parse(out.trim().split("\n").pop()!)); }
-      catch { resolve([`Prueba de comportamiento: la app colgó o terminó sin responder. ${err.slice(0, 200)}`]); }
+      catch { resolve({ errors: [`Prueba de comportamiento: la app colgó o terminó sin responder. ${err.slice(0, 200)}`] }); }
     });
     child.stdin.end(JSON.stringify({ task, stack, files }));
   });
 }
+
+export const behave = (task: Task, stack: Stack, files: Files) => behaveMeasured(task, stack, files).then((r) => r.errors);
 
 if (process.argv.includes("--worker")) {
   let input = "";

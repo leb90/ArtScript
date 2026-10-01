@@ -43,7 +43,11 @@
           "errors": [],
           "edit": "```patch\nappend CartItemRow/row\n  button \"Quitar\" danger small -> onChangeQty(item.product.id, -item.qty)\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7662,
+        "brotli": 2665
+      }
     },
     {
       "task": "shop-remove@full",
@@ -86,7 +90,11 @@
           "errors": [],
           "edit": "```patch\nappend CartItemRow/row\n  button \"Quitar\" danger small -> onChangeQty(item.product.id, -item.qty)\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7662,
+        "brotli": 2665
+      }
     },
     {
       "task": "shop-remove@full",
@@ -122,7 +130,11 @@
           "errors": [],
           "edit": "```edit App.tsx\n<<<<<<< SEARCH\n  const count = cart.reduce((n, i) => n + i.qty, 0);\n=======\n  function remove(id: number) {\n    setCart(cart.filter((i) => i.product.id !== id));\n  }\n\n  const count = cart.reduce((n, i) => n + i.qty, 0);\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\n<CartView cart={cart} onChangeQty={changeQty} onClear={() => setCart([])} />\n=======\n<CartView cart={cart} onChangeQty={changeQty} onRemove={remove} onClear={() => setCart([])} />\n>>>>>>> REPLACE\n```\n\n```edit CartView.tsx\n<<<<<<< SEARCH\ntype Props = { cart: CartItem[]; onChangeQty: (id: number, delta: number) => void; onClear: () => void };\n\nexport default function CartView({ cart, onChangeQty, onClear }: Props) {\n=======\ntype Props = {\n  cart: CartItem[];\n  onChangeQty: (id: number, delta: number) => void;\n  onRemove: (id: number) => void;\n  onClear: () => void;\n};\n\nexport default function CartView({ cart, onChangeQty, onRemove, onClear }: Props) {\n>>>>>>> REPLACE\n```\n\n```edit CartView.tsx\n<<<<<<< SEARCH\n        <CartItemRow key={item.product.id} item={item} onChangeQty={(d) => onChangeQty(item.product.id, d)} />\n=======\n        <CartItemRow\n          key={item.product.id}\n          item={item}\n          onChangeQty={(d) => onChangeQty(item.product.id, d)}\n          onRemove={() => onRemove(item.product.id)}\n        />\n>>>>>>> REPLACE\n```\n\n```edit CartItemRow.tsx\n<<<<<<< SEARCH\nexport default function CartItemRow({ item, onChangeQty }: { item: CartItem; onChangeQty: (delta: number) => void }) {\n=======\nexport default function CartItemRow({\n  item,\n  onChangeQty,\n  onRemove,\n}: {\n  item: CartItem;\n  onChangeQty: (delta: number) => void;\n  onRemove: () => void;\n}) {\n>>>>>>> REPLACE\n```\n\n```edit CartItemRow.tsx\n<<<<<<< SEARCH\n      <span>${(item.product.price * item.qty).toFixed(2)}</span>\n=======\n      <span>${(item.product.price * item.qty).toFixed(2)}</span>\n      <button className=\"danger\" onClick={onRemove}>Quitar</button>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227291,
+        "brotli": 60519
+      }
     },
     {
       "task": "shop-remove@full",
@@ -158,7 +170,11 @@
           "errors": [],
           "edit": "```edit App.tsx\n<<<<<<< SEARCH\n  const count = cart.reduce((n, i) => n + i.qty, 0);\n=======\n  function remove(id: number) {\n    setCart(cart.filter((i) => i.product.id !== id));\n  }\n\n  const count = cart.reduce((n, i) => n + i.qty, 0);\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\n<CartView cart={cart} onChangeQty={changeQty} onClear={() => setCart([])} />\n=======\n<CartView cart={cart} onChangeQty={changeQty} onRemove={remove} onClear={() => setCart([])} />\n>>>>>>> REPLACE\n```\n\n```edit CartView.tsx\n<<<<<<< SEARCH\ntype Props = { cart: CartItem[]; onChangeQty: (id: number, delta: number) => void; onClear: () => void };\n\nexport default function CartView({ cart, onChangeQty, onClear }: Props) {\n=======\ntype Props = {\n  cart: CartItem[];\n  onChangeQty: (id: number, delta: number) => void;\n  onRemove: (id: number) => void;\n  onClear: () => void;\n};\n\nexport default function CartView({ cart, onChangeQty, onRemove, onClear }: Props) {\n>>>>>>> REPLACE\n```\n\n```edit CartView.tsx\n<<<<<<< SEARCH\n        <CartItemRow key={item.product.id} item={item} onChangeQty={(d) => onChangeQty(item.product.id, d)} />\n=======\n        <CartItemRow\n          key={item.product.id}\n          item={item}\n          onChangeQty={(d) => onChangeQty(item.product.id, d)}\n          onRemove={() => onRemove(item.product.id)}\n        />\n>>>>>>> REPLACE\n```\n\n```edit CartItemRow.tsx\n<<<<<<< SEARCH\nexport default function CartItemRow({ item, onChangeQty }: { item: CartItem; onChangeQty: (delta: number) => void }) {\n=======\nexport default function CartItemRow({\n  item,\n  onChangeQty,\n  onRemove,\n}: {\n  item: CartItem;\n  onChangeQty: (delta: number) => void;\n  onRemove: () => void;\n}) {\n>>>>>>> REPLACE\n```\n\n```edit CartItemRow.tsx\n<<<<<<< SEARCH\n      <span>${(item.product.price * item.qty).toFixed(2)}</span>\n=======\n      <span>${(item.product.price * item.qty).toFixed(2)}</span>\n      <button className=\"danger\" onClick={onRemove}>Quitar</button>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227291,
+        "brotli": 60519
+      }
     },
     {
       "task": "shop-remove@full",
@@ -194,7 +210,11 @@
           "errors": [],
           "edit": "```edit App.svelte\n<<<<<<< SEARCH\n  function changeQty(id: number, delta: number) {\n=======\n  function removeItem(id: number) {\n    cart = cart.filter((i) => i.product.id !== id);\n  }\n\n  function changeQty(id: number, delta: number) {\n>>>>>>> REPLACE\n```\n\n```edit App.svelte\n<<<<<<< SEARCH\n    <CartView {cart} onChangeQty={changeQty} onClear={() => (cart = [])} />\n=======\n    <CartView {cart} onChangeQty={changeQty} onRemove={removeItem} onClear={() => (cart = [])} />\n>>>>>>> REPLACE\n```\n\n```edit CartView.svelte\n<<<<<<< SEARCH\n  let { cart, onChangeQty, onClear }: { cart: CartItem[]; onChangeQty: (id: number, delta: number) => void; onClear: () => void } = $props();\n=======\n  let { cart, onChangeQty, onRemove, onClear }: { cart: CartItem[]; onChangeQty: (id: number, delta: number) => void; onRemove: (id: number) => void; onClear: () => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit CartView.svelte\n<<<<<<< SEARCH\n      <CartItemRow {item} onChangeQty={(d) => onChangeQty(item.product.id, d)} />\n=======\n      <CartItemRow {item} onChangeQty={(d) => onChangeQty(item.product.id, d)} onRemove={() => onRemove(item.product.id)} />\n>>>>>>> REPLACE\n```\n\n```edit CartItemRow.svelte\n<<<<<<< SEARCH\n  let { item, onChangeQty }: { item: CartItem; onChangeQty: (delta: number) => void } = $props();\n=======\n  let { item, onChangeQty, onRemove }: { item: CartItem; onChangeQty: (delta: number) => void; onRemove: () => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit CartItemRow.svelte\n<<<<<<< SEARCH\n  <span>${(item.product.price * item.qty).toFixed(2)}</span>\n=======\n  <span>${(item.product.price * item.qty).toFixed(2)}</span>\n  <button class=\"danger\" onclick={onRemove}>Quitar</button>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62086,
+        "brotli": 20895
+      }
     },
     {
       "task": "shop-remove@full",
@@ -230,7 +250,11 @@
           "errors": [],
           "edit": "```edit App.svelte\n<<<<<<< SEARCH\n  function changeQty(id: number, delta: number) {\n=======\n  function remove(id: number) {\n    cart = cart.filter((i) => i.product.id !== id);\n  }\n\n  function changeQty(id: number, delta: number) {\n>>>>>>> REPLACE\n```\n\n```edit App.svelte\n<<<<<<< SEARCH\n    <CartView {cart} onChangeQty={changeQty} onClear={() => (cart = [])} />\n=======\n    <CartView {cart} onChangeQty={changeQty} onRemove={remove} onClear={() => (cart = [])} />\n>>>>>>> REPLACE\n```\n\n```edit CartView.svelte\n<<<<<<< SEARCH\n  let { cart, onChangeQty, onClear }: { cart: CartItem[]; onChangeQty: (id: number, delta: number) => void; onClear: () => void } = $props();\n=======\n  let { cart, onChangeQty, onRemove, onClear }: { cart: CartItem[]; onChangeQty: (id: number, delta: number) => void; onRemove: (id: number) => void; onClear: () => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit CartView.svelte\n<<<<<<< SEARCH\n      <CartItemRow {item} onChangeQty={(d) => onChangeQty(item.product.id, d)} />\n=======\n      <CartItemRow {item} onChangeQty={(d) => onChangeQty(item.product.id, d)} onRemove={() => onRemove(item.product.id)} />\n>>>>>>> REPLACE\n```\n\n```edit CartItemRow.svelte\n<<<<<<< SEARCH\n  let { item, onChangeQty }: { item: CartItem; onChangeQty: (delta: number) => void } = $props();\n=======\n  let { item, onChangeQty, onRemove }: { item: CartItem; onChangeQty: (delta: number) => void; onRemove: () => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit CartItemRow.svelte\n<<<<<<< SEARCH\n  <span>${(item.product.price * item.qty).toFixed(2)}</span>\n=======\n  <span>${(item.product.price * item.qty).toFixed(2)}</span>\n  <button class=\"danger\" onclick={onRemove}>Quitar</button>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62086,
+        "brotli": 20895
+      }
     },
     {
       "task": "shop-remove@focus",
@@ -257,7 +281,11 @@
           "errors": [],
           "edit": "```patch\ninsert after CartItemRow/row/text[2]\n  button \"Quitar\" danger small -> onChangeQty(item.product.id, -item.qty)\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7662,
+        "brotli": 2665
+      }
     },
     {
       "task": "shop-remove@focus",
@@ -284,7 +312,11 @@
           "errors": [],
           "edit": "```patch\nappend CartItemRow/row\n  button \"Quitar\" danger small -> onChangeQty(item.product.id, -item.qty)\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7662,
+        "brotli": 2665
+      }
     },
     {
       "task": "shop-remove@focus",
@@ -320,7 +352,11 @@
           "errors": [],
           "edit": "```edit CartItemRow.tsx\n<<<<<<< SEARCH\nexport default function CartItemRow({ item, onChangeQty }: { item: CartItem; onChangeQty: (delta: number) => void }) {\n=======\nexport default function CartItemRow({\n  item,\n  onChangeQty,\n  onRemove,\n}: {\n  item: CartItem;\n  onChangeQty: (delta: number) => void;\n  onRemove: () => void;\n}) {\n>>>>>>> REPLACE\n```\n\n```edit CartItemRow.tsx\n<<<<<<< SEARCH\n      <span>${(item.product.price * item.qty).toFixed(2)}</span>\n=======\n      <span>${(item.product.price * item.qty).toFixed(2)}</span>\n      <button onClick={onRemove} className=\"text-red-600 hover:underline\">Quitar</button>\n>>>>>>> REPLACE\n```\n\n```edit CartView.tsx\n<<<<<<< SEARCH\ntype Props = { cart: CartItem[]; onChangeQty: (id: number, delta: number) => void; onClear: () => void };\n\nexport default function CartView({ cart, onChangeQty, onClear }: Props) {\n=======\ntype Props = {\n  cart: CartItem[];\n  onChangeQty: (id: number, delta: number) => void;\n  onRemove: (id: number) => void;\n  onClear: () => void;\n};\n\nexport default function CartView({ cart, onChangeQty, onRemove, onClear }: Props) {\n>>>>>>> REPLACE\n```\n\n```edit CartView.tsx\n<<<<<<< SEARCH\n        <CartItemRow key={item.product.id} item={item} onChangeQty={(d) => onChangeQty(item.product.id, d)} />\n=======\n        <CartItemRow\n          key={item.product.id}\n          item={item}\n          onChangeQty={(d) => onChangeQty(item.product.id, d)}\n          onRemove={() => onRemove(item.product.id)}\n        />\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\n  const count = cart.reduce((n, i) => n + i.qty, 0);\n=======\n  function remove(id: number) {\n    setCart(cart.filter((i) => i.product.id !== id));\n  }\n\n  const count = cart.reduce((n, i) => n + i.qty, 0);\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\n        <CartView cart={cart} onChangeQty={changeQty} onClear={() => setCart([])} />\n=======\n        <CartView cart={cart} onChangeQty={changeQty} onRemove={remove} onClear={() => setCart([])} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227313,
+        "brotli": 60602
+      }
     },
     {
       "task": "shop-remove@focus",
@@ -356,7 +392,11 @@
           "errors": [],
           "edit": "```edit CartItemRow.tsx\n<<<<<<< SEARCH\nexport default function CartItemRow({ item, onChangeQty }: { item: CartItem; onChangeQty: (delta: number) => void }) {\n=======\nexport default function CartItemRow({\n  item,\n  onChangeQty,\n  onRemove,\n}: {\n  item: CartItem;\n  onChangeQty: (delta: number) => void;\n  onRemove: () => void;\n}) {\n>>>>>>> REPLACE\n```\n\n```edit CartItemRow.tsx\n<<<<<<< SEARCH\n      <span>${(item.product.price * item.qty).toFixed(2)}</span>\n=======\n      <span>${(item.product.price * item.qty).toFixed(2)}</span>\n      <button onClick={onRemove} className=\"text-red-600\">Quitar</button>\n>>>>>>> REPLACE\n```\n\n```edit CartView.tsx\n<<<<<<< SEARCH\ntype Props = { cart: CartItem[]; onChangeQty: (id: number, delta: number) => void; onClear: () => void };\n\nexport default function CartView({ cart, onChangeQty, onClear }: Props) {\n=======\ntype Props = {\n  cart: CartItem[];\n  onChangeQty: (id: number, delta: number) => void;\n  onRemove: (id: number) => void;\n  onClear: () => void;\n};\n\nexport default function CartView({ cart, onChangeQty, onRemove, onClear }: Props) {\n>>>>>>> REPLACE\n```\n\n```edit CartView.tsx\n<<<<<<< SEARCH\n        <CartItemRow key={item.product.id} item={item} onChangeQty={(d) => onChangeQty(item.product.id, d)} />\n=======\n        <CartItemRow\n          key={item.product.id}\n          item={item}\n          onChangeQty={(d) => onChangeQty(item.product.id, d)}\n          onRemove={() => onRemove(item.product.id)}\n        />\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\n  const count = cart.reduce((n, i) => n + i.qty, 0);\n=======\n  function remove(id: number) {\n    setCart(cart.filter((i) => i.product.id !== id));\n  }\n\n  const count = cart.reduce((n, i) => n + i.qty, 0);\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\n        <CartView cart={cart} onChangeQty={changeQty} onClear={() => setCart([])} />\n=======\n        <CartView cart={cart} onChangeQty={changeQty} onRemove={remove} onClear={() => setCart([])} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227297,
+        "brotli": 60465
+      }
     },
     {
       "task": "shop-remove@focus",
@@ -392,7 +432,11 @@
           "errors": [],
           "edit": "```edit CartItemRow.svelte\n<<<<<<< SEARCH\n  let { item, onChangeQty }: { item: CartItem; onChangeQty: (delta: number) => void } = $props();\n=======\n  let { item, onChangeQty, onRemove }: { item: CartItem; onChangeQty: (delta: number) => void; onRemove: () => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit CartItemRow.svelte\n<<<<<<< SEARCH\n  <span>${(item.product.price * item.qty).toFixed(2)}</span>\n=======\n  <span>${(item.product.price * item.qty).toFixed(2)}</span>\n  <button class=\"text-red-600\" onclick={onRemove}>Quitar</button>\n>>>>>>> REPLACE\n```\n\n```edit CartView.svelte\n<<<<<<< SEARCH\n  let { cart, onChangeQty, onClear }: { cart: CartItem[]; onChangeQty: (id: number, delta: number) => void; onClear: () => void } = $props();\n=======\n  let { cart, onChangeQty, onRemove, onClear }: { cart: CartItem[]; onChangeQty: (id: number, delta: number) => void; onRemove: (id: number) => void; onClear: () => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit CartView.svelte\n<<<<<<< SEARCH\n      <CartItemRow {item} onChangeQty={(d) => onChangeQty(item.product.id, d)} />\n=======\n      <CartItemRow {item} onChangeQty={(d) => onChangeQty(item.product.id, d)} onRemove={() => onRemove(item.product.id)} />\n>>>>>>> REPLACE\n```\n\n```edit App.svelte\n<<<<<<< SEARCH\n</script>\n\n<div class=\"flex flex-col gap-4 p-4\">\n=======\n\n  function remove(id: number) {\n    cart = cart.filter((i) => i.product.id !== id);\n  }\n</script>\n\n<div class=\"flex flex-col gap-4 p-4\">\n>>>>>>> REPLACE\n```\n\n```edit App.svelte\n<<<<<<< SEARCH\n    <CartView {cart} onChangeQty={changeQty} onClear={() => (cart = [])} />\n=======\n    <CartView {cart} onChangeQty={changeQty} onRemove={remove} onClear={() => (cart = [])} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62092,
+        "brotli": 20868
+      }
     },
     {
       "task": "shop-remove@focus",
@@ -428,7 +472,11 @@
           "errors": [],
           "edit": "```edit CartItemRow.svelte\n<<<<<<< SEARCH\n  let { item, onChangeQty }: { item: CartItem; onChangeQty: (delta: number) => void } = $props();\n=======\n  let { item, onChangeQty, onRemove }: { item: CartItem; onChangeQty: (delta: number) => void; onRemove: () => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit CartItemRow.svelte\n<<<<<<< SEARCH\n  <span>${(item.product.price * item.qty).toFixed(2)}</span>\n=======\n  <span>${(item.product.price * item.qty).toFixed(2)}</span>\n  <button class=\"text-red-600\" onclick={onRemove}>Quitar</button>\n>>>>>>> REPLACE\n```\n\n```edit CartView.svelte\n<<<<<<< SEARCH\n  let { cart, onChangeQty, onClear }: { cart: CartItem[]; onChangeQty: (id: number, delta: number) => void; onClear: () => void } = $props();\n=======\n  let { cart, onChangeQty, onRemove, onClear }: { cart: CartItem[]; onChangeQty: (id: number, delta: number) => void; onRemove: (id: number) => void; onClear: () => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit CartView.svelte\n<<<<<<< SEARCH\n      <CartItemRow {item} onChangeQty={(d) => onChangeQty(item.product.id, d)} />\n=======\n      <CartItemRow {item} onChangeQty={(d) => onChangeQty(item.product.id, d)} onRemove={() => onRemove(item.product.id)} />\n>>>>>>> REPLACE\n```\n\n```edit App.svelte\n<<<<<<< SEARCH\n  function changeQty(id: number, delta: number) {\n=======\n  function removeItem(id: number) {\n    cart = cart.filter((i) => i.product.id !== id);\n  }\n\n  function changeQty(id: number, delta: number) {\n>>>>>>> REPLACE\n```\n\n```edit App.svelte\n<<<<<<< SEARCH\n    <CartView {cart} onChangeQty={changeQty} onClear={() => (cart = [])} />\n=======\n    <CartView {cart} onChangeQty={changeQty} onRemove={removeItem} onClear={() => (cart = [])} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62092,
+        "brotli": 20906
+      }
     },
     {
       "task": "shop-stock@full",
@@ -455,7 +503,11 @@
           "errors": [],
           "edit": "```patch\nreplace Shop.add\n  fn add(product) {\n    if product.stock <= 0 { return }\n    let found = cart.find(i => i.product.id == product.id)\n    if found {\n      found.qty++\n    } else {\n      cart.push({ product, qty: 1 })\n    }\n    products = products.map(p => p.id == product.id ? { ...p, stock: p.stock - 1 } : p)\n  }\nreplace ProductCard/card/button\n  if product.stock > 0 {\n    button \"Agregar\" primary -> onAdd(product)\n  } else {\n    text \"Sin stock\" muted\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7713,
+        "brotli": 2698
+      }
     },
     {
       "task": "shop-stock@full",
@@ -482,7 +534,11 @@
           "errors": [],
           "edit": "```patch\nreplace Shop.add\n  fn add(product) {\n    let p = products.find(x => x.id == product.id)\n    if !p { return }\n    if p.stock <= 0 { return }\n    p.stock--\n    let found = cart.find(i => i.product.id == product.id)\n    if found {\n      found.qty++\n    } else {\n      cart.push({ product: p, qty: 1 })\n    }\n  }\nreplace ProductCard/card/button\n  if product.stock > 0 {\n    button \"Agregar\" primary -> onAdd(product)\n  } else {\n    text \"Sin stock\" muted\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7712,
+        "brotli": 2703
+      }
     },
     {
       "task": "shop-stock@full",
@@ -525,7 +581,11 @@
           "errors": [],
           "edit": "```edit App.tsx\n<<<<<<< SEARCH\n  const [products] = useState<Product[]>(PRODUCTS);\n=======\n  const [products, setProducts] = useState<Product[]>(PRODUCTS);\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\n  function add(product: Product) {\n    const found = cart.find((i) => i.product.id === product.id);\n=======\n  function add(product: Product) {\n    const current = products.find((p) => p.id === product.id);\n    if (!current || current.stock <= 0) return;\n    setProducts(products.map((p) => (p.id === product.id ? { ...p, stock: p.stock - 1 } : p)));\n    const found = cart.find((i) => i.product.id === product.id);\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\n  function changeQty(id: number, delta: number) {\n    setCart(cart.map((i) => (i.product.id === id ? { ...i, qty: i.qty + delta } : i)).filter((i) => i.qty > 0));\n  }\n=======\n  function clearCart() {\n    setProducts(\n      products.map((p) => {\n        const item = cart.find((i) => i.product.id === p.id);\n        return item ? { ...p, stock: p.stock + item.qty } : p;\n      })\n    );\n    setCart([]);\n  }\n\n  function changeQty(id: number, delta: number) {\n    const current = products.find((p) => p.id === id);\n    if (!current || (delta > 0 && current.stock <= 0)) return;\n    setProducts(products.map((p) => (p.id === id ? { ...p, stock: p.stock - delta } : p)));\n    setCart(cart.map((i) => (i.product.id === id ? { ...i, qty: i.qty + delta } : i)).filter((i) => i.qty > 0));\n  }\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\nonClear={() => setCart([])} />\n=======\nonClear={clearCart} />\n>>>>>>> REPLACE\n```\n\n```edit ProductCard.tsx\n<<<<<<< SEARCH\n      <button className=\"primary\" onClick={onAdd}>Agregar</button>\n=======\n      {product.stock > 0 ? (\n        <button className=\"primary\" onClick={onAdd}>Agregar</button>\n      ) : (\n        <span className=\"text-red-500\">Sin stock</span>\n      )}\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227492,
+        "brotli": 60644
+      }
     },
     {
       "task": "shop-stock@full",
@@ -561,7 +621,11 @@
           "errors": [],
           "edit": "```edit App.tsx\n<<<<<<< SEARCH\n  const [products] = useState<Product[]>(PRODUCTS);\n=======\n  const [products, setProducts] = useState<Product[]>(PRODUCTS);\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\n  function add(product: Product) {\n    const found = cart.find((i) => i.product.id === product.id);\n=======\n  function add(product: Product) {\n    const current = products.find((p) => p.id === product.id);\n    if (!current || current.stock <= 0) return;\n    setProducts(products.map((p) => (p.id === product.id ? { ...p, stock: p.stock - 1 } : p)));\n    const found = cart.find((i) => i.product.id === product.id);\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\n  function changeQty(id: number, delta: number) {\n=======\n  function clearCart() {\n    setProducts(\n      products.map((p) => {\n        const item = cart.find((i) => i.product.id === p.id);\n        return item ? { ...p, stock: p.stock + item.qty } : p;\n      })\n    );\n    setCart([]);\n  }\n\n  function changeQty(id: number, delta: number) {\n    const product = products.find((p) => p.id === id);\n    if (!product) return;\n    if (delta > 0 && product.stock <= 0) return;\n    setProducts(products.map((p) => (p.id === id ? { ...p, stock: p.stock - delta } : p)));\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\nonClear={() => setCart([])} />\n=======\nonClear={clearCart} />\n>>>>>>> REPLACE\n```\n\n```edit ProductCard.tsx\n<<<<<<< SEARCH\n      <button className=\"primary\" onClick={onAdd}>Agregar</button>\n=======\n      {product.stock > 0 ? (\n        <button className=\"primary\" onClick={onAdd}>Agregar</button>\n      ) : (\n        <span className=\"text-gray-500\">Sin stock</span>\n      )}\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227494,
+        "brotli": 60594
+      }
     },
     {
       "task": "shop-stock@full",
@@ -597,7 +661,11 @@
           "errors": [],
           "edit": "```edit App.svelte\n<<<<<<< SEARCH\n  function add(product: Product) {\n    const found = cart.find((i) => i.product.id === product.id);\n    if (found) found.qty++;\n    else cart.push({ product, qty: 1 });\n  }\n\n  function changeQty(id: number, delta: number) {\n    cart = cart.map((i) => (i.product.id === id ? { ...i, qty: i.qty + delta } : i)).filter((i) => i.qty > 0);\n  }\n=======\n  function add(product: Product) {\n    const p = products.find((x) => x.id === product.id);\n    if (!p || p.stock <= 0) return;\n    p.stock--;\n    const found = cart.find((i) => i.product.id === p.id);\n    if (found) found.qty++;\n    else cart.push({ product: p, qty: 1 });\n  }\n\n  function changeQty(id: number, delta: number) {\n    const p = products.find((x) => x.id === id);\n    if (!p) return;\n    if (delta > 0 && p.stock <= 0) return;\n    p.stock -= delta;\n    cart = cart.map((i) => (i.product.id === id ? { ...i, qty: i.qty + delta } : i)).filter((i) => i.qty > 0);\n  }\n\n  function clearCart() {\n    for (const item of cart) {\n      const p = products.find((x) => x.id === item.product.id);\n      if (p) p.stock += item.qty;\n    }\n    cart = [];\n  }\n>>>>>>> REPLACE\n```\n\n```edit App.svelte\n<<<<<<< SEARCH\nonClear={() => (cart = [])} />\n=======\nonClear={clearCart} />\n>>>>>>> REPLACE\n```\n\n```edit ProductCard.svelte\n<<<<<<< SEARCH\n  <button class=\"primary\" onclick={onAdd}>Agregar</button>\n=======\n  {#if product.stock > 0}\n    <button class=\"primary\" onclick={onAdd}>Agregar</button>\n  {:else}\n    <span class=\"text-gray-500\">Sin stock</span>\n  {/if}\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62249,
+        "brotli": 20945
+      }
     },
     {
       "task": "shop-stock@full",
@@ -633,7 +701,11 @@
           "errors": [],
           "edit": "```edit App.svelte\n<<<<<<< SEARCH\n  function add(product: Product) {\n    const found = cart.find((i) => i.product.id === product.id);\n=======\n  function add(product: Product) {\n    if (product.stock <= 0) return;\n    product.stock--;\n    const found = cart.find((i) => i.product.id === product.id);\n>>>>>>> REPLACE\n```\n\n```edit App.svelte\n<<<<<<< SEARCH\n  function changeQty(id: number, delta: number) {\n    cart = cart.map(\n=======\n  function changeQty(id: number, delta: number) {\n    const product = products.find((p) => p.id === id);\n    if (!product) return;\n    if (delta > 0 && product.stock < delta) return;\n    product.stock -= delta;\n    cart = cart.map(\n>>>>>>> REPLACE\n```\n\n```edit App.svelte\n<<<<<<< SEARCH\n    cart = cart.map((i) => (i.product.id === id ? { ...i, qty: i.qty + delta } : i)).filter((i) => i.qty > 0);\n  }\n=======\n    cart = cart.map((i) => (i.product.id === id ? { ...i, qty: i.qty + delta } : i)).filter((i) => i.qty > 0);\n  }\n\n  function clearCart() {\n    for (const item of cart) {\n      const product = products.find((p) => p.id === item.product.id);\n      if (product) product.stock += item.qty;\n    }\n    cart = [];\n  }\n>>>>>>> REPLACE\n```\n\n```edit App.svelte\n<<<<<<< SEARCH\nonClear={() => (cart = [])} />\n=======\nonClear={clearCart} />\n>>>>>>> REPLACE\n```\n\n```edit CartItemRow.svelte\n<<<<<<< SEARCH\n  <button onclick={() => onChangeQty(1)}>+</button>\n=======\n  <button disabled={item.product.stock <= 0} onclick={() => onChangeQty(1)}>+</button>\n>>>>>>> REPLACE\n```\n\n```edit ProductCard.svelte\n<<<<<<< SEARCH\n  <button class=\"primary\" onclick={onAdd}>Agregar</button>\n=======\n  {#if product.stock > 0}\n    <button class=\"primary\" onclick={onAdd}>Agregar</button>\n  {:else}\n    <span class=\"text-gray-500\">Sin stock</span>\n  {/if}\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62250,
+        "brotli": 20950
+      }
     },
     {
       "task": "shop-stock@focus",
@@ -660,7 +732,11 @@
           "errors": [],
           "edit": "```patch\nreplace Shop.add\n  fn add(product) {\n    if product.stock <= 0 { return }\n    products = products.map(p => p.id == product.id ? { ...p, stock: p.stock - 1 } : p)\n    let found = cart.find(i => i.product.id == product.id)\n    if found {\n      found.qty++\n    } else {\n      cart.push({ product, qty: 1 })\n    }\n  }\nreplace ProductCard/card/button\n  if product.stock > 0 {\n    button \"Agregar\" primary -> onAdd(product)\n  } else {\n    text \"Sin stock\" muted\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7713,
+        "brotli": 2700
+      }
     },
     {
       "task": "shop-stock@focus",
@@ -687,7 +763,11 @@
           "errors": [],
           "edit": "```patch\nreplace Shop.add\n  fn add(product) {\n    if product.stock <= 0 { return }\n    products = products.map(p => p.id == product.id ? { ...p, stock: p.stock - 1 } : p)\n    let found = cart.find(i => i.product.id == product.id)\n    if found {\n      found.qty++\n    } else {\n      cart.push({ product, qty: 1 })\n    }\n  }\nreplace ProductCard/card/button\n  if product.stock > 0 {\n    button \"Agregar\" primary -> onAdd(product)\n  } else {\n    text \"Sin stock\" muted\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7713,
+        "brotli": 2700
+      }
     },
     {
       "task": "shop-stock@focus",
@@ -723,7 +803,11 @@
           "errors": [],
           "edit": "Consideraciones: `products` pasa a ser estado mutable. `add` descuenta 1 del stock (si hay stock). Al cambiar la cantidad en el carrito, el stock también debe mantenerse consistente: restar suma stock, sumar descuenta (solo si hay). Al vaciar el carrito se restituye el stock.\n\n```edit App.tsx\n<<<<<<< SEARCH\n  const [products] = useState<Product[]>(PRODUCTS);\n=======\n  const [products, setProducts] = useState<Product[]>(PRODUCTS);\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\n  function add(product: Product) {\n    const found = cart.find((i) => i.product.id === product.id);\n=======\n  function add(product: Product) {\n    const current = products.find((p) => p.id === product.id);\n    if (!current || current.stock <= 0) return;\n    setProducts(products.map((p) => (p.id === product.id ? { ...p, stock: p.stock - 1 } : p)));\n    const found = cart.find((i) => i.product.id === product.id);\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\n  function changeQty(id: number, delta: number) {\n    setCart(cart.map((i) => (i.product.id === id ? { ...i, qty: i.qty + delta } : i)).filter((i) => i.qty > 0));\n  }\n=======\n  function changeQty(id: number, delta: number) {\n    const current = products.find((p) => p.id === id);\n    if (!current) return;\n    if (delta > current.stock) delta = current.stock;\n    if (delta === 0) return;\n    setProducts(products.map((p) => (p.id === id ? { ...p, stock: p.stock - delta } : p)));\n    setCart(cart.map((i) => (i.product.id === id ? { ...i, qty: i.qty + delta } : i)).filter((i) => i.qty > 0));\n  }\n\n  function clearCart() {\n    setProducts(\n      products.map((p) => {\n        const item = cart.find((i) => i.product.id === p.id);\n        return item ? { ...p, stock: p.stock + item.qty } : p;\n      })\n    );\n    setCart([]);\n  }\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\nonClear={() => setCart([])} />\n=======\nonClear={clearCart} />\n>>>>>>> REPLACE\n```\n\n```edit ProductCard.tsx\n<<<<<<< SEARCH\n      <button className=\"primary\" onClick={onAdd}>Agregar</button>\n=======\n      {product.stock > 0 ? (\n        <button className=\"primary\" onClick={onAdd}>Agregar</button>\n      ) : (\n        <span className=\"font-semibold text-red-600\">Sin stock</span>\n      )}\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227520,
+        "brotli": 60698
+      }
     },
     {
       "task": "shop-stock@focus",
@@ -766,7 +850,11 @@
           "errors": [],
           "edit": "```edit App.tsx\n<<<<<<< SEARCH\n  const [products] = useState<Product[]>(PRODUCTS);\n=======\n  const [products, setProducts] = useState<Product[]>(PRODUCTS);\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\n  function add(product: Product) {\n=======\n  function adjustStock(id: number, delta: number) {\n    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, stock: p.stock + delta } : p)));\n  }\n\n  function add(product: Product) {\n    const current = products.find((p) => p.id === product.id);\n    if (!current || current.stock <= 0) return;\n    adjustStock(product.id, -1);\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\n  function changeQty(id: number, delta: number) {\n=======\n  function changeQty(id: number, delta: number) {\n    if (delta > 0) {\n      const current = products.find((p) => p.id === id);\n      if (!current || current.stock < delta) return;\n    }\n    adjustStock(id, -delta);\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\n  const count = cart.reduce((n, i) => n + i.qty, 0);\n=======\n  function clear() {\n    setProducts((prev) =>\n      prev.map((p) => {\n        const item = cart.find((i) => i.product.id === p.id);\n        return item ? { ...p, stock: p.stock + item.qty } : p;\n      })\n    );\n    setCart([]);\n  }\n\n  const count = cart.reduce((n, i) => n + i.qty, 0);\n>>>>>>> REPLACE\n```\n\n```edit App.tsx\n<<<<<<< SEARCH\nonClear={() => setCart([])}\n=======\nonClear={clear}\n>>>>>>> REPLACE\n```\n\n```edit ProductCard.tsx\n<<<<<<< SEARCH\n      <button className=\"primary\" onClick={onAdd}>Agregar</button>\n=======\n      {product.stock > 0 ? (\n        <button className=\"primary\" onClick={onAdd}>Agregar</button>\n      ) : (\n        <span className=\"font-semibold text-red-600\">Sin stock</span>\n      )}\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227506,
+        "brotli": 60641
+      }
     },
     {
       "task": "shop-stock@focus",
@@ -802,7 +890,11 @@
           "errors": [],
           "edit": "```edit App.svelte\n<<<<<<< SEARCH\n  function add(product: Product) {\n    const found = cart.find((i) => i.product.id === product.id);\n    if (found) found.qty++;\n    else cart.push({ product, qty: 1 });\n  }\n\n  function changeQty(id: number, delta: number) {\n    cart = cart.map((i) => (i.product.id === id ? { ...i, qty: i.qty + delta } : i)).filter((i) => i.qty > 0);\n  }\n=======\n  function add(product: Product) {\n    const p = products.find((x) => x.id === product.id);\n    if (!p || p.stock <= 0) return;\n    p.stock--;\n    const found = cart.find((i) => i.product.id === product.id);\n    if (found) found.qty++;\n    else cart.push({ product, qty: 1 });\n  }\n\n  function changeQty(id: number, delta: number) {\n    const p = products.find((x) => x.id === id);\n    if (!p) return;\n    if (delta > 0 && p.stock < delta) return;\n    p.stock -= delta;\n    cart = cart.map((i) => (i.product.id === id ? { ...i, qty: i.qty + delta } : i)).filter((i) => i.qty > 0);\n  }\n\n  function clearCart() {\n    for (const item of cart) {\n      const p = products.find((x) => x.id === item.product.id);\n      if (p) p.stock += item.qty;\n    }\n    cart = [];\n  }\n>>>>>>> REPLACE\n```\n\n```edit App.svelte\n<<<<<<< SEARCH\nonClear={() => (cart = [])} />\n=======\nonClear={clearCart} />\n>>>>>>> REPLACE\n```\n\n```edit ProductCard.svelte\n<<<<<<< SEARCH\n  <button class=\"primary\" onclick={onAdd}>Agregar</button>\n=======\n  {#if product.stock > 0}\n    <button class=\"primary\" onclick={onAdd}>Agregar</button>\n  {:else}\n    <span class=\"text-red-600 font-semibold\">Sin stock</span>\n  {/if}\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62261,
+        "brotli": 20973
+      }
     },
     {
       "task": "shop-stock@focus",
@@ -838,7 +930,11 @@
           "errors": [],
           "edit": "```edit App.svelte\n<<<<<<< SEARCH\n  function add(product: Product) {\n    const found = cart.find((i) => i.product.id === product.id);\n    if (found) found.qty++;\n    else cart.push({ product, qty: 1 });\n  }\n\n  function changeQty(id: number, delta: number) {\n    cart = cart.map((i) => (i.product.id === id ? { ...i, qty: i.qty + delta } : i)).filter((i) => i.qty > 0);\n  }\n=======\n  function add(product: Product) {\n    const p = products.find((x) => x.id === product.id);\n    if (!p || p.stock <= 0) return;\n    p.stock--;\n    const found = cart.find((i) => i.product.id === product.id);\n    if (found) found.qty++;\n    else cart.push({ product: p, qty: 1 });\n  }\n\n  function changeQty(id: number, delta: number) {\n    const p = products.find((x) => x.id === id);\n    if (!p || delta > p.stock) return;\n    p.stock -= delta;\n    cart = cart.map((i) => (i.product.id === id ? { ...i, qty: i.qty + delta } : i)).filter((i) => i.qty > 0);\n  }\n\n  function clear() {\n    for (const item of cart) {\n      const p = products.find((x) => x.id === item.product.id);\n      if (p) p.stock += item.qty;\n    }\n    cart = [];\n  }\n>>>>>>> REPLACE\n```\n\n```edit App.svelte\n<<<<<<< SEARCH\nonClear={() => (cart = [])} />\n=======\nonClear={clear} />\n>>>>>>> REPLACE\n```\n\n```edit ProductCard.svelte\n<<<<<<< SEARCH\n  <button class=\"primary\" onclick={onAdd}>Agregar</button>\n=======\n  {#if product.stock > 0}\n    <button class=\"primary\" onclick={onAdd}>Agregar</button>\n  {:else}\n    <span class=\"text-red-600 font-semibold\">Sin stock</span>\n  {/if}\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62255,
+        "brotli": 20983
+      }
     },
     {
       "task": "shop-discount@full",
@@ -865,7 +961,11 @@
           "errors": [],
           "edit": "```patch\nreplace Summary/row\n  column gap=1 {\n    row justify=between {\n      text `Total: $${total.toFixed(2)}` bold\n      button \"Vaciar carrito\" danger -> onClear()\n    }\n    if total > 50 {\n      text \"Descuento 10%\" muted\n      text `Total final: $${(total * 0.9).toFixed(2)}` bold\n    }\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7752,
+        "brotli": 2692
+      }
     },
     {
       "task": "shop-discount@full",
@@ -892,7 +992,11 @@
           "errors": [],
           "edit": "```patch\nreplace Summary/row\n  column gap=1 {\n    row justify=between {\n      text `Total: $${total.toFixed(2)}` bold\n      button \"Vaciar carrito\" danger -> onClear()\n    }\n    if total > 50 {\n      text \"Descuento 10%\" muted\n      text `Total final: $${(total * 0.9).toFixed(2)}` bold\n    }\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7752,
+        "brotli": 2692
+      }
     },
     {
       "task": "shop-discount@full",
@@ -928,7 +1032,11 @@
           "errors": [],
           "edit": "Solo cambia `Summary.tsx`.\n\n```edit Summary.tsx\n<<<<<<< SEARCH\n  const total = cart.reduce((sum, i) => sum + i.product.price * i.qty, 0);\n  return (\n    <div className=\"flex items-center justify-between border-t pt-2\">\n      <span className=\"font-bold\">Total: ${total.toFixed(2)}</span>\n      <button className=\"danger\" onClick={onClear}>Vaciar carrito</button>\n    </div>\n  );\n=======\n  const total = cart.reduce((sum, i) => sum + i.product.price * i.qty, 0);\n  const hasDiscount = total > 50;\n  const finalTotal = hasDiscount ? total * 0.9 : total;\n  return (\n    <div className=\"flex items-center justify-between border-t pt-2\">\n      <div className=\"flex flex-col\">\n        <span className=\"font-bold\">Total: ${total.toFixed(2)}</span>\n        {hasDiscount && (\n          <>\n            <span className=\"text-green-600\">Descuento 10%</span>\n            <span className=\"font-bold\">Total final: ${finalTotal.toFixed(2)}</span>\n          </>\n        )}\n      </div>\n      <button className=\"danger\" onClick={onClear}>Vaciar carrito</button>\n    </div>\n  );\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227387,
+        "brotli": 60566
+      }
     },
     {
       "task": "shop-discount@full",
@@ -964,7 +1072,11 @@
           "errors": [],
           "edit": "```edit Summary.tsx\n<<<<<<< SEARCH\n  const total = cart.reduce((sum, i) => sum + i.product.price * i.qty, 0);\n  return (\n    <div className=\"flex items-center justify-between border-t pt-2\">\n      <span className=\"font-bold\">Total: ${total.toFixed(2)}</span>\n      <button className=\"danger\" onClick={onClear}>Vaciar carrito</button>\n    </div>\n  );\n=======\n  const total = cart.reduce((sum, i) => sum + i.product.price * i.qty, 0);\n  const hasDiscount = total > 50;\n  const finalTotal = hasDiscount ? total * 0.9 : total;\n  return (\n    <div className=\"flex items-center justify-between border-t pt-2\">\n      <div className=\"flex flex-col\">\n        <span className=\"font-bold\">Total: ${total.toFixed(2)}</span>\n        {hasDiscount && (\n          <>\n            <span className=\"text-green-600\">Descuento 10%</span>\n            <span className=\"font-bold\">Total final: ${finalTotal.toFixed(2)}</span>\n          </>\n        )}\n      </div>\n      <button className=\"danger\" onClick={onClear}>Vaciar carrito</button>\n    </div>\n  );\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227387,
+        "brotli": 60566
+      }
     },
     {
       "task": "shop-discount@full",
@@ -1000,7 +1112,11 @@
           "errors": [],
           "edit": "```edit Summary.svelte\n<<<<<<< SEARCH\n  let total = $derived(cart.reduce((sum, i) => sum + i.product.price * i.qty, 0));\n</script>\n\n<div class=\"flex items-center justify-between border-t pt-2\">\n  <span class=\"font-bold\">Total: ${total.toFixed(2)}</span>\n  <button class=\"danger\" onclick={onClear}>Vaciar carrito</button>\n</div>\n=======\n  let total = $derived(cart.reduce((sum, i) => sum + i.product.price * i.qty, 0));\n  let hasDiscount = $derived(total > 50);\n  let finalTotal = $derived(hasDiscount ? total * 0.9 : total);\n</script>\n\n<div class=\"flex items-center justify-between border-t pt-2\">\n  <div class=\"flex flex-col\">\n    <span class=\"font-bold\">Total: ${total.toFixed(2)}</span>\n    {#if hasDiscount}\n      <span class=\"text-green-600\">Descuento 10%</span>\n      <span class=\"font-bold\">Total final: ${finalTotal.toFixed(2)}</span>\n    {/if}\n  </div>\n  <button class=\"danger\" onclick={onClear}>Vaciar carrito</button>\n</div>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62212,
+        "brotli": 20931
+      }
     },
     {
       "task": "shop-discount@full",
@@ -1036,7 +1152,11 @@
           "errors": [],
           "edit": "```edit Summary.svelte\n<<<<<<< SEARCH\n  let total = $derived(cart.reduce((sum, i) => sum + i.product.price * i.qty, 0));\n</script>\n\n<div class=\"flex items-center justify-between border-t pt-2\">\n  <span class=\"font-bold\">Total: ${total.toFixed(2)}</span>\n  <button class=\"danger\" onclick={onClear}>Vaciar carrito</button>\n</div>\n=======\n  let total = $derived(cart.reduce((sum, i) => sum + i.product.price * i.qty, 0));\n  let hasDiscount = $derived(total > 50);\n  let finalTotal = $derived(hasDiscount ? total * 0.9 : total);\n</script>\n\n<div class=\"flex items-center justify-between border-t pt-2\">\n  <div class=\"flex flex-col\">\n    <span class=\"font-bold\">Total: ${total.toFixed(2)}</span>\n    {#if hasDiscount}\n      <span class=\"text-green-600\">Descuento 10%</span>\n      <span class=\"font-bold\">Total final: ${finalTotal.toFixed(2)}</span>\n    {/if}\n  </div>\n  <button class=\"danger\" onclick={onClear}>Vaciar carrito</button>\n</div>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62212,
+        "brotli": 20931
+      }
     },
     {
       "task": "shop-discount@focus",
@@ -1063,7 +1183,11 @@
           "errors": [],
           "edit": "```patch\nappend Summary\n  computed discounted = total > 50\n  computed finalTotal = discounted ? total * 0.9 : total\ninsert after Summary/row\n  if discounted {\n    column gap=1 {\n      text \"Descuento 10%\" muted\n      text `Total final: $${finalTotal.toFixed(2)}` bold\n    }\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7788,
+        "brotli": 2717
+      }
     },
     {
       "task": "shop-discount@focus",
@@ -1090,7 +1214,11 @@
           "errors": [],
           "edit": "```patch\nappend Summary\n  computed discounted = total > 50\n  computed finalTotal = discounted ? total * 0.9 : total\ninsert after Summary/row\n  if discounted {\n    column gap=1 {\n      text \"Descuento 10%\" muted\n      text `Total final: $${finalTotal.toFixed(2)}` bold\n    }\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7788,
+        "brotli": 2717
+      }
     },
     {
       "task": "shop-discount@focus",
@@ -1126,7 +1254,11 @@
           "errors": [],
           "edit": "```edit Summary.tsx\n<<<<<<< SEARCH\n  const total = cart.reduce((sum, i) => sum + i.product.price * i.qty, 0);\n  return (\n    <div className=\"flex items-center justify-between border-t pt-2\">\n      <span className=\"font-bold\">Total: ${total.toFixed(2)}</span>\n      <button className=\"danger\" onClick={onClear}>Vaciar carrito</button>\n    </div>\n  );\n=======\n  const total = cart.reduce((sum, i) => sum + i.product.price * i.qty, 0);\n  const hasDiscount = total > 50;\n  const finalTotal = hasDiscount ? total * 0.9 : total;\n  return (\n    <div className=\"flex items-center justify-between border-t pt-2\">\n      <div className=\"flex flex-col\">\n        <span className=\"font-bold\">Total: ${total.toFixed(2)}</span>\n        {hasDiscount && (\n          <>\n            <span className=\"text-green-600\">Descuento 10%</span>\n            <span className=\"font-bold\">Total final: ${finalTotal.toFixed(2)}</span>\n          </>\n        )}\n      </div>\n      <button className=\"danger\" onClick={onClear}>Vaciar carrito</button>\n    </div>\n  );\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227387,
+        "brotli": 60566
+      }
     },
     {
       "task": "shop-discount@focus",
@@ -1162,7 +1294,11 @@
           "errors": [],
           "edit": "```edit Summary.tsx\n<<<<<<< SEARCH\n  const total = cart.reduce((sum, i) => sum + i.product.price * i.qty, 0);\n  return (\n    <div className=\"flex items-center justify-between border-t pt-2\">\n      <span className=\"font-bold\">Total: ${total.toFixed(2)}</span>\n      <button className=\"danger\" onClick={onClear}>Vaciar carrito</button>\n    </div>\n  );\n=======\n  const total = cart.reduce((sum, i) => sum + i.product.price * i.qty, 0);\n  const hasDiscount = total > 50;\n  const finalTotal = hasDiscount ? total * 0.9 : total;\n  return (\n    <div className=\"flex items-center justify-between border-t pt-2\">\n      <div className=\"flex flex-col\">\n        <span className=\"font-bold\">Total: ${total.toFixed(2)}</span>\n        {hasDiscount && (\n          <>\n            <span className=\"text-green-600\">Descuento 10%</span>\n            <span className=\"font-bold\">Total final: ${finalTotal.toFixed(2)}</span>\n          </>\n        )}\n      </div>\n      <button className=\"danger\" onClick={onClear}>Vaciar carrito</button>\n    </div>\n  );\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227387,
+        "brotli": 60566
+      }
     },
     {
       "task": "shop-discount@focus",
@@ -1198,7 +1334,11 @@
           "errors": [],
           "edit": "```edit Summary.svelte\n<<<<<<< SEARCH\n  let total = $derived(cart.reduce((sum, i) => sum + i.product.price * i.qty, 0));\n</script>\n\n<div class=\"flex items-center justify-between border-t pt-2\">\n  <span class=\"font-bold\">Total: ${total.toFixed(2)}</span>\n  <button class=\"danger\" onclick={onClear}>Vaciar carrito</button>\n</div>\n=======\n  let total = $derived(cart.reduce((sum, i) => sum + i.product.price * i.qty, 0));\n  let hasDiscount = $derived(total > 50);\n  let finalTotal = $derived(hasDiscount ? total * 0.9 : total);\n</script>\n\n<div class=\"flex items-center justify-between border-t pt-2\">\n  <div class=\"flex flex-col\">\n    <span class=\"font-bold\">Total: ${total.toFixed(2)}</span>\n    {#if hasDiscount}\n      <span class=\"text-green-600\">Descuento 10%</span>\n      <span class=\"font-bold\">Total final: ${finalTotal.toFixed(2)}</span>\n    {/if}\n  </div>\n  <button class=\"danger\" onclick={onClear}>Vaciar carrito</button>\n</div>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62212,
+        "brotli": 20931
+      }
     },
     {
       "task": "shop-discount@focus",
@@ -1234,7 +1374,11 @@
           "errors": [],
           "edit": "```edit Summary.svelte\n<<<<<<< SEARCH\n  let total = $derived(cart.reduce((sum, i) => sum + i.product.price * i.qty, 0));\n</script>\n\n<div class=\"flex items-center justify-between border-t pt-2\">\n  <span class=\"font-bold\">Total: ${total.toFixed(2)}</span>\n  <button class=\"danger\" onclick={onClear}>Vaciar carrito</button>\n</div>\n=======\n  let total = $derived(cart.reduce((sum, i) => sum + i.product.price * i.qty, 0));\n  let hasDiscount = $derived(total > 50);\n  let finalTotal = $derived(hasDiscount ? total * 0.9 : total);\n</script>\n\n<div class=\"flex items-center justify-between border-t pt-2\">\n  <div class=\"flex flex-col\">\n    <span class=\"font-bold\">Total: ${total.toFixed(2)}</span>\n    {#if hasDiscount}\n      <span class=\"text-green-600\">Descuento 10%</span>\n      <span class=\"font-bold\">Total final: ${finalTotal.toFixed(2)}</span>\n    {/if}\n  </div>\n  <button class=\"danger\" onclick={onClear}>Vaciar carrito</button>\n</div>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62212,
+        "brotli": 20931
+      }
     },
     {
       "task": "shop-sort@full",
@@ -1261,7 +1405,11 @@
           "errors": [],
           "edit": "```patch\ninsert before Catalog.shown\n  state sortByPrice = false\nreplace Catalog.shown\n  computed shown = products\n    .filter(p => p.name.toLowerCase().includes(query.toLowerCase()))\n    .sort((a, b) => sortByPrice ? a.price - b.price : 0)\ninsert after Catalog/column/input\n  button \"Ordenar por precio\" primary=sortByPrice -> sortByPrice = !sortByPrice\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7716,
+        "brotli": 2716
+      }
     },
     {
       "task": "shop-sort@full",
@@ -1288,7 +1436,11 @@
           "errors": [],
           "edit": "```patch\nappend Catalog\n  state sorted = false\nreplace Catalog.shown\n  computed shown = (sorted ? [...products].sort((a, b) => a.price - b.price) : products).filter(p => p.name.toLowerCase().includes(query.toLowerCase()))\ninsert after Catalog/column/input\n  button \"Ordenar por precio\" primary=sorted -> sorted = !sorted\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7716,
+        "brotli": 2713
+      }
     },
     {
       "task": "shop-sort@full",
@@ -1324,7 +1476,11 @@
           "errors": [],
           "edit": "```edit Catalog.tsx\n<<<<<<< SEARCH\n  const [query, setQuery] = useState(\"\");\n  const shown = products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()));\n=======\n  const [query, setQuery] = useState(\"\");\n  const [sorted, setSorted] = useState(false);\n  const filtered = products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()));\n  const shown = sorted ? [...filtered].sort((a, b) => a.price - b.price) : filtered;\n>>>>>>> REPLACE\n```\n\n```edit Catalog.tsx\n<<<<<<< SEARCH\n      <SearchBox value={query} onChange={setQuery} />\n=======\n      <div className=\"flex items-center gap-2\">\n        <SearchBox value={query} onChange={setQuery} />\n        <button\n          className={sorted ? \"font-bold\" : \"\"}\n          aria-pressed={sorted}\n          onClick={() => setSorted((s) => !s)}\n        >\n          Ordenar por precio\n        </button>\n      </div>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227366,
+        "brotli": 60572
+      }
     },
     {
       "task": "shop-sort@full",
@@ -1360,7 +1516,11 @@
           "errors": [],
           "edit": "```edit Catalog.tsx\n<<<<<<< SEARCH\n  const [query, setQuery] = useState(\"\");\n  const shown = products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()));\n=======\n  const [query, setQuery] = useState(\"\");\n  const [sorted, setSorted] = useState(false);\n  const filtered = products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()));\n  const shown = sorted ? [...filtered].sort((a, b) => a.price - b.price) : filtered;\n>>>>>>> REPLACE\n```\n\n```edit Catalog.tsx\n<<<<<<< SEARCH\n      <SearchBox value={query} onChange={setQuery} />\n=======\n      <div className=\"flex items-center gap-2\">\n        <SearchBox value={query} onChange={setQuery} />\n        <button\n          className={sorted ? \"font-bold\" : \"\"}\n          aria-pressed={sorted}\n          onClick={() => setSorted((s) => !s)}\n        >\n          Ordenar por precio\n        </button>\n      </div>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227366,
+        "brotli": 60572
+      }
     },
     {
       "task": "shop-sort@full",
@@ -1396,7 +1556,11 @@
           "errors": [],
           "edit": "```edit Catalog.svelte\n<<<<<<< SEARCH\n  let shown = $derived(products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase())));\n=======\n  let sorted = $state(false);\n  let shown = $derived.by(() => {\n    const filtered = products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()));\n    return sorted ? [...filtered].sort((a, b) => a.price - b.price) : filtered;\n  });\n>>>>>>> REPLACE\n```\n\n```edit Catalog.svelte\n<<<<<<< SEARCH\n  <SearchBox bind:value={query} />\n=======\n  <SearchBox bind:value={query} />\n  <button class={sorted ? \"font-bold\" : \"\"} onclick={() => (sorted = !sorted)}>Ordenar por precio</button>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62070,
+        "brotli": 20870
+      }
     },
     {
       "task": "shop-sort@full",
@@ -1432,7 +1596,11 @@
           "errors": [],
           "edit": "```edit Catalog.svelte\n<<<<<<< SEARCH\n  let shown = $derived(products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase())));\n=======\n  let sorted = $state(false);\n  let shown = $derived.by(() => {\n    const filtered = products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()));\n    return sorted ? [...filtered].sort((a, b) => a.price - b.price) : filtered;\n  });\n>>>>>>> REPLACE\n```\n\n```edit Catalog.svelte\n<<<<<<< SEARCH\n  <SearchBox bind:value={query} />\n=======\n  <SearchBox bind:value={query} />\n  <button class={sorted ? \"font-bold\" : \"\"} onclick={() => (sorted = !sorted)}>Ordenar por precio</button>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62070,
+        "brotli": 20870
+      }
     },
     {
       "task": "shop-sort@focus",
@@ -1459,7 +1627,11 @@
           "errors": [],
           "edit": "```patch\nreplace Catalog.shown\n  computed shown = (sorted ? [...products].sort((a, b) => a.price - b.price) : products).filter(p => p.name.toLowerCase().includes(query.toLowerCase()))\ninsert before Catalog.shown\n  state sorted = false\ninsert before Catalog/column/grid\n  button \"Ordenar por precio\" small -> sorted = true\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7699,
+        "brotli": 2706
+      }
     },
     {
       "task": "shop-sort@focus",
@@ -1486,7 +1658,11 @@
           "errors": [],
           "edit": "```patch\nreplace Catalog.shown\n  computed shown = (sorted ? [...products].sort((a, b) => a.price - b.price) : products).filter(p => p.name.toLowerCase().includes(query.toLowerCase()))\ninsert before Catalog.shown\n  state sorted = false\ninsert before Catalog/column/grid\n  button \"Ordenar por precio\" small -> sorted = true\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7699,
+        "brotli": 2706
+      }
     },
     {
       "task": "shop-sort@focus",
@@ -1522,7 +1698,11 @@
           "errors": [],
           "edit": "```edit Catalog.tsx\n<<<<<<< SEARCH\n  const [query, setQuery] = useState(\"\");\n  const shown = products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()));\n=======\n  const [query, setQuery] = useState(\"\");\n  const [sortByPrice, setSortByPrice] = useState(false);\n  const filtered = products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()));\n  const shown = sortByPrice ? [...filtered].sort((a, b) => a.price - b.price) : filtered;\n>>>>>>> REPLACE\n```\n\n```edit Catalog.tsx\n<<<<<<< SEARCH\n      <SearchBox value={query} onChange={setQuery} />\n=======\n      <SearchBox value={query} onChange={setQuery} />\n      <button\n        type=\"button\"\n        onClick={() => setSortByPrice((s) => !s)}\n        aria-pressed={sortByPrice}\n        className={`self-start rounded border px-3 py-1 text-sm ${\n          sortByPrice ? \"bg-blue-600 text-white border-blue-600\" : \"bg-white text-gray-800 border-gray-300\"\n        }`}\n      >\n        Ordenar por precio\n      </button>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227428,
+        "brotli": 60612
+      }
     },
     {
       "task": "shop-sort@focus",
@@ -1558,7 +1738,11 @@
           "errors": [],
           "edit": "```edit Catalog.tsx\n<<<<<<< SEARCH\n  const [query, setQuery] = useState(\"\");\n  const shown = products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()));\n=======\n  const [query, setQuery] = useState(\"\");\n  const [sortByPrice, setSortByPrice] = useState(false);\n  const filtered = products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()));\n  const shown = sortByPrice ? [...filtered].sort((a, b) => a.price - b.price) : filtered;\n>>>>>>> REPLACE\n```\n\n```edit Catalog.tsx\n<<<<<<< SEARCH\n      <SearchBox value={query} onChange={setQuery} />\n=======\n      <SearchBox value={query} onChange={setQuery} />\n      <button\n        type=\"button\"\n        onClick={() => setSortByPrice((s) => !s)}\n        aria-pressed={sortByPrice}\n        className={`self-start rounded border px-3 py-1 text-sm ${\n          sortByPrice ? \"bg-blue-600 text-white border-blue-600\" : \"bg-white text-gray-800 border-gray-300\"\n        }`}\n      >\n        Ordenar por precio\n      </button>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 227428,
+        "brotli": 60612
+      }
     },
     {
       "task": "shop-sort@focus",
@@ -1594,7 +1778,11 @@
           "errors": [],
           "edit": "```edit Catalog.svelte\n<<<<<<< SEARCH\n  let shown = $derived(products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase())));\n=======\n  let sortByPrice = $state(false);\n  let shown = $derived.by(() => {\n    const filtered = products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()));\n    return sortByPrice ? [...filtered].sort((a, b) => a.price - b.price) : filtered;\n  });\n>>>>>>> REPLACE\n```\n\n```edit Catalog.svelte\n<<<<<<< SEARCH\n  <SearchBox bind:value={query} />\n=======\n  <SearchBox bind:value={query} />\n  <button\n    type=\"button\"\n    class=\"self-start rounded border px-3 py-1 text-sm hover:bg-gray-100 {sortByPrice ? 'bg-gray-200 font-semibold' : ''}\"\n    aria-pressed={sortByPrice}\n    onclick={() => (sortByPrice = !sortByPrice)}\n  >\n    Ordenar por precio\n  </button>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62191,
+        "brotli": 20973
+      }
     },
     {
       "task": "shop-sort@focus",
@@ -1630,7 +1818,11 @@
           "errors": [],
           "edit": "```edit Catalog.svelte\n<<<<<<< SEARCH\n  let shown = $derived(products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase())));\n=======\n  let sortByPrice = $state(false);\n  let shown = $derived.by(() => {\n    const filtered = products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()));\n    return sortByPrice ? [...filtered].sort((a, b) => a.price - b.price) : filtered;\n  });\n>>>>>>> REPLACE\n```\n\n```edit Catalog.svelte\n<<<<<<< SEARCH\n  <SearchBox bind:value={query} />\n=======\n  <SearchBox bind:value={query} />\n  <button\n    type=\"button\"\n    class=\"self-start rounded border px-3 py-1 hover:bg-gray-100 {sortByPrice ? 'bg-gray-200 font-semibold' : ''}\"\n    aria-pressed={sortByPrice}\n    onclick={() => (sortByPrice = !sortByPrice)}\n  >\n    Ordenar por precio\n  </button>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 62183,
+        "brotli": 20975
+      }
     },
     {
       "task": "admin-total@full",
@@ -1666,7 +1858,11 @@
           "errors": [],
           "edit": "```patch\ninsert after SuppliersPage/column/title\n  text `Total: ${items.reduce((s, i) => s + i.amount, 0)}` bold\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17315,
+        "brotli": 2764
+      }
     },
     {
       "task": "admin-total@full",
@@ -1702,7 +1898,11 @@
           "errors": [],
           "edit": "```patch\ninsert after SuppliersPage/column/title\n  text `Total: ${items.reduce((s, i) => s + i.amount, 0)}` bold\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17315,
+        "brotli": 2764
+      }
     },
     {
       "task": "admin-total@full",
@@ -1770,7 +1970,11 @@
           "errors": [],
           "edit": "```edit SuppliersPage.tsx\n<<<<<<< SEARCH\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Proveedores</h2>\n=======\n  const total = items.reduce((sum, item) => sum + item.amount, 0);\n\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Proveedores</h2>\n      <span className=\"font-semibold\">Total: {total}</span>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237494,
+        "brotli": 61041
+      }
     },
     {
       "task": "admin-total@full",
@@ -1838,7 +2042,11 @@
           "errors": [],
           "edit": "```edit SuppliersPage.tsx\n<<<<<<< SEARCH\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Proveedores</h2>\n=======\n  const total = items.reduce((sum, i) => sum + i.amount, 0);\n\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Proveedores</h2>\n      <span className=\"font-semibold\">Total: {total}</span>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237494,
+        "brotli": 61041
+      }
     },
     {
       "task": "admin-total@full",
@@ -1906,7 +2114,11 @@
           "errors": [],
           "edit": "```edit SuppliersPage.svelte\n<<<<<<< SEARCH\n  function add(name: string, amount: number) {\n=======\n  let total = $derived(items.reduce((sum, i) => sum + i.amount, 0));\n\n  function add(name: string, amount: number) {\n>>>>>>> REPLACE\n```\n\n```edit SuppliersPage.svelte\n<<<<<<< SEARCH\n  <SuppliersList {items} />\n=======\n  <span class=\"font-semibold\">Total: {total}</span>\n  <SuppliersList {items} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71325,
+        "brotli": 20712
+      }
     },
     {
       "task": "admin-total@full",
@@ -1974,7 +2186,11 @@
           "errors": [],
           "edit": "```edit SuppliersPage.svelte\n<<<<<<< SEARCH\n  function add(name: string, amount: number) {\n=======\n  let total = $derived(items.reduce((sum, i) => sum + i.amount, 0));\n\n  function add(name: string, amount: number) {\n>>>>>>> REPLACE\n```\n\n```edit SuppliersPage.svelte\n<<<<<<< SEARCH\n  <SuppliersList {items} />\n=======\n  <span class=\"font-semibold\">Total: {total}</span>\n  <SuppliersList {items} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71325,
+        "brotli": 20712
+      }
     },
     {
       "task": "admin-total@focus",
@@ -2010,7 +2226,11 @@
           "errors": [],
           "edit": "```patch\nappend SuppliersPage\n  computed total = items.reduce((sum, i) => sum + i.amount, 0)\ninsert after SuppliersPage/column/title\n  text `Total: ${total}` bold\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17620,
+        "brotli": 2842
+      }
     },
     {
       "task": "admin-total@focus",
@@ -2046,7 +2266,11 @@
           "errors": [],
           "edit": "```patch\nappend SuppliersPage\n  computed total = items.reduce((sum, i) => sum + i.amount, 0)\ninsert after SuppliersPage/column/title\n  text `Total: ${total}` bold\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17620,
+        "brotli": 2842
+      }
     },
     {
       "task": "admin-total@focus",
@@ -2114,7 +2338,11 @@
           "errors": [],
           "edit": "```edit SuppliersPage.tsx\n<<<<<<< SEARCH\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Proveedores</h2>\n=======\n  const total = items.reduce((sum, i) => sum + i.amount, 0);\n\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Proveedores</h2>\n      <span className=\"font-semibold\">Total: {total}</span>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237494,
+        "brotli": 61041
+      }
     },
     {
       "task": "admin-total@focus",
@@ -2182,7 +2410,11 @@
           "errors": [],
           "edit": "```edit SuppliersPage.tsx\n<<<<<<< SEARCH\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Proveedores</h2>\n      <SuppliersForm onAdd={add} />\n=======\n  const total = items.reduce((sum, i) => sum + i.amount, 0);\n\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Proveedores</h2>\n      <SuppliersForm onAdd={add} />\n      <span className=\"font-semibold\">Total: {total}</span>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237494,
+        "brotli": 61100
+      }
     },
     {
       "task": "admin-total@focus",
@@ -2250,7 +2482,11 @@
           "errors": [],
           "edit": "```edit SuppliersPage.svelte\n<<<<<<< SEARCH\n  function add(name: string, amount: number) {\n=======\n  let total = $derived(items.reduce((sum, i) => sum + i.amount, 0));\n\n  function add(name: string, amount: number) {\n>>>>>>> REPLACE\n```\n\n```edit SuppliersPage.svelte\n<<<<<<< SEARCH\n  <SuppliersList {items} />\n=======\n  <SuppliersList {items} />\n  <p class=\"font-semibold\">Total: {total}</p>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71323,
+        "brotli": 20721
+      }
     },
     {
       "task": "admin-total@focus",
@@ -2318,7 +2554,11 @@
           "errors": [],
           "edit": "```edit SuppliersPage.svelte\n<<<<<<< SEARCH\n  function add(name: string, amount: number) {\n=======\n  let total = $derived(items.reduce((sum, i) => sum + i.amount, 0));\n\n  function add(name: string, amount: number) {\n>>>>>>> REPLACE\n```\n\n```edit SuppliersPage.svelte\n<<<<<<< SEARCH\n  <SuppliersList {items} />\n=======\n  <SuppliersList {items} />\n  <p class=\"font-semibold\">Total: {total}</p>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71323,
+        "brotli": 20721
+      }
     },
     {
       "task": "admin-toggle@full",
@@ -2354,7 +2594,11 @@
           "errors": [],
           "edit": "```patch\ninsert after EmployeesRow/row/text[0]\n  if !item.active {\n    text \"(inactivo)\" muted\n  }\nappend EmployeesRow/row\n  button \"Alternar\" small -> item.active = !item.active\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17420,
+        "brotli": 2791
+      }
     },
     {
       "task": "admin-toggle@full",
@@ -2390,7 +2634,11 @@
           "errors": [],
           "edit": "```patch\ninsert after EmployeesRow/row/text[0]\n  if !item.active {\n    text \"(inactivo)\" muted\n  }\nappend EmployeesRow/row\n  button \"Alternar\" small -> item.active = !item.active\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17420,
+        "brotli": 2791
+      }
     },
     {
       "task": "admin-toggle@full",
@@ -2458,7 +2706,11 @@
           "errors": [],
           "edit": "```edit EmployeesPage.tsx\n<<<<<<< SEARCH\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Empleados</h2>\n      <EmployeesForm onAdd={add} />\n      <EmployeesList items={items} />\n=======\n  function toggle(id: number) {\n    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, active: !i.active } : i)));\n  }\n\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Empleados</h2>\n      <EmployeesForm onAdd={add} />\n      <EmployeesList items={items} onToggle={toggle} />\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.tsx\n<<<<<<< SEARCH\nexport default function EmployeesList({ items }: { items: Item[] }) {\n=======\nexport default function EmployeesList({ items, onToggle }: { items: Item[]; onToggle: (id: number) => void }) {\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.tsx\n<<<<<<< SEARCH\n        <EmployeesRow key={item.id} item={item} />\n=======\n        <EmployeesRow key={item.id} item={item} onToggle={() => onToggle(item.id)} />\n>>>>>>> REPLACE\n```\n\n```edit EmployeesRow.tsx\n<<<<<<< SEARCH\nexport default function EmployeesRow({ item }: { item: Item }) {\n=======\nexport default function EmployeesRow({ item, onToggle }: { item: Item; onToggle: () => void }) {\n>>>>>>> REPLACE\n```\n\n```edit EmployeesRow.tsx\n<<<<<<< SEARCH\n      <span className=\"font-semibold\">{item.name}</span>\n      <span>Sueldo: {item.amount}</span>\n=======\n      <span className=\"font-semibold\">{item.name}</span>\n      {!item.active && <span className=\"text-gray-500\">(inactivo)</span>}\n      <span>Sueldo: {item.amount}</span>\n      <button onClick={onToggle}>Alternar</button>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237639,
+        "brotli": 61079
+      }
     },
     {
       "task": "admin-toggle@full",
@@ -2526,7 +2778,11 @@
           "errors": [],
           "edit": "```edit EmployeesPage.tsx\n<<<<<<< SEARCH\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Empleados</h2>\n      <EmployeesForm onAdd={add} />\n      <EmployeesList items={items} />\n=======\n  function toggle(id: number) {\n    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, active: !i.active } : i)));\n  }\n\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Empleados</h2>\n      <EmployeesForm onAdd={add} />\n      <EmployeesList items={items} onToggle={toggle} />\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.tsx\n<<<<<<< SEARCH\nexport default function EmployeesList({ items }: { items: Item[] }) {\n=======\nexport default function EmployeesList({ items, onToggle }: { items: Item[]; onToggle: (id: number) => void }) {\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.tsx\n<<<<<<< SEARCH\n        <EmployeesRow key={item.id} item={item} />\n=======\n        <EmployeesRow key={item.id} item={item} onToggle={onToggle} />\n>>>>>>> REPLACE\n```\n\n```edit EmployeesRow.tsx\n<<<<<<< SEARCH\nexport default function EmployeesRow({ item }: { item: Item }) {\n  return (\n    <div className=\"flex gap-2\">\n      <span className=\"font-semibold\">{item.name}</span>\n      <span>Sueldo: {item.amount}</span>\n=======\nexport default function EmployeesRow({ item, onToggle }: { item: Item; onToggle: (id: number) => void }) {\n  return (\n    <div className=\"flex gap-2\">\n      <span className=\"font-semibold\">{item.name}</span>\n      {!item.active && <span className=\"text-gray-500\">(inactivo)</span>}\n      <span>Sueldo: {item.amount}</span>\n      <button onClick={() => onToggle(item.id)}>Alternar</button>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237639,
+        "brotli": 61061
+      }
     },
     {
       "task": "admin-toggle@full",
@@ -2594,7 +2850,11 @@
           "errors": [],
           "edit": "Hay que cambiar EmployeesRow, EmployeesList y EmployeesPage. En `EmployeesPage` se mantiene el estado, así que agrego la función `toggle` ahí y la paso hacia abajo.\n\n```edit EmployeesRow.svelte\n<<<<<<< SEARCH\n  let { item }: { item: Item } = $props();\n</script>\n\n<div class=\"flex gap-2\">\n  <span class=\"font-semibold\">{item.name}</span>\n  <span>Sueldo: {item.amount}</span>\n</div>\n=======\n  let { item, onToggle }: { item: Item; onToggle: (id: number) => void } = $props();\n</script>\n\n<div class=\"flex gap-2\">\n  <span class=\"font-semibold\">{item.name}</span>\n  {#if !item.active}\n    <span class=\"text-gray-500\">(inactivo)</span>\n  {/if}\n  <span>Sueldo: {item.amount}</span>\n  <button onclick={() => onToggle(item.id)}>Alternar</button>\n</div>\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.svelte\n<<<<<<< SEARCH\n  let { items }: { items: Item[] } = $props();\n=======\n  let { items, onToggle }: { items: Item[]; onToggle: (id: number) => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.svelte\n<<<<<<< SEARCH\n      <EmployeesRow {item} />\n=======\n      <EmployeesRow {item} {onToggle} />\n>>>>>>> REPLACE\n```\n\n```edit EmployeesPage.svelte\n<<<<<<< SEARCH\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n=======\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n\n  function toggle(id: number) {\n    const item = items.find((i) => i.id === id);\n    if (item) item.active = !item.active;\n  }\n>>>>>>> REPLACE\n```\n\n```edit EmployeesPage.svelte\n<<<<<<< SEARCH\n  <EmployeesList {items} />\n=======\n  <EmployeesList {items} onToggle={toggle} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71480,
+        "brotli": 20775
+      }
     },
     {
       "task": "admin-toggle@full",
@@ -2662,7 +2922,11 @@
           "errors": [],
           "edit": "Se agrega un callback `onToggle` que baja desde la página hasta la fila, y la fila muestra el botón y el texto \"(inactivo)\".\n\n```edit EmployeesPage.svelte\n<<<<<<< SEARCH\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n=======\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n\n  function toggle(id: number) {\n    const item = items.find((i) => i.id === id);\n    if (item) item.active = !item.active;\n  }\n>>>>>>> REPLACE\n```\n\n```edit EmployeesPage.svelte\n<<<<<<< SEARCH\n  <EmployeesList {items} />\n=======\n  <EmployeesList {items} onToggle={toggle} />\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.svelte\n<<<<<<< SEARCH\n  let { items }: { items: Item[] } = $props();\n=======\n  let { items, onToggle }: { items: Item[]; onToggle: (id: number) => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.svelte\n<<<<<<< SEARCH\n      <EmployeesRow {item} />\n=======\n      <EmployeesRow {item} {onToggle} />\n>>>>>>> REPLACE\n```\n\n```edit EmployeesRow.svelte\n<<<<<<< SEARCH\n  let { item }: { item: Item } = $props();\n=======\n  let { item, onToggle }: { item: Item; onToggle: (id: number) => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit EmployeesRow.svelte\n<<<<<<< SEARCH\n  <span class=\"font-semibold\">{item.name}</span>\n  <span>Sueldo: {item.amount}</span>\n=======\n  <span class=\"font-semibold\">{item.name}</span>\n  {#if !item.active}\n    <span class=\"text-gray-500\">(inactivo)</span>\n  {/if}\n  <span>Sueldo: {item.amount}</span>\n  <button onclick={() => onToggle(item.id)}>Alternar</button>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71480,
+        "brotli": 20775
+      }
     },
     {
       "task": "admin-toggle@focus",
@@ -2698,7 +2962,11 @@
           "errors": [],
           "edit": "```patch\nreplace EmployeesRow/row\n  row gap=2 {\n    text item.name bold\n    if !item.active {\n      text \"(inactivo)\" muted\n    }\n    text `Sueldo: ${item.amount}`\n    button \"Alternar\" small -> item.active = !item.active\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17420,
+        "brotli": 2791
+      }
     },
     {
       "task": "admin-toggle@focus",
@@ -2734,7 +3002,11 @@
           "errors": [],
           "edit": "```patch\nreplace EmployeesRow/row\n  row gap=2 {\n    text item.name bold\n    if !item.active {\n      text \"(inactivo)\" muted\n    }\n    text `Sueldo: ${item.amount}`\n    button \"Alternar\" small -> item.active = !item.active\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17420,
+        "brotli": 2791
+      }
     },
     {
       "task": "admin-toggle@focus",
@@ -2802,7 +3074,11 @@
           "errors": [],
           "edit": "```edit EmployeesRow.tsx\n<<<<<<< SEARCH\nexport default function EmployeesRow({ item }: { item: Item }) {\n  return (\n    <div className=\"flex gap-2\">\n      <span className=\"font-semibold\">{item.name}</span>\n      <span>Sueldo: {item.amount}</span>\n    </div>\n  );\n}\n=======\nexport default function EmployeesRow({\n  item,\n  onToggle,\n}: {\n  item: Item;\n  onToggle: (id: number) => void;\n}) {\n  return (\n    <div className=\"flex items-center gap-2\">\n      <span className=\"font-semibold\">{item.name}</span>\n      {!item.active && <span className=\"text-gray-500\">(inactivo)</span>}\n      <span>Sueldo: {item.amount}</span>\n      <button\n        type=\"button\"\n        className=\"rounded border px-2 py-0.5 text-sm\"\n        onClick={() => onToggle(item.id)}\n      >\n        Alternar\n      </button>\n    </div>\n  );\n}\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.tsx\n<<<<<<< SEARCH\nexport default function EmployeesList({ items }: { items: Item[] }) {\n=======\nexport default function EmployeesList({\n  items,\n  onToggle,\n}: {\n  items: Item[];\n  onToggle: (id: number) => void;\n}) {\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.tsx\n<<<<<<< SEARCH\n        <EmployeesRow key={item.id} item={item} />\n=======\n        <EmployeesRow key={item.id} item={item} onToggle={onToggle} />\n>>>>>>> REPLACE\n```\n\n```edit EmployeesPage.tsx\n<<<<<<< SEARCH\n  return (\n    <div className=\"flex flex-col gap-2\">\n=======\n  function toggle(id: number) {\n    setItems((prev) =>\n      prev.map((i) => (i.id === id ? { ...i, active: !i.active } : i))\n    );\n  }\n\n  return (\n    <div className=\"flex flex-col gap-2\">\n>>>>>>> REPLACE\n```\n\n```edit EmployeesPage.tsx\n<<<<<<< SEARCH\n      <EmployeesList items={items} />\n=======\n      <EmployeesList items={items} onToggle={toggle} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237713,
+        "brotli": 61153
+      }
     },
     {
       "task": "admin-toggle@focus",
@@ -2870,7 +3146,11 @@
           "errors": [],
           "edit": "```edit EmployeesRow.tsx\n<<<<<<< SEARCH\nexport default function EmployeesRow({ item }: { item: Item }) {\n  return (\n    <div className=\"flex gap-2\">\n      <span className=\"font-semibold\">{item.name}</span>\n      <span>Sueldo: {item.amount}</span>\n    </div>\n  );\n}\n=======\nexport default function EmployeesRow({\n  item,\n  onToggle,\n}: {\n  item: Item;\n  onToggle: (id: number) => void;\n}) {\n  return (\n    <div className=\"flex items-center gap-2\">\n      <span className=\"font-semibold\">{item.name}</span>\n      {!item.active && <span className=\"text-gray-500\">(inactivo)</span>}\n      <span>Sueldo: {item.amount}</span>\n      <button\n        type=\"button\"\n        className=\"rounded border px-2 py-0.5 text-sm hover:bg-gray-100\"\n        onClick={() => onToggle(item.id)}\n      >\n        Alternar\n      </button>\n    </div>\n  );\n}\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.tsx\n<<<<<<< SEARCH\nexport default function EmployeesList({ items }: { items: Item[] }) {\n=======\nexport default function EmployeesList({\n  items,\n  onToggle,\n}: {\n  items: Item[];\n  onToggle: (id: number) => void;\n}) {\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.tsx\n<<<<<<< SEARCH\n        <EmployeesRow key={item.id} item={item} />\n=======\n        <EmployeesRow key={item.id} item={item} onToggle={onToggle} />\n>>>>>>> REPLACE\n```\n\n```edit EmployeesPage.tsx\n<<<<<<< SEARCH\n  return (\n    <div className=\"flex flex-col gap-2\">\n=======\n  function toggle(id: number) {\n    setItems((prev) =>\n      prev.map((i) => (i.id === id ? { ...i, active: !i.active } : i))\n    );\n  }\n\n  return (\n    <div className=\"flex flex-col gap-2\">\n>>>>>>> REPLACE\n```\n\n```edit EmployeesPage.tsx\n<<<<<<< SEARCH\n      <EmployeesList items={items} />\n=======\n      <EmployeesList items={items} onToggle={toggle} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237731,
+        "brotli": 61114
+      }
     },
     {
       "task": "admin-toggle@focus",
@@ -2938,7 +3218,11 @@
           "errors": [],
           "edit": "```edit EmployeesRow.svelte\n<<<<<<< SEARCH\n  let { item }: { item: Item } = $props();\n</script>\n\n<div class=\"flex gap-2\">\n  <span class=\"font-semibold\">{item.name}</span>\n  <span>Sueldo: {item.amount}</span>\n</div>\n=======\n  let { item, onToggle }: { item: Item; onToggle: (id: number) => void } = $props();\n</script>\n\n<div class=\"flex gap-2 items-center\">\n  <span class=\"font-semibold\">{item.name}</span>\n  {#if !item.active}\n    <span class=\"text-gray-500\">(inactivo)</span>\n  {/if}\n  <span>Sueldo: {item.amount}</span>\n  <button\n    type=\"button\"\n    class=\"px-2 py-0.5 border rounded\"\n    onclick={() => onToggle(item.id)}\n  >\n    Alternar\n  </button>\n</div>\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.svelte\n<<<<<<< SEARCH\n  let { items }: { items: Item[] } = $props();\n=======\n  let { items, onToggle }: { items: Item[]; onToggle: (id: number) => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.svelte\n<<<<<<< SEARCH\n      <EmployeesRow {item} />\n=======\n      <EmployeesRow {item} {onToggle} />\n>>>>>>> REPLACE\n```\n\n```edit EmployeesPage.svelte\n<<<<<<< SEARCH\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n=======\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n\n  function toggle(id: number) {\n    const item = items.find((i) => i.id === id);\n    if (item) item.active = !item.active;\n  }\n>>>>>>> REPLACE\n```\n\n```edit EmployeesPage.svelte\n<<<<<<< SEARCH\n  <EmployeesList {items} />\n=======\n  <EmployeesList {items} onToggle={toggle} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71542,
+        "brotli": 20802
+      }
     },
     {
       "task": "admin-toggle@focus",
@@ -3006,7 +3290,11 @@
           "errors": [],
           "edit": "```edit EmployeesRow.svelte\n<<<<<<< SEARCH\n  let { item }: { item: Item } = $props();\n</script>\n\n<div class=\"flex gap-2\">\n  <span class=\"font-semibold\">{item.name}</span>\n  <span>Sueldo: {item.amount}</span>\n</div>\n=======\n  let { item, onToggle }: { item: Item; onToggle: (id: number) => void } = $props();\n</script>\n\n<div class=\"flex items-center gap-2\">\n  <span class=\"font-semibold\">{item.name}</span>\n  {#if !item.active}\n    <span class=\"text-gray-500\">(inactivo)</span>\n  {/if}\n  <span>Sueldo: {item.amount}</span>\n  <button\n    type=\"button\"\n    class=\"rounded border px-2 py-0.5 text-sm hover:bg-gray-100\"\n    onclick={() => onToggle(item.id)}\n  >\n    Alternar\n  </button>\n</div>\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.svelte\n<<<<<<< SEARCH\n  let { items }: { items: Item[] } = $props();\n=======\n  let { items, onToggle }: { items: Item[]; onToggle: (id: number) => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit EmployeesList.svelte\n<<<<<<< SEARCH\n      <EmployeesRow {item} />\n=======\n      <EmployeesRow {item} {onToggle} />\n>>>>>>> REPLACE\n```\n\n```edit EmployeesPage.svelte\n<<<<<<< SEARCH\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n=======\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n\n  function toggle(id: number) {\n    const item = items.find((i) => i.id === id);\n    if (item) item.active = !item.active;\n  }\n>>>>>>> REPLACE\n```\n\n```edit EmployeesPage.svelte\n<<<<<<< SEARCH\n  <EmployeesList {items} />\n=======\n  <EmployeesList {items} onToggle={toggle} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71568,
+        "brotli": 20867
+      }
     },
     {
       "task": "admin-delete@full",
@@ -3042,7 +3330,11 @@
           "errors": [],
           "edit": "```patch\nreplace CouponsPage/column/CouponsList\n  CouponsList items=items onDelete=(id => items = items.filter(x => x.id != id))\nreplace CouponsList\n  component CouponsList(items: Item[], onDelete: Fn) {\n    if items.length == 0 {\n      text \"Sin registros\" muted\n    } else {\n      column gap=1 {\n        for item in items {\n          CouponsRow item=item onDelete=onDelete\n        }\n      }\n    }\n  }\nreplace CouponsRow\n  component CouponsRow(item: Item, onDelete: Fn) {\n    row gap=2 {\n      text item.name bold\n      text `Descuento: ${item.amount}`\n      button \"Eliminar\" danger small -> onDelete(item.id)\n    }\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17448,
+        "brotli": 2841
+      }
     },
     {
       "task": "admin-delete@full",
@@ -3078,7 +3370,11 @@
           "errors": [],
           "edit": "```patch\nreplace CouponsPage/column/CouponsList\n  CouponsList items=items onDelete=(id => items = items.filter(x => x.id != id))\nreplace CouponsList\n  component CouponsList(items: Item[], onDelete: Fn) {\n    if items.length == 0 {\n      text \"Sin registros\" muted\n    } else {\n      column gap=1 {\n        for item in items {\n          CouponsRow item=item onDelete=onDelete\n        }\n      }\n    }\n  }\nreplace CouponsRow\n  component CouponsRow(item: Item, onDelete: Fn) {\n    row gap=2 {\n      text item.name bold\n      text `Descuento: ${item.amount}`\n      button \"Eliminar\" danger small -> onDelete(item.id)\n    }\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17448,
+        "brotli": 2841
+      }
     },
     {
       "task": "admin-delete@full",
@@ -3146,7 +3442,11 @@
           "errors": [],
           "edit": "```edit CouponsPage.tsx\n<<<<<<< SEARCH\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Cupones</h2>\n      <CouponsForm onAdd={add} />\n      <CouponsList items={items} />\n=======\n  function remove(id: number) {\n    setItems((prev) => prev.filter((i) => i.id !== id));\n  }\n\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Cupones</h2>\n      <CouponsForm onAdd={add} />\n      <CouponsList items={items} onDelete={remove} />\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.tsx\n<<<<<<< SEARCH\nexport default function CouponsList({ items }: { items: Item[] }) {\n=======\nexport default function CouponsList({ items, onDelete }: { items: Item[]; onDelete: (id: number) => void }) {\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.tsx\n<<<<<<< SEARCH\n        <CouponsRow key={item.id} item={item} />\n=======\n        <CouponsRow key={item.id} item={item} onDelete={onDelete} />\n>>>>>>> REPLACE\n```\n\n```edit CouponsRow.tsx\n<<<<<<< SEARCH\nexport default function CouponsRow({ item }: { item: Item }) {\n=======\nexport default function CouponsRow({ item, onDelete }: { item: Item; onDelete: (id: number) => void }) {\n>>>>>>> REPLACE\n```\n\n```edit CouponsRow.tsx\n<<<<<<< SEARCH\n      <span>Descuento: {item.amount}</span>\n=======\n      <span>Descuento: {item.amount}</span>\n      <button onClick={() => onDelete(item.id)}>Eliminar</button>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237536,
+        "brotli": 61018
+      }
     },
     {
       "task": "admin-delete@full",
@@ -3214,7 +3514,11 @@
           "errors": [],
           "edit": "```edit CouponsPage.tsx\n<<<<<<< SEARCH\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Cupones</h2>\n      <CouponsForm onAdd={add} />\n      <CouponsList items={items} />\n=======\n  function remove(id: number) {\n    setItems((prev) => prev.filter((i) => i.id !== id));\n  }\n\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <h2 className=\"text-xl font-bold\">Cupones</h2>\n      <CouponsForm onAdd={add} />\n      <CouponsList items={items} onDelete={remove} />\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.tsx\n<<<<<<< SEARCH\nexport default function CouponsList({ items }: { items: Item[] }) {\n=======\nexport default function CouponsList({ items, onDelete }: { items: Item[]; onDelete: (id: number) => void }) {\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.tsx\n<<<<<<< SEARCH\n        <CouponsRow key={item.id} item={item} />\n=======\n        <CouponsRow key={item.id} item={item} onDelete={onDelete} />\n>>>>>>> REPLACE\n```\n\n```edit CouponsRow.tsx\n<<<<<<< SEARCH\nexport default function CouponsRow({ item }: { item: Item }) {\n=======\nexport default function CouponsRow({ item, onDelete }: { item: Item; onDelete: (id: number) => void }) {\n>>>>>>> REPLACE\n```\n\n```edit CouponsRow.tsx\n<<<<<<< SEARCH\n      <span>Descuento: {item.amount}</span>\n=======\n      <span>Descuento: {item.amount}</span>\n      <button onClick={() => onDelete(item.id)}>Eliminar</button>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237536,
+        "brotli": 61018
+      }
     },
     {
       "task": "admin-delete@full",
@@ -3282,7 +3586,11 @@
           "errors": [],
           "edit": "```edit CouponsRow.svelte\n<<<<<<< SEARCH\n  let { item }: { item: Item } = $props();\n</script>\n=======\n  let { item, onDelete }: { item: Item; onDelete: (id: number) => void } = $props();\n</script>\n>>>>>>> REPLACE\n```\n\n```edit CouponsRow.svelte\n<<<<<<< SEARCH\n  <span>Descuento: {item.amount}</span>\n=======\n  <span>Descuento: {item.amount}</span>\n  <button onclick={() => onDelete(item.id)}>Eliminar</button>\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.svelte\n<<<<<<< SEARCH\n  let { items }: { items: Item[] } = $props();\n=======\n  let { items, onDelete }: { items: Item[]; onDelete: (id: number) => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.svelte\n<<<<<<< SEARCH\n      <CouponsRow {item} />\n=======\n      <CouponsRow {item} {onDelete} />\n>>>>>>> REPLACE\n```\n\n```edit CouponsPage.svelte\n<<<<<<< SEARCH\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n=======\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n\n  function remove(id: number) {\n    items = items.filter((i) => i.id !== id);\n  }\n>>>>>>> REPLACE\n```\n\n```edit CouponsPage.svelte\n<<<<<<< SEARCH\n  <CouponsList {items} />\n=======\n  <CouponsList {items} onDelete={remove} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71341,
+        "brotli": 20718
+      }
     },
     {
       "task": "admin-delete@full",
@@ -3350,7 +3658,11 @@
           "errors": [],
           "edit": "```edit CouponsRow.svelte\n<<<<<<< SEARCH\n  let { item }: { item: Item } = $props();\n</script>\n=======\n  let { item, onDelete }: { item: Item; onDelete: (id: number) => void } = $props();\n</script>\n>>>>>>> REPLACE\n```\n\n```edit CouponsRow.svelte\n<<<<<<< SEARCH\n  <span>Descuento: {item.amount}</span>\n=======\n  <span>Descuento: {item.amount}</span>\n  <button onclick={() => onDelete(item.id)}>Eliminar</button>\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.svelte\n<<<<<<< SEARCH\n  let { items }: { items: Item[] } = $props();\n=======\n  let { items, onDelete }: { items: Item[]; onDelete: (id: number) => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.svelte\n<<<<<<< SEARCH\n      <CouponsRow {item} />\n=======\n      <CouponsRow {item} {onDelete} />\n>>>>>>> REPLACE\n```\n\n```edit CouponsPage.svelte\n<<<<<<< SEARCH\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n=======\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n\n  function remove(id: number) {\n    items = items.filter((i) => i.id !== id);\n  }\n>>>>>>> REPLACE\n```\n\n```edit CouponsPage.svelte\n<<<<<<< SEARCH\n  <CouponsList {items} />\n=======\n  <CouponsList {items} onDelete={remove} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71341,
+        "brotli": 20718
+      }
     },
     {
       "task": "admin-delete@focus",
@@ -3386,7 +3698,11 @@
           "errors": [],
           "edit": "```patch\nreplace CouponsRow\n  component CouponsRow(item: Item, onDelete: Fn) {\n    row gap=2 {\n      text item.name bold\n      text `Descuento: ${item.amount}`\n      button \"Eliminar\" danger small -> onDelete(item.id)\n    }\n  }\nreplace CouponsList\n  component CouponsList(items: Item[], onDelete: Fn) {\n    if items.length == 0 {\n      text \"Sin registros\" muted\n    } else {\n      column gap=1 {\n        for item in items {\n          CouponsRow item=item onDelete=onDelete\n        }\n      }\n    }\n  }\nappend CouponsPage\n  fn remove(id) {\n    items = items.filter(x => x.id != id)\n  }\nreplace CouponsPage/column/CouponsList\n  CouponsList items=items onDelete=remove\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17459,
+        "brotli": 2869
+      }
     },
     {
       "task": "admin-delete@focus",
@@ -3422,7 +3738,11 @@
           "errors": [],
           "edit": "```patch\nreplace CouponsRow\n  component CouponsRow(item: Item, onDelete: Fn) {\n    row gap=2 {\n      text item.name bold\n      text `Descuento: ${item.amount}`\n      button \"Eliminar\" danger small -> onDelete(item.id)\n    }\n  }\nreplace CouponsList\n  component CouponsList(items: Item[], onDelete: Fn) {\n    if items.length == 0 {\n      text \"Sin registros\" muted\n    } else {\n      column gap=1 {\n        for item in items {\n          CouponsRow item=item onDelete=onDelete\n        }\n      }\n    }\n  }\nappend CouponsPage\n  fn remove(id) {\n    items = items.filter(x => x.id != id)\n  }\nset CouponsPage/column/CouponsList onDelete=remove\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17459,
+        "brotli": 2869
+      }
     },
     {
       "task": "admin-delete@focus",
@@ -3490,7 +3810,11 @@
           "errors": [],
           "edit": "```edit CouponsRow.tsx\n<<<<<<< SEARCH\nexport default function CouponsRow({ item }: { item: Item }) {\n=======\nexport default function CouponsRow({\n  item,\n  onDelete,\n}: {\n  item: Item;\n  onDelete: (id: number) => void;\n}) {\n>>>>>>> REPLACE\n```\n\n```edit CouponsRow.tsx\n<<<<<<< SEARCH\n      <span>Descuento: {item.amount}</span>\n=======\n      <span>Descuento: {item.amount}</span>\n      <button\n        type=\"button\"\n        className=\"rounded bg-red-600 px-2 text-white hover:bg-red-700\"\n        onClick={() => onDelete(item.id)}\n      >\n        Eliminar\n      </button>\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.tsx\n<<<<<<< SEARCH\nexport default function CouponsList({ items }: { items: Item[] }) {\n=======\nexport default function CouponsList({\n  items,\n  onDelete,\n}: {\n  items: Item[];\n  onDelete: (id: number) => void;\n}) {\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.tsx\n<<<<<<< SEARCH\n        <CouponsRow key={item.id} item={item} />\n=======\n        <CouponsRow key={item.id} item={item} onDelete={onDelete} />\n>>>>>>> REPLACE\n```\n\n```edit CouponsPage.tsx\n<<<<<<< SEARCH\n  return (\n    <div className=\"flex flex-col gap-2\">\n=======\n  function remove(id: number) {\n    setItems((prev) => prev.filter((i) => i.id !== id));\n  }\n\n  return (\n    <div className=\"flex flex-col gap-2\">\n>>>>>>> REPLACE\n```\n\n```edit CouponsPage.tsx\n<<<<<<< SEARCH\n      <CouponsList items={items} />\n=======\n      <CouponsList items={items} onDelete={remove} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237614,
+        "brotli": 61088
+      }
     },
     {
       "task": "admin-delete@focus",
@@ -3558,7 +3882,11 @@
           "errors": [],
           "edit": "```edit CouponsRow.tsx\n<<<<<<< SEARCH\nexport default function CouponsRow({ item }: { item: Item }) {\n=======\nexport default function CouponsRow({\n  item,\n  onDelete,\n}: {\n  item: Item;\n  onDelete: (id: number) => void;\n}) {\n>>>>>>> REPLACE\n```\n\n```edit CouponsRow.tsx\n<<<<<<< SEARCH\n      <span>Descuento: {item.amount}</span>\n=======\n      <span>Descuento: {item.amount}</span>\n      <button\n        type=\"button\"\n        className=\"rounded bg-red-600 px-2 text-white hover:bg-red-700\"\n        onClick={() => onDelete(item.id)}\n      >\n        Eliminar\n      </button>\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.tsx\n<<<<<<< SEARCH\nexport default function CouponsList({ items }: { items: Item[] }) {\n=======\nexport default function CouponsList({\n  items,\n  onDelete,\n}: {\n  items: Item[];\n  onDelete: (id: number) => void;\n}) {\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.tsx\n<<<<<<< SEARCH\n        <CouponsRow key={item.id} item={item} />\n=======\n        <CouponsRow key={item.id} item={item} onDelete={onDelete} />\n>>>>>>> REPLACE\n```\n\n```edit CouponsPage.tsx\n<<<<<<< SEARCH\n  return (\n    <div className=\"flex flex-col gap-2\">\n=======\n  function remove(id: number) {\n    setItems((prev) => prev.filter((i) => i.id !== id));\n  }\n\n  return (\n    <div className=\"flex flex-col gap-2\">\n>>>>>>> REPLACE\n```\n\n```edit CouponsPage.tsx\n<<<<<<< SEARCH\n      <CouponsList items={items} />\n=======\n      <CouponsList items={items} onDelete={remove} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237614,
+        "brotli": 61088
+      }
     },
     {
       "task": "admin-delete@focus",
@@ -3626,7 +3954,11 @@
           "errors": [],
           "edit": "```edit CouponsRow.svelte\n<<<<<<< SEARCH\n  let { item }: { item: Item } = $props();\n</script>\n\n<div class=\"flex gap-2\">\n  <span class=\"font-semibold\">{item.name}</span>\n  <span>Descuento: {item.amount}</span>\n</div>\n=======\n  let { item, onDelete }: { item: Item; onDelete: (id: number) => void } = $props();\n</script>\n\n<div class=\"flex gap-2 items-center\">\n  <span class=\"font-semibold\">{item.name}</span>\n  <span>Descuento: {item.amount}</span>\n  <button\n    type=\"button\"\n    class=\"ml-auto rounded bg-red-600 px-2 py-1 text-sm text-white hover:bg-red-700\"\n    onclick={() => onDelete(item.id)}\n  >\n    Eliminar\n  </button>\n</div>\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.svelte\n<<<<<<< SEARCH\n  let { items }: { items: Item[] } = $props();\n=======\n  let { items, onDelete }: { items: Item[]; onDelete: (id: number) => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.svelte\n<<<<<<< SEARCH\n      <CouponsRow {item} />\n=======\n      <CouponsRow {item} {onDelete} />\n>>>>>>> REPLACE\n```\n\n```edit CouponsPage.svelte\n<<<<<<< SEARCH\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n=======\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n\n  function remove(id: number) {\n    items = items.filter((i) => i.id !== id);\n  }\n>>>>>>> REPLACE\n```\n\n```edit CouponsPage.svelte\n<<<<<<< SEARCH\n  <CouponsList {items} />\n=======\n  <CouponsList {items} onDelete={remove} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71449,
+        "brotli": 20799
+      }
     },
     {
       "task": "admin-delete@focus",
@@ -3694,7 +4026,11 @@
           "errors": [],
           "edit": "```edit CouponsRow.svelte\n<<<<<<< SEARCH\n  let { item }: { item: Item } = $props();\n</script>\n\n<div class=\"flex gap-2\">\n  <span class=\"font-semibold\">{item.name}</span>\n  <span>Descuento: {item.amount}</span>\n</div>\n=======\n  let { item, onDelete }: { item: Item; onDelete: (id: number) => void } = $props();\n</script>\n\n<div class=\"flex gap-2 items-center\">\n  <span class=\"font-semibold\">{item.name}</span>\n  <span>Descuento: {item.amount}</span>\n  <button\n    type=\"button\"\n    class=\"ml-auto px-2 py-1 text-sm rounded bg-red-600 text-white hover:bg-red-700\"\n    onclick={() => onDelete(item.id)}\n  >\n    Eliminar\n  </button>\n</div>\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.svelte\n<<<<<<< SEARCH\n  let { items }: { items: Item[] } = $props();\n=======\n  let { items, onDelete }: { items: Item[]; onDelete: (id: number) => void } = $props();\n>>>>>>> REPLACE\n```\n\n```edit CouponsList.svelte\n<<<<<<< SEARCH\n      <CouponsRow {item} />\n=======\n      <CouponsRow {item} {onDelete} />\n>>>>>>> REPLACE\n```\n\n```edit CouponsPage.svelte\n<<<<<<< SEARCH\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n=======\n    items.push({ id: Date.now(), name, amount, active: true });\n  }\n\n  function remove(id: number) {\n    items = items.filter((i) => i.id !== id);\n  }\n>>>>>>> REPLACE\n```\n\n```edit CouponsPage.svelte\n<<<<<<< SEARCH\n  <CouponsList {items} />\n=======\n  <CouponsList {items} onDelete={remove} />\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71449,
+        "brotli": 20775
+      }
     },
     {
       "task": "admin-required@full",
@@ -3730,7 +4066,11 @@
           "errors": [],
           "edit": "```patch\ninsert before CustomersForm.submit\n  state error = \"\"\nreplace CustomersForm.submit\n  fn submit() {\n    if name.trim() == \"\" {\n      error = \"Nombre requerido\"\n      return\n    }\n    error = \"\"\n    onAdd(name, amount)\n    name = \"\"\n    amount = 0\n  }\ninsert after CustomersForm/row/button\n  if error != \"\" {\n    text error small\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17362,
+        "brotli": 2832
+      }
     },
     {
       "task": "admin-required@full",
@@ -3773,7 +4113,11 @@
           "errors": [],
           "edit": "```patch\nappend CustomersForm\n  state error = \"\"\nreplace CustomersForm.submit\n  fn submit() {\n    if name.trim() == \"\" {\n      error = \"Nombre requerido\"\n      return\n    }\n    error = \"\"\n    onAdd(name, amount)\n    name = \"\"\n    amount = 0\n  }\ninsert after CustomersForm/row/button\n  if error != \"\" {\n    text error bold\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17361,
+        "brotli": 2815
+      }
     },
     {
       "task": "admin-required@full",
@@ -3841,7 +4185,11 @@
           "errors": [],
           "edit": "```edit CustomersForm.tsx\n<<<<<<< SEARCH\n  const [amount, setAmount] = useState(\"\");\n\n  function submit() {\n    onAdd(name, Number(amount) || 0);\n    setName(\"\");\n    setAmount(\"\");\n  }\n=======\n  const [amount, setAmount] = useState(\"\");\n  const [error, setError] = useState(\"\");\n\n  function submit() {\n    if (name.trim() === \"\") {\n      setError(\"Nombre requerido\");\n      return;\n    }\n    setError(\"\");\n    onAdd(name, Number(amount) || 0);\n    setName(\"\");\n    setAmount(\"\");\n  }\n>>>>>>> REPLACE\n```\n\n```edit CustomersForm.tsx\n<<<<<<< SEARCH\n    <div className=\"flex gap-2\">\n      <input placeholder=\"Nombre\" value={name} onChange={(e) => setName(e.target.value)} />\n      <input placeholder=\"Saldo\" type=\"number\" value={amount} onChange={(e) => setAmount(e.target.value)} />\n      <button className=\"primary\" onClick={submit}>Agregar</button>\n    </div>\n=======\n    <div className=\"flex flex-col gap-1\">\n      <div className=\"flex gap-2\">\n        <input\n          placeholder=\"Nombre\"\n          value={name}\n          onChange={(e) => {\n            setName(e.target.value);\n            if (error) setError(\"\");\n          }}\n        />\n        <input placeholder=\"Saldo\" type=\"number\" value={amount} onChange={(e) => setAmount(e.target.value)} />\n        <button className=\"primary\" onClick={submit}>Agregar</button>\n      </div>\n      {error && <span className=\"text-red-600 text-sm\">{error}</span>}\n    </div>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237609,
+        "brotli": 60973
+      }
     },
     {
       "task": "admin-required@full",
@@ -3909,7 +4257,11 @@
           "errors": [],
           "edit": "```edit CustomersForm.tsx\n<<<<<<< SEARCH\n  const [amount, setAmount] = useState(\"\");\n\n  function submit() {\n    onAdd(name, Number(amount) || 0);\n    setName(\"\");\n    setAmount(\"\");\n  }\n=======\n  const [amount, setAmount] = useState(\"\");\n  const [error, setError] = useState(\"\");\n\n  function submit() {\n    if (name.trim() === \"\") {\n      setError(\"Nombre requerido\");\n      return;\n    }\n    setError(\"\");\n    onAdd(name, Number(amount) || 0);\n    setName(\"\");\n    setAmount(\"\");\n  }\n>>>>>>> REPLACE\n```\n\n```edit CustomersForm.tsx\n<<<<<<< SEARCH\n  return (\n    <div className=\"flex gap-2\">\n      <input placeholder=\"Nombre\" value={name} onChange={(e) => setName(e.target.value)} />\n      <input placeholder=\"Saldo\" type=\"number\" value={amount} onChange={(e) => setAmount(e.target.value)} />\n      <button className=\"primary\" onClick={submit}>Agregar</button>\n    </div>\n  );\n=======\n  return (\n    <div className=\"flex flex-col gap-1\">\n      <div className=\"flex gap-2\">\n        <input\n          placeholder=\"Nombre\"\n          value={name}\n          onChange={(e) => {\n            setName(e.target.value);\n            if (error) setError(\"\");\n          }}\n        />\n        <input placeholder=\"Saldo\" type=\"number\" value={amount} onChange={(e) => setAmount(e.target.value)} />\n        <button className=\"primary\" onClick={submit}>Agregar</button>\n      </div>\n      {error && <span className=\"text-red-600 text-sm\">{error}</span>}\n    </div>\n  );\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237609,
+        "brotli": 60973
+      }
     },
     {
       "task": "admin-required@full",
@@ -3977,7 +4329,11 @@
           "errors": [],
           "edit": "```edit CustomersForm.svelte\n<<<<<<< SEARCH\n  let amount = $state(\"\");\n\n  function submit() {\n    onAdd(name, Number(amount) || 0);\n=======\n  let amount = $state(\"\");\n  let error = $state(\"\");\n\n  function submit() {\n    if (!name.trim()) {\n      error = \"Nombre requerido\";\n      return;\n    }\n    error = \"\";\n    onAdd(name, Number(amount) || 0);\n>>>>>>> REPLACE\n```\n\n```edit CustomersForm.svelte\n<<<<<<< SEARCH\n<div class=\"flex gap-2\">\n  <input placeholder=\"Nombre\" bind:value={name} />\n  <input placeholder=\"Saldo\" type=\"number\" bind:value={amount} />\n  <button class=\"primary\" onclick={submit}>Agregar</button>\n</div>\n=======\n<div class=\"flex flex-col gap-1\">\n  <div class=\"flex gap-2\">\n    <input placeholder=\"Nombre\" bind:value={name} />\n    <input placeholder=\"Saldo\" type=\"number\" bind:value={amount} />\n    <button class=\"primary\" onclick={submit}>Agregar</button>\n  </div>\n  {#if error}\n    <span class=\"text-sm text-red-600\">{error}</span>\n  {/if}\n</div>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71415,
+        "brotli": 20778
+      }
     },
     {
       "task": "admin-required@full",
@@ -4045,7 +4401,11 @@
           "errors": [],
           "edit": "```edit CustomersForm.svelte\n<<<<<<< SEARCH\n  let amount = $state(\"\");\n\n  function submit() {\n    onAdd(name, Number(amount) || 0);\n=======\n  let amount = $state(\"\");\n  let error = $state(\"\");\n\n  function submit() {\n    if (!name.trim()) {\n      error = \"Nombre requerido\";\n      return;\n    }\n    error = \"\";\n    onAdd(name, Number(amount) || 0);\n>>>>>>> REPLACE\n```\n\n```edit CustomersForm.svelte\n<<<<<<< SEARCH\n<div class=\"flex gap-2\">\n  <input placeholder=\"Nombre\" bind:value={name} />\n  <input placeholder=\"Saldo\" type=\"number\" bind:value={amount} />\n  <button class=\"primary\" onclick={submit}>Agregar</button>\n</div>\n=======\n<div class=\"flex flex-col gap-1\">\n  <div class=\"flex gap-2\">\n    <input placeholder=\"Nombre\" bind:value={name} />\n    <input placeholder=\"Saldo\" type=\"number\" bind:value={amount} />\n    <button class=\"primary\" onclick={submit}>Agregar</button>\n  </div>\n  {#if error}\n    <span class=\"text-sm text-red-600\">{error}</span>\n  {/if}\n</div>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71415,
+        "brotli": 20778
+      }
     },
     {
       "task": "admin-required@focus",
@@ -4081,7 +4441,11 @@
           "errors": [],
           "edit": "```patch\nreplace CustomersForm.submit\n  fn submit() {\n    if name.trim() == \"\" {\n      error = \"Nombre requerido\"\n      return\n    }\n    error = \"\"\n    onAdd(name, amount)\n    name = \"\"\n    amount = 0\n  }\ninsert before CustomersForm.submit\n  state error = \"\"\ninsert after CustomersForm/row\n  if error != \"\" {\n    text error small bold\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17369,
+        "brotli": 2832
+      }
     },
     {
       "task": "admin-required@focus",
@@ -4117,7 +4481,11 @@
           "errors": [],
           "edit": "```patch\nreplace CustomersForm.submit\n  fn submit() {\n    if name.trim() == \"\" {\n      error = \"Nombre requerido\"\n      return\n    }\n    error = \"\"\n    onAdd(name, amount)\n    name = \"\"\n    amount = 0\n  }\ninsert before CustomersForm.submit\n  state error = \"\"\ninsert after CustomersForm/row\n  if error != \"\" {\n    text error small bold\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17369,
+        "brotli": 2832
+      }
     },
     {
       "task": "admin-required@focus",
@@ -4185,7 +4553,11 @@
           "errors": [],
           "edit": "```edit CustomersForm.tsx\n<<<<<<< SEARCH\n  const [amount, setAmount] = useState(\"\");\n\n  function submit() {\n    onAdd(name, Number(amount) || 0);\n    setName(\"\");\n    setAmount(\"\");\n  }\n=======\n  const [amount, setAmount] = useState(\"\");\n  const [error, setError] = useState(\"\");\n\n  function submit() {\n    if (!name.trim()) {\n      setError(\"Nombre requerido\");\n      return;\n    }\n    setError(\"\");\n    onAdd(name.trim(), Number(amount) || 0);\n    setName(\"\");\n    setAmount(\"\");\n  }\n>>>>>>> REPLACE\n```\n\n```edit CustomersForm.tsx\n<<<<<<< SEARCH\n    <div className=\"flex gap-2\">\n      <input placeholder=\"Nombre\" value={name} onChange={(e) => setName(e.target.value)} />\n      <input placeholder=\"Saldo\" type=\"number\" value={amount} onChange={(e) => setAmount(e.target.value)} />\n      <button className=\"primary\" onClick={submit}>Agregar</button>\n    </div>\n=======\n    <div className=\"flex flex-col gap-1\">\n      <div className=\"flex gap-2\">\n        <input\n          placeholder=\"Nombre\"\n          value={name}\n          onChange={(e) => {\n            setName(e.target.value);\n            if (error) setError(\"\");\n          }}\n        />\n        <input placeholder=\"Saldo\" type=\"number\" value={amount} onChange={(e) => setAmount(e.target.value)} />\n        <button className=\"primary\" onClick={submit}>Agregar</button>\n      </div>\n      {error && <span className=\"text-red-600 text-sm\" role=\"alert\">{error}</span>}\n    </div>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237625,
+        "brotli": 61074
+      }
     },
     {
       "task": "admin-required@focus",
@@ -4253,7 +4625,11 @@
           "errors": [],
           "edit": "```edit CustomersForm.tsx\n<<<<<<< SEARCH\n  const [amount, setAmount] = useState(\"\");\n\n  function submit() {\n    onAdd(name, Number(amount) || 0);\n    setName(\"\");\n    setAmount(\"\");\n  }\n=======\n  const [amount, setAmount] = useState(\"\");\n  const [error, setError] = useState(\"\");\n\n  function submit() {\n    if (!name.trim()) {\n      setError(\"Nombre requerido\");\n      return;\n    }\n    setError(\"\");\n    onAdd(name.trim(), Number(amount) || 0);\n    setName(\"\");\n    setAmount(\"\");\n  }\n>>>>>>> REPLACE\n```\n\n```edit CustomersForm.tsx\n<<<<<<< SEARCH\n    <div className=\"flex gap-2\">\n      <input placeholder=\"Nombre\" value={name} onChange={(e) => setName(e.target.value)} />\n      <input placeholder=\"Saldo\" type=\"number\" value={amount} onChange={(e) => setAmount(e.target.value)} />\n      <button className=\"primary\" onClick={submit}>Agregar</button>\n    </div>\n=======\n    <div className=\"flex flex-col gap-1\">\n      <div className=\"flex gap-2\">\n        <input\n          placeholder=\"Nombre\"\n          value={name}\n          onChange={(e) => {\n            setName(e.target.value);\n            if (error) setError(\"\");\n          }}\n        />\n        <input placeholder=\"Saldo\" type=\"number\" value={amount} onChange={(e) => setAmount(e.target.value)} />\n        <button className=\"primary\" onClick={submit}>Agregar</button>\n      </div>\n      {error && <p className=\"text-red-600 text-sm\" role=\"alert\">{error}</p>}\n    </div>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 237622,
+        "brotli": 61042
+      }
     },
     {
       "task": "admin-required@focus",
@@ -4321,7 +4697,11 @@
           "errors": [],
           "edit": "```edit CustomersForm.svelte\n<<<<<<< SEARCH\n  let amount = $state(\"\");\n\n  function submit() {\n    onAdd(name, Number(amount) || 0);\n    name = \"\";\n    amount = \"\";\n  }\n</script>\n\n<div class=\"flex gap-2\">\n  <input placeholder=\"Nombre\" bind:value={name} />\n  <input placeholder=\"Saldo\" type=\"number\" bind:value={amount} />\n  <button class=\"primary\" onclick={submit}>Agregar</button>\n</div>\n=======\n  let amount = $state(\"\");\n  let error = $state(\"\");\n\n  function submit() {\n    if (!name.trim()) {\n      error = \"Nombre requerido\";\n      return;\n    }\n    error = \"\";\n    onAdd(name, Number(amount) || 0);\n    name = \"\";\n    amount = \"\";\n  }\n</script>\n\n<div class=\"flex flex-col gap-1\">\n  <div class=\"flex gap-2\">\n    <input placeholder=\"Nombre\" bind:value={name} oninput={() => (error = \"\")} />\n    <input placeholder=\"Saldo\" type=\"number\" bind:value={amount} />\n    <button class=\"primary\" onclick={submit}>Agregar</button>\n  </div>\n  {#if error}\n    <p class=\"text-sm text-red-600\" role=\"alert\">{error}</p>\n  {/if}\n</div>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71455,
+        "brotli": 20786
+      }
     },
     {
       "task": "admin-required@focus",
@@ -4389,7 +4769,11 @@
           "errors": [],
           "edit": "```edit CustomersForm.svelte\n<<<<<<< SEARCH\n  let amount = $state(\"\");\n\n  function submit() {\n    onAdd(name, Number(amount) || 0);\n    name = \"\";\n    amount = \"\";\n  }\n</script>\n\n<div class=\"flex gap-2\">\n  <input placeholder=\"Nombre\" bind:value={name} />\n  <input placeholder=\"Saldo\" type=\"number\" bind:value={amount} />\n  <button class=\"primary\" onclick={submit}>Agregar</button>\n</div>\n=======\n  let amount = $state(\"\");\n  let error = $state(\"\");\n\n  function submit() {\n    if (!name.trim()) {\n      error = \"Nombre requerido\";\n      return;\n    }\n    error = \"\";\n    onAdd(name.trim(), Number(amount) || 0);\n    name = \"\";\n    amount = \"\";\n  }\n</script>\n\n<div class=\"flex flex-col gap-1\">\n  <div class=\"flex gap-2\">\n    <input placeholder=\"Nombre\" bind:value={name} oninput={() => (error = \"\")} />\n    <input placeholder=\"Saldo\" type=\"number\" bind:value={amount} />\n    <button class=\"primary\" onclick={submit}>Agregar</button>\n  </div>\n  {#if error}\n    <p class=\"text-sm text-red-600\" role=\"alert\">{error}</p>\n  {/if}\n</div>\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 71462,
+        "brotli": 20790
+      }
     }
   ]
 }

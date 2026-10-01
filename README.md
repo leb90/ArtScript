@@ -18,7 +18,7 @@ page Counter "/" {
 
 Status: **v0.1, MVP foundation**.
 
-**Early result:** Claude built the same 10 apps (8 frontend, 2 full-stack) in ArtScript, React + TypeScript and Svelte; each app was run and used in a simulated browser to check it works. With Claude Sonnet 5.5 every app worked in all three stacks, and ArtScript cost **57% less per working app than React + TypeScript and 50% less than Svelte** (67% less than React on the full-stack tasks), counting the spec, retries and thinking tokens. Modifying larger existing projects (an 11-component shop and a 42-component admin panel, 64 changes per stack), it cost **49% less than React** (43–57% depending on the project and on whether the whole project or only the relevant parts were in the prompt). An earlier, compile-only run with Claude Opus 5.5 gave 44% less. See [Cost eval results](#cost-eval-results).
+**Early result:** Claude built the same 10 apps (8 frontend, 2 full-stack) in ArtScript, React + TypeScript and Svelte; each app was run and used in a simulated browser to check it works. With Claude Sonnet 5.5 every app worked in all three stacks, and ArtScript cost **57% less per working app than React + TypeScript and 50% less than Svelte** (67% less than React on the full-stack tasks), counting the spec, retries and thinking tokens. Modifying larger existing projects (an 11-component shop and a 42-component admin panel, 64 changes per stack), it cost **49% less than React** (43–57% depending on the project and on whether the whole project or only the relevant parts were in the prompt). The apps it produces ship about 2–3 KB of JavaScript (brotli) versus ~59 KB for React and ~20 KB for Svelte. An earlier, compile-only run with Claude Opus 5.5 gave 44% less. See [Cost eval results](#cost-eval-results).
 
 ## Usage
 
@@ -166,11 +166,11 @@ Validation: ArtScript with its own compiler, React with strict `tsc`, Svelte wit
 
 With `claude-opus-5-5`, ArtScript cost **44% less** per solved task than React + TS and **42% less** than Svelte 5.
 
-| Stack | Solved | USD per solved task | vs React | Without prompt cache | Avg attempts | Output tokens / run | Final code tokens |
-|---|---|---|---|---|---|---|---|
-| **ArtScript** | 24/24 | **$0.0131** | −44% | $0.0208 | 1.13 | 579 | 382 |
-| React + TS | 24/24 | $0.0235 | — | $0.0235 | 1.00 | 1102 | 1026 |
-| Svelte 5 | 24/24 | $0.0225 | −4% | $0.0225 | 1.00 | 1049 | 914 |
+| Stack | Solved | USD per solved task | vs React | Without prompt cache | Avg attempts | Output tokens / run | Final code tokens | App JS (brotli) |
+|---|---|---|---|---|---|---|---|---|
+| **ArtScript** | 24/24 | **$0.0131** | −44% | $0.0208 | 1.13 | 579 | 382 | — |
+| React + TS | 24/24 | $0.0235 | — | $0.0235 | 1.00 | 1102 | 1026 | — |
+| Svelte 5 | 24/24 | $0.0225 | −4% | $0.0225 | 1.00 | 1049 | 914 | — |
 
 ```mermaid
 xychart-beta
@@ -201,11 +201,11 @@ Run 2026-09-30: 8 tasks × 3 stacks × 3 runs, total $1.42, prices as of 2026-09
 
 With `claude-sonnet-5-5`, ArtScript cost **57% less** per solved task than React + TS and **50% less** than Svelte 5.
 
-| Stack | Solved | USD per solved task | vs React | Without prompt cache | Avg attempts | Output tokens / run | Final code tokens |
-|---|---|---|---|---|---|---|---|
-| **ArtScript** | 20/20 | **$0.0057** | −57% | $0.0097 | 1.00 | 343 | 377 |
-| React + TS | 20/20 | $0.0134 | — | $0.0134 | 1.00 | 1255 | 1210 |
-| Svelte 5 | 20/20 | $0.0116 | −14% | $0.0116 | 1.00 | 1072 | 1092 |
+| Stack | Solved | USD per solved task | vs React | Without prompt cache | Avg attempts | Output tokens / run | Final code tokens | App JS (brotli) |
+|---|---|---|---|---|---|---|---|---|
+| **ArtScript** | 20/20 | **$0.0057** | −57% | $0.0097 | 1.00 | 343 | 377 | 1.9 KB |
+| React + TS | 20/20 | $0.0134 | — | $0.0134 | 1.00 | 1255 | 1210 | 58.7 KB |
+| Svelte 5 | 20/20 | $0.0116 | −14% | $0.0116 | 1.00 | 1072 | 1092 | 18.2 KB |
 
 ```mermaid
 xychart-beta
@@ -236,11 +236,11 @@ xychart-beta
 
 Whole project in the prompt ("full") vs. what a good agent would read ("focus": ArtScript gets `art context` of the relevant parts, React/Svelte the file list plus the relevant files). Each change is applied to the whole project and the app is used in the simulated browser.
 
-| Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus |
-|---|---|---|---|---|
-| **ArtScript** | $0.0093 (8/8) | $0.0051 (8/8) | 4311 | 3559 |
-| React + TS | $0.0163 (8/8) | $0.0119 (8/8) | 3378 | 1430 |
-| Svelte 5 | $0.0128 (8/8) | $0.0097 (8/8) | 2731 | 1086 |
+| Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus | App JS (brotli) |
+|---|---|---|---|---|---|
+| **ArtScript** | $0.0093 (8/8) | $0.0051 (8/8) | 4311 | 3559 | 2.6 KB |
+| React + TS | $0.0163 (8/8) | $0.0119 (8/8) | 3378 | 1430 | 59.2 KB |
+| Svelte 5 | $0.0128 (8/8) | $0.0097 (8/8) | 2731 | 1086 | 20.4 KB |
 
 Input tokens include ArtScript's ~1.9K-token spec in the system prompt (mostly billed at the cache rate) and every retry.
 
@@ -248,11 +248,11 @@ Input tokens include ArtScript's ~1.9K-token spec in the system prompt (mostly b
 
 Whole project in the prompt ("full") vs. what a good agent would read ("focus": ArtScript gets `art context` of the relevant parts, React/Svelte the file list plus the relevant files). Each change is applied to the whole project and the app is used in the simulated browser.
 
-| Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus |
-|---|---|---|---|---|
-| **ArtScript** | $0.0128 (8/8) | $0.0041 (8/8) | 8180 | 3755 |
-| React + TS | $0.0246 (8/8) | $0.0086 (8/8) | 9534 | 1429 |
-| Svelte 5 | $0.0228 (8/8) | $0.0081 (8/8) | 8898 | 1421 |
+| Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus | App JS (brotli) |
+|---|---|---|---|---|---|
+| **ArtScript** | $0.0128 (8/8) | $0.0041 (8/8) | 8180 | 3755 | 2.8 KB |
+| React + TS | $0.0246 (8/8) | $0.0086 (8/8) | 9534 | 1429 | 59.6 KB |
+| Svelte 5 | $0.0228 (8/8) | $0.0081 (8/8) | 8898 | 1421 | 20.3 KB |
 
 Input tokens include ArtScript's ~1.9K-token spec in the system prompt (mostly billed at the cache rate) and every retry.
 
@@ -268,6 +268,7 @@ Run 2026-10-01: 10 tasks × 3 stacks × 2 runs, total $0.61, prices as of 2026-0
 - Full-stack tasks: React and Svelte also write their own `server.ts` (Node `http`, no dependencies); ArtScript uses `api`. Svelte is validated without TypeScript type checking of `.svelte` files, which favors it.
 - Each run uses the ArtScript spec as of its date; older runs are not redone when the spec improves. The runs above used the Spanish version of the spec; it has since been translated to English (about 6% fewer tokens).
 - Task prompts (and the feedback given to the model) are in Spanish; they are the fixed dataset these numbers were measured on.
+- App JS: each working app bundled with esbuild (minified, production mode) and compressed with brotli: the JavaScript a browser downloads. ArtScript's includes its runtime; React's includes React DOM; Svelte's includes its client runtime.
 - 3 runs per task is an early signal, not a definitive benchmark. Reproduce it with `npm run eval`.
 
 <!-- eval-results:end -->

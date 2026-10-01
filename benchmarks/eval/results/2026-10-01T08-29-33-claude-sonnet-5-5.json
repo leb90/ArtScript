@@ -34,7 +34,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 4235,
+        "brotli": 1651
+      }
     },
     {
       "task": "counter",
@@ -59,7 +63,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 4235,
+        "brotli": 1651
+      }
     },
     {
       "task": "counter",
@@ -84,7 +92,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 224578,
+        "brotli": 59826
+      }
     },
     {
       "task": "counter",
@@ -109,7 +121,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 224488,
+        "brotli": 59785
+      }
     },
     {
       "task": "counter",
@@ -134,7 +150,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 47662,
+        "brotli": 16204
+      }
     },
     {
       "task": "counter",
@@ -159,7 +179,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 47662,
+        "brotli": 16204
+      }
     },
     {
       "task": "todo",
@@ -184,7 +208,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 5431,
+        "brotli": 2103
+      }
     },
     {
       "task": "todo",
@@ -209,7 +237,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 5431,
+        "brotli": 2103
+      }
     },
     {
       "task": "todo",
@@ -242,7 +274,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 225485,
+        "brotli": 60195
+      }
     },
     {
       "task": "todo",
@@ -275,7 +311,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 225518,
+        "brotli": 60239
+      }
     },
     {
       "task": "todo",
@@ -301,7 +341,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 59140,
+        "brotli": 20204
+      }
     },
     {
       "task": "todo",
@@ -327,7 +371,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 58025,
+        "brotli": 19794
+      }
     },
     {
       "task": "login",
@@ -360,7 +408,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 4805,
+        "brotli": 1873
+      }
     },
     {
       "task": "login",
@@ -393,7 +445,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 4792,
+        "brotli": 1867
+      }
     },
     {
       "task": "login",
@@ -418,7 +474,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 225221,
+        "brotli": 59918
+      }
     },
     {
       "task": "login",
@@ -443,7 +503,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 225207,
+        "brotli": 60078
+      }
     },
     {
       "task": "login",
@@ -469,7 +533,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 52165,
+        "brotli": 17693
+      }
     },
     {
       "task": "login",
@@ -495,7 +563,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 52242,
+        "brotli": 17772
+      }
     },
     {
       "task": "search",
@@ -520,7 +592,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 4563,
+        "brotli": 1772
+      }
     },
     {
       "task": "search",
@@ -545,7 +621,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 4589,
+        "brotli": 1775
+      }
     },
     {
       "task": "search",
@@ -662,7 +742,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 56660,
+        "brotli": 19253
+      }
     },
     {
       "task": "search",
@@ -689,7 +773,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 54769,
+        "brotli": 18719
+      }
     },
     {
       "task": "cart",
@@ -714,7 +802,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 5704,
+        "brotli": 2111
+      }
     },
     {
       "task": "cart",
@@ -739,7 +831,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 6113,
+        "brotli": 2196
+      }
     },
     {
       "task": "cart",
@@ -764,7 +860,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 226252,
+        "brotli": 60199
+      }
     },
     {
       "task": "cart",
@@ -789,7 +889,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 226238,
+        "brotli": 60169
+      }
     },
     {
       "task": "cart",
@@ -816,7 +920,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 54914,
+        "brotli": 18633
+      }
     },
     {
       "task": "cart",
@@ -843,7 +951,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 55055,
+        "brotli": 18639
+      }
     },
     {
       "task": "tabs",
@@ -868,7 +980,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 4331,
+        "brotli": 1675
+      }
     },
     {
       "task": "tabs",
@@ -893,7 +1009,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 4299,
+        "brotli": 1657
+      }
     },
     {
       "task": "tabs",
@@ -918,7 +1038,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 225424,
+        "brotli": 60286
+      }
     },
     {
       "task": "tabs",
@@ -943,7 +1067,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 225004,
+        "brotli": 60146
+      }
     },
     {
       "task": "tabs",
@@ -968,7 +1096,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 53674,
+        "brotli": 18461
+      }
     },
     {
       "task": "tabs",
@@ -993,7 +1125,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 53697,
+        "brotli": 18434
+      }
     },
     {
       "task": "counter-mod",
@@ -1019,7 +1155,11 @@
           "errors": [],
           "edit": "```patch\nappend Counter\n  fn inc() {\n    if count < 10 { count++ }\n  }\nappend Counter\n  fn dec() {\n    if count > 0 { count-- }\n  }\nappend Counter\n  fn reset() {\n    count = 0\n  }\nreplace Counter/column/row/button[0]\n  button \"-\" -> dec() disabled=(count <= 0)\nreplace Counter/column/row/button[1]\n  button \"+\" primary -> inc() disabled=(count >= 10)\ninsert after Counter/column/row\n  button \"Reset\" danger small -> reset()\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 4544,
+        "brotli": 1768
+      }
     },
     {
       "task": "counter-mod",
@@ -1045,7 +1185,11 @@
           "errors": [],
           "edit": "```patch\nappend Counter\n  fn inc() {\n    if count < 10 { count++ }\n  }\nappend Counter\n  fn dec() {\n    if count > 0 { count-- }\n  }\nreplace Counter/column/row/button[0]\n  button \"-\" -> dec() disabled=(count <= 0)\nreplace Counter/column/row/button[1]\n  button \"+\" primary -> inc() disabled=(count >= 10)\ninsert after Counter/column/row\n  button \"Reset\" danger small -> count = 0\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 4527,
+        "brotli": 1768
+      }
     },
     {
       "task": "counter-mod",
@@ -1070,7 +1214,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 224365,
+        "brotli": 59844
+      }
     },
     {
       "task": "counter-mod",
@@ -1095,7 +1243,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 224364,
+        "brotli": 59842
+      }
     },
     {
       "task": "counter-mod",
@@ -1120,7 +1272,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 47536,
+        "brotli": 16141
+      }
     },
     {
       "task": "counter-mod",
@@ -1145,7 +1301,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 47692,
+        "brotli": 16187
+      }
     },
     {
       "task": "todo-mod",
@@ -1171,7 +1331,11 @@
           "errors": [],
           "edit": "```patch\nappend Todos\n  computed doneCount = todos.filter(t => t.done).length\n  fn clearDone() {\n    todos = todos.filter(t => !t.done)\n  }\ninsert after Todos/column/if\n  if doneCount > 0 {\n    button \"Borrar completadas\" danger small -> clearDone()\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 5405,
+        "brotli": 2068
+      }
     },
     {
       "task": "todo-mod",
@@ -1197,7 +1361,11 @@
           "errors": [],
           "edit": "```patch\nappend Todos\n  computed doneCount = todos.filter(t => t.done).length\n  fn clearDone() {\n    todos = todos.filter(t => !t.done)\n  }\ninsert after Todos/column/if\n  if doneCount > 0 {\n    button \"Borrar completadas\" danger small -> clearDone()\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 5405,
+        "brotli": 2068
+      }
     },
     {
       "task": "todo-mod",
@@ -1223,7 +1391,11 @@
           "errors": [],
           "edit": "```edit Todos.tsx\n<<<<<<< SEARCH\n  const pending = todos.filter((t) => !t.done).length;\n=======\n  const pending = todos.filter((t) => !t.done).length;\n  const completed = todos.length - pending;\n\n  function clearCompleted() {\n    setTodos(todos.filter((t) => !t.done));\n  }\n>>>>>>> REPLACE\n```\n\n```edit Todos.tsx\n<<<<<<< SEARCH\n      {todos.length === 0 ? <span className=\"text-gray-500\">No hay tareas</span> : <span className=\"text-gray-500\">{pending} pendientes</span>}\n=======\n      {todos.length === 0 ? <span className=\"text-gray-500\">No hay tareas</span> : <span className=\"text-gray-500\">{pending} pendientes</span>}\n      {completed > 0 && (\n        <div>\n          <button className=\"danger small\" onClick={clearCompleted}>Borrar completadas</button>\n        </div>\n      )}\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 224827,
+        "brotli": 59935
+      }
     },
     {
       "task": "todo-mod",
@@ -1248,7 +1420,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 224832,
+        "brotli": 59926
+      }
     },
     {
       "task": "todo-mod",
@@ -1275,7 +1451,11 @@
           "errors": [],
           "edit": "```edit Todos.svelte\n<<<<<<< SEARCH\n  let pending = $derived(todos.filter((t) => !t.done).length);\n=======\n  let pending = $derived(todos.filter((t) => !t.done).length);\n  let completed = $derived(todos.length - pending);\n\n  function clearCompleted() {\n    todos = todos.filter((t) => !t.done);\n  }\n>>>>>>> REPLACE\n```\n\n```edit Todos.svelte\n<<<<<<< SEARCH\n    <span class=\"text-gray-500\">{pending} pendientes</span>\n  {/if}\n=======\n    <span class=\"text-gray-500\">{pending} pendientes</span>\n  {/if}\n  {#if completed > 0}\n    <div>\n      <button class=\"danger\" onclick={clearCompleted}>Borrar completadas</button>\n    </div>\n  {/if}\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 58057,
+        "brotli": 19703
+      }
     },
     {
       "task": "todo-mod",
@@ -1302,7 +1482,11 @@
           "errors": [],
           "edit": "```edit Todos.svelte\n<<<<<<< SEARCH\n  let pending = $derived(todos.filter((t) => !t.done).length);\n=======\n  let pending = $derived(todos.filter((t) => !t.done).length);\n  let completed = $derived(todos.length - pending);\n\n  function clearCompleted() {\n    todos = todos.filter((t) => !t.done);\n  }\n>>>>>>> REPLACE\n```\n\n```edit Todos.svelte\n<<<<<<< SEARCH\n    <span class=\"text-gray-500\">{pending} pendientes</span>\n  {/if}\n=======\n    <span class=\"text-gray-500\">{pending} pendientes</span>\n  {/if}\n  {#if completed > 0}\n    <div>\n      <button class=\"danger\" onclick={clearCompleted}>Borrar completadas</button>\n    </div>\n  {/if}\n>>>>>>> REPLACE\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 58057,
+        "brotli": 19703
+      }
     },
     {
       "task": "fs-users",
@@ -1327,7 +1511,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 5854,
+        "brotli": 2353
+      }
     },
     {
       "task": "fs-users",
@@ -1352,7 +1540,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 5828,
+        "brotli": 2345
+      }
     },
     {
       "task": "fs-users",
@@ -1378,7 +1570,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 225713,
+        "brotli": 60179
+      }
     },
     {
       "task": "fs-users",
@@ -1404,7 +1600,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 225871,
+        "brotli": 60187
+      }
     },
     {
       "task": "fs-users",
@@ -1431,7 +1631,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 59491,
+        "brotli": 19963
+      }
     },
     {
       "task": "fs-users",
@@ -1458,7 +1662,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 58922,
+        "brotli": 19847
+      }
     },
     {
       "task": "fs-shopping",
@@ -1483,7 +1691,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 6083,
+        "brotli": 2407
+      }
     },
     {
       "task": "fs-shopping",
@@ -1508,7 +1720,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 5953,
+        "brotli": 2368
+      }
     },
     {
       "task": "fs-shopping",
@@ -1534,7 +1750,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 226233,
+        "brotli": 60386
+      }
     },
     {
       "task": "fs-shopping",
@@ -1560,7 +1780,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 226199,
+        "brotli": 60407
+      }
     },
     {
       "task": "fs-shopping",
@@ -1587,7 +1811,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 60497,
+        "brotli": 20315
+      }
     },
     {
       "task": "fs-shopping",
@@ -1613,7 +1841,11 @@
           },
           "errors": []
         }
-      ]
+      ],
+      "size": {
+        "raw": 59538,
+        "brotli": 19975
+      }
     }
   ]
 }

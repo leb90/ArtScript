@@ -54,6 +54,7 @@
     "eval": "node benchmarks/eval/run.ts",
     "eval:report": "node benchmarks/eval/report.ts",
     "eval:retries": "node benchmarks/eval/retries.ts",
+    "eval:sizes": "node benchmarks/eval/sizes.ts",
     "art": "node src/cli.ts",
     "prepack": "npm run build",
     "prepublishOnly": "npm test && npm run typecheck"

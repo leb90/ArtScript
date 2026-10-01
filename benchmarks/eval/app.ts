@@ -7,6 +7,7 @@ import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { brotliCompressSync } from "node:zlib";
 import * as esbuild from "esbuild";
 import { compile } from "../../src/compile.ts";
 // @ts-ignore: runtime is plain JS
@@ -17,9 +18,12 @@ const WORK = join(import.meta.dirname, ".work");
 
 export class BehaviorError extends Error {}
 
+// What the browser downloads: the app's JavaScript, minified, raw and brotli-compressed bytes.
+export type AppSize = { raw: number; brotli: number };
+
 // ---------- bundling ----------
 // Returns the path of a single ES module that mounts the app into #app.
-async function bundle(stack: Stack, files: Files, dir: string): Promise<string> {
+async function bundle(stack: Stack, files: Files, dir: string): Promise<{ path: string; size: AppSize }> {
   const write = (name: string, src: string) => { mkdirSync(join(dir, name, ".."), { recursive: true }); writeFileSync(join(dir, name), src); };
   let entry: string;
   if (stack === "artscript") {
@@ -54,13 +58,21 @@ async function bundle(stack: Stack, files: Files, dir: string): Promise<string> 
   try {
     const out = await esbuild.build({
       entryPoints: [join(dir, entry)], bundle: true, format: "esm", platform: "browser", write: false, jsx: "automatic",
-      conditions: ["browser"], define: { "process.env.NODE_ENV": '"production"' }, logLevel: "silent",
+      conditions: ["browser"], define: { "process.env.NODE_ENV": '"production"' }, logLevel: "silent", minify: true,
     });
     write("bundle.mjs", out.outputFiles[0].text);
+    const bytes = Buffer.from(out.outputFiles[0].text);
+    return { path: join(dir, "bundle.mjs"), size: { raw: bytes.length, brotli: brotliCompressSync(bytes).length } };
   } catch (e: any) {
     throw new BehaviorError("no se pudo empaquetar: " + (e.errors?.map((x: any) => x.text).join("; ") ?? String(e)));
   }
-  return join(dir, "bundle.mjs");
+}
+
+// Bundles an app only to measure it (no browser, no server).
+export async function measureApp(stack: Stack, files: Files): Promise<AppSize> {
+  mkdirSync(WORK, { recursive: true });
+  const dir = mkdtempSync(join(WORK, `size-${stack}-`));
+  try { return (await bundle(stack, files, dir)).size; } finally { rmSync(dir, { recursive: true, force: true }); }
 }
 
 // ---------- servers (full-stack tasks) ----------
@@ -214,7 +226,7 @@ export class Page {
 
 // Builds and mounts an app; the caller must call close(). It installs global DOM state, so each
 // check runs in its own process (see behave() in behavior.ts).
-export async function launch(stack: Stack, files: Files, fullstack: boolean): Promise<{ page: Page; close: () => Promise<void> }> {
+export async function launch(stack: Stack, files: Files, fullstack: boolean): Promise<{ page: Page; close: () => Promise<void>; size: AppSize }> {
   mkdirSync(WORK, { recursive: true });
   const dir = mkdtempSync(join(WORK, `app-${stack}-`));
   let server: Running | null = null;
@@ -224,11 +236,11 @@ export async function launch(stack: Stack, files: Files, fullstack: boolean): Pr
     rmSync(dir, { recursive: true, force: true });
   };
   try {
-    const path = await bundle(stack, files, dir);
+    const { path, size } = await bundle(stack, files, dir);
     if (fullstack) server = await startServer(stack, files, dir);
     const page = new Page(path, `http://localhost:${server?.port ?? 3999}/`);
     await page.open();
-    return { page, close };
+    return { page, close, size };
   } catch (e) {
     await close();
     throw e;

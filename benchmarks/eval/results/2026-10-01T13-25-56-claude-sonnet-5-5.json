@@ -36,7 +36,11 @@
           "errors": [],
           "edit": "```patch\nappend CartItemRow/row\n  button \"Quitar\" danger small -> onChangeQty(item.product.id, -item.qty)\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7662,
+        "brotli": 2665
+      }
     },
     {
       "task": "shop-remove@full",
@@ -63,7 +67,11 @@
           "errors": [],
           "edit": "Para eliminar el ítem hay que pasar un nuevo callback `onRemove` por `CartView` y `CartItemRow`. Uso `onChangeQty` con un delta muy negativo sería un atajo, pero es más claro agregar `onRemove`.\n\n```patch\nreplace CartView\n  component CartView(cart: CartItem[], onChangeQty: Fn, onRemove: Fn, onClear: Fn) {\n    if cart.length == 0 {\n      text \"El carrito está vacío\" muted\n    } else {\n      column gap=2 {\n        for item in cart {\n          CartItemRow item=item onChangeQty=onChangeQty onRemove=onRemove\n        }\n        Summary cart=cart onClear=onClear\n      }\n    }\n  }\nreplace CartItemRow\n  component CartItemRow(item: CartItem, onChangeQty: Fn, onRemove: Fn) {\n    row gap=2 {\n      text item.product.name\n      button \"-\" -> onChangeQty(item.product.id, -1)\n      text item.qty\n      button \"+\" -> onChangeQty(item.product.id, 1)\n      text `$${(item.product.price * item.qty).toFixed(2)}`\n      button \"Quitar\" danger small -> onRemove(item.product.id)\n    }\n  }\nappend Shop\n  fn removeItem(id) {\n    cart = cart.filter(i => i.product.id != id)\n  }\nreplace Shop/column/if/else/CartView\n  CartView cart=cart onChangeQty=changeQty onRemove=removeItem onClear=(() => cart = [])\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7794,
+        "brotli": 2716
+      }
     },
     {
       "task": "shop-remove@focus",
@@ -90,7 +98,11 @@
           "errors": [],
           "edit": "```patch\nappend CartItemRow/row\n  button \"Quitar\" danger small -> onChangeQty(item.product.id, -item.qty)\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7662,
+        "brotli": 2665
+      }
     },
     {
       "task": "shop-remove@focus",
@@ -117,7 +129,11 @@
           "errors": [],
           "edit": "```patch\nappend CartItemRow/row\n  button \"Quitar\" danger small -> onChangeQty(item.product.id, -item.qty)\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7662,
+        "brotli": 2665
+      }
     },
     {
       "task": "shop-stock@full",
@@ -144,7 +160,11 @@
           "errors": [],
           "edit": "```patch\nreplace Shop.add\n  fn add(product) {\n    if product.stock <= 0 { return }\n    products = products.map(p => p.id == product.id ? { ...p, stock: p.stock - 1 } : p)\n    let found = cart.find(i => i.product.id == product.id)\n    if found {\n      found.qty++\n    } else {\n      cart.push({ product, qty: 1 })\n    }\n  }\nreplace ProductCard/card/button\n  if product.stock > 0 {\n    button \"Agregar\" primary -> onAdd(product)\n  } else {\n    text \"Sin stock\" danger\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7714,
+        "brotli": 2705
+      }
     },
     {
       "task": "shop-stock@full",
@@ -171,7 +191,11 @@
           "errors": [],
           "edit": "```patch\nreplace Shop.add\n  fn add(product) {\n    let p = products.find(x => x.id == product.id)\n    if !p { return }\n    if p.stock <= 0 { return }\n    p.stock--\n    let found = cart.find(i => i.product.id == product.id)\n    if found {\n      found.qty++\n    } else {\n      cart.push({ product: p, qty: 1 })\n    }\n  }\nreplace ProductCard/card/button\n  if product.stock > 0 {\n    button \"Agregar\" primary -> onAdd(product)\n  } else {\n    text \"Sin stock\" danger\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7713,
+        "brotli": 2706
+      }
     },
     {
       "task": "shop-stock@focus",
@@ -198,7 +222,11 @@
           "errors": [],
           "edit": "```patch\nreplace Shop.add\n  fn add(product) {\n    if product.stock <= 0 { return }\n    let found = cart.find(i => i.product.id == product.id)\n    if found {\n      found.qty++\n    } else {\n      cart.push({ product, qty: 1 })\n    }\n    products = products.map(p => p.id == product.id ? { ...p, stock: p.stock - 1 } : p)\n  }\nreplace ProductCard/card/button\n  if product.stock > 0 {\n    button \"Agregar\" primary -> onAdd(product)\n  } else {\n    text \"Sin stock\" danger\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7714,
+        "brotli": 2693
+      }
     },
     {
       "task": "shop-stock@focus",
@@ -225,7 +253,11 @@
           "errors": [],
           "edit": "```patch\nreplace Shop.add\n  fn add(product) {\n    if product.stock <= 0 { return }\n    products = products.map(p => p.id == product.id ? { ...p, stock: p.stock - 1 } : p)\n    let found = cart.find(i => i.product.id == product.id)\n    if found {\n      found.qty++\n    } else {\n      cart.push({ product, qty: 1 })\n    }\n  }\nreplace ProductCard/card/button\n  if product.stock > 0 {\n    button \"Agregar\" primary -> onAdd(product)\n  } else {\n    text \"Sin stock\" danger bold\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7721,
+        "brotli": 2701
+      }
     },
     {
       "task": "shop-discount@full",
@@ -252,7 +284,11 @@
           "errors": [],
           "edit": "```patch\nappend Summary\n  computed discounted = total > 50\n  computed finalTotal = total * 0.9\nreplace Summary/row\n  column gap=1 {\n    row justify=between {\n      text `Total: $${total.toFixed(2)}` bold\n      button \"Vaciar carrito\" danger -> onClear()\n    }\n    if discounted {\n      text \"Descuento 10%\" muted\n      text `Total final: $${finalTotal.toFixed(2)}` bold\n    }\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7780,
+        "brotli": 2709
+      }
     },
     {
       "task": "shop-discount@full",
@@ -279,7 +315,11 @@
           "errors": [],
           "edit": "```patch\nreplace Summary/row\n  column gap=1 {\n    row justify=between {\n      text `Total: $${total.toFixed(2)}` bold\n      button \"Vaciar carrito\" danger -> onClear()\n    }\n    if total > 50 {\n      text \"Descuento 10%\" danger\n      text `Total final: $${(total * 0.9).toFixed(2)}` bold\n    }\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7753,
+        "brotli": 2696
+      }
     },
     {
       "task": "shop-discount@focus",
@@ -306,7 +346,11 @@
           "errors": [],
           "edit": "```patch\nappend Summary\n  computed discounted = total > 50\n  computed finalTotal = total * 0.9\ninsert after Summary/row\n  if discounted {\n    column gap=1 {\n      text \"Descuento 10%\" danger\n      text `Total final: $${finalTotal.toFixed(2)}` bold\n    }\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7781,
+        "brotli": 2711
+      }
     },
     {
       "task": "shop-discount@focus",
@@ -333,7 +377,11 @@
           "errors": [],
           "edit": "```patch\nappend Summary\n  computed discounted = total > 50\n  computed finalTotal = total * 0.9\ninsert after Summary/row\n  if discounted {\n    column gap=1 {\n      text \"Descuento 10%\" danger\n      text `Total final: $${finalTotal.toFixed(2)}` bold\n    }\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7781,
+        "brotli": 2711
+      }
     },
     {
       "task": "shop-sort@full",
@@ -360,7 +408,11 @@
           "errors": [],
           "edit": "```patch\ninsert before Catalog.shown\n  state sorted = false\nreplace Catalog.shown\n  computed shown = products\n    .filter(p => p.name.toLowerCase().includes(query.toLowerCase()))\n    .sort((a, b) => sorted ? a.price - b.price : 0)\ninsert after Catalog/column/input\n  button \"Ordenar por precio\" primary=sorted -> sorted = !sorted\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7716,
+        "brotli": 2715
+      }
     },
     {
       "task": "shop-sort@full",
@@ -387,7 +439,11 @@
           "errors": [],
           "edit": "```patch\ninsert before Catalog.shown\n  state sortByPrice = false\nreplace Catalog.shown\n  computed shown = products\n    .filter(p => p.name.toLowerCase().includes(query.toLowerCase()))\n    .sort((a, b) => sortByPrice ? a.price - b.price : 0)\ninsert after Catalog/column/input\n  button \"Ordenar por precio\" primary=(sortByPrice) -> sortByPrice = !sortByPrice\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7716,
+        "brotli": 2716
+      }
     },
     {
       "task": "shop-sort@focus",
@@ -414,7 +470,11 @@
           "errors": [],
           "edit": "```patch\nappend Catalog\n  state sorted = false\nreplace Catalog.shown\n  computed shown = products\n    .filter(p => p.name.toLowerCase().includes(query.toLowerCase()))\n    .sort((a, b) => sorted ? a.price - b.price : 0)\ninsert after Catalog/column/input\n  button \"Ordenar por precio\" small primary -> sorted = true\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7709,
+        "brotli": 2715
+      }
     },
     {
       "task": "shop-sort@focus",
@@ -441,7 +501,11 @@
           "errors": [],
           "edit": "```patch\nappend Catalog\n  state sorted = false\nreplace Catalog.shown\n  computed shown = products\n    .filter(p => p.name.toLowerCase().includes(query.toLowerCase()))\n    .sort((a, b) => sorted ? a.price - b.price : 0)\ninsert after Catalog/column/input\n  button \"Ordenar por precio\" small primary -> sorted = true\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 7709,
+        "brotli": 2715
+      }
     },
     {
       "task": "admin-total@full",
@@ -477,7 +541,11 @@
           "errors": [],
           "edit": "```patch\ninsert after SuppliersPage/column/title\n  text `Total: ${items.reduce((s, i) => s + i.amount, 0)}` bold\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17315,
+        "brotli": 2764
+      }
     },
     {
       "task": "admin-total@full",
@@ -513,7 +581,11 @@
           "errors": [],
           "edit": "```patch\ninsert after SuppliersPage/column/title\n  text `Total: ${items.reduce((s, i) => s + i.amount, 0)}` bold\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17315,
+        "brotli": 2764
+      }
     },
     {
       "task": "admin-total@focus",
@@ -549,7 +621,11 @@
           "errors": [],
           "edit": "```patch\nappend SuppliersPage\n  computed total = items.reduce((sum, i) => sum + i.amount, 0)\ninsert after SuppliersPage/column/title\n  text `Total: ${total}` bold\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17620,
+        "brotli": 2842
+      }
     },
     {
       "task": "admin-total@focus",
@@ -585,7 +661,11 @@
           "errors": [],
           "edit": "```patch\ninsert after SuppliersPage/column/title\n  text `Total: ${total}`\nappend SuppliersPage\n  computed total = items.reduce((sum, i) => sum + i.amount, 0)\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17611,
+        "brotli": 2842
+      }
     },
     {
       "task": "admin-toggle@full",
@@ -621,7 +701,11 @@
           "errors": [],
           "edit": "```patch\nreplace EmployeesRow\n  component EmployeesRow(item: Item) {\n    row gap=2 {\n      text item.name bold\n      if !item.active {\n        text \"(inactivo)\" muted\n      }\n      text `Sueldo: ${item.amount}`\n      button \"Alternar\" small -> item.active = !item.active\n    }\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17420,
+        "brotli": 2791
+      }
     },
     {
       "task": "admin-toggle@full",
@@ -657,7 +741,11 @@
           "errors": [],
           "edit": "```patch\nreplace EmployeesRow/row\n  row gap=2 {\n    text item.name bold\n    if !item.active {\n      text \"(inactivo)\" muted\n    }\n    text `Sueldo: ${item.amount}`\n    button \"Alternar\" small -> item.active = !item.active\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17420,
+        "brotli": 2791
+      }
     },
     {
       "task": "admin-toggle@focus",
@@ -693,7 +781,11 @@
           "errors": [],
           "edit": "```patch\nreplace EmployeesRow/row\n  row gap=2 align=center {\n    text item.name bold\n    if !item.active {\n      text \"(inactivo)\" muted\n    }\n    text `Sueldo: ${item.amount}`\n    button \"Alternar\" small -> item.active = !item.active\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17448,
+        "brotli": 2820
+      }
     },
     {
       "task": "admin-toggle@focus",
@@ -729,7 +821,11 @@
           "errors": [],
           "edit": "```patch\nreplace EmployeesRow/row\n  row gap=2 align=center {\n    text item.name bold\n    if !item.active {\n      text \"(inactivo)\" muted\n    }\n    text `Sueldo: ${item.amount}`\n    button \"Alternar\" small -> item.active = !item.active\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17448,
+        "brotli": 2820
+      }
     },
     {
       "task": "admin-delete@full",
@@ -765,7 +861,11 @@
           "errors": [],
           "edit": "```patch\nreplace CouponsPage/column/CouponsList\n  CouponsList items=items onDelete=(id => items = items.filter(x => x.id != id))\nreplace CouponsList\n  component CouponsList(items: Item[], onDelete: Fn) {\n    if items.length == 0 {\n      text \"Sin registros\" muted\n    } else {\n      column gap=1 {\n        for item in items {\n          CouponsRow item=item onDelete=onDelete\n        }\n      }\n    }\n  }\nreplace CouponsRow\n  component CouponsRow(item: Item, onDelete: Fn) {\n    row gap=2 {\n      text item.name bold\n      text `Descuento: ${item.amount}`\n      button \"Eliminar\" danger small -> onDelete(item.id)\n    }\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17448,
+        "brotli": 2841
+      }
     },
     {
       "task": "admin-delete@full",
@@ -801,7 +901,11 @@
           "errors": [],
           "edit": "```patch\nreplace CouponsRow\n  component CouponsRow(item: Item, onDelete: Fn) {\n    row gap=2 {\n      text item.name bold\n      text `Descuento: ${item.amount}`\n      button \"Eliminar\" danger small -> onDelete(item.id)\n    }\n  }\nreplace CouponsList\n  component CouponsList(items: Item[], onDelete: Fn) {\n    if items.length == 0 {\n      text \"Sin registros\" muted\n    } else {\n      column gap=1 {\n        for item in items {\n          CouponsRow item=item onDelete=onDelete\n        }\n      }\n    }\n  }\nreplace CouponsPage/column/CouponsList\n  CouponsList items=items onDelete=remove\ninsert after CouponsPage.add\n  fn remove(id) {\n    items = items.filter(x => x.id != id)\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17459,
+        "brotli": 2869
+      }
     },
     {
       "task": "admin-delete@focus",
@@ -837,7 +941,11 @@
           "errors": [],
           "edit": "```patch\nreplace CouponsRow\n  component CouponsRow(item: Item, onDelete: Fn) {\n    row gap=2 {\n      text item.name bold\n      text `Descuento: ${item.amount}`\n      button \"Eliminar\" danger small -> onDelete(item.id)\n    }\n  }\nreplace CouponsList\n  component CouponsList(items: Item[], onDelete: Fn) {\n    if items.length == 0 {\n      text \"Sin registros\" muted\n    } else {\n      column gap=1 {\n        for item in items {\n          CouponsRow item=item onDelete=onDelete\n        }\n      }\n    }\n  }\nappend CouponsPage\n  fn remove(id) {\n    items = items.filter(x => x.id != id)\n  }\nreplace CouponsPage/column/CouponsList\n  CouponsList items=items onDelete=remove\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17459,
+        "brotli": 2869
+      }
     },
     {
       "task": "admin-delete@focus",
@@ -873,7 +981,11 @@
           "errors": [],
           "edit": "```patch\nreplace CouponsRow\n  component CouponsRow(item: Item, onDelete: Fn) {\n    row gap=2 {\n      text item.name bold\n      text `Descuento: ${item.amount}`\n      button \"Eliminar\" danger small -> onDelete(item.id)\n    }\n  }\nreplace CouponsList\n  component CouponsList(items: Item[], onDelete: Fn) {\n    if items.length == 0 {\n      text \"Sin registros\" muted\n    } else {\n      column gap=1 {\n        for item in items {\n          CouponsRow item=item onDelete=onDelete\n        }\n      }\n    }\n  }\nappend CouponsPage\n  fn remove(id) {\n    items = items.filter(x => x.id != id)\n  }\nreplace CouponsPage/column/CouponsList\n  CouponsList items=items onDelete=remove\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17459,
+        "brotli": 2869
+      }
     },
     {
       "task": "admin-required@full",
@@ -909,7 +1021,11 @@
           "errors": [],
           "edit": "```patch\nappend CustomersForm\n  state error = \"\"\nreplace CustomersForm.submit\n  fn submit() {\n    if name == \"\" {\n      error = \"Nombre requerido\"\n      return\n    }\n    error = \"\"\n    onAdd(name, amount)\n    name = \"\"\n    amount = 0\n  }\ninsert after CustomersForm/row\n  if error != \"\" {\n    text error danger small\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17364,
+        "brotli": 2845
+      }
     },
     {
       "task": "admin-required@full",
@@ -945,7 +1061,11 @@
           "errors": [],
           "edit": "```patch\nappend CustomersForm\n  state error = \"\"\nreplace CustomersForm.submit\n  fn submit() {\n    if name == \"\" {\n      error = \"Nombre requerido\"\n      return\n    }\n    error = \"\"\n    onAdd(name, amount)\n    name = \"\"\n    amount = 0\n  }\ninsert after CustomersForm/row\n  if error != \"\" {\n    text error danger small\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17364,
+        "brotli": 2845
+      }
     },
     {
       "task": "admin-required@focus",
@@ -981,7 +1101,11 @@
           "errors": [],
           "edit": "```patch\nappend CustomersForm\n  state error = \"\"\nreplace CustomersForm.submit\n  fn submit() {\n    if name.trim() == \"\" {\n      error = \"Nombre requerido\"\n      return\n    }\n    error = \"\"\n    onAdd(name, amount)\n    name = \"\"\n    amount = 0\n  }\ninsert after CustomersForm/row\n  if error != \"\" {\n    text error danger small\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17371,
+        "brotli": 2836
+      }
     },
     {
       "task": "admin-required@focus",
@@ -1017,7 +1141,11 @@
           "errors": [],
           "edit": "```patch\nreplace CustomersForm.submit\n  fn submit() {\n    if name.trim() == \"\" {\n      error = \"Nombre requerido\"\n      return\n    }\n    error = \"\"\n    onAdd(name, amount)\n    name = \"\"\n    amount = 0\n  }\ninsert before CustomersForm.submit\n  state error = \"\"\nappend CustomersForm/row\n  if error != \"\" {\n    text error danger small\n  }\n```"
         }
-      ]
+      ],
+      "size": {
+        "raw": 17371,
+        "brotli": 2832
+      }
     }
   ]
 }

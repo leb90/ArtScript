@@ -17,7 +17,8 @@ import { parseProject } from "../../src/compile.ts";
 import { declContexts, projectMap } from "../../src/context.ts";
 import { formatAI } from "../../src/errors.ts";
 import { applyPatch } from "../../src/patch.ts";
-import { behave } from "./behavior.ts";
+import { behave, behaveMeasured } from "./behavior.ts";
+import type { AppSize } from "./app.ts";
 import { applyEdits, extractFiles, extractPatch, validate, type Files, type Stack } from "./validate.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -153,6 +154,7 @@ type RunResult = {
   // Every attempt: the files Claude returned and the errors fed back (empty on the last successful one).
   // Lets retries be diagnosed exactly: `npm run eval:retries -- <results.json>`.
   history: { files: Files; errors: string[]; edit?: string }[]; // `edit`: the patch/edit answer, when used
+  size?: AppSize; // the working app's JavaScript (minified; raw and brotli bytes)
 };
 
 let spent = 0;
@@ -165,6 +167,7 @@ async function runOne(client: Anthropic, task: Task, stack: Stack, run: number):
   let files: Files = {};
   let stop: string | undefined;
   const history: { files: Files; errors: string[]; edit?: string }[] = [];
+  let size: AppSize | undefined;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     if (spent >= MAX_USD) { errors = [`budget exhausted (--max-usd ${MAX_USD})`]; return done(false, attempt - 1); }
@@ -194,7 +197,7 @@ async function runOne(client: Anthropic, task: Task, stack: Stack, run: number):
     if (edited && "errors" in edited) { files = {}; errors = edited.errors; }
     // Full files returned for a modification replace those files; the rest of the project stays.
     else { files = edited ? edited.files : { ...baseFiles(task, stack), ...extractFiles(text) }; errors = await validate(stack, files); }
-    if (!errors.length && BEHAVIOR) errors = await behave(task, stack, files);
+    if (!errors.length && BEHAVIOR) ({ errors, size } = await behaveMeasured(task, stack, files));
     history.push({ files, errors: errors.slice(0, 10), ...(edited ? { edit: text } : {}) });
     if (!errors.length) return done(true, attempt);
     const fix = edited ? "Devolvé el cambio corregido (se aplica sobre el código original)." : "Devolvé los archivos completos corregidos.";
@@ -205,7 +208,7 @@ async function runOne(client: Anthropic, task: Task, stack: Stack, run: number):
   async function done(ok: boolean, attempts: number): Promise<RunResult> {
     let codeTokens: number | null = null;
     if (ok) codeTokens = await countCodeTokens(client, files);
-    return { task: task.id, stack, run, ok, attempts, usage, usd: usd(usage), codeTokens, errors: ok ? [] : errors.slice(0, 5), stop, history };
+    return { task: task.id, stack, run, ok, attempts, usage, usd: usd(usage), codeTokens, errors: ok ? [] : errors.slice(0, 5), stop, history, size };
   }
 }
 
