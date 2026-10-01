@@ -1,0 +1,19 @@
+# ArtScript
+
+> A web language and framework designed so that AI models build and change full-stack web apps with fewer tokens, retries and dollars than React or Svelte. `.art` files compile to small, dependency-free JavaScript (signals, direct DOM) plus a Node server (REST apis from models, SQLite, auth).
+
+Use the spec before writing code; use the edit spec when changing existing code.
+
+## Docs
+
+- [Spec](docs/SPEC.md): the whole language in ~3K tokens (declarations, members, backend, view, rules, `art patch`).
+- [Edit spec](docs/SPEC-EDIT.md): ~800 tokens, enough to change existing code (the code shows the syntax).
+- [README](README.md): usage, commands and the measured cost against React, Svelte, Vue and SolidJS.
+- [Security](SECURITY.md): what apps get by default.
+
+## Tools for agents
+
+- `art mcp`: an MCP server with `art_spec`, `art_check`, `art_context` and `art_patch`.
+- `art check --ai`: errors as JSON with `expected`, `actual` and `fixes`.
+- `art context [Name...]`: compact context and every addressable patch path.
+- `art patch`: structured, atomic, type-checked edits instead of rewriting files.

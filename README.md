@@ -131,6 +131,12 @@ set Todos/column gap=6
 
 `art context <Component>` lists every addressable path. An agent that only changes existing code can load [docs/SPEC-EDIT.md](docs/SPEC-EDIT.md) (~800 tokens) instead of the full [spec](docs/SPEC.md) (~2.9K): the code it reads already shows the syntax.
 
+Agents can use ArtScript's tools directly through MCP (`art_spec`, `art_check`, `art_context`, `art_patch`). In Claude Code:
+
+```
+claude mcp add artscript -- npx art mcp
+```
+
 Other commands: `npm run art -- <command>` (for example `npm run art -- check examples/todo --ai`). Full list: `npm run art -- help`.
 
 Not published on npm yet (see [docs/PUBLISHING.md](docs/PUBLISHING.md)).

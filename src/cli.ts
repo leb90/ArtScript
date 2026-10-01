@@ -29,6 +29,7 @@ const HELP = `art ${PKG.version} — the ArtScript compiler
   art fmt [path] [--write]          canonical format (without --write it only prints)
   art patch [file|-] [--dir path] [--dry-run] [--ai]
                                     apply structured edits (reads stdin without a file)
+  art mcp [--dir path]               MCP server (stdio) with art_spec, art_check, art_context, art_patch
   art context [Name...] [--dir path] [--budget N]
                                     compact context for AI (without a name: project map)
   art ast <file>                    AST as JSON
@@ -219,6 +220,14 @@ switch (cmd) {
     const loc = flags.has("--loc");
     const program = parse(readFileSync(pos[0], "utf8"), pos[0]);
     console.log(JSON.stringify(program, (k, v) => (k === "loc" && !loc ? undefined : v), 1));
+    break;
+  }
+
+  case "mcp": {
+    // An MCP server for agents; the workspace is the current directory (or --dir).
+    const { runMcp } = await import("./mcp.ts");
+    const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+    runMcp(resolve((flag("--dir") as string) ?? "."), join(ROOT, "docs"), pkg.version);
     break;
   }
 

@@ -2,7 +2,7 @@
   "name": "artscript",
   "version": "0.1.0",
   "private": true,
-  "description": "Lenguaje web AI-native que compila a JavaScript. Menos tokens, menos contexto, menos errores.",
+  "description": "An AI-native web language that compiles to JavaScript: fewer tokens, less context, fewer errors.",
   "keywords": [
     "artscript",
     "language",
@@ -39,7 +39,9 @@
     "runtime",
     "templates",
     "docs/SPEC.md",
-    "docs/SPEC-EDIT.md"
+    "docs/SPEC-EDIT.md",
+    "llms.txt",
+    "SECURITY.md"
   ],
   "engines": {
     "node": ">=24"
