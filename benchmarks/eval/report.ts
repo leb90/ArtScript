@@ -47,18 +47,25 @@ function stats(f: ResultFile, stack: string, task?: string) {
   };
 }
 
-type Loaded = { path: string; data: ResultFile; paths: string[]; replaced: string[] };
+// Why cells were re-run, per result file (benchmarks/eval/results/notes.json).
+const NOTES: Record<string, string> = (() => {
+  try { return JSON.parse(readFileSync(join(HERE, "results", "notes.json"), "utf8")); } catch { return {}; }
+})();
+
+type Loaded = { path: string; data: ResultFile; paths: string[]; replaced: string[]; reruns: string[] };
 
 function merge(files: { path: string; data: ResultFile }[]): Loaded[] {
   const byModel = new Map<string, Loaded>();
   for (const { path, data } of files) {
     const prev = byModel.get(data.model);
-    if (!prev) { byModel.set(data.model, { path, data: { ...data, results: [...data.results] }, paths: [path], replaced: [] }); continue; }
+    if (!prev) { byModel.set(data.model, { path, data: { ...data, results: [...data.results] }, paths: [path], replaced: [], reruns: [] }); continue; }
     const cells = new Set(data.results.map((r) => `${r.task}/${r.stack}`));
     const existed = new Set(prev.data.results.map((r) => `${r.task}/${r.stack}`));
     prev.data.results = [...prev.data.results.filter((r) => !cells.has(`${r.task}/${r.stack}`)), ...data.results];
     prev.paths.push(path);
-    prev.replaced.push(...[...cells].filter((c) => existed.has(c)));
+    const rerun = [...cells].filter((c) => existed.has(c));
+    prev.replaced.push(...rerun);
+    if (rerun.length) prev.reruns.push(`${rerun.length} cell(s) re-run in ${basename(path)}${NOTES[basename(path)] ? ` (${NOTES[basename(path)]})` : ""}`);
   }
   return [...byModel.values()];
 }
@@ -96,7 +103,7 @@ function projectTable(rs: Run[], what: string): string[] {
 
 function section(loaded: Loaded[]): string {
   const out: string[] = [START, "", "## Cost eval results", ""];
-  for (const { path, data: all, paths, replaced } of loaded) {
+  for (const { path, data: all, paths, reruns } of loaded) {
     // Larger-project tasks ("<task>@full" / "<task>@focus") get their own table below.
     const f = { ...all, results: all.results.filter((r) => !r.task.includes("@")) };
     const project = all.results.filter((r) => r.task.includes("@"));
@@ -123,7 +130,7 @@ function section(loaded: Loaded[]): string {
     }
     const total = STACKS.reduce((a, k) => a + s[k].total, 0);
     const links = paths.map((p) => `[\`${relative(REPO, p)}\`](${relative(REPO, p)})`).join(", ");
-    const rerun = replaced.length ? ` Re-run after fixing bugs that run uncovered: ${replaced.join(", ")} (the model's first answers there were correct; the failures came from the eval harness and, for login/artscript, an ArtScript compiler bug).` : "";
+    const rerun = reruns.length ? ` ${reruns.join("; ")}.` : "";
     out.push("", "</details>", "");
     if (project.length) out.push(...projectTables(project));
     out.push(`Run ${date}: ${tasks.length} tasks × ${STACKS.length} stacks × ${f.runs} runs, total $${total.toFixed(2)}, prices as of ${f.pricesDate}.${rerun} Raw data: ${links}.`, "");
