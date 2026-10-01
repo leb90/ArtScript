@@ -241,13 +241,13 @@ Whole project in the prompt ("full") vs. what a good agent would read ("focus": 
 
 | Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus | App JS (brotli) |
 |---|---|---|---|---|---|
-| **ArtScript** | $0.0395 (8/8) | $0.0170 (8/8) | 11749 | 6244 | 4.2 KB |
+| **ArtScript** | $0.0340 (8/8) | $0.0159 (8/8) | 9365 | 4940 | 4.3 KB |
 | React + TS | $0.0487 (8/8) | $0.0176 (8/8) | 9534 | 1429 | 59.6 KB |
 | Svelte 5 | $0.0456 (8/8) | $0.0164 (8/8) | 8898 | 1421 | 20.3 KB |
 
 Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
 
-Run 2026-09-30: 10 tasks × 3 stacks × 3 runs, total $1.35, prices as of 2026-09-25. 24 cell(s) re-run in 2026-10-01T18-02-02-claude-opus-5-5.json (full Opus run (26 tasks), with the spec that includes routes and the 0.3 UI elements (~2,700 tokens) and `art patch` before the path-tolerance change). Raw data: [`benchmarks/eval/results/2026-09-30T22-23-39-claude-opus-5-5.json`](benchmarks/eval/results/2026-09-30T22-23-39-claude-opus-5-5.json), [`benchmarks/eval/results/2026-10-01T18-02-02-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-01T18-02-02-claude-opus-5-5.json).
+Run 2026-09-30: 10 tasks × 3 stacks × 3 runs, total $1.35, prices as of 2026-09-25. 24 cell(s) re-run in 2026-10-01T18-02-02-claude-opus-5-5.json (full Opus run (26 tasks), with the spec that includes routes and the 0.3 UI elements (~2,700 tokens) and `art patch` before the path-tolerance change); 8 cell(s) re-run in 2026-10-01T18-27-21-claude-opus-5-5.json (ArtScript only, admin tasks, after accepting what models write out of habit (see the 2026-10-01 commits: writable computed, two-way props, typed/default params, art patch variants, set Component prop: Type). The two first runs paid the one-time cache write of the new spec, which the full run had charged to its first task). Raw data: [`benchmarks/eval/results/2026-09-30T22-23-39-claude-opus-5-5.json`](benchmarks/eval/results/2026-09-30T22-23-39-claude-opus-5-5.json), [`benchmarks/eval/results/2026-10-01T18-02-02-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-01T18-02-02-claude-opus-5-5.json), [`benchmarks/eval/results/2026-10-01T18-27-21-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-01T18-27-21-claude-opus-5-5.json).
 
 ### claude-sonnet-5-5 (effort medium)
 
@@ -371,7 +371,7 @@ Whole project in the prompt ("full") vs. what a good agent would read ("focus": 
 
 | Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus | App JS (brotli) |
 |---|---|---|---|---|---|
-| **ArtScript** | $0.0159 (5/8) | $0.0166 (5/8) | 8246 | 8498 | 3.5 KB |
+| **ArtScript** | $0.0054 (8/8) | $0.0042 (8/8) | 4717 | 3531 | 3.7 KB |
 | React + TS | $0.0060 (8/8) | $0.0067 (7/8) | 2603 | 1404 | 59.1 KB |
 | Svelte 5 | $0.0057 (8/8) | $0.0037 (8/8) | 2817 | 957 | 20.4 KB |
 
@@ -383,7 +383,7 @@ Whole project in the prompt ("full") vs. what a good agent would read ("focus": 
 
 | Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus | App JS (brotli) |
 |---|---|---|---|---|---|
-| **ArtScript** | $0.0217 (6/8) | $0.0107 (7/8) | 15308 | 8040 | 4.2 KB |
+| **ArtScript** | $0.0165 (7/8) | $0.0057 (8/8) | 13452 | 4948 | 4.3 KB |
 | React + TS | $0.0108 (8/8) | $0.0043 (8/8) | 7622 | 1042 | 59.6 KB |
 | Svelte 5 | $0.0100 (8/8) | $0.0044 (8/8) | 7246 | 1091 | 20.3 KB |
 
@@ -395,13 +395,13 @@ Whole project in the prompt ("full") vs. what a good agent would read ("focus": 
 
 | Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus | App JS (brotli) |
 |---|---|---|---|---|---|
-| **ArtScript** | $0.0332 (7/8) | $0.0130 (6/8) | 27988 | 8426 | 5.1 KB |
+| **ArtScript** | $0.0297 (7/8) | $0.0082 (8/8) | 24605 | 7281 | 5.2 KB |
 | React + TS | $0.0207 (8/8) | $0.0051 (8/8) | 18176 | 1460 | 60.9 KB |
 | Svelte 5 | $0.0224 (8/8) | $0.0050 (8/8) | 19416 | 1569 | 21.4 KB |
 
 Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
 
-Run 2026-10-01: 10 tasks × 3 stacks × 2 runs, total $0.70, prices as of 2026-09-25. 2026-10-01T13-46-55-claude-haiku-4-5.json: first 12 tasks; the run was cut short when the account ran out of credit; 2026-10-01T17-58-24-claude-haiku-4-5.json: the remaining 22 tasks, after the credit was restored; the spec now includes routes and the 0.3 UI elements (~2,700 tokens instead of ~2,000); 22 cell(s) re-run in 2026-10-01T18-01-50-claude-haiku-4-5.json (ArtScript only, after making `art patch` accept the paths Haiku wrote (members as view paths, paths through child components) and adding `set Component prop: Type`; before that change ArtScript solved 24/44 of these cells at $0.0297 per solved task. React and Svelte unchanged). Raw data: [`benchmarks/eval/results/2026-10-01T13-46-55-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-01T13-46-55-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-01T17-58-24-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-01T17-58-24-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-01T18-01-50-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-01T18-01-50-claude-haiku-4-5.json).
+Run 2026-10-01: 10 tasks × 3 stacks × 2 runs, total $0.70, prices as of 2026-09-25. 2026-10-01T13-46-55-claude-haiku-4-5.json: first 12 tasks; the run was cut short when the account ran out of credit; 2026-10-01T17-58-24-claude-haiku-4-5.json: the remaining 22 tasks, after the credit was restored; the spec now includes routes and the 0.3 UI elements (~2,700 tokens instead of ~2,000); 22 cell(s) re-run in 2026-10-01T18-01-50-claude-haiku-4-5.json (ArtScript only, after making `art patch` accept the paths Haiku wrote (members as view paths, paths through child components) and adding `set Component prop: Type`; before that change ArtScript solved 24/44 of these cells at $0.0297 per solved task. React and Svelte unchanged); 22 cell(s) re-run in 2026-10-01T18-27-44-claude-haiku-4-5.json (ArtScript only, after the same changes; the run before solved 32/44 of these cells at $0.0207 per solved task, and the first one 24/44 at $0.0297. React and Svelte unchanged). Raw data: [`benchmarks/eval/results/2026-10-01T13-46-55-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-01T13-46-55-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-01T17-58-24-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-01T17-58-24-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-01T18-01-50-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-01T18-01-50-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-01T18-27-44-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-01T18-27-44-claude-haiku-4-5.json).
 
 ### Methodology and limitations
 

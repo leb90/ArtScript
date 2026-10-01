@@ -8,5 +8,7 @@
   "2026-10-01T17-55-58-claude-sonnet-5-5.json": "the xl-required task for Vue 3 and SolidJS, which could not run before for lack of credit",
   "2026-10-01T17-58-24-claude-haiku-4-5.json": "the remaining 22 tasks, after the credit was restored; the spec now includes routes and the 0.3 UI elements (~2,700 tokens instead of ~2,000)",
   "2026-10-01T18-01-50-claude-haiku-4-5.json": "ArtScript only, after making `art patch` accept the paths Haiku wrote (members as view paths, paths through child components) and adding `set Component prop: Type`; before that change ArtScript solved 24/44 of these cells at $0.0297 per solved task. React and Svelte unchanged",
-  "2026-10-01T18-02-02-claude-opus-5-5.json": "full Opus run (26 tasks), with the spec that includes routes and the 0.3 UI elements (~2,700 tokens) and `art patch` before the path-tolerance change"
+  "2026-10-01T18-02-02-claude-opus-5-5.json": "full Opus run (26 tasks), with the spec that includes routes and the 0.3 UI elements (~2,700 tokens) and `art patch` before the path-tolerance change",
+  "2026-10-01T18-27-21-claude-opus-5-5.json": "ArtScript only, admin tasks, after accepting what models write out of habit (see the 2026-10-01 commits: writable computed, two-way props, typed/default params, art patch variants, set Component prop: Type). The two first runs paid the one-time cache write of the new spec, which the full run had charged to its first task",
+  "2026-10-01T18-27-44-claude-haiku-4-5.json": "ArtScript only, after the same changes; the run before solved 32/44 of these cells at $0.0207 per solved task, and the first one 24/44 at $0.0297. React and Svelte unchanged"
 }
