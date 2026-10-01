@@ -37,10 +37,10 @@ export const CATALOG: Record<string, { code: string; desc: string }> = {
   // View
   UNKNOWN_ELEMENT: { code: "E2001", desc: "Unknown UI element or component." },
   UNKNOWN_PROP: { code: "E2002", desc: "Invalid prop for this element or component." },
-  MISSING_PROP: { code: "E2003", desc: "A required component prop is missing." },
+  MISSING_PROP: { code: "E2003", desc: "A required prop is missing (component props, or `options` of select/radio/tabs)." },
   NO_ACTION: { code: "E2004", desc: "This element doesn't take an `->` action." },
   NO_CONTENT: { code: "E2005", desc: "This element doesn't take content." },
-  NOT_BINDABLE: { code: "E2006", desc: "`input` needs a `state` (or a field of one) to bind to." },
+  NOT_BINDABLE: { code: "E2006", desc: "`input`, `select`, `checkbox`, `modal`, etc. need a `state` (or a field of one) to bind to." },
   LAYOUT_SLOT: { code: "E2008", desc: "A layout needs exactly one `slot`, and `slot` only goes in layouts." },
   BAD_ROUTE: { code: "E2009", desc: "Invalid or repeated page route." },
   NO_CHILDREN: { code: "E2007", desc: "This element doesn't take `{ }` children." },

@@ -119,8 +119,36 @@ export function $on(n, kind, fn) {
     batch(() => fn(e));
   });
 }
-// Two-way input binding. `mode`: "value" | "number" | "checked".
+function untrack(fn) {
+  const prev = listener;
+  listener = null;
+  try { return fn(); } finally { listener = prev; }
+}
+
+// Two-way binding. `mode`: "value" | "number" | "checked" | "file" | "open" (modal).
 export function $bind(n, get, set, mode) {
+  if (mode === "file") {
+    effect(() => { const v = get(); if (v == null || v.length === 0) n.value = ""; });
+    n.addEventListener("change", () => batch(() => set(n.multiple ? [...n.files] : n.files[0] ?? null)));
+    return;
+  }
+  if (mode === "open") {
+    effect(() => {
+      const open = !!get();
+      const apply = () => {
+        if (open === n.open) return;
+        if (open) n.showModal ? n.showModal() : n.setAttribute("open", "");
+        else n.close ? n.close() : n.removeAttribute("open");
+      };
+      n.isConnected ? apply() : queueMicrotask(apply); // showModal needs the dialog in the page
+    });
+    n.addEventListener("close", () => batch(() => set(false)));
+    n.addEventListener("click", (e) => { // click on the backdrop closes
+      const r = n.getBoundingClientRect();
+      if (e.target === n && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) n.close?.();
+    });
+    return;
+  }
   const prop = mode === "checked" ? "checked" : "value";
   effect(() => {
     const v = get();
@@ -130,6 +158,57 @@ export function $bind(n, get, set, mode) {
   n.addEventListener(mode === "checked" ? "change" : "input", () => {
     batch(() => set(mode === "checked" ? n.checked : mode === "number" ? Number(n.value) : n.value));
   });
+}
+
+// One value out of `options` (strings, or objects with value/id and label/name): select, radio, tabs.
+// The state keeps the option's original value (a Number stays a Number).
+const optionOf = (it) => it !== null && typeof it === "object"
+  ? { value: it.value ?? it.id, label: str(it.label ?? it.name ?? it.value ?? it.id) }
+  : { value: it, label: str(it) };
+let groups = 0;
+export function $choice(n, kind, options, get, set) {
+  let items = [];
+  const name = `a-choice-${++groups}`;
+  const pick = (it) => batch(() => set(it ? it.value : null));
+  const sync = (v) => {
+    const i = items.findIndex((it) => it.value === v || (v != null && str(it.value) === str(v)));
+    if (kind === "select") n.selectedIndex = i < 0 ? (n.$placeholder != null ? 0 : -1) : i + (n.$placeholder != null ? 1 : 0);
+    else [...n.children].forEach((c, j) => {
+      if (kind === "tabs") { c.setAttribute("aria-selected", String(i === j)); c.classList.toggle("a-active", i === j); }
+      else c.firstChild.checked = i === j;
+    });
+  };
+  if (kind === "select") n.addEventListener("change", () => pick(items[n.selectedIndex - (n.$placeholder != null ? 1 : 0)]));
+  else n.setAttribute("role", kind === "tabs" ? "tablist" : "radiogroup");
+  effect(() => {
+    items = (options() ?? []).map(optionOf);
+    n.textContent = "";
+    if (kind === "select" && n.$placeholder != null) {
+      const o = $el(n, "option");
+      o.value = "";
+      o.disabled = true;
+      o.textContent = n.$placeholder;
+    }
+    for (const it of items) {
+      if (kind === "select") $el(n, "option").textContent = it.label;
+      else if (kind === "tabs") {
+        const b = $el(n, "button");
+        b.type = "button";
+        b.setAttribute("role", "tab");
+        b.textContent = it.label;
+        b.addEventListener("click", () => { pick(it); n.dispatchEvent(new Event("change")); });
+      } else {
+        const l = $el(n, "label", "a-check");
+        const i = $el(l, "input");
+        i.type = "radio";
+        i.name = name;
+        i.addEventListener("change", () => pick(it));
+        $el(l, "span").textContent = it.label;
+      }
+    }
+    sync(untrack(get));
+  });
+  effect(() => sync(get()));
 }
 
 // Renders fragments before an anchor; disposes them on change.
@@ -250,7 +329,7 @@ export function $data(fn, initial) {
 }
 
 // ---------- App ----------
-const CSS = `*{box-sizing:border-box}body{margin:0;font:16px/1.5 system-ui,sans-serif;color:#1a1a1a;background:#fafafa}#app{padding:24px;max-width:960px;margin:0 auto}.a-row{display:flex;align-items:center}.a-column{display:flex;flex-direction:column}.a-grid{display:grid}.a-wrap{flex-wrap:wrap}.a-card{display:flex;flex-direction:column;padding:16px;border:1px solid #e5e5e5;border-radius:12px;background:#fff}button{font:inherit;padding:6px 14px;border-radius:8px;border:1px solid #d4d4d4;background:#fff;color:inherit;cursor:pointer}button.a-primary{background:#2563eb;border-color:#2563eb;color:#fff}button.a-danger{color:#dc2626;border-color:#fca5a5}span.a-danger{color:#dc2626}button.a-small{padding:2px 8px;font-size:.875em}input{font:inherit}input:not([type=checkbox]){padding:6px 10px;border:1px solid #d4d4d4;border-radius:8px;background:inherit;color:inherit}.a-bold{font-weight:600}.a-muted{color:#737373}.a-small{font-size:.875em}.a-large{font-size:1.25em}h2{margin:0}a{color:#2563eb}@media(prefers-color-scheme:dark){body{background:#111;color:#eee}.a-card{background:#1a1a1a;border-color:#333}button{background:#222;border-color:#444}input:not([type=checkbox]){border-color:#444}.a-muted{color:#999}}`;
+const CSS = `*{box-sizing:border-box}body{margin:0;font:16px/1.5 system-ui,sans-serif;color:#1a1a1a;background:#fafafa}#app{padding:24px;max-width:960px;margin:0 auto}.a-row{display:flex;align-items:center}.a-column{display:flex;flex-direction:column}.a-grid{display:grid}.a-wrap{flex-wrap:wrap}.a-card{display:flex;flex-direction:column;padding:16px;border:1px solid #e5e5e5;border-radius:12px;background:#fff}button{font:inherit;padding:6px 14px;border-radius:8px;border:1px solid #d4d4d4;background:#fff;color:inherit;cursor:pointer}button.a-primary{background:#2563eb;border-color:#2563eb;color:#fff}button.a-danger{color:#dc2626;border-color:#fca5a5}span.a-danger{color:#dc2626}button.a-small{padding:2px 8px;font-size:.875em}input{font:inherit}input:not([type=checkbox]):not([type=radio]):not([type=file]){padding:6px 10px;border:1px solid #d4d4d4;border-radius:8px;background:inherit;color:inherit}.a-bold{font-weight:600}.a-muted{color:#737373}.a-small{font-size:.875em}.a-large{font-size:1.25em}h2{margin:0}a{color:#2563eb}textarea,select{font:inherit;padding:6px 10px;border:1px solid #d4d4d4;border-radius:8px;background:inherit;color:inherit}.a-field{display:flex;flex-direction:column;gap:4px}.a-check{display:flex;flex-direction:row;align-items:center;gap:8px}.a-radio{display:flex;flex-direction:column;gap:4px}.a-tabs{display:flex;gap:4px;border-bottom:1px solid #e5e5e5}.a-tabs button{border:0;border-radius:8px 8px 0 0;background:none}.a-tabs .a-active{box-shadow:inset 0 -2px #2563eb;font-weight:600}.a-modal{border:0;border-radius:12px;padding:20px;min-width:min(420px,90vw)}.a-modal::backdrop{background:#0006}.a-badge{display:inline-block;padding:0 8px;border-radius:999px;font-size:.75em;background:#e5e5e5}.a-badge.a-primary{background:#dbeafe;color:#1d4ed8}.a-badge.a-success{background:#dcfce7;color:#15803d}.a-badge.a-danger{background:#fee2e2;color:#b91c1c}.a-spinner{display:inline-block;width:1em;height:1em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:a-spin .7s linear infinite}@keyframes a-spin{to{transform:rotate(360deg)}}hr{border:0;border-top:1px solid #e5e5e5;margin:8px 0;width:100%}.a-list{margin:0;padding-left:20px}.a-table{border-collapse:collapse;width:100%}.a-table th,.a-table td{text-align:left;padding:8px;border-bottom:1px solid #e5e5e5}video,img{max-width:100%}@media(prefers-color-scheme:dark){body{background:#111;color:#eee}.a-card{background:#1a1a1a;border-color:#333}button{background:#222;border-color:#444}input:not([type=checkbox]):not([type=radio]):not([type=file]){border-color:#444}.a-muted{color:#999}textarea,select{border-color:#444}.a-modal{background:#1a1a1a;color:inherit}.a-badge{background:#333}.a-table th,.a-table td,hr,.a-tabs{border-color:#333}}`;
 
 // ---------- Router (History API) ----------
 // Routes: { path: "/products/:id" | "*", comp, layout? }. Internal <a href="/..."> clicks and

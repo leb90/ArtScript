@@ -411,12 +411,18 @@ class Checker {
     if (el.content) {
       if (spec.content === "bind") {
         if (!this.bindable(el.content, scope)) {
-          this.err("NOT_BINDABLE", "`input` binds its value to a state", el.content.loc, {
-            expr: printExpr(el.content), fixes: ["declare `state x = \"\"` and use `input x`"],
+          this.err("NOT_BINDABLE", `\`${el.tag}\` binds its value to a state`, el.content.loc, {
+            expr: printExpr(el.content), fixes: [`declare \`state x = ${spec.bind === "checked" || spec.bind === "open" ? "false" : spec.bind === "file" ? "null" : '""'}\` and use \`${el.tag} x\``],
           });
         }
       }
       this.infer(el.content, scope);
+    }
+    if (spec.bind === "choice" && !el.props.some((p) => p.name === "options" && p.value)) {
+      this.err("MISSING_PROP", `'${el.tag}' needs \`options\``, el.loc, { expr: el.tag, fixes: [`${el.tag} x options=["a", "b"]`] });
+    }
+    if (spec.content === "bind" && !el.content) {
+      this.err("MISSING_PROP", `'${el.tag}' needs a state to bind`, el.loc, { expr: el.tag, fixes: [`${el.tag} x`] });
     }
     for (const p of el.props) {
       if (p.value === null) {

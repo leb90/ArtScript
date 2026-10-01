@@ -94,17 +94,30 @@ column gap=4 align=center {
 | `text` | text | — | | bold muted small large danger |
 | `title` | text | — | | muted small large |
 | `button` | text | click | disabled | primary danger small |
-| `input` | **state to bind** (two-way) | Enter | placeholder type disabled | |
+| `input` | **state to bind** (two-way) | Enter | placeholder type disabled label | required |
+| `textarea` | state to bind | — | placeholder rows disabled label | required |
+| `select` | state to bind | change | **options** placeholder disabled label | |
+| `radio` `tabs` | state to bind | change | **options** label | |
+| `checkbox` | Bool state | change | label disabled | |
+| `file` | state (`File`, or list with `multiple`) | change | accept label disabled | multiple |
+| `modal` | Bool state (open) | — | gap pad align justify | |
 | `image` | src | — | alt width height | |
+| `video` `audio` | src | — | video: width height poster | controls autoplay loop muted |
 | `link` | text | — | to href | muted |
+| `badge` | text | — | | primary success danger |
+| `spinner` `divider` | — | — | | |
 | `row` `column` `card` | — | — | gap pad align justify | row: wrap |
 | `grid` | — | — | gap pad align justify cols | |
 | `form` | — | submit | gap pad align justify | |
+| `list` > `item` | item: text | item: click | | item: muted |
+| `table` > `tr` > `th` `td` | th/td: text | tr: click | | td: muted |
 
 - All take `class style id`.
 - Conditional flag: `text t.title muted=t.done` applies the flag while the value is `true`.
 - `gap=4` and `pad=4`: 1 unit = 4px. `align=start|center|end|stretch`. `justify=start|center|end|between|around`. `cols=3`.
 - `type=text|number|email|password|checkbox|date`. With `type=checkbox`, `input` binds a Bool.
+- `options=["S", "M"]` or a list of objects (`value`/`id` and `label`/`name`); the state gets the option's value with its type. `label="Email"` adds a visible label. `modal open { ... }` shows while `open` is true; Esc or the backdrop set it to false.
+- `item`, `th`, `td` take text and/or `{ children }`.
 - Prop values: literal, name, `a.b`, call, or `( expression )` in parentheses.
 - Component: `Name prop=value`. Capitalized name.
 - If a component receives a model as a prop and changes a field (`todo.done = true`), the owning state updates by itself.

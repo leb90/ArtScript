@@ -206,17 +206,41 @@ class ComponentGen {
 
   element(el: Element, parent: string, scope: Scope) {
     const spec = ELEMENTS[el.tag];
+    const isAttr = (name: string) => !!spec.attrs?.includes(name);
+    const isFlag = (name: string) => spec.flags.includes(name) && !isAttr(name);
+    const classes = [spec.cls, ...el.props.filter((p) => !p.value && isFlag(p.name)).map((p) => "a-" + p.name)].filter(Boolean).join(" ");
+
+    // `label="Email"` wraps the control in a <label> (a group gets a labelled <div> instead).
+    const label = el.props.find((p) => p.name === "label")?.value;
+    if (label) {
+      const w = this.v();
+      const after = spec.type === "checkbox";
+      this.emit(`const ${w} = $.$el(${parent}, "${spec.bind === "choice" && el.tag !== "select" ? "div" : "label"}", "a-field${after ? " a-check" : ""}");`);
+      parent = w;
+      if (!after) this.labelText(w, label, scope);
+    }
     const v = this.v();
-    const classes = [spec.cls, ...el.props.filter((p) => !p.value).map((p) => "a-" + p.name)].filter(Boolean).join(" ");
-    const isFlag = (name: string) => spec.flags.includes(name);
     this.emit(`const ${v} = $.$el(${parent}, "${spec.html}"${classes ? `, "${classes}"` : ""});`);
+    if (spec.type) this.emit(`${v}.type = "${spec.type}";`);
+    if (el.tag === "spinner") this.emit(`${v}.setAttribute("role", "status");`);
+    if (label && spec.type === "checkbox") this.labelText(parent, label, scope);
+    if (label && spec.bind === "choice" && el.tag !== "select") this.emit(`$.$attr(${v}, "aria-label", () => ${this.expr(label, scope)});`);
 
     const typeProp = el.props.find((p) => p.name === "type")?.value;
-    const inputType = typeProp?.kind === "Ident" ? typeProp.name : typeProp?.kind === "Str" ? typeProp.value : null;
+    const inputType = spec.type ?? (typeProp?.kind === "Ident" ? typeProp.name : typeProp?.kind === "Str" ? typeProp.value : null);
+    const options = el.props.find((p) => p.name === "options")?.value;
 
     for (const p of el.props) {
-      if (!p.value) continue;
+      if (!p.value) {
+        if (isAttr(p.name)) this.emit(`${v}.${p.name} = true;`);
+        continue;
+      }
       const val = p.value;
+      if (p.name === "label" || p.name === "options") continue;
+      if (isAttr(p.name)) {
+        this.attr(v, p.name, val, scope);
+        continue;
+      }
       const lit = literal(val);
       // Keyword values (`type=email`, `align=center`) win over a variable with the same name,
       // as the checker assumes; other bare names are keywords only if nothing else declares them.
@@ -236,6 +260,8 @@ class ComponentGen {
         else this.emit(`$.$style(${v}, "gridTemplateColumns", () => \`repeat(\${${this.expr(val, scope)}}, minmax(0, 1fr))\`);`);
       } else if (p.name === "type") {
         if (word !== null) this.emit(`${v}.type = ${JSON.stringify(word)};`);
+      } else if (p.name === "placeholder" && el.tag === "select") {
+        this.emit(`${v}.$placeholder = ${this.expr(val, scope)};`);
       } else if (p.name === "to") {
         this.attr(v, "href", val, scope); // internal links navigate without reloading (see the router)
       } else if (p.name === "class") {
@@ -254,8 +280,13 @@ class ComponentGen {
         const s = scope.child();
         s.vars.set("$v", { kind: "param" });
         const set = this.expr({ kind: "Assign", op: "=", target: c, value: { kind: "Ident", name: "$v", loc: c.loc }, loc: c.loc }, s);
-        const mode = inputType === "checkbox" ? "checked" : inputType === "number" ? "number" : "value";
-        this.emit(`$.$bind(${v}, () => ${this.expr(c, scope)}, ($v) => ${set}, "${mode}");`);
+        const get = `() => ${this.expr(c, scope)}`;
+        const opts = options ? `() => ${this.expr(options, scope)}` : "() => []";
+        if (spec.bind === "choice") this.emit(`$.$choice(${v}, "${el.tag}", ${opts}, ${get}, ($v) => ${set});`);
+        else {
+          const mode = spec.bind ?? (inputType === "checkbox" ? "checked" : inputType === "number" ? "number" : "value");
+          this.emit(`$.$bind(${v}, ${get}, ($v) => ${set}, "${mode}");`);
+        }
       }
     }
 
@@ -265,6 +296,12 @@ class ComponentGen {
       this.emit("});");
     }
     this.view(el.children, v, scope);
+  }
+
+  labelText(parent: string, val: Expr, scope: Scope) {
+    const s = this.v();
+    this.emit(`const ${s} = $.$el(${parent}, "span");`);
+    this.attr(s, "textContent", val, scope);
   }
 
   attr(v: string, name: string, val: Expr, scope: Scope, wrap = (s: string) => s) {
