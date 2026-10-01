@@ -3,7 +3,7 @@
 // Node only, no dependencies. `art dev` mounts createApi in its dev server; `art build` emits a
 // server.js that calls serve().
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, renameSync, statSync } from "node:fs";
+import { createReadStream, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { basename, extname, join, resolve, sep } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -12,6 +12,10 @@ import { fileURLToPath } from "node:url";
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const COOKIE = "art_session";
 const MIN_PASSWORD = 8;
+// Largest upload accepted (bytes); a `File` field's `max=` can only lower it.
+const MAX_UPLOAD = Number(process.env.ART_MAX_UPLOAD ?? 10 * 1024 * 1024);
+// Uploaded files shown inline; anything else is downloaded (an uploaded page can't run here).
+const INLINE = /^(image\/(png|jpeg|gif|webp|avif)|video\/|audio\/|application\/pdf$|text\/plain$)/;
 
 // An error with an HTTP status; its body is sent as JSON. `fail(message)` in server fns throws one.
 export class HttpError extends Error {
@@ -45,6 +49,7 @@ export function validate(schema, type, value, path = "") {
     case "Number": return kind === "number" && Number.isFinite(value) ? null : fail("Number", kind);
     case "Bool": return kind === "boolean" ? null : fail("Bool", kind);
     case "Date": case "Any": case "Fn": return null;
+    case "File": return kind === "object" && typeof value.url === "string" ? null : fail("File (upload it first: a File value in create/update)", kind);
   }
   const model = schema.models[type];
   if (!model) return null;
@@ -80,6 +85,7 @@ function openDb(dataDir) {
   mkdirSync(dataDir, { recursive: true });
   const db = new DatabaseSync(join(dataDir, "art.db"));
   db.exec("PRAGMA journal_mode = WAL; CREATE TABLE IF NOT EXISTS _sessions (token TEXT PRIMARY KEY, user TEXT NOT NULL)");
+  db.exec("CREATE TABLE IF NOT EXISTS _files (id TEXT PRIMARY KEY, name TEXT NOT NULL, type TEXT NOT NULL, size INTEGER NOT NULL)");
   const legacy = join(dataDir, "_sessions.json");
   if (existsSync(legacy)) {
     for (const [token, user] of Object.entries(JSON.parse(readFileSync(legacy, "utf8")))) db.prepare("INSERT OR IGNORE INTO _sessions VALUES (?, ?)").run(token, user);
@@ -233,12 +239,27 @@ function makeTable(schema, db, dataDir, name, { model, access }, backup) {
         }
       }
     }
+    // `File` fields: the descriptor must point to an uploaded file; its name, type and size come
+    // from the server's record (not from the client), and `max` (bytes) and `accept` apply to them.
+    for (const [f, t] of Object.entries(fields)) {
+      if (!/^File(\[\])?\??$/.test(t) || row[f] === null || row[f] === undefined) continue;
+      const r = schema.rules?.[model]?.[f] ?? {};
+      const one = (v) => {
+        const id = typeof v?.url === "string" ? /^\/api\/_files\/([\w-]+)$/.exec(v.url)?.[1] : null;
+        const meta = id && db.prepare("SELECT id, name, type, size FROM _files WHERE id = ?").get(id);
+        if (!meta) throw new HttpError(400, "VALIDATION", `invalid ${f}: expected an uploaded file`, { field: f, expected: "File", actual: JSON.stringify(v) });
+        if (r.max !== undefined && meta.size > r.max) throw new HttpError(400, "VALIDATION", `invalid ${f}: expected at most ${r.max} bytes, got ${meta.size}`, { field: f, expected: `at most ${r.max} bytes`, actual: `${meta.size} bytes` });
+        if (r.accept !== undefined && !accepts(r.accept, meta)) throw new HttpError(400, "VALIDATION", `invalid ${f}: expected ${r.accept}, got ${meta.type}`, { field: f, expected: r.accept, actual: meta.type });
+        return { url: `/api/_files/${meta.id}`, name: meta.name, type: meta.type, size: meta.size };
+      };
+      row[f] = t.startsWith("File[]") ? (Array.isArray(row[f]) ? row[f].map(one) : row[f]) : one(row[f]);
+    }
     const e = validate(vschema, model, row);
     if (e) throw new HttpError(400, "VALIDATION", `invalid ${e.field}: expected ${e.expected}, got ${e.actual}`, e);
     // Field rules: min/max (length of text or lists, value of numbers), match, unique.
     for (const [f, r] of Object.entries(schema.rules?.[model] ?? {})) {
       const v = row[f];
-      if (v === null || v === undefined) continue;
+      if (v === null || v === undefined || /^File/.test(fields[f])) continue;
       const size = typeof v === "number" ? v : v.length;
       const unit = typeof v === "number" ? "" : Array.isArray(v) ? " items" : " characters";
       const bad = (expected, actual) => { throw new HttpError(400, "VALIDATION", `invalid ${f}: expected ${expected}, got ${actual}`, { field: f, expected, actual }); };
@@ -326,6 +347,48 @@ function makeTable(schema, db, dataDir, name, { model, access }, backup) {
   };
 }
 
+// `accept="image/*,.pdf"`: MIME types (with `type/*`) or extensions, like <input accept>.
+function accepts(accept, { name, type }) {
+  return accept.split(",").map((a) => a.trim().toLowerCase()).some((a) =>
+    a.startsWith(".") ? name.toLowerCase().endsWith(a) : a.endsWith("/*") ? type.startsWith(a.slice(0, -1)) : type === a);
+}
+
+// POST /api/_files (the raw body, `content-type` and `x-file-name` headers) → { url, name, type, size };
+// GET /api/_files/<id> → the file.
+async function files(req, res, id, sql, dataDir) {
+  const dir = join(dataDir, "files");
+  if (req.method === "POST" && !id) {
+    const chunks = [];
+    let size = 0;
+    for await (const chunk of req) {
+      size += chunk.length;
+      if (size > MAX_UPLOAD) throw new HttpError(413, "TOO_LARGE", `the file is larger than ${MAX_UPLOAD} bytes`);
+      chunks.push(chunk);
+    }
+    const meta = {
+      id: randomUUID(),
+      name: decodeURIComponent(String(req.headers["x-file-name"] ?? "file")).replace(/[\\/]/g, "_").slice(0, 200) || "file",
+      type: String(req.headers["content-type"] ?? "application/octet-stream").split(";")[0].trim().toLowerCase(),
+      size,
+    };
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, meta.id), Buffer.concat(chunks));
+    sql.prepare("INSERT INTO _files VALUES (?, ?, ?, ?)").run(meta.id, meta.name, meta.type, meta.size);
+    return send(res, 201, { url: `/api/_files/${meta.id}`, name: meta.name, type: meta.type, size: meta.size });
+  }
+  const meta = req.method === "GET" && id && sql.prepare("SELECT * FROM _files WHERE id = ?").get(id);
+  if (!meta) throw new HttpError(404, "NOT_FOUND", "no such file");
+  res.writeHead(200, {
+    "content-type": meta.type,
+    "content-length": meta.size,
+    "content-disposition": `${INLINE.test(meta.type) ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(meta.name)}`,
+    "x-content-type-options": "nosniff",
+    "content-security-policy": "sandbox",
+    "cache-control": "public, max-age=31536000, immutable",
+  });
+  createReadStream(join(dir, meta.id)).pipe(res);
+}
+
 function send(res, status, body, headers = {}) {
   if (body === undefined) return res.writeHead(status, headers).end();
   res.writeHead(status, { "content-type": "application/json", ...headers }).end(JSON.stringify(body));
@@ -382,6 +445,8 @@ export function createApi(schema, dataDir, fns = {}) {
     const url = new URL(req.url ?? "/", "http://localhost");
     if (!url.pathname.startsWith("/api/")) return false;
     try {
+      const fm = /^\/api\/_files(?:\/([\w-]+))?$/.exec(url.pathname);
+      if (fm) return await files(req, res, fm[1], sql, dataDir), true;
       const me = currentUser(req);
       const publicMe = me && users.out(me);
       const body = req.method === "POST" || req.method === "PATCH" || req.method === "PUT" ? await readJson(req) : undefined;

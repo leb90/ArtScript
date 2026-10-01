@@ -21,9 +21,10 @@ page Users "/users" {
 }
 ```
 
-- Types: `String Number Bool ID Email Date Fn Any`, `model` names, `T[]` list, `T?` optional (may be null).
+- Types: `String Number Bool ID Email Date Fn Any File`, `model` names, `T[]` list, `T?` optional (may be null).
 - Field rules, enforced by the server: `name: String min=2 max=50` (length; for a Number, its value; for a list, its size), `code: String match="^[A-Z]{3}$"`, `email: Email unique`.
 - Defaults: `stock: Number = 0` (a literal); `create` may omit the field.
+- Files: `photo: File? max=2000000 accept="image/*"` (max in bytes). Pass the File from `file picked` straight to `create`/`update`: it's uploaded and stored as `{ url, name, type, size }` (`image post.photo.url`).
 - Changing a stored model needs no migration code: on the next start, rows get new fields' defaults, lose removed fields, and move renamed ones (`title: String was="name"`); the database is backed up first. A new required field needs a default (or `?`).
 - `page Product "/products/:id"`: a component with a route; inside it `params.id` (String) and `query.tab` (from `?tab=`). `page NotFound "*"` catches unknown paths. Without a route: `/lowercase-name`.
 - `layout Main { ... slot ... }` wraps pages and stays mounted while they change (the only layout applies to every page; `page X "/x" layout Main` picks one). `link "x" to="/path"` and `navigate("/path")` change pages without reloading.

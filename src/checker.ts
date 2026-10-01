@@ -22,7 +22,9 @@ const list = (of: Ty): Ty => ({ k: "list", of });
 const opt = (of: Ty): Ty => (of.k === "opt" || of.k === "any" || of.k === "null" ? of : { k: "opt", of });
 
 // Built-in types. ID and Email are strings with semantics (validation to come).
-export const BUILTIN_TYPES: Record<string, Ty> = { String: STR, Number: NUM, Bool: BOOL, ID: STR, Email: STR, Date: ANY, Fn: fn(ANY), Any: ANY };
+// An uploaded file, as stored and returned: `image post.photo.url`.
+const FILE: Ty = { k: "obj", fields: { url: STR, name: STR, type: STR, size: NUM }, strict: true };
+export const BUILTIN_TYPES: Record<string, Ty> = { String: STR, Number: NUM, Bool: BOOL, ID: STR, Email: STR, Date: ANY, Fn: fn(ANY), Any: ANY, File: FILE };
 
 export const GLOBALS = new Set([
   "Math", "JSON", "console", "Date", "Number", "String", "Boolean", "Array", "Object", "Map", "Set", "Promise", "Intl",
@@ -283,7 +285,10 @@ class Checker {
     const t = f.type;
     const text = !t.list && (t.name === "String" || t.name === "Email");
     const bad = (rule: string, expected: string) => this.err("TYPE_MISMATCH", `'${rule}' doesn't apply to ${printType(t)}`, f.loc, { expr: `${f.name}: ${printType(t)} ${rule}`, expected, actual: printType(t) });
-    if ((r.min !== undefined || r.max !== undefined) && !(text || t.list || t.name === "Number")) bad("min/max", "String, Number or a list");
+    const file = t.name === "File";
+    if (r.min !== undefined && file) bad("min", "String, Number or a list (a File takes max=bytes)");
+    if ((r.min !== undefined || r.max !== undefined) && !(text || t.list || file || t.name === "Number")) bad("min/max", "String, Number, File or a list");
+    if (r.accept !== undefined && !file) bad("accept", "File");
     if (r.min !== undefined && r.max !== undefined && r.min > r.max) this.err("TYPE_MISMATCH", `min (${r.min}) is greater than max (${r.max})`, f.loc, { expr: f.name });
     if (r.match !== undefined) {
       if (!text) bad("match", "String or Email");
@@ -795,6 +800,7 @@ class Checker {
         // A relation also takes the id (`author: me.id`), or a list of ids.
         const ref = this.refTarget(model, p.key);
         const ids = ref && (fields[p.key].k === "list" ? ty.k === "list" && ty.of.k === "str" : ty.k === "str");
+        // A File field takes a browser File (from `file x`, typed Any) or an uploaded file.
         if (!ids) this.expectTy(p.value, ty, fields[p.key]);
       }
     }

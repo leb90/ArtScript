@@ -19,7 +19,8 @@ export type ModelDecl = { kind: "Model"; name: string; fields: Field[]; loc: Loc
 // `code: String match="^[A-Z]{3}$"`. min/max: length of a String or list, value of a Number.
 // `author: User cascade`: deleting the user deletes the rows that reference it (see relations).
 // `was="name"`: the field was renamed; existing rows are migrated on the next start.
-export type FieldRules = { min?: number; max?: number; match?: string; unique?: boolean; cascade?: boolean; was?: string };
+// `photo: File max=2000000 accept="image/*"`: max is bytes for a File; accept as in <input accept>.
+export type FieldRules = { min?: number; max?: number; match?: string; unique?: boolean; cascade?: boolean; was?: string; accept?: string };
 // `default`: `stock: Number = 0` fills it on create and in existing rows when the field is added.
 export type Field = { name: string; type: TypeRef; default?: Expr; rules?: FieldRules; loc: Loc };
 

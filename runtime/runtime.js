@@ -357,8 +357,30 @@ export function setApiBase(url) { apiBase = url; }
 const dataVersion = new Signal(0);
 const bump = (v) => { dataVersion.v = dataVersion._v + 1; return v; };
 
+// A browser File (from `file x`) anywhere in a create/update is uploaded first and replaced by its
+// { url, name, type, size }.
+async function uploads(v) {
+  if (typeof Blob !== "undefined" && v instanceof Blob) {
+    const res = await fetch(`${apiBase}/api/_files`, {
+      method: "POST", credentials: "same-origin", body: v,
+      headers: { "content-type": v.type || "application/octet-stream", "x-file-name": encodeURIComponent(v.name ?? "file") },
+    });
+    const data = await res.json();
+    if (!res.ok) throw Object.assign(new Error(data?.message ?? res.statusText), { status: res.status, details: data });
+    return data;
+  }
+  if (Array.isArray(v)) return Promise.all(v.map(uploads));
+  if (v && typeof v === "object" && Object.getPrototypeOf(v) === Object.prototype) {
+    const out = {};
+    for (const [k, x] of Object.entries(v)) out[k] = await uploads(x);
+    return out;
+  }
+  return v;
+}
+
 // `quiet` reads resolve to null instead of failing when the resource is missing or needs a login.
 async function request(method, path, body, quiet = method === "GET") {
+  if (body !== undefined && method !== "GET") body = await uploads(body);
   const init = body === undefined ? { method } : { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
   const res = await fetch(`${apiBase}/api/${path}`, { credentials: "same-origin", ...init });
   const data = res.status === 204 ? null : await res.json();

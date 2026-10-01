@@ -112,11 +112,11 @@ class Parser {
       const def = this.eat("=") ? this.unary() : undefined;
       const rules: Record<string, number | string | boolean> = {};
       while (this.tok.t === "id") {
-        if (!["min", "max", "match", "unique", "cascade", "was"].includes(this.tok.v)) this.fail("min=, max=, match=\"regex\", unique, cascade or was=\"old name\"");
+        if (!["min", "max", "match", "unique", "cascade", "was", "accept"].includes(this.tok.v)) this.fail("min=, max=, match=\"regex\", unique, cascade, accept=\"image/*\" or was=\"old name\"");
         const r = this.next().v;
         if (r === "unique" || r === "cascade") { rules[r] = true; continue; }
         this.expect("=");
-        const text = r === "match" || r === "was";
+        const text = r === "match" || r === "was" || r === "accept";
         const neg = this.eat("-");
         if ((this.tok.t as string) !== (text ? "str" : "num")) this.fail(text ? "a string" : "a number");
         const v = this.next().v;
