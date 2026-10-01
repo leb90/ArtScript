@@ -190,38 +190,64 @@ Validation: ArtScript with its own compiler, React with strict `tsc`, Svelte wit
 
 ### claude-opus-5-5 (effort medium)
 
-With `claude-opus-5-5`, ArtScript cost **44% less** per solved task than React + TS and **42% less** than Svelte 5.
+With `claude-opus-5-5`, ArtScript cost **55% less** per solved task than React + TS and **49% less** than Svelte 5.
 
 | Stack | Solved | USD per solved task | vs React | Without prompt cache | Avg attempts | Output tokens / run | Final code tokens | App JS (brotli) |
 |---|---|---|---|---|---|---|---|---|
-| **ArtScript** | 24/24 | **$0.0131** | −44% | $0.0208 | 1.13 | 579 | 382 | — |
-| React + TS | 24/24 | $0.0235 | — | $0.0235 | 1.00 | 1102 | 1026 | — |
-| Svelte 5 | 24/24 | $0.0225 | −4% | $0.0225 | 1.00 | 1049 | 914 | — |
+| **ArtScript** | 20/20 | **$0.0131** | −55% | $0.0259 | 1.00 | 485 | 395 | 3.2 KB |
+| React + TS | 20/20 | $0.0290 | — | $0.0290 | 1.00 | 1367 | 1297 | 58.7 KB |
+| Svelte 5 | 20/20 | $0.0255 | −12% | $0.0255 | 1.00 | 1191 | 1117 | 18.2 KB |
 
 ```mermaid
 xychart-beta
     title "USD per solved task (claude-opus-5-5)"
     x-axis ["ArtScript", "React + TS", "Svelte 5"]
-    y-axis "USD" 0 --> 0.029
-    bar [0.0131, 0.0235, 0.0225]
+    y-axis "USD" 0 --> 0.035
+    bar [0.0131, 0.0290, 0.0255]
 ```
 
 <details><summary>Per task</summary>
 
 | Task | ArtScript | React + TS | Svelte 5 |
 |---|---|---|---|
-| counter | $0.0037 (3/3) | $0.0119 (3/3) | $0.0118 (3/3) |
-| todo | $0.0287 (3/3) | $0.0299 (3/3) | $0.0270 (3/3) |
-| login | $0.0055 (3/3) | $0.0204 (3/3) | $0.0196 (3/3) |
-| search | $0.0091 (3/3) | $0.0208 (3/3) | $0.0214 (3/3) |
-| cart | $0.0280 (3/3) | $0.0354 (3/3) | $0.0410 (3/3) |
-| tabs | $0.0112 (3/3) | $0.0297 (3/3) | $0.0237 (3/3) |
-| counter-mod | $0.0070 (3/3) | $0.0157 (3/3) | $0.0176 (3/3) |
-| todo-mod | $0.0120 (3/3) | $0.0245 (3/3) | $0.0178 (3/3) |
+| counter | $0.0227 (2/2) | $0.0122 (2/2) | $0.0131 (2/2) |
+| todo | $0.0175 (2/2) | $0.0292 (2/2) | $0.0247 (2/2) |
+| login | $0.0065 (2/2) | $0.0189 (2/2) | $0.0184 (2/2) |
+| search | $0.0101 (2/2) | $0.0203 (2/2) | $0.0213 (2/2) |
+| cart | $0.0254 (2/2) | $0.0399 (2/2) | $0.0402 (2/2) |
+| tabs | $0.0087 (2/2) | $0.0294 (2/2) | $0.0214 (2/2) |
+| counter-mod | $0.0046 (2/2) | $0.0183 (2/2) | $0.0109 (2/2) |
+| todo-mod | $0.0112 (2/2) | $0.0247 (2/2) | $0.0179 (2/2) |
+| fs-users | $0.0136 (2/2) | $0.0420 (2/2) | $0.0443 (2/2) |
+| fs-shopping | $0.0103 (2/2) | $0.0550 (2/2) | $0.0427 (2/2) |
 
 </details>
 
-Run 2026-09-30: 8 tasks × 3 stacks × 3 runs, total $1.42, prices as of 2026-09-25. Raw data: [`benchmarks/eval/results/2026-09-30T22-23-39-claude-opus-5-5.json`](benchmarks/eval/results/2026-09-30T22-23-39-claude-opus-5-5.json).
+#### Larger project: 4 modifications to an 11-component shop
+
+Whole project in the prompt ("full") vs. what a good agent would read ("focus": ArtScript gets `art context` of the relevant parts, React/Svelte the file list plus the relevant files). Each change is applied to the whole project and the app is used in the simulated browser.
+
+| Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus | App JS (brotli) |
+|---|---|---|---|---|---|
+| **ArtScript** | $0.0218 (8/8) | $0.0132 (8/8) | 5390 | 4638 | 4.1 KB |
+| React + TS | $0.0263 (8/8) | $0.0198 (8/8) | 2784 | 1084 | 59.2 KB |
+| Svelte 5 | $0.0287 (8/8) | $0.0177 (8/8) | 3222 | 1086 | 20.4 KB |
+
+Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
+
+#### Larger project: 4 modifications to a 42-component admin panel
+
+Whole project in the prompt ("full") vs. what a good agent would read ("focus": ArtScript gets `art context` of the relevant parts, React/Svelte the file list plus the relevant files). Each change is applied to the whole project and the app is used in the simulated browser.
+
+| Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus | App JS (brotli) |
+|---|---|---|---|---|---|
+| **ArtScript** | $0.0395 (8/8) | $0.0170 (8/8) | 11749 | 6244 | 4.2 KB |
+| React + TS | $0.0487 (8/8) | $0.0176 (8/8) | 9534 | 1429 | 59.6 KB |
+| Svelte 5 | $0.0456 (8/8) | $0.0164 (8/8) | 8898 | 1421 | 20.3 KB |
+
+Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
+
+Run 2026-09-30: 10 tasks × 3 stacks × 3 runs, total $1.35, prices as of 2026-09-25. 24 cell(s) re-run in 2026-10-01T18-02-02-claude-opus-5-5.json (full Opus run (26 tasks), with the spec that includes routes and the 0.3 UI elements (~2,700 tokens) and `art patch` before the path-tolerance change). Raw data: [`benchmarks/eval/results/2026-09-30T22-23-39-claude-opus-5-5.json`](benchmarks/eval/results/2026-09-30T22-23-39-claude-opus-5-5.json), [`benchmarks/eval/results/2026-10-01T18-02-02-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-01T18-02-02-claude-opus-5-5.json).
 
 ### claude-sonnet-5-5 (effort medium)
 
@@ -272,7 +298,7 @@ Whole project in the prompt ("full") vs. what a good agent would read ("focus": 
 | Vue 3 | $0.0110 (8/8) | $0.0085 (8/8) | 2879 | 1109 | 24.8 KB |
 | SolidJS | $0.0190 (8/8) | $0.0102 (8/8) | 4165 | 1132 | 6.3 KB |
 
-Input tokens include ArtScript's ~1.9K-token spec in the system prompt (mostly billed at the cache rate) and every retry.
+Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
 
 #### Larger project: 4 modifications to a 42-component admin panel
 
@@ -286,7 +312,7 @@ Whole project in the prompt ("full") vs. what a good agent would read ("focus": 
 | Vue 3 | $0.0238 (8/8) | $0.0083 (8/8) | 9330 | 1405 | 24.8 KB |
 | SolidJS | $0.0261 (8/8) | $0.0091 (8/8) | 10254 | 1486 | 6.8 KB |
 
-Input tokens include ArtScript's ~1.9K-token spec in the system prompt (mostly billed at the cache rate) and every retry.
+Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
 
 #### Larger project: 4 modifications to a 102-component admin panel
 
@@ -297,12 +323,12 @@ Whole project in the prompt ("full") vs. what a good agent would read ("focus": 
 | **ArtScript** | $0.0307 (8/8) | $0.0053 (8/8) | 15874 | 4432 | 3.6 KB |
 | React + TS | $0.0506 (8/8) | $0.0099 (8/8) | 22654 | 2110 | 60.9 KB |
 | Svelte 5 | $0.0470 (8/8) | $0.0095 (8/8) | 21052 | 2102 | 21.4 KB |
-| Vue 3 | $0.0494 (7/7) | $0.0099 (6/6) | 22083 | 2096 | 26.0 KB |
-| SolidJS | $0.0543 (6/6) | $0.0101 (6/6) | 24362 | 2229 | 7.8 KB |
+| Vue 3 | $0.0493 (8/8) | $0.0095 (8/8) | 22084 | 2026 | 26.0 KB |
+| SolidJS | $0.0546 (8/8) | $0.0103 (8/8) | 24364 | 2167 | 7.8 KB |
 
-Input tokens include ArtScript's ~1.9K-token spec in the system prompt (mostly billed at the cache rate) and every retry.
+Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
 
-Run 2026-10-01: 10 tasks × 5 stacks × 2 runs, total $1.09, prices as of 2026-09-25. 2 cell(s) re-run in 2026-10-01T09-58-38-claude-sonnet-5-5.json (the model's first answers there were correct; the failures came from eval-harness bugs, since fixed); 1 cell(s) re-run in 2026-10-01T09-58-42-claude-sonnet-5-5.json (the model's first answers there were correct; the failures came from an ArtScript compiler bug, since fixed); 16 cell(s) re-run in 2026-10-01T13-25-56-claude-sonnet-5-5.json (ArtScript only, after improving `art patch` and the checker with what the previous run showed; React and Svelte are unchanged); 2026-10-01T13-33-05-claude-sonnet-5-5.json: the 102-component admin panel (xl-* tasks); 2026-10-01T13-46-28-claude-sonnet-5-5.json: Vue 3 and SolidJS added; the last task (xl-required) never ran for them because the account ran out of credit, so their xl figures lack it. Raw data: [`benchmarks/eval/results/2026-10-01T08-29-33-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T08-29-33-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T09-58-38-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T09-58-38-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T09-58-42-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T09-58-42-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T13-23-38-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T13-23-38-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T13-25-56-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T13-25-56-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T13-33-05-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T13-33-05-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T13-46-28-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T13-46-28-claude-sonnet-5-5.json).
+Run 2026-10-01: 10 tasks × 5 stacks × 2 runs, total $1.09, prices as of 2026-09-25. 2 cell(s) re-run in 2026-10-01T09-58-38-claude-sonnet-5-5.json (the model's first answers there were correct; the failures came from eval-harness bugs, since fixed); 1 cell(s) re-run in 2026-10-01T09-58-42-claude-sonnet-5-5.json (the model's first answers there were correct; the failures came from an ArtScript compiler bug, since fixed); 16 cell(s) re-run in 2026-10-01T13-25-56-claude-sonnet-5-5.json (ArtScript only, after improving `art patch` and the checker with what the previous run showed; React and Svelte are unchanged); 2026-10-01T13-33-05-claude-sonnet-5-5.json: the 102-component admin panel (xl-* tasks); 2026-10-01T13-46-28-claude-sonnet-5-5.json: Vue 3 and SolidJS added; their xl-required task ran later (see below); 1 cell(s) re-run in 2026-10-01T17-55-58-claude-sonnet-5-5.json (the xl-required task for Vue 3 and SolidJS, which could not run before for lack of credit). Raw data: [`benchmarks/eval/results/2026-10-01T08-29-33-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T08-29-33-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T09-58-38-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T09-58-38-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T09-58-42-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T09-58-42-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T13-23-38-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T13-23-38-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T13-25-56-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T13-25-56-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T13-33-05-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T13-33-05-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T13-46-28-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T13-46-28-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T17-55-58-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T17-55-58-claude-sonnet-5-5.json).
 
 ### claude-haiku-4-5 (no effort setting)
 
@@ -339,26 +365,50 @@ xychart-beta
 
 </details>
 
-#### Larger project: 1 modifications to an 11-component shop
+#### Larger project: 4 modifications to an 11-component shop
 
 Whole project in the prompt ("full") vs. what a good agent would read ("focus": ArtScript gets `art context` of the relevant parts, React/Svelte the file list plus the relevant files). Each change is applied to the whole project and the app is used in the simulated browser.
 
 | Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus | App JS (brotli) |
 |---|---|---|---|---|---|
-| **ArtScript** | $0.0039 (2/2) | $0.0035 (2/2) | 3435 | 3133 | 2.6 KB |
-| React + TS | $0.0049 (2/2) | $0.0072 (2/2) | 2165 | 1125 | 59.1 KB |
-| Svelte 5 | $0.0051 (2/2) | $0.0046 (2/2) | 2160 | 1143 | 20.4 KB |
+| **ArtScript** | $0.0159 (5/8) | $0.0166 (5/8) | 8246 | 8498 | 3.5 KB |
+| React + TS | $0.0060 (8/8) | $0.0067 (7/8) | 2603 | 1404 | 59.1 KB |
+| Svelte 5 | $0.0057 (8/8) | $0.0037 (8/8) | 2817 | 957 | 20.4 KB |
 
-Input tokens include ArtScript's ~1.9K-token spec in the system prompt (mostly billed at the cache rate) and every retry.
+Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
 
-Run 2026-10-01: 10 tasks × 3 stacks × 2 runs, total $0.70, prices as of 2026-09-25. 2026-10-01T13-46-55-claude-haiku-4-5.json: cut short when the account ran out of credit: only the 12 tasks that ran for ArtScript, React and Svelte are reported. Raw data: [`benchmarks/eval/results/2026-10-01T13-46-55-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-01T13-46-55-claude-haiku-4-5.json).
+#### Larger project: 4 modifications to a 42-component admin panel
+
+Whole project in the prompt ("full") vs. what a good agent would read ("focus": ArtScript gets `art context` of the relevant parts, React/Svelte the file list plus the relevant files). Each change is applied to the whole project and the app is used in the simulated browser.
+
+| Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus | App JS (brotli) |
+|---|---|---|---|---|---|
+| **ArtScript** | $0.0217 (6/8) | $0.0107 (7/8) | 15308 | 8040 | 4.2 KB |
+| React + TS | $0.0108 (8/8) | $0.0043 (8/8) | 7622 | 1042 | 59.6 KB |
+| Svelte 5 | $0.0100 (8/8) | $0.0044 (8/8) | 7246 | 1091 | 20.3 KB |
+
+Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
+
+#### Larger project: 4 modifications to a 102-component admin panel
+
+Whole project in the prompt ("full") vs. what a good agent would read ("focus": ArtScript gets `art context` of the relevant parts, React/Svelte the file list plus the relevant files). Each change is applied to the whole project and the app is used in the simulated browser.
+
+| Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus | App JS (brotli) |
+|---|---|---|---|---|---|
+| **ArtScript** | $0.0332 (7/8) | $0.0130 (6/8) | 27988 | 8426 | 5.1 KB |
+| React + TS | $0.0207 (8/8) | $0.0051 (8/8) | 18176 | 1460 | 60.9 KB |
+| Svelte 5 | $0.0224 (8/8) | $0.0050 (8/8) | 19416 | 1569 | 21.4 KB |
+
+Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
+
+Run 2026-10-01: 10 tasks × 3 stacks × 2 runs, total $0.70, prices as of 2026-09-25. 2026-10-01T13-46-55-claude-haiku-4-5.json: first 12 tasks; the run was cut short when the account ran out of credit; 2026-10-01T17-58-24-claude-haiku-4-5.json: the remaining 22 tasks, after the credit was restored; the spec now includes routes and the 0.3 UI elements (~2,700 tokens instead of ~2,000); 22 cell(s) re-run in 2026-10-01T18-01-50-claude-haiku-4-5.json (ArtScript only, after making `art patch` accept the paths Haiku wrote (members as view paths, paths through child components) and adding `set Component prop: Type`; before that change ArtScript solved 24/44 of these cells at $0.0297 per solved task. React and Svelte unchanged). Raw data: [`benchmarks/eval/results/2026-10-01T13-46-55-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-01T13-46-55-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-01T17-58-24-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-01T17-58-24-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-01T18-01-50-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-01T18-01-50-claude-haiku-4-5.json).
 
 ### Methodology and limitations
 
 - Each task is the same functional request for every stack (6 create, 2 modify). Claude gets the task, returns files, and the harness validates them: ArtScript with its compiler, React with strict `tsc`, Svelte with its compiler. Errors are fed back, up to 3 attempts.
 - In the 2 modify tasks each stack may use its cheapest edit format: ArtScript an `art patch`, React and Svelte search/replace edit blocks (like a coding agent's Edit tool). Full files are also accepted. Runs before 2026-10-01 had no edit formats: every stack returned full files.
 - Cost is computed from the real `usage` the API returns: the ArtScript spec in the system prompt, retries and thinking tokens (billed as output) all count.
-- ArtScript's system prompt includes its ~1.2K-token spec, which is served from the prompt cache after the first request; the "without prompt cache" column prices those tokens at the full input rate.
+- ArtScript's system prompt includes its spec (1.2K–2.7K tokens depending on the run date), which is served from the prompt cache after the first request; the "without prompt cache" column prices those tokens at the full input rate.
 - Since 2026-10-01 every app is also **run and used like a person would**: it's mounted in a simulated browser (happy-dom) and a stack-agnostic check clicks, types and reads the screen (e.g. adds and completes todos, reloads the page to check data persisted on the server). A failed check is fed back to Claude like a compiler error. Earlier runs only checked that code compiled and typechecked.
 - Full-stack tasks: React and Svelte also write their own `server.ts` (Node `http`, no dependencies); ArtScript uses `api`. Svelte is validated without TypeScript type checking of `.svelte` files, which favors it.
 - Each run uses the ArtScript spec as of its date; older runs are not redone when the spec improves. The runs above used the Spanish version of the spec; it has since been translated to English (about 6% fewer tokens).

@@ -3,6 +3,10 @@
   "2026-10-01T09-58-42-claude-sonnet-5-5.json": "the model's first answers there were correct; the failures came from an ArtScript compiler bug, since fixed",
   "2026-10-01T13-25-56-claude-sonnet-5-5.json": "ArtScript only, after improving `art patch` and the checker with what the previous run showed; React and Svelte are unchanged",
   "2026-10-01T13-33-05-claude-sonnet-5-5.json": "the 102-component admin panel (xl-* tasks)",
-  "2026-10-01T13-46-28-claude-sonnet-5-5.json": "Vue 3 and SolidJS added; the last task (xl-required) never ran for them because the account ran out of credit, so their xl figures lack it",
-  "2026-10-01T13-46-55-claude-haiku-4-5.json": "cut short when the account ran out of credit: only the 12 tasks that ran for ArtScript, React and Svelte are reported"
+  "2026-10-01T13-46-28-claude-sonnet-5-5.json": "Vue 3 and SolidJS added; their xl-required task ran later (see below)",
+  "2026-10-01T13-46-55-claude-haiku-4-5.json": "first 12 tasks; the run was cut short when the account ran out of credit",
+  "2026-10-01T17-55-58-claude-sonnet-5-5.json": "the xl-required task for Vue 3 and SolidJS, which could not run before for lack of credit",
+  "2026-10-01T17-58-24-claude-haiku-4-5.json": "the remaining 22 tasks, after the credit was restored; the spec now includes routes and the 0.3 UI elements (~2,700 tokens instead of ~2,000)",
+  "2026-10-01T18-01-50-claude-haiku-4-5.json": "ArtScript only, after making `art patch` accept the paths Haiku wrote (members as view paths, paths through child components) and adding `set Component prop: Type`; before that change ArtScript solved 24/44 of these cells at $0.0297 per solved task. React and Svelte unchanged",
+  "2026-10-01T18-02-02-claude-opus-5-5.json": "full Opus run (26 tasks), with the spec that includes routes and the 0.3 UI elements (~2,700 tokens) and `art patch` before the path-tolerance change"
 }

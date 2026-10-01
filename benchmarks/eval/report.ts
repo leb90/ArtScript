@@ -107,7 +107,7 @@ function projectTable(rs: Run[], what: string): string[] {
     const sized = rs.filter((r) => r.stack === k && r.ok && r.size);
     out.push(`| ${NAMES[k]} | ${full.text} | ${focus.text} | ${Math.round(full.input)} | ${Math.round(focus.input)} | ${kb(avg(sized.map((r) => r.size!.brotli)))} |`);
   }
-  out.push("", "Input tokens include ArtScript's ~1.9K-token spec in the system prompt (mostly billed at the cache rate) and every retry.");
+  out.push("", "Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.");
   return out;
 }
 
@@ -159,7 +159,7 @@ function section(loaded: Loaded[]): string {
     "- Each task is the same functional request for every stack (6 create, 2 modify). Claude gets the task, returns files, and the harness validates them: ArtScript with its compiler, React with strict `tsc`, Svelte with its compiler. Errors are fed back, up to 3 attempts.",
     "- In the 2 modify tasks each stack may use its cheapest edit format: ArtScript an `art patch`, React and Svelte search/replace edit blocks (like a coding agent's Edit tool). Full files are also accepted. Runs before 2026-10-01 had no edit formats: every stack returned full files.",
     "- Cost is computed from the real `usage` the API returns: the ArtScript spec in the system prompt, retries and thinking tokens (billed as output) all count.",
-    "- ArtScript's system prompt includes its ~1.2K-token spec, which is served from the prompt cache after the first request; the \"without prompt cache\" column prices those tokens at the full input rate.",
+    "- ArtScript's system prompt includes its spec (1.2K–2.7K tokens depending on the run date), which is served from the prompt cache after the first request; the \"without prompt cache\" column prices those tokens at the full input rate.",
     "- Since 2026-10-01 every app is also **run and used like a person would**: it's mounted in a simulated browser (happy-dom) and a stack-agnostic check clicks, types and reads the screen (e.g. adds and completes todos, reloads the page to check data persisted on the server). A failed check is fed back to Claude like a compiler error. Earlier runs only checked that code compiled and typechecked.",
     "- Full-stack tasks: React and Svelte also write their own `server.ts` (Node `http`, no dependencies); ArtScript uses `api`. Svelte is validated without TypeScript type checking of `.svelte` files, which favors it.",
     "- Each run uses the ArtScript spec as of its date; older runs are not redone when the spec improves. The runs above used the Spanish version of the spec; it has since been translated to English (about 6% fewer tokens).",
