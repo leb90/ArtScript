@@ -1,0 +1,31 @@
+model Contact {
+  name: String
+  kind: String
+}
+
+page Contacts "/" {
+  state contacts: Contact[] = []
+  state open = false
+  state name = ""
+  state kind = "Amigo"
+  fn save() {
+    contacts.push({ name, kind })
+    name = ""
+    open = false
+  }
+
+  column gap=3 {
+    button "Nuevo contacto" primary -> open = true
+    for c in contacts {
+      text `${c.name} (${c.kind})`
+    }
+    modal open {
+      input name placeholder="Nombre"
+      select kind options=["Amigo", "Trabajo"]
+      row gap=2 {
+        button "Guardar" primary -> save()
+        button "Cancelar" -> open = false
+      }
+    }
+  }
+}

@@ -1,0 +1,59 @@
+model Author {
+  id: ID
+  name: String
+}
+
+model Post {
+  id: ID
+  title: String
+  author: Author
+}
+
+api authors: Author
+
+api posts: Post
+
+page Blog "/" {
+  data authors = api.authors.list()
+  data posts = api.posts.list()
+  state name = ""
+  state title = ""
+  state author = ""
+  state error = ""
+  fn removeAuthor(id) {
+    try {
+      await api.authors.remove(id)
+      error = ""
+    } catch (e) {
+      error = "El autor tiene posts"
+    }
+  }
+
+  column gap=4 {
+    row gap=2 {
+      input name placeholder="Autor"
+      button "Crear autor" -> {
+        await api.authors.create({ name })
+        name = ""
+      }
+    }
+    for a in authors {
+      row gap=2 {
+        text a.name
+        button "Borrar autor" small -> removeAuthor(a.id)
+      }
+    }
+    text error danger
+    row gap=2 {
+      input title placeholder="Título"
+      select author options=authors placeholder="Autor del post"
+      button "Publicar" primary -> {
+        await api.posts.create({ title, author })
+        title = ""
+      }
+    }
+    for p in posts {
+      text `${p.title} por ${p.author.name}`
+    }
+  }
+}

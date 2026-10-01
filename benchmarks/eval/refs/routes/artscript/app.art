@@ -1,0 +1,22 @@
+page Home "/" {
+  state products = [{ id: 1, name: "Mesa" }, { id: 2, name: "Silla" }]
+
+  title "Productos"
+  for p in products {
+    row gap=2 {
+      text p.name
+      link "Ver" to=`/productos/${p.id}`
+    }
+  }
+}
+
+page Product "/productos/:id" {
+  computed name = params.id == "1" ? "Mesa" : params.id == "2" ? "Silla" : "No encontrado"
+
+  title name
+  link "Volver" to="/"
+}
+
+page NotFound "*" {
+  title "No encontrado"
+}

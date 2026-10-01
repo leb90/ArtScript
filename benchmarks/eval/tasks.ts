@@ -64,6 +64,25 @@ export const TASKS: Task[] = [
     fullstack: true,
     prompt: "Creá una lista de compras full-stack: un input con placeholder 'Producto' y un botón 'Agregar' que crea el ítem en el servidor. Cada ítem muestra su nombre, un botón 'Comprado' que lo marca como comprado en el servidor (y entonces muestra '✓' junto al nombre) y un botón 'Borrar'. Arriba mostrá 'N por comprar' con la cantidad de ítems no comprados. Los datos viven en el servidor: al recargar la página siguen ahí.",
   },
+  // Added with 0.3/0.4: relations, validations, routes, dialogs and selects.
+  {
+    id: "fs-blog",
+    fullstack: true,
+    prompt: "Creá un blog full-stack con autores y posts. Un input con placeholder 'Autor' y un botón 'Crear autor'. Un input con placeholder 'Título', un selector (select) para elegir el autor entre los creados y un botón 'Publicar' que crea el post. Cada post muestra su título y 'por <nombre del autor>'. Cada autor se lista con un botón 'Borrar autor'; si el autor tiene posts no se borra y se muestra 'El autor tiene posts'. Los datos viven en el servidor: al recargar la página siguen ahí.",
+  },
+  {
+    id: "fs-products",
+    fullstack: true,
+    prompt: "Creá un registro full-stack de productos: inputs con placeholder 'Nombre', 'Código' y 'Precio', y un botón 'Guardar' que crea el producto en el servidor. El servidor rechaza un nombre de menos de 3 caracteres (mostrá 'Nombre muy corto'), un código que ya existe (mostrá 'Código repetido') y un precio negativo (mostrá 'Precio inválido'); en esos casos no se crea nada. Cada producto guardado muestra su nombre y su código. Los datos viven en el servidor: al recargar la página siguen ahí.",
+  },
+  {
+    id: "routes",
+    prompt: "Creá una app con rutas (URLs reales que cambian sin recargar la página). Los productos son Mesa (id 1) y Silla (id 2). En '/' mostrá el título 'Productos' y, por cada producto, su nombre y un link 'Ver' que lleva a '/productos/<id>'. La página '/productos/<id>' muestra el nombre del producto y un link 'Volver' que lleva a '/'. Cualquier otra URL muestra 'No encontrado'.",
+  },
+  {
+    id: "contacts",
+    prompt: "Creá una lista de contactos. Un botón 'Nuevo contacto' abre un diálogo (modal) con un input con placeholder 'Nombre', un selector (select) de tipo con las opciones 'Amigo' y 'Trabajo', y los botones 'Guardar' y 'Cancelar'. 'Guardar' agrega el contacto, que se muestra como 'Nombre (Tipo)', y cierra el diálogo; 'Cancelar' lo cierra sin agregar. Con el diálogo cerrado, su contenido no se ve.",
+  },
 ];
 
 // Modifications on a larger project (benchmarks/eval/projects/shop), each in both context modes.

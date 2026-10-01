@@ -156,6 +156,14 @@ async function startServer(stack: Stack, files: Files, dir: string): Promise<Run
 
 // ---------- the page ----------
 const norm = (s: string) => s.replace(/\s+/g, " ").trim();
+// What a person sees: not inside a closed <dialog>, a `hidden` element or one styled display:none.
+const visible = (el: Element | null): boolean => {
+  for (let e = el; e; e = e.parentElement) {
+    if (e.tagName === "DIALOG" && !(e as HTMLDialogElement).open) return false;
+    if ((e as HTMLElement).hidden || (e as HTMLElement).style?.display === "none") return false;
+  }
+  return true;
+};
 
 export class Page {
   private n = 0;
@@ -166,10 +174,10 @@ export class Page {
     this.url = url;
   }
 
-  // Mounts (or re-mounts, for a "reload") the app in a fresh window.
-  async open() {
+  // Mounts (or re-mounts, for a "reload") the app in a fresh window, at `path` if given ("/products/2").
+  async open(path?: string) {
     if (GlobalRegistrator.isRegistered) await GlobalRegistrator.unregister();
-    GlobalRegistrator.register({ url: this.url });
+    GlobalRegistrator.register({ url: path ? new URL(path, this.url).href : this.url });
     document.body.innerHTML = '<div id="app"></div>';
     try {
       await import(`${pathToFileURL(this.bundlePath).href}?mount=${this.n++}`);
@@ -195,6 +203,7 @@ export class Page {
       return x === b;
     };
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (!visible(n.parentElement)) continue;
       out += (prev && adjacent(prev, n) ? "" : " ") + (n.textContent ?? "");
       prev = n;
     }
@@ -202,7 +211,7 @@ export class Page {
   }
 
   private buttons(): HTMLElement[] {
-    return [...document.querySelectorAll<HTMLElement>("button, [role=button], input[type=submit], input[type=button]")];
+    return [...document.querySelectorAll<HTMLElement>("button, [role=button], input[type=submit], input[type=button]")].filter(visible);
   }
   private label(b: HTMLElement): string { return norm(b.textContent || (b as HTMLInputElement).value || ""); }
 
@@ -220,7 +229,7 @@ export class Page {
 
   // An input by placeholder, by type (`type:password`) or by position (`#0`).
   input(which: string): HTMLInputElement {
-    const inputs = [...document.querySelectorAll<HTMLInputElement>("input:not([type=checkbox]):not([type=submit]):not([type=button]), textarea")];
+    const inputs = [...document.querySelectorAll<HTMLInputElement>("input:not([type=checkbox]):not([type=submit]):not([type=button]), textarea")].filter(visible);
     const found = which.startsWith("#") ? inputs[Number(which.slice(1))]
       : which.startsWith("type:") ? inputs.find((i) => i.type === which.slice(5))
       : inputs.find((i) => i.placeholder === which);
@@ -248,6 +257,34 @@ export class Page {
     if (key === "Enter" && form && !down.defaultPrevented) form.dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
     await this.settle();
   }
+
+  // Picks the option with that text in the `index`-th visible <select>.
+  async select(index: number, option: string) {
+    const selects = [...document.querySelectorAll<HTMLSelectElement>("select")].filter(visible);
+    const el = selects[index];
+    if (!el) throw new BehaviorError(`no hay un selector (select) número ${index + 1} (hay ${selects.length})`);
+    const opt = [...el.options].find((o) => norm(o.textContent ?? "") === option);
+    if (!opt) throw new BehaviorError(`el selector no tiene la opción "${option}". Opciones: ${[...el.options].map((o) => `"${norm(o.textContent ?? "")}"`).join(", ")}`);
+    // Like a browser: the option itself becomes selected. happy-dom doesn't match options with
+    // `:checked` (Svelte reads the choice that way), so this select answers it as a browser would.
+    for (const o of el.options) o.selected = o === opt;
+    el.selectedIndex = opt.index;
+    const query = el.querySelector.bind(el);
+    el.querySelector = ((q: string) => (q === ":checked" ? el.options[el.selectedIndex] ?? null : query(q))) as typeof el.querySelector;
+    el.dispatchEvent(new window.Event("input", { bubbles: true }));
+    el.dispatchEvent(new window.Event("change", { bubbles: true }));
+    await this.settle();
+  }
+
+  // Clicks the `index`-th visible link with that text, like a person (a plain click event).
+  async link(label: string, index = 0) {
+    const all = [...document.querySelectorAll<HTMLAnchorElement>("a")].filter((a) => visible(a) && norm(a.textContent ?? "") === label);
+    if (!all[index]) throw new BehaviorError(`no hay un link "${label}"${index ? ` número ${index + 1}` : ""}`);
+    all[index].dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }));
+    await this.settle();
+  }
+
+  path(): string { return window.location.pathname; }
 
   async check(index: number) {
     const boxes = [...document.querySelectorAll<HTMLInputElement>("input[type=checkbox]")];

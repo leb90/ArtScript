@@ -1,0 +1,36 @@
+model Product {
+  id: ID
+  name: String min=3
+  code: String unique
+  price: Number min=0
+}
+
+api products: Product
+
+page Products "/" {
+  data products = api.products.list()
+  state name = ""
+  state code = ""
+  state price = 0
+  state error = ""
+  fn save() {
+    try {
+      await api.products.create({ name, code, price })
+      error = ""
+    } catch (e) {
+      let field = e.details?.field
+      error = field == "name" ? "Nombre muy corto" : field == "code" ? "Código repetido" : "Precio inválido"
+    }
+  }
+
+  column gap=3 {
+    input name placeholder="Nombre"
+    input code placeholder="Código"
+    input price placeholder="Precio" type=number
+    button "Guardar" primary -> save()
+    text error danger
+    for p in products {
+      text `${p.name} (${p.code})`
+    }
+  }
+}

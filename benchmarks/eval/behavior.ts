@@ -220,6 +220,65 @@ const CHECKS: Record<string, Check> = {
     await p.until(() => !has(p, "ana@x.co") && has(p, "ceci@x.co"), "que el borrado persista después de recargar");
   },
 
+  async "fs-blog"(p) {
+    await p.until(() => p.count("Crear autor") === 1 && p.count("Publicar") === 1, 'los botones "Crear autor" y "Publicar"');
+    for (const name of ["Ana", "Beto"]) { await p.fill("Autor", name); await p.click("Crear autor"); }
+    await p.until(() => p.count("Borrar autor") === 2, 'dos autores, cada uno con "Borrar autor"');
+    await p.fill("Título", "Hola mundo");
+    await p.select(0, "Beto");
+    await p.click("Publicar");
+    await p.until(() => has(p, "Hola mundo") && has(p, "por Beto"), '"Hola mundo" y "por Beto"');
+    await p.click("Borrar autor", 1);
+    await p.until(() => has(p, "El autor tiene posts") && p.count("Borrar autor") === 2, '"El autor tiene posts" y que Beto no se borre');
+    await p.click("Borrar autor", 0);
+    await p.until(() => p.count("Borrar autor") === 1, "que Ana (sin posts) se borre");
+    await p.open();
+    await p.until(() => has(p, "Hola mundo") && has(p, "por Beto") && p.count("Borrar autor") === 1, "los datos guardados en el servidor después de recargar");
+  },
+
+  async "fs-products"(p) {
+    await p.until(() => p.count("Guardar") === 1, 'el botón "Guardar"');
+    const save = async (name: string, code: string, price: string) => {
+      await p.fill("Nombre", name); await p.fill("Código", code); await p.fill("Precio", price); await p.click("Guardar");
+    };
+    await save("Mesa", "AB1", "10");
+    await p.until(() => has(p, "Mesa") && has(p, "AB1"), 'que se guarde "Mesa" (AB1)');
+    await save("Me", "XY9", "5");
+    await p.until(() => has(p, "Nombre muy corto") && !has(p, "XY9"), '"Nombre muy corto" y que no se guarde XY9');
+    await save("Silla", "AB1", "3");
+    await p.until(() => has(p, "Código repetido") && !has(p, "Silla"), '"Código repetido" y que no se guarde Silla');
+    await save("Banco", "CD2", "-1");
+    await p.until(() => has(p, "Precio inválido") && !has(p, "CD2"), '"Precio inválido" y que no se guarde CD2');
+    await p.open();
+    await p.until(() => has(p, "Mesa") && has(p, "AB1") && !has(p, "Silla") && !has(p, "CD2"), "solo Mesa guardada en el servidor después de recargar");
+  },
+
+  async routes(p) {
+    await p.until(() => has(p, "Productos") && has(p, "Mesa") && has(p, "Silla"), 'en "/" el título "Productos" con Mesa y Silla');
+    await p.link("Ver", 1);
+    await p.until(() => p.path() === "/productos/2" && has(p, "Silla") && !has(p, "Mesa"), 'que "Ver" de Silla lleve a /productos/2 y muestre "Silla"');
+    await p.link("Volver");
+    await p.until(() => p.path() === "/" && has(p, "Productos") && has(p, "Mesa"), 'que "Volver" lleve a "/"');
+    await p.open("/productos/1");
+    await p.until(() => has(p, "Mesa") && !has(p, "Silla"), 'que abrir /productos/1 muestre "Mesa"');
+    await p.open("/no/existe");
+    await p.until(() => has(p, "No encontrado"), 'que una URL desconocida muestre "No encontrado"');
+  },
+
+  async contacts(p) {
+    await p.until(() => p.count("Nuevo contacto") === 1 && p.count("Guardar") === 0, '"Nuevo contacto" y el diálogo cerrado (sin "Guardar" visible)');
+    await p.click("Nuevo contacto");
+    await p.until(() => p.count("Guardar") === 1 && p.count("Cancelar") === 1, 'el diálogo abierto con "Guardar" y "Cancelar"');
+    await p.fill("Nombre", "Ana");
+    await p.select(0, "Trabajo");
+    await p.click("Guardar");
+    await p.until(() => has(p, "Ana (Trabajo)") && p.count("Guardar") === 0, '"Ana (Trabajo)" y el diálogo cerrado');
+    await p.click("Nuevo contacto");
+    await p.fill("Nombre", "Beto");
+    await p.click("Cancelar");
+    await p.until(() => !has(p, "Beto") && p.count("Guardar") === 0, 'que "Cancelar" cierre sin agregar a Beto');
+  },
+
   async "fs-shopping"(p) {
     await p.until(() => p.count("Agregar") === 1, 'el botón "Agregar"');
     for (const item of ["Leche", "Pan"]) { await p.fill("Producto", item); await p.click("Agregar"); }
