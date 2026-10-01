@@ -51,6 +51,17 @@ fn add(x) {                      // function; body = JS statements
 - Assigning to a `state` updates the UI: `count++`, `name = "x"`, `users.push(u)`, `user.name = "x"`.
 - No hooks, setters or manual dependencies.
 - Statements: expression, `let x = ...`, `if cond { } else { }`, `return`, `try { } catch (e) { }`.
+- Only for DOM libraries (charts, maps, editors), timers and subscriptions:
+  ```
+  ref box                          // the element marked `ref=box` (set before mount runs)
+  mount {                          // once, when the view is in the page
+    let chart = new Chart(box, { data: points })
+    cleanup { chart.destroy() }    // on unmount
+  }
+  effect {                         // re-runs when the states it reads change
+    document.title = `${count} items`
+  }
+  ```
 
 ## Backend: `api` and `data`
 
@@ -119,7 +130,10 @@ column gap=4 align=center {
 - `options=["S", "M"]` or a list of objects (`value`/`id` and `label`/`name`); the state gets the option's value with its type. `label="Email"` adds a visible label. `modal open { ... }` shows while `open` is true; Esc or the backdrop set it to false.
 - `item`, `th`, `td` take text and/or `{ children }`.
 - Prop values: literal, name, `a.b`, call, or `( expression )` in parentheses.
-- Component: `Name prop=value`. Capitalized name.
+- Component: `Name prop=value`. Capitalized name. Children: `Card title="x" { ... }` render where the component puts `slot`.
+- Events besides `->`: `on:<event>=statement`, with `event` available: `input q on:keydown=(event.key == "Escape" ? q = "" : null)`, `card on:mouseenter=(hover = true)`.
+- `for p in products key p.id { }`: rows are matched by key (default: the item itself) and keep their DOM, focus and input state across updates.
+- Responsive: `grid cols=1 md:cols=3 lg:gap=6` (`sm` 640px, `md` 768, `lg` 1024, `xl` 1280; `cols`, `gap`, `pad`; numbers).
 - If a component receives a model as a prop and changes a field (`todo.done = true`), the owning state updates by itself.
 - Multi-statement action: `-> { a(); b = 1 }`.
 

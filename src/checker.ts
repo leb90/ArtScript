@@ -1,6 +1,6 @@
 // Type checker: small type system, null safety and errors with fixes.
 import type { ComponentDecl, Element, Expr, Loc, ModelDecl, Program, ServerFnDecl, Stmt, TypeRef, UseDecl, ViewNode } from "./ast.ts";
-import { ELEMENTS, ENUM_PROPS } from "./elements.ts";
+import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, RESPONSIVE_PROPS } from "./elements.ts";
 import { CATALOG, diag, suggest, type Diagnostic } from "./errors.ts";
 import { inspectModule, isLocal, packageName } from "./modules.ts";
 import { printDecl, printExpr } from "./printer.ts";
@@ -75,7 +75,7 @@ function strMethod(name: string): Ty | null {
   return null;
 }
 
-export type SymKind = "state" | "computed" | "data" | "prop" | "fn" | "let" | "loop" | "param" | "global";
+export type SymKind = "state" | "computed" | "data" | "prop" | "fn" | "let" | "loop" | "param" | "global" | "ref";
 export type Sym = { kind: SymKind; ty: Ty };
 
 class Scope {
@@ -98,7 +98,14 @@ class Scope {
 }
 
 export type ModelInfo = Map<string, Record<string, Ty>>;
-export type CompInfo = Map<string, { params: { name: string; ty: Ty; required: boolean }[] }>;
+export type CompInfo = Map<string, { params: { name: string; ty: Ty; required: boolean }[]; slot: boolean }>;
+
+// DOM events accepted by `on:<event>` (typos get the closest one).
+const EVENTS = ["click", "dblclick", "input", "change", "submit", "keydown", "keyup", "focus", "blur", "mouseenter", "mouseleave", "mousedown", "mouseup", "mousemove", "pointerdown", "pointerup", "pointermove", "touchstart", "touchend", "wheel", "scroll", "contextmenu", "dragstart", "dragover", "dragleave", "drop", "paste", "copy", "load", "error", "ended", "play", "pause", "timeupdate", "toggle", "close"];
+
+function hasSlot(nodes: ViewNode[]): boolean {
+  return nodes.some((n) => n.kind === "IfView" ? hasSlot(n.then) || hasSlot(n.else ?? []) : n.kind === "ForView" ? hasSlot(n.body) : n.tag === "slot" || hasSlot(n.children));
+}
 
 export type Analysis = { diagnostics: Diagnostic[]; models: ModelInfo; comps: CompInfo; symbols: Map<string, Map<string, Sym>> };
 
@@ -127,6 +134,7 @@ class Checker {
   returns: Ty[] | null = null; // return types collected while checking a server fn
   imports = new Map<string, Ty>(); // names brought in by `use`, visible everywhere
   inLayout = false;
+  inHook = false;
   slots = 0;
   importFrom = new Map<string, string>(); // imported name → module
   idFields = new Map<string, Set<string>>(); // model → fields declared as ID (assigned by the server on create)
@@ -204,6 +212,7 @@ class Checker {
       this.at = d.name;
       this.comps.set(d.name, {
         params: d.params.map((p) => ({ name: p.name, ty: this.resolve(p.type), required: !p.default && !p.type.optional })),
+        slot: hasSlot(d.view),
       });
     }
     this.routes();
@@ -314,7 +323,8 @@ class Checker {
       if (keys.length) scope.vars.set("params", { kind: "global", ty: { k: "obj", fields: Object.fromEntries(keys.map((k) => [k, STR])), strict: true } });
       scope.vars.set("query", { kind: "global", ty: { k: "obj", fields: {} } });
     }
-    this.inLayout = !!c.layout;
+    this.inLayout = !c.page;
+    this.inHook = false;
     this.slots = 0;
     const declare = (name: string, sym: Sym, loc: Loc) => {
       if (scope.vars.has(name)) this.err("DUPLICATE_NAME", `'${name}' is already declared in ${c.name}`, loc, { expr: name });
@@ -337,9 +347,16 @@ class Checker {
       scope.vars.set("server", { kind: "global", ty: { k: "obj", fields } });
     }
     // Declare everything first (allows forward references), then infer types in order.
-    const kindOf = { State: "state", Computed: "computed", Data: "data", Fn: "fn" } as const;
-    for (const m of c.members) declare(m.name, { kind: kindOf[m.kind], ty: m.kind === "Fn" ? fn(ANY) : ANY }, m.loc);
+    const kindOf = { State: "state", Computed: "computed", Data: "data", Fn: "fn", Ref: "ref" } as const;
+    for (const m of c.members) if (m.kind !== "Mount" && m.kind !== "Effect") declare(m.name, { kind: kindOf[m.kind], ty: m.kind === "Fn" ? fn(ANY) : ANY }, m.loc);
     for (const m of c.members) {
+      if (m.kind === "Ref") continue;
+      if (m.kind === "Mount" || m.kind === "Effect") {
+        this.inHook = true;
+        this.stmts(m.body, new Scope(scope));
+        this.inHook = false;
+        continue;
+      }
       const sym = scope.vars.get(m.name)!;
       if (m.kind === "State") {
         const init = this.infer(m.init, scope);
@@ -355,7 +372,7 @@ class Checker {
         // count() starts at 0, so it isn't nullable either.
         if (t.k === "async") sym.ty = t.of.k === "list" || t.of.k === "num" ? t.of : opt(t.of);
         else if (t.k !== "any") this.err("TYPE_MISMATCH", "`data` needs an api call", m.expr.loc, { expr: printExpr(m.expr), expected: "api.<name>.list() | get(id)", actual: show(t) });
-      } else {
+      } else if (m.kind === "Fn") {
         const fs = new Scope(scope);
         for (const p of m.params) fs.vars.set(p, { kind: "param", ty: ANY });
         this.stmts(m.body, fs);
@@ -389,6 +406,7 @@ class Checker {
         const s = new Scope(scope);
         s.vars.set(n.item, { kind: "loop", ty: elem });
         if (n.index) s.vars.set(n.index, { kind: "loop", ty: NUM });
+        if (n.key) this.infer(n.key, s);
         this.view(n.body, s);
       } else this.element(n, scope);
     }
@@ -397,7 +415,7 @@ class Checker {
   element(el: Element, scope: Scope) {
     if (/^[A-Z]/.test(el.tag)) return this.componentUse(el, scope);
     if (el.tag === "slot") {
-      if (!this.inLayout) this.err("LAYOUT_SLOT", "`slot` only goes inside a `layout`", el.loc, { expr: "slot", fixes: ["layout Main {\n  slot\n}"] });
+      if (!this.inLayout) this.err("LAYOUT_SLOT", "`slot` only goes inside a `layout` or a `component`", el.loc, { expr: "slot", fixes: ["layout Main {\n  slot\n}"] });
       else this.slots++;
       return;
     }
@@ -425,6 +443,31 @@ class Checker {
       this.err("MISSING_PROP", `'${el.tag}' needs a state to bind`, el.loc, { expr: el.tag, fixes: [`${el.tag} x`] });
     }
     for (const p of el.props) {
+      if (p.name.startsWith("on:")) {
+        this.event(p, scope);
+        continue;
+      }
+      if (p.name.includes(":")) {
+        const [bp, name] = p.name.split(":");
+        const ok = BREAKPOINTS[bp] !== undefined && RESPONSIVE_PROPS.includes(name) && spec.props.includes(name);
+        if (!ok) {
+          this.err("UNKNOWN_PROP", `'${el.tag}' doesn't take '${p.name}'`, p.loc, {
+            expr: p.name, expected: "sm|md|lg|xl : " + RESPONSIVE_PROPS.filter((x) => spec.props.includes(x)).join("|"),
+            fixes: BREAKPOINTS[bp] === undefined ? suggest(bp, Object.keys(BREAKPOINTS)).map((b) => `${b}:${name}`) : [],
+          });
+        } else if (p.value?.kind !== "Num") {
+          this.err("TYPE_MISMATCH", `'${p.name}' needs a number`, p.loc, { expr: p.name, expected: "Number literal", fixes: [`${p.name}=2`] });
+        }
+        continue;
+      }
+      if (p.name === "ref" && p.value) {
+        const r = p.value.kind === "Ident" ? scope.get(p.value.name) : null;
+        if (r?.kind !== "ref") {
+          const name = p.value.kind === "Ident" ? p.value.name : "el";
+          this.err("TYPE_MISMATCH", "`ref=` needs a name declared with `ref`", p.value.loc, { expr: printExpr(p.value), expected: "ref", actual: r?.kind ?? "undefined", fixes: [`ref ${name}`] });
+        }
+        continue;
+      }
       if (p.value === null) {
         if (!spec.flags.includes(p.name)) {
           this.err("UNKNOWN_PROP", `'${el.tag}' doesn't take the flag '${p.name}'`, p.loc, {
@@ -493,7 +536,22 @@ class Checker {
       }
     }
     if (el.action) this.err("NO_ACTION", `a component doesn't take '->'`, el.loc, { expr: el.tag });
-    if (el.children.length) this.err("NO_CHILDREN", `'${el.tag}' doesn't take children`, el.loc, { expr: el.tag });
+    if (el.children.length) {
+      if (!comp.slot) this.err("NO_CHILDREN", `'${el.tag}' doesn't take children`, el.loc, { expr: el.tag, fixes: [`add \`slot\` to component ${el.tag} where the children go`] });
+      this.view(el.children, scope);
+    }
+  }
+
+  // `on:keydown=save(event.key)`: a statement (or a function, called with the event).
+  event(p: Element["props"][number], scope: Scope) {
+    const ev = p.name.slice(3);
+    if (!EVENTS.includes(ev)) {
+      this.err("UNKNOWN_PROP", `unknown event '${ev}'`, p.loc, { expr: p.name, expected: "on:<DOM event>", fixes: suggest(ev, EVENTS).map((e) => `on:${e}`) });
+    }
+    if (!p.value) return;
+    const s = new Scope(scope);
+    s.vars.set("event", { kind: "param", ty: ANY });
+    this.infer(p.value, s);
   }
 
   // ---------- statements ----------
@@ -511,6 +569,9 @@ class Checker {
         // The caught error: `e.message` always exists; api errors also carry `status` and `details`.
         if (s.param) h.vars.set(s.param, { kind: "let", ty: { k: "obj", fields: { message: STR, status: NUM, details: ANY } } });
         this.stmts(s.handler, h);
+      } else if (s.kind === "Cleanup") {
+        if (!this.inHook) this.err("BAD_CLEANUP", "`cleanup` only goes inside `mount { }` or `effect { }`", s.loc, { expr: "cleanup", fixes: ["mount {\n  ...\n  cleanup { ... }\n}"] });
+        this.stmts(s.body, new Scope(scope));
       } else {
         this.infer(s.cond, scope);
         this.stmts(s.then, this.narrow(s.cond, true, scope));

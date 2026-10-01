@@ -189,7 +189,7 @@ class Parser {
     this.skipSep();
     while (!this.is("}")) {
       if (this.tok.t === "eof") this.fail("'}'");
-      if (this.is("state") || this.is("computed") || this.is("fn") || this.is("data")) members.push(this.member());
+      if (this.memberAhead()) members.push(this.member());
       else view.push(this.viewNode());
       this.skipSep();
     }
@@ -197,9 +197,19 @@ class Parser {
     return { kind: "Component", page, ...(layout ? { layout: true } : {}), name, path, ...(layoutName ? { layoutName } : {}), params, members, view, loc: kw.loc };
   }
 
+  memberAhead(): boolean {
+    if (this.is("state") || this.is("computed") || this.is("fn") || this.is("data")) return true;
+    if (this.is("ref")) return this.peek().t === "id";
+    return (this.is("mount") || this.is("effect")) && this.is("{", this.peek());
+  }
+
   member(): Member {
     const kw = this.next();
+    if (kw.v === "mount" || kw.v === "effect") {
+      return { kind: kw.v === "mount" ? "Mount" : "Effect", name: kw.v, body: this.block(), loc: kw.loc };
+    }
     const name = this.ident().v;
+    if (kw.v === "ref") return { kind: "Ref", name, loc: kw.loc };
     if (kw.v === "state") {
       const type = this.eat(":") ? this.type() : null;
       this.expect("=");
@@ -253,7 +263,8 @@ class Parser {
       const index = this.eat(",") ? this.ident("an index variable").v : null;
       this.expect("in");
       const list = this.expr();
-      return { kind: "ForView", item, index, list, body: this.viewBlock(), loc: t.loc };
+      const key = this.is("key") ? (this.next(), this.expr()) : null;
+      return { kind: "ForView", item, index, list, ...(key ? { key } : {}), body: this.viewBlock(), loc: t.loc };
     }
     return this.element();
   }
@@ -285,6 +296,14 @@ class Parser {
     const readProps = () => {
       while (!atEnd()) {
         const p = this.ident("a prop (name=value) or flag");
+        // `on:keydown=save()` (an event handler) and `md:cols=3` (from a screen width up).
+        if (this.is(":") && this.peek().t === "id") {
+          this.next();
+          const name = `${p.v}:${this.next().v}`;
+          if (p.v === "on" && !this.is("=")) this.expect("=");
+          props.push({ name, value: this.eat("=") ? this.unary() : null, loc: p.loc });
+          continue;
+        }
         if (this.eat("=")) props.push({ name: p.v, value: this.unary(), loc: p.loc });
         else props.push({ name: p.v, value: null, loc: p.loc });
       }
@@ -343,6 +362,10 @@ class Parser {
       if (this.eat("(")) { param = this.ident("an error name").v; this.expect(")"); }
       else if (this.tok.t === "id") param = this.next().v;
       return { kind: "Try", body, param, handler: this.block(), loc: t.loc };
+    }
+    if (this.is("cleanup") && this.is("{", this.peek())) {
+      this.next();
+      return { kind: "Cleanup", body: this.block(), loc: t.loc };
     }
     if (this.is("return")) {
       this.next();

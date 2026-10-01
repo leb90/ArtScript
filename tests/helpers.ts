@@ -9,6 +9,10 @@ class FNode {
   childNodes: FNode[] = [];
   parentNode: FNode | null = null;
   isFrag = false;
+  get nextSibling(): FNode | null {
+    const list = this.parentNode?.childNodes;
+    return list?.[list.indexOf(this) + 1] ?? null;
+  }
   appendChild(n: FNode): FNode {
     return this.insertBefore(n, null);
   }

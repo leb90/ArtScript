@@ -2,7 +2,7 @@
 import type { ApiAccess, ComponentDecl, Element, Expr, Program, ServerFnDecl, Stmt, ViewNode } from "./ast.ts";
 import { specifier } from "./modules.ts";
 import { printDecl, printType } from "./printer.ts";
-import { ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
+import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
 
 type Kind = "state" | "computed" | "prop" | "fn" | "let" | "loop" | "param";
 type Sym = { kind: Kind; sig?: string }; // sig: signal to notify on mutation (loops over a state)
@@ -137,19 +137,23 @@ class ComponentGen {
       }
     }
     // `data` compiles to a signal, so it reads and mutates like a state.
-    for (const m of c.members) scope.vars.set(m.name, { kind: m.kind === "Computed" ? "computed" : m.kind === "Fn" ? "fn" : "state" });
+    for (const m of c.members) {
+      if (m.kind !== "Mount" && m.kind !== "Effect") scope.vars.set(m.name, { kind: m.kind === "Computed" ? "computed" : m.kind === "Fn" ? "fn" : m.kind === "Ref" ? "let" : "state" });
+    }
     for (const p of c.params) {
       const def = p.default ? `(() => ${this.expr(p.default, scope)})` : "(() => undefined)";
       this.emit(`const ${p.name} = $p.${p.name} ?? ${def};`);
     }
     for (const m of c.members) {
-      if (m.kind === "State") this.emit(`const ${m.name} = $.signal(${this.expr(m.init, scope)});`);
+      if (m.kind === "Mount" || m.kind === "Effect") continue; // after the view, so refs are set
+      if (m.kind === "Ref") this.emit(`let ${m.name} = null;`);
+      else if (m.kind === "State") this.emit(`const ${m.name} = $.signal(${this.expr(m.init, scope)});`);
       else if (m.kind === "Computed") this.emit(`const ${m.name} = $.computed(() => ${this.expr(m.expr, scope)});`);
       else if (m.kind === "Data") {
         // Lists start as [] so views can iterate right away, counts as 0; anything else as null.
         const method = m.expr.kind === "Call" && m.expr.callee.kind === "Member" ? m.expr.callee.prop : "";
         this.emit(`const ${m.name} = $.$data(() => ${this.expr(m.expr, scope)}, ${method === "list" ? "[]" : method === "count" ? "0" : "null"});`);
-      } else {
+      } else if (m.kind === "Fn") {
         const fs = scope.child();
         for (const p of m.params) fs.vars.set(p, { kind: "param" });
         this.emit(`${hasAwait(m.body) ? "async " : ""}function ${m.name}(${m.params.join(", ")}) {`);
@@ -160,6 +164,12 @@ class ComponentGen {
       }
     }
     this.view(c.view, "$parent", scope);
+    for (const m of c.members) {
+      if (m.kind !== "Mount" && m.kind !== "Effect") continue;
+      this.emit(`$.${m.kind === "Mount" ? "$mount" : "$effect"}(${hasAwait(m.body) ? "async " : ""}() => {`);
+      this.nested(() => this.stmts(m.body, scope.child()));
+      this.emit("});");
+    }
     return `function ${c.name}($p, $parent) {\n${this.lines.join("\n")}\n}`;
   }
 
@@ -181,11 +191,19 @@ class ComponentGen {
         s.vars.set(node.item, { kind: "loop", sig: this.signalOf(node.list, scope) });
         if (node.index) s.vars.set(node.index, { kind: "loop" });
         const params = [f, node.item, ...(node.index ? [node.index] : [])].join(", ");
+        let key = "";
+        if (node.key) {
+          const ks = scope.child();
+          ks.vars.set(node.item, { kind: "param" });
+          if (node.index) ks.vars.set(node.index, { kind: "param" });
+          key = `, (${node.item}${node.index ? `, ${node.index}` : ""}) => ${this.expr(node.key, ks)}`;
+        }
+        // The item and index are signals: kept rows update in place instead of re-rendering.
         this.emit(`$.$for(${parent}, () => ${this.expr(node.list, scope)}, (${params}) => {`);
         this.nested(() => this.view(node.body, f, s));
-        this.emit("});");
+        this.emit(`}${key});`);
       } else if (node.tag === "slot") {
-        this.emit(`$p.$slot(${parent});`); // the router renders the current page here
+        this.emit(`$p.$slot?.(${parent});`); // a layout's page, or a component's children
       } else if (/^[A-Z]/.test(node.tag)) {
         // If the prop comes from a state, pass its signal so the child can notify mutations.
         const props = node.props.filter((p) => p.value).map((p) => {
@@ -193,7 +211,12 @@ class ComponentGen {
           const sig = this.signalOf(p.value!, scope);
           return `${p.name}: ${sig ? `$.$ref(${get}, ${sig})` : get}`;
         });
-        this.emit(`${node.tag}({ ${props.join(", ")} }, ${parent});`);
+        if (node.children.length) {
+          const f = this.v("f");
+          this.emit(`${node.tag}({ ${[...props, `$slot: (${f}) => {`].join(", ")}`);
+          this.nested(() => this.view(node.children, f, scope));
+          this.emit(`} }, ${parent});`);
+        } else this.emit(`${node.tag}({ ${props.join(", ")} }, ${parent});`);
       } else this.element(node, parent, scope);
     }
   }
@@ -237,6 +260,22 @@ class ComponentGen {
       }
       const val = p.value;
       if (p.name === "label" || p.name === "options") continue;
+      if (p.name === "ref") {
+        this.emit(`${printExprName(val)} = ${v};`);
+        continue;
+      }
+      if (p.name.includes(":") && !p.name.startsWith("on:")) continue; // responsive: below
+      if (val.kind === "Num" && el.props.some((q) => q.name.endsWith(":" + p.name))) {
+        this.responsive(v, "", p.name, val.value); // the base must be a class too, to be overridable
+        continue;
+      }
+      if (p.name.startsWith("on:")) {
+        const s = scope.child();
+        s.vars.set("event", { kind: "param" });
+        const body = val.kind === "Arrow" ? `${this.expr(val, s)}(event)` : this.expr(val, s);
+        this.emit(`$.$on(${v}, "${p.name.slice(3)}", ${exprHasAwait(val) ? "async " : ""}(event) => { ${body}; });`);
+        continue;
+      }
       if (isAttr(p.name)) {
         this.attr(v, p.name, val, scope);
         continue;
@@ -290,12 +329,27 @@ class ComponentGen {
       }
     }
 
+    for (const p of el.props) {
+      const [bp, name] = p.name.split(":");
+      if (name && bp !== "on" && p.value?.kind === "Num") this.responsive(v, bp, name, p.value.value);
+    }
+
     if (el.action && spec.action) {
       this.emit(`$.$on(${v}, "${spec.action}", ${hasAwait(el.action) ? "async " : ""}() => {`);
       this.nested(() => this.stmts(el.action!, scope.child()));
       this.emit("});");
     }
     this.view(el.children, v, scope);
+  }
+
+  // `md:cols=3` → class a-md-cols-3 with its rule in a media query. Larger breakpoints repeat the
+  // selector so they win over smaller ones regardless of rule order.
+  responsive(v: string, bp: string, name: string, n: number) {
+    const cls = `a-${bp ? bp + "-" : ""}${name}-${n}`;
+    const decl = name === "cols" ? `grid-template-columns:repeat(${n},minmax(0,1fr))` : `${name === "pad" ? "padding" : "gap"}:${n * 4}px`;
+    const weight = bp ? Object.keys(BREAKPOINTS).indexOf(bp) + 2 : 1;
+    const rule = `${`.${cls}`.repeat(weight)}{${decl}}`;
+    this.emit(`$.$css(${v}, "${cls}", "${bp ? `@media(min-width:${BREAKPOINTS[bp]}px){${rule}}` : rule}");`);
   }
 
   labelText(parent: string, val: Expr, scope: Scope) {
@@ -319,6 +373,11 @@ class ComponentGen {
         // `let found = cart.find(...)`: mutating `found` must still notify `cart`.
         scope.vars.set(s.name, { kind: "let", sig: this.signalOf(s.init, scope) });
       } else if (s.kind === "Return") this.emit(s.value ? `return ${this.expr(s.value, scope)};` : "return;");
+      else if (s.kind === "Cleanup") {
+        this.emit("$.onDispose(() => {");
+        this.nested(() => this.stmts(s.body, scope.child()));
+        this.emit("});");
+      }
       else if (s.kind === "Try") {
         this.emit("try {");
         this.nested(() => this.stmts(s.body, scope.child()));
@@ -362,7 +421,7 @@ class ComponentGen {
       case "Null": return "null";
       case "Ident": {
         const sym = scope.get(e.name);
-        if (sym?.kind === "state" || sym?.kind === "computed") return `${e.name}.v`;
+        if (sym?.kind === "state" || sym?.kind === "computed" || sym?.kind === "loop") return `${e.name}.v`;
         if (sym?.kind === "prop") return `${e.name}()`;
         return e.name;
       }
@@ -439,9 +498,12 @@ function hasAwait(stmts: Stmt[]): boolean {
     if (s.kind === "Let") return exprHasAwait(s.init);
     if (s.kind === "Return") return s.value !== null && exprHasAwait(s.value);
     if (s.kind === "Try") return hasAwait(s.body) || hasAwait(s.handler);
+    if (s.kind === "Cleanup") return false;
     return exprHasAwait(s.cond) || hasAwait(s.then) || (s.else !== null && hasAwait(s.else));
   });
 }
+
+const printExprName = (e: Expr) => (e.kind === "Ident" ? e.name : "undefined");
 
 function literal(e: Expr): string | number | boolean | null {
   if (e.kind === "Str" || e.kind === "Num" || e.kind === "Bool") return e.value;

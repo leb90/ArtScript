@@ -47,18 +47,24 @@ export type ComponentDecl = {
 
 export type Param = { name: string; type: TypeRef; default: Expr | null; loc: Loc };
 
-export type Member = StateDecl | ComputedDecl | FnDecl | DataDecl;
+export type Member = StateDecl | ComputedDecl | FnDecl | DataDecl | RefDecl | HookDecl;
 export type StateDecl = { kind: "State"; name: string; type: TypeRef | null; init: Expr; loc: Loc };
 export type ComputedDecl = { kind: "Computed"; name: string; expr: Expr; loc: Loc };
 export type FnDecl = { kind: "Fn"; name: string; params: string[]; body: Stmt[]; loc: Loc };
 // `data users = api.users.list()`: async value, loaded on mount and reloaded when its api changes.
 export type DataDecl = { kind: "Data"; name: string; expr: Expr; loc: Loc };
+// `ref canvas`: holds the element marked `ref=canvas` (null until the view is built).
+export type RefDecl = { kind: "Ref"; name: string; loc: Loc };
+// `mount { ... }` runs once after the view is in the page; `effect { ... }` re-runs when what it
+// reads changes. Both may register `cleanup { ... }`. `name` is the keyword (for `art patch`).
+export type HookDecl = { kind: "Mount" | "Effect"; name: "mount" | "effect"; body: Stmt[]; loc: Loc };
 
 // ---------- View ----------
 
 export type ViewNode = Element | IfView | ForView;
 
-export type Prop = { name: string; value: Expr | null; loc: Loc }; // value null = flag (`primary`)
+// value null = flag (`primary`). Events are props named `on:<event>` (`on:keydown=save()`).
+export type Prop = { name: string; value: Expr | null; loc: Loc };
 
 export type Element = {
   kind: "Element";
@@ -71,7 +77,8 @@ export type Element = {
 };
 
 export type IfView = { kind: "IfView"; cond: Expr; then: ViewNode[]; else: ViewNode[] | null; loc: Loc };
-export type ForView = { kind: "ForView"; item: string; index: string | null; list: Expr; body: ViewNode[]; loc: Loc };
+// `key` identifies items across updates (default: the item itself), so rows keep their DOM.
+export type ForView = { kind: "ForView"; item: string; index: string | null; list: Expr; key?: Expr; body: ViewNode[]; loc: Loc };
 
 // ---------- Statements (fn bodies and actions) ----------
 
@@ -80,7 +87,8 @@ export type Stmt =
   | { kind: "Let"; name: string; init: Expr; loc: Loc }
   | { kind: "If"; cond: Expr; then: Stmt[]; else: Stmt[] | null; loc: Loc }
   | { kind: "Return"; value: Expr | null; loc: Loc }
-  | { kind: "Try"; body: Stmt[]; param: string | null; handler: Stmt[]; loc: Loc };
+  | { kind: "Try"; body: Stmt[]; param: string | null; handler: Stmt[]; loc: Loc }
+  | { kind: "Cleanup"; body: Stmt[]; loc: Loc };
 
 // ---------- Expressions (a JavaScript subset) ----------
 

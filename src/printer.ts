@@ -74,6 +74,7 @@ export function printStmt(s: Stmt): string {
     case "Let": return `let ${s.name} = ${printExpr(s.init)}`;
     case "Return": return s.value ? `return ${printExpr(s.value)}` : "return";
     case "Try": return `try ${printBlockInline(s.body)} catch${s.param ? ` (${s.param})` : ""} ${printBlockInline(s.handler)}`;
+    case "Cleanup": return `cleanup ${printBlockInline(s.body)}`;
     case "If": {
       let out = `if ${printExpr(s.cond)} ${printBlockInline(s.then)}`;
       if (s.else) out += ` else ${s.else.length === 1 && s.else[0].kind === "If" ? printStmt(s.else[0]) : printBlockInline(s.else)}`;
@@ -111,7 +112,9 @@ export function printDecl(d: Decl): string {
     if (m.kind === "State") out.push(`${IND}state ${m.name}${m.type ? `: ${printType(m.type)}` : ""} = ${printExpr(m.init)}`);
     else if (m.kind === "Computed") out.push(`${IND}computed ${m.name} = ${printExpr(m.expr)}`);
     else if (m.kind === "Data") out.push(`${IND}data ${m.name} = ${printExpr(m.expr)}`);
-    else out.push(`${IND}fn ${m.name}(${m.params.join(", ")}) {`, ...printStmts(m.body, 2), `${IND}}`);
+    else if (m.kind === "Ref") out.push(`${IND}ref ${m.name}`);
+    else if (m.kind === "Mount" || m.kind === "Effect") out.push(`${IND}${m.name} {`, ...printStmts(m.body, 2), `${IND}}`);
+    else if (m.kind === "Fn") out.push(`${IND}fn ${m.name}(${m.params.join(", ")}) {`, ...printStmts(m.body, 2), `${IND}}`);
   }
   if (d.members.length && d.view.length) out.push("");
   out.push(...printView(d.view, 1));
@@ -133,6 +136,8 @@ export function printStmts(stmts: Stmt[], depth: number): string[] {
       }
       if (els) out.push(`${pad}} else {`, ...printStmts(els, depth + 1));
       out.push(`${pad}}`);
+    } else if (s.kind === "Cleanup") {
+      out.push(`${pad}cleanup {`, ...printStmts(s.body, depth + 1), `${pad}}`);
     } else if (s.kind === "Try") {
       out.push(`${pad}try {`, ...printStmts(s.body, depth + 1), `${pad}} catch${s.param ? ` (${s.param})` : ""} {`, ...printStmts(s.handler, depth + 1), `${pad}}`);
     } else out.push(pad + printStmt(s));
@@ -167,7 +172,7 @@ export function printView(nodes: ViewNode[], depth: number): string[] {
       if (els) out.push(`${pad}} else {`, ...printView(els, depth + 1));
       out.push(`${pad}}`);
     } else if (n.kind === "ForView") {
-      out.push(`${pad}for ${n.item}${n.index ? `, ${n.index}` : ""} in ${printExpr(n.list)} {`, ...printView(n.body, depth + 1), `${pad}}`);
+      out.push(`${pad}for ${n.item}${n.index ? `, ${n.index}` : ""} in ${printExpr(n.list)}${n.key ? ` key ${printExpr(n.key)}` : ""} {`, ...printView(n.body, depth + 1), `${pad}}`);
     } else {
       let line = pad + printElementHead(n);
       const lines: string[] = [];

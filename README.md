@@ -110,6 +110,8 @@ page NotFound "*" {
 }
 ```
 
+The UI covers forms and data views out of the box (`select`, `radio`, `tabs`, `checkbox`, `textarea`, `file`, `modal`, `table`, `list`, `badge`, `spinner`, `video`…), plus `on:<event>` handlers, `ref` + `mount`/`effect` with `cleanup` for DOM libraries, component children through `slot`, keyed lists that keep their DOM (`for p in products key p.id`) and responsive props (`grid cols=1 md:cols=3`).
+
 Any npm package or JS/TS module of your own can be used with `use`; the compiler checks that the module and every imported name exist, and `art build` bundles everything into one minified file:
 
 ```

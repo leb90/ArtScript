@@ -109,6 +109,16 @@ export function $attr(n, name, fn) {
     else n.setAttribute(name, v === true ? "" : v);
   });
 }
+// Adds a class whose rule is generated on demand (responsive props), once per page.
+let sheet = null;
+const rules = new Set();
+export function $css(n, cls, rule) {
+  n.classList.add(cls);
+  if (rules.has(cls)) return;
+  rules.add(cls);
+  sheet ??= document.head.appendChild(document.createElement("style"));
+  sheet.textContent += rule;
+}
 export function $class(n, cls, fn) { effect(() => { n.classList.toggle(cls, !!fn()); }); }
 export function $style(n, prop, fn) { effect(() => { n.style[prop] = str(fn()); }); }
 export function $on(n, kind, fn) {
@@ -245,13 +255,78 @@ export function $if(parent, cond, a, b) {
   });
 }
 
-// TODO: keyed reconciliation. For now the whole list re-renders on change.
-export function $for(parent, list, render) {
-  const r = region(parent);
+// Keyed list: rows whose key (default: the item itself) survives an update keep their DOM and
+// get the new item through their signal; only new rows render and only moved rows move.
+export function $for(parent, list, render, key = (it) => it) {
+  const anchor = document.createComment("");
+  parent.appendChild(anchor);
+  let rows = [];
+  const range = (r) => {
+    const out = [];
+    for (let n = r.start; ; n = n.nextSibling) { out.push(n); if (n === r.end) return out; }
+  };
+  const drop = (r) => { r.dispose(); for (const n of range(r)) remove(n); };
+  onDispose(() => { rows.forEach(drop); rows = []; });
   effect(() => {
     const items = list() ?? [];
-    r.clear();
-    r.mount((frag) => items.forEach((it, i) => r.disposers.push(root(() => render(frag, it, i)))));
+    const old = new Map();
+    for (const r of rows) old.has(r.key) ? old.get(r.key).push(r) : old.set(r.key, [r]);
+    const kept = [];
+    const next = items.map((it, i) => {
+      const k = key(it, i);
+      const r = old.get(k)?.shift();
+      if (r) {
+        r.item._v = it; // always notified below: the item may have been mutated in place
+        if (r.index._v !== i) { r.index._v = i; kept.push(r.index); }
+        kept.push(r.item);
+        return r;
+      }
+      const n = { key: k, item: new Signal(it), index: new Signal(i), start: document.createComment(""), end: document.createComment("") };
+      const frag = document.createDocumentFragment();
+      frag.appendChild(n.start);
+      n.dispose = root(() => render(frag, n.item, n.index));
+      frag.appendChild(n.end);
+      return n;
+    });
+    for (const rs of old.values()) rs.forEach(drop);
+    rows = next;
+    let ref = anchor;
+    for (let j = next.length - 1; j >= 0; j--) {
+      const r = next[j];
+      if (r.end.nextSibling !== ref || r.end.parentNode !== anchor.parentNode) {
+        for (const n of range(r)) anchor.parentNode.insertBefore(n, ref);
+      }
+      ref = r.start;
+    }
+    untrack(() => batch(() => kept.forEach((s) => s.notify())));
+  });
+}
+
+// `mount { ... }`: runs once the view is in the page; `cleanup { }` inside runs on unmount.
+export function $mount(fn) {
+  const o = owner;
+  let alive = true;
+  onDispose(() => { alive = false; });
+  queueMicrotask(() => {
+    if (!alive) return;
+    const prev = owner;
+    owner = o;
+    try { fn(); } finally { owner = prev; }
+  });
+}
+
+// `effect { ... }`: re-runs when what it reads changes; its `cleanup { }` runs before each re-run.
+export function $effect(fn) {
+  const cleanups = [];
+  const clean = () => { for (const f of cleanups.splice(0)) f(); };
+  $mount(() => {
+    effect(() => {
+      untrack(clean); // what a cleanup reads isn't a dependency of the effect
+      const prev = owner;
+      owner = cleanups;
+      try { fn(); } finally { owner = prev; }
+    });
+    onDispose(clean);
   });
 }
 

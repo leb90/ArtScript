@@ -15,7 +15,7 @@ export type ElementSpec = {
 };
 
 const LAYOUT = ["gap", "pad", "align", "justify"];
-const COMMON = ["class", "style", "id"];
+const COMMON = ["class", "style", "id", "ref"];
 const MEDIA = ["controls", "autoplay", "loop", "muted"];
 
 export const ELEMENTS: Record<string, ElementSpec> = {
@@ -58,6 +58,10 @@ export const ENUM_PROPS: Record<string, string[]> = {
   justify: ["start", "center", "end", "between", "around"],
   type: ["text", "number", "email", "password", "checkbox", "date"],
 };
+
+// `md:cols=3`: applies from that screen width up (px). Only for these numeric props.
+export const BREAKPOINTS: Record<string, number> = { sm: 640, md: 768, lg: 1024, xl: 1280 };
+export const RESPONSIVE_PROPS = ["cols", "gap", "pad"];
 
 // Numeric spacing props: 1 unit = 4px.
 export const SPACING_PROPS = new Set(["gap", "pad"]);

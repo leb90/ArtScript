@@ -43,6 +43,7 @@ export const CATALOG: Record<string, { code: string; desc: string }> = {
   NOT_BINDABLE: { code: "E2006", desc: "`input`, `select`, `checkbox`, `modal`, etc. need a `state` (or a field of one) to bind to." },
   LAYOUT_SLOT: { code: "E2008", desc: "A layout needs exactly one `slot`, and `slot` only goes in layouts." },
   BAD_ROUTE: { code: "E2009", desc: "Invalid or repeated page route." },
+  BAD_CLEANUP: { code: "E2010", desc: "`cleanup { }` only goes inside `mount { }` or `effect { }`." },
   NO_CHILDREN: { code: "E2007", desc: "This element doesn't take `{ }` children." },
   // art patch
   PATCH_SYNTAX: { code: "E3001", desc: "Invalid patch line: an operation was expected." },
