@@ -453,7 +453,16 @@ function setParams(comp: ComponentDecl, items: string, loc: Loc) {
   const rest = items.replace(/(?:^|[\s,])-[A-Za-z_]\w*/g, " ").trim().replace(/^,|,$/g, "");
   comp.params = comp.params.filter((p) => !remove.includes(p.name));
   if (!rest) return;
-  for (const np of parseParams(rest, PATCH_FILE, loc.line)) {
+  // `item: Item onRemove` (no commas): a new param starts at each `name` followed by `:`, `=`,
+  // another name or the end.
+  let params: ComponentDecl["params"];
+  try {
+    params = parseParams(rest, PATCH_FILE, loc.line);
+  } catch (e) {
+    if (rest.includes(",")) throw e;
+    params = parseParams(rest.split(/\s+(?=[A-Za-z_]\w*\s*(?::|$|\s+[A-Za-z_]\w*\s*:))/).join(", "), PATCH_FILE, loc.line);
+  }
+  for (const np of params) {
     const i = comp.params.findIndex((p) => p.name === np.name);
     if (i >= 0) comp.params[i] = np;
     else comp.params.push(np);

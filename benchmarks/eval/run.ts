@@ -58,9 +58,9 @@ const BEHAVIOR = !args.includes("--no-behavior");
 // ---------- prompts ----------
 const FORMAT = "Respondé SOLO con los archivos completos, cada uno en un bloque de código cuyo encabezado es el nombre del archivo, por ejemplo:\n```App.tsx\n...\n```\nSin explicaciones.";
 
-// `--spec edit`: modification tasks get docs/SPEC-EDIT.md (the code shows the syntax) instead of
-// the full spec. Creation tasks always get the full spec.
-const SPEC_MODE = opt("spec", "full") as "full" | "edit";
+// Modification tasks get docs/SPEC-EDIT.md (the code shows the syntax); `--spec full` sends the full
+// spec instead. Creation tasks always get the full spec.
+const SPEC_MODE = opt("spec", "edit") as "full" | "edit";
 
 function systemPrompt(stack: Stack, task?: Task): string {
   if (stack === "artscript") {

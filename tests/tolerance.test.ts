@@ -132,3 +132,12 @@ test("art patch: braced op bodies and a header-only body", () => {
   const out = ok("replace Card\n  component Card(product: Product, onAdd: Fn, big: Bool = false) {\n");
   assert.match(out, /component Card\(product: Product, onAdd: Fn, big: Bool = false\) \{\n  row/);
 });
+
+test("TS function types, props without commas, one-line if", () => {
+  // Parsed as Fn; they're required, so the checker asks for them where Card is used.
+  const r = applyPatch(APP(), "set Card onRemove: (id: Number) => void, onPick: () => void, cb: Function\n");
+  assert.deepEqual(r.diagnostics.map((d) => d.expected), ["onRemove: Fn", "onPick: Fn", "cb: Fn"]);
+  const r2 = applyPatch(APP(), "set Card big: Bool extra\n");
+  assert.deepEqual(r2.diagnostics.map((d) => d.expected), ["big: Bool", "extra: Any"]);
+  assert.deepEqual(types('page P {\n  state n = ""\n  fn go() {\n    if n.trim() == "" return\n    n = "x"\n  }\n\n  text n\n}'), []);
+});

@@ -193,7 +193,23 @@ class Parser {
   }
 
   type(): TypeRef {
+    // A TypeScript function type (`(id: Number) => void`, `() => void`) is `Fn`.
+    if (this.is("(")) {
+      const loc = this.tok.loc;
+      for (let depth = 0; ;) {
+        const t = this.next();
+        if (t.t === "eof") this.fail("')'");
+        if (t.v === "(") depth++;
+        else if (t.v === ")" && --depth === 0) break;
+      }
+      if (this.eat("=>")) {
+        if (this.is("(")) this.type();
+        else this.ident("a return type");
+      }
+      return { name: "Fn", list: false, optional: this.eat("?"), loc };
+    }
     const t = this.ident("a type");
+    if (t.v === "Function" || t.v === "void") t.v = t.v === "void" ? "Any" : "Fn";
     let list = false;
     if (this.is("[") && this.is("]", this.peek())) { this.i += 2; list = true; }
     const optional = this.eat("?");
@@ -377,7 +393,8 @@ class Parser {
     if (this.is("if")) {
       this.next();
       const cond = this.expr();
-      const then = this.block();
+      // `if x == "" return` (one statement without braces), as in JavaScript.
+      const then = this.is("{") ? this.block() : [this.stmt()];
       let els: Stmt[] | null = null;
       if (this.elseAhead()) {
         this.next();
