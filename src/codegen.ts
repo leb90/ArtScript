@@ -3,6 +3,10 @@ import type { ApiAccess, ComponentDecl, Element, Expr, Program, ServerFnDecl, St
 import { specifier } from "./modules.ts";
 import { printDecl, printType } from "./printer.ts";
 import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
+import { twoWayProps } from "./checker.ts";
+
+// Props each component assigns (bound two-way), for the program being generated.
+let twoWay = new Map<string, Set<string>>();
 
 type Kind = "state" | "computed" | "prop" | "fn" | "let" | "loop" | "param";
 type Sym = { kind: Kind; sig?: string }; // sig: signal to notify on mutation (loops over a state)
@@ -49,6 +53,7 @@ export function generate(program: Program): string {
   if (program.decls.some((d) => d.kind === "Auth")) out.push("const auth = $.$auth();", "");
   if (program.decls.some((d) => d.kind === "ServerFn")) out.push("const server = $.$server();", "");
   const pages: string[] = [];
+  twoWay = twoWayProps(program);
   for (const d of program.decls) {
     if (d.kind !== "Component") continue;
     out.push(new ComponentGen(d).gen(), "");
@@ -98,7 +103,7 @@ function serverFnsModule(program: Program, fns: ServerFnDecl[]): string {
     const scope = new Scope(null);
     for (const name of ["db", "me", "fail", ...f.params]) scope.vars.set(name, { kind: "param" });
     g.stmts(f.body, scope);
-    out.push(`  async ${f.name}({ db, me, fail }${f.params.map((p) => `, ${p}`).join("")}) {`, ...g.lines, "  },");
+    out.push(`  async ${f.name}({ db, me, fail }${f.params.map((p, i) => `, ${p}${f.defaults?.[i] ? ` = ${g.expr(f.defaults[i]!, scope)}` : ""}`).join("")}) {`, ...g.lines, "  },");
   }
   out.push("};");
   return out.join("\n");
@@ -156,7 +161,8 @@ class ComponentGen {
       } else if (m.kind === "Fn") {
         const fs = scope.child();
         for (const p of m.params) fs.vars.set(p, { kind: "param" });
-        this.emit(`${hasAwait(m.body) ? "async " : ""}function ${m.name}(${m.params.join(", ")}) {`);
+        const ps = m.params.map((p, i) => (m.defaults?.[i] ? `${p} = ${this.expr(m.defaults[i]!, scope)}` : p));
+        this.emit(`${hasAwait(m.body) ? "async " : ""}function ${m.name}(${ps.join(", ")}) {`);
         this.ind++;
         this.stmts(m.body, fs);
         this.ind--;
@@ -209,6 +215,13 @@ class ComponentGen {
         const props = node.props.filter((p) => p.value).map((p) => {
           const get = `() => ${this.expr(p.value!, scope)}`;
           const sig = this.signalOf(p.value!, scope);
+          // A prop the child assigns gets a setter that assigns the expression passed here.
+          if (twoWay.get(node.tag)?.has(p.name)) {
+            const s = scope.child();
+            s.vars.set("$v", { kind: "param" });
+            const set = this.expr({ kind: "Assign", op: "=", target: p.value!, value: { kind: "Ident", name: "$v", loc: p.loc }, loc: p.loc }, s);
+            return `${p.name}: $.$ref(${get}, ${sig ?? "undefined"}, ($v) => ${set})`;
+          }
           return `${p.name}: ${sig ? `$.$ref(${get}, ${sig})` : get}`;
         });
         if (node.children.length) {
@@ -406,7 +419,7 @@ class ComponentGen {
     }
     if (e.kind !== "Ident") return undefined;
     const sym = scope.get(e.name);
-    if (sym?.kind === "state") return e.name;
+    if (sym?.kind === "state" || sym?.kind === "computed") return e.name;
     if (sym?.kind === "prop") return `${e.name}.sig`;
     return sym?.sig;
   }
@@ -430,16 +443,26 @@ class ComponentGen {
       case "Call": {
         const call = `${this.wrapPostfix(e.callee, scope)}${e.optional ? "?.(" : "("}${e.args.map(x).join(", ")})`;
         if (e.callee.kind === "Member" && MUTATORS.has(e.callee.prop)) {
-          const sig = this.signalOf(e.callee.object, scope);
+          const sig = this.signalOf(e.callee.object, scope) ?? this.untracked(e.callee.object, scope);
           if (sig) return `$.$m(${sig}, ${call})`;
         }
         return call;
       }
       case "Unary": return e.op === "typeof" || e.op === "await" ? `(${e.op} ${x(e.arg)})` : `${e.op}(${x(e.arg)})`;
-      case "Update": return this.mutation(e.arg, e.prefix ? `${e.op}${x(e.arg)}` : `${x(e.arg)}${e.op}`, scope);
+      case "Update": {
+        if (this.isProp(e.arg, scope)) return `${x(e.arg)}.set(${x(e.arg)}() ${e.op[0]} 1)`.replace(/\(\)\.set/, ".set");
+        return this.mutation(e.arg, e.prefix ? `${e.op}${x(e.arg)}` : `${x(e.arg)}${e.op}`, scope);
+      }
       case "Binary": return `(${x(e.left)} ${JS_OPS[e.op] ?? e.op} ${x(e.right)})`;
       case "Cond": return `(${x(e.test)} ? ${x(e.then)} : ${x(e.else)})`;
-      case "Assign": return this.mutation(e.target, `${x(e.target)} ${e.op} ${x(e.value)}`, scope);
+      case "Assign": {
+        // A prop assigned directly: two-way, so it calls the setter the parent passed.
+        if (this.isProp(e.target, scope)) {
+          const name = (e.target as Expr & { kind: "Ident" }).name;
+          return e.op === "=" ? `${name}.set(${x(e.value)})` : `${name}.set(${name}() ${e.op.slice(0, -1)} (${x(e.value)}))`;
+        }
+        return this.mutation(e.target, `${x(e.target)} ${e.op} ${x(e.value)}`, scope);
+      }
       case "Array": return `[${e.items.map(x).join(", ")}]`;
       case "Object": return `{ ${e.props.map((p) => ("spread" in p ? `...${x(p.spread)}` : `${JSON.stringify(p.key)}: ${x(p.value)}`)).join(", ")} }`;
       case "Arrow": {
@@ -468,8 +491,22 @@ class ComponentGen {
   // Direct assignment to a state uses its setter; nested mutations notify the root signal.
   mutation(target: Expr, code: string, scope: Scope): string {
     if (target.kind === "Ident") return code;
-    const sig = this.signalOf(target, scope);
+    const sig = this.signalOf(target, scope) ?? this.untracked(target, scope);
     return sig ? `$.$m(${sig}, ${code})` : code;
+  }
+
+  isProp(e: Expr, scope: Scope): boolean {
+    return e.kind === "Ident" && scope.get(e.name)?.kind === "prop";
+  }
+
+  // A mutation through a parameter (`fn add(p) { p.stock-- }`, `xs.forEach(x => x.done = true)`)
+  // can't know which state owns the object: it notifies every state (`$.$all`).
+  untracked(e: Expr, scope: Scope): string | undefined {
+    if (this.c.name === "server") return undefined; // server fns have no UI to update
+    while (e.kind === "Member" || e.kind === "Index" || (e.kind === "Call" && e.callee.kind === "Member")) {
+      e = e.kind === "Call" ? (e.callee as Expr & { kind: "Member" }).object : e.object;
+    }
+    return e.kind === "Ident" && scope.get(e.name)?.kind === "param" ? "$.$all" : undefined;
   }
 }
 

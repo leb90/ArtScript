@@ -95,11 +95,15 @@ export function printProgram(p: Program): string {
   return p.decls.map(printDecl).join("\n\n") + "\n";
 }
 
+export function printParams(f: { params: string[]; defaults?: (Expr | null)[] }): string {
+  return f.params.map((p, i) => (f.defaults?.[i] ? `${p} = ${printExpr(f.defaults[i]!)}` : p)).join(", ");
+}
+
 export function printDecl(d: Decl): string {
   if (d.kind === "Use") return `use ${JSON.stringify(d.source)}${d.default ? ` as ${d.default}` : ""}${d.names.length ? ` { ${d.names.join(", ")} }` : ""}`;
   if (d.kind === "Api") return `api ${d.name}: ${d.model}${d.access === "public" ? "" : " " + d.access}`;
   if (d.kind === "Auth") return `auth ${d.api}`;
-  if (d.kind === "ServerFn") return `server fn ${d.name}(${d.params.join(", ")}) {\n${printStmts(d.body, 1).join("\n")}\n}`;
+  if (d.kind === "ServerFn") return `server fn ${d.name}(${printParams(d)}) {\n${printStmts(d.body, 1).join("\n")}\n}`;
   if (d.kind === "Model") {
     return `model ${d.name} {\n${d.fields.map((f) => `${IND}${f.name}: ${printType(f.type)}`).join("\n")}\n}`;
   }
@@ -114,7 +118,7 @@ export function printDecl(d: Decl): string {
     else if (m.kind === "Data") out.push(`${IND}data ${m.name} = ${printExpr(m.expr)}`);
     else if (m.kind === "Ref") out.push(`${IND}ref ${m.name}`);
     else if (m.kind === "Mount" || m.kind === "Effect") out.push(`${IND}${m.name} {`, ...printStmts(m.body, 2), `${IND}}`);
-    else if (m.kind === "Fn") out.push(`${IND}fn ${m.name}(${m.params.join(", ")}) {`, ...printStmts(m.body, 2), `${IND}}`);
+    else if (m.kind === "Fn") out.push(`${IND}fn ${m.name}(${printParams(m)}) {`, ...printStmts(m.body, 2), `${IND}}`);
   }
   if (d.members.length && d.view.length) out.push("");
   out.push(...printView(d.view, 1));

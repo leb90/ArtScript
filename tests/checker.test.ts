@@ -34,11 +34,11 @@ test("UNKNOWN_FIELD on models", () => {
   assert.deepEqual(d.fixes, ["name"]);
 });
 
-test("POSSIBLY_EMPTY when indexing a list without ?.", () => {
-  const [d] = errs(USER + "page P {\n  state users: User[] = []\n  text users[0].name\n}");
+test("indexing a list is T (as in TypeScript); find() is T? and must be handled", () => {
+  assert.deepEqual(types(USER + "page P {\n  state users: User[] = []\n  text users[0].name\n}"), []);
+  const [d] = errs(USER + "page P {\n  state users: User[] = []\n  text users.find(u => u.name == \"a\").name\n}");
   assert.equal(d.type, "POSSIBLY_EMPTY");
   assert.equal(d.actual, "User?");
-  assert.deepEqual(d.fixes, ["users[0]?.name"]);
   assert.deepEqual(types(USER + "page P {\n  state users: User[] = []\n  text users[0]?.name ?? \"-\"\n}"), []);
 });
 
@@ -54,11 +54,16 @@ test("TYPE_MISMATCH on state annotations and arithmetic", () => {
   assert.deepEqual(types('page P {\n  state s = "a"\n  text s * 2\n}'), ["TYPE_MISMATCH"]);
 });
 
-test("ASSIGN_READONLY on computed and props", () => {
-  const [d] = errs('page P {\n  state a = 1\n  computed b = a * 2\n  button "x" -> b = 3\n}');
-  assert.equal(d.type, "ASSIGN_READONLY");
-  assert.equal(d.actual, "computed");
-  assert.deepEqual(types('component C(n: Number) {\n  button "x" -> n++\n}'), ["ASSIGN_READONLY"]);
+test("computed and props can be assigned; two-way props need something assignable", () => {
+  assert.deepEqual(types('page P {\n  state a = 1\n  computed b = a * 2\n  button "x" -> b = 3\n}'), []);
+  const C = 'component C(n: Number) {\n  button "x" -> n++\n}\n';
+  assert.deepEqual(types(C + "page P {\n  state n = 1\n  C n=n\n}"), []);
+  const [d] = errs(C + "page P {\n  C n=3\n}");
+  assert.equal(d.type, "NOT_BINDABLE");
+  // Passing it on to a child that assigns it makes it two-way too.
+  assert.deepEqual(types(C + "component B(n: Number) {\n  C n=n\n}\npage P {\n  B n=3\n}"), ["NOT_BINDABLE"]);
+  const [l] = errs('page P {\n  state xs = [1]\n  for x in xs {\n    button "x" -> x = 2\n  }\n}');
+  assert.equal(l.type, "ASSIGN_READONLY");
 });
 
 test("mutating fields of a model received as a prop is allowed", () => {

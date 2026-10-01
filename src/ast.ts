@@ -27,7 +27,7 @@ export type ApiDecl = { kind: "Api"; name: string; model: string; access: ApiAcc
 export type AuthDecl = { kind: "Auth"; name: string; api: string; loc: Loc };
 
 // `server fn name(params) { ... }`: runs on the server with `db`, `me` and `fail`; called as `server.name()`.
-export type ServerFnDecl = { kind: "ServerFn"; name: string; params: string[]; body: Stmt[]; loc: Loc };
+export type ServerFnDecl = { kind: "ServerFn"; name: string; params: string[]; defaults?: (Expr | null)[]; body: Stmt[]; loc: Loc };
 
 // `page` and `component` share a shape; a page has a route and no params.
 export type ComponentDecl = {
@@ -50,7 +50,8 @@ export type Param = { name: string; type: TypeRef; default: Expr | null; loc: Lo
 export type Member = StateDecl | ComputedDecl | FnDecl | DataDecl | RefDecl | HookDecl;
 export type StateDecl = { kind: "State"; name: string; type: TypeRef | null; init: Expr; loc: Loc };
 export type ComputedDecl = { kind: "Computed"; name: string; expr: Expr; loc: Loc };
-export type FnDecl = { kind: "Fn"; name: string; params: string[]; body: Stmt[]; loc: Loc };
+// `defaults[i]`: default value of params[i] (`fn sort(asc = true)`), when any param has one.
+export type FnDecl = { kind: "Fn"; name: string; params: string[]; defaults?: (Expr | null)[]; body: Stmt[]; loc: Loc };
 // `data users = api.users.list()`: async value, loaded on mount and reloaded when its api changes.
 export type DataDecl = { kind: "Data"; name: string; expr: Expr; loc: Loc };
 // `ref canvas`: holds the element marked `ref=canvas` (null until the view is built).

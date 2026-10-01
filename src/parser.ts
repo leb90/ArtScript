@@ -148,14 +148,36 @@ class Parser {
     const loc = this.next().loc;
     this.expect("fn");
     const name = this.ident("a function name").v;
+    const { params, defaults } = this.fnParams();
+    return { kind: "ServerFn", name, params, ...(defaults.some(Boolean) ? { defaults } : {}), body: this.block(), loc };
+  }
+
+  // `(a, b: Number, c = 1)`: TypeScript-style annotations are accepted and dropped (the checker
+  // infers types); defaults are kept.
+  fnParams(): { params: string[]; defaults: (Expr | null)[] } {
     this.expect("(");
-    const params: string[] = [];
+    const params: string[] = [], defaults: (Expr | null)[] = [];
     while (!this.is(")")) {
       params.push(this.ident("a parameter name").v);
+      if (this.eat(":")) this.type();
+      defaults.push(this.eat("=") ? this.ternary() : null);
       if (!this.eat(",")) break;
     }
     this.expect(")");
-    return { kind: "ServerFn", name, params, body: this.block(), loc };
+    return { params, defaults };
+  }
+
+  // A prop value: a literal, name, call or `(expr)`, and (as LLMs write) a comparison or other
+  // binary expression right after it: `muted=error == ""`, `disabled=n > 3`.
+  propValue(): Expr {
+    const first = this.unary();
+    const t = this.tok;
+    if (t.t !== "op" || BINARY_PREC[t.v] === undefined) return first;
+    const value = this.binary(0, first);
+    if (!this.eat("?")) return value;
+    const then = this.unary();
+    this.expect(":");
+    return { kind: "Cond", test: value, then, else: this.unary(), loc: value.loc };
   }
 
   type(): TypeRef {
@@ -179,9 +201,10 @@ class Parser {
     if (!page && this.eat("(")) {
       while (!this.is(")")) {
         const p = this.ident("a prop name");
-        this.expect(":");
-        const type = this.type();
+        // `(item, onRemove)` / `(compact = false)`: an untyped prop is Any, or the type of its default.
+        const type: TypeRef = this.eat(":") ? this.type() : { name: "Any", list: false, optional: false, loc: p.loc };
         const def = this.eat("=") ? this.expr() : null;
+        if (type.name === "Any" && def) type.name = def.kind === "Str" || def.kind === "Template" ? "String" : def.kind === "Num" ? "Number" : def.kind === "Bool" ? "Bool" : "Any";
         params.push({ name: p.v, type, default: def, loc: p.loc });
         if (!this.eat(",")) break;
       }
@@ -223,14 +246,8 @@ class Parser {
       this.expect("=");
       return { kind: kw.v === "data" ? "Data" : "Computed", name, expr: this.expr(), loc: kw.loc };
     }
-    this.expect("(");
-    const params: string[] = [];
-    while (!this.is(")")) {
-      params.push(this.ident("a parameter name").v);
-      if (!this.eat(",")) break;
-    }
-    this.expect(")");
-    const fn: FnDecl = { kind: "Fn", name, params, body: this.block(), loc: kw.loc };
+    const { params, defaults } = this.fnParams();
+    const fn: FnDecl = { kind: "Fn", name, params, ...(defaults.some(Boolean) ? { defaults } : {}), body: this.block(), loc: kw.loc };
     return fn;
   }
 
@@ -305,10 +322,10 @@ class Parser {
           this.next();
           const name = `${p.v}:${this.next().v}`;
           if (p.v === "on" && !this.is("=")) this.expect("=");
-          props.push({ name, value: this.eat("=") ? this.unary() : null, loc: p.loc });
+          props.push({ name, value: this.eat("=") ? this.propValue() : null, loc: p.loc });
           continue;
         }
-        if (this.eat("=")) props.push({ name: p.v, value: this.unary(), loc: p.loc });
+        if (this.eat("=")) props.push({ name: p.v, value: this.propValue(), loc: p.loc });
         else props.push({ name: p.v, value: null, loc: p.loc });
       }
     };
@@ -408,6 +425,7 @@ class Parser {
     if (this.eat("(")) {
       while (!this.is(")")) {
         params.push(this.ident("a parameter").v);
+        if (this.eat(":")) this.type(); // `(p: Product) => ...`: annotation dropped
         if (!this.eat(",")) break;
       }
       this.expect(")");
@@ -428,8 +446,8 @@ class Parser {
     return { kind: "Cond", test, then, else: this.expr(), loc: test.loc };
   }
 
-  binary(min: number): Expr {
-    let left = this.unary();
+  binary(min: number, first?: Expr): Expr {
+    let left = first ?? this.unary();
     for (;;) {
       const t = this.tok;
       const prec = t.t === "op" ? BINARY_PREC[t.v] : undefined;

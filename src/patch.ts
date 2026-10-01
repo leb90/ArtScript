@@ -21,7 +21,7 @@ import { printProgram } from "./printer.ts";
 export type PatchResult = { files: Record<string, string>; changed: string[]; diagnostics: Diagnostic[] };
 
 // `target` is the path; `args` is the rest of the op line (props for `set`, file for `add`).
-type Op = { op: string; target: string; args: string; body: string; line: number; bodyLine: number };
+type Op = { op: string; target: string; args: string; body: string; line: number; bodyLine: number; sig?: string };
 
 const OP_LINE = /^(replace|insert before|insert after|append|remove|set|add)\b[ \t]*(.*)$/;
 const PATCH_FILE = "patch";
@@ -83,6 +83,18 @@ function inside(list: ViewNode[], tag: string): { n: ViewNode; i: number; list: 
   return out;
 }
 
+// Nodes with `tag` anywhere below `list` (through elements too).
+function descendants(list: ViewNode[], tag: string): { n: ViewNode; i: number; list: ViewNode[] }[] {
+  const out: { n: ViewNode; i: number; list: ViewNode[] }[] = [];
+  const walk = (l: ViewNode[]) => l.forEach((n, i) => {
+    if (tagOf(n) === tag) out.push({ n, i, list: l });
+    walk(childrenOf(n));
+    if (n.kind === "IfView" && n.else) walk(n.else);
+  });
+  list.forEach((n) => { walk(childrenOf(n)); if (n.kind === "IfView" && n.else) walk(n.else); });
+  return out;
+}
+
 // Valid next path segments inside a list, used as fix suggestions.
 function segLabels(list: ViewNode[]): string[] {
   return list.map((n) => {
@@ -139,11 +151,15 @@ function resolve(p: Program, path: string, loc: Loc): Target {
     const sm = /^([A-Za-z_]\w*)(?:\[(\d+)\])?$/.exec(seg);
     if (!sm) fail("TARGET_NOT_FOUND", `invalid segment '${seg}'`, segLabels(list).map((l) => `${walked}/${l}`));
     let matches = list.map((n, i) => ({ n, i, list })).filter((x) => tagOf(x.n) === sm![1]);
-    // A path may skip `if`/`else`/`for` wrappers (`CartView/column` for `CartView/if/else/column`)
-    // when exactly one node matches through them.
+    // A path may skip `if`/`else`/`for` wrappers (`CartView/column` for `CartView/if/else/column`),
+    // or any other nodes (`List/for` for `List/if/else/column/for`), when exactly one node matches.
     if (!matches.length && sm![2] === undefined) {
       const through = inside(list, sm![1]);
       if (through.length === 1) matches = through;
+      else if (!through.length) {
+        const deep = descendants(list, sm![1]);
+        if (deep.length === 1) matches = deep;
+      }
     }
     if (!matches.length) {
       const labels = segLabels(list);
@@ -191,9 +207,9 @@ function alternatives(p: Program, path: string): string[] {
   }
   for (let i = segs.length - 1; i >= 1; i--) {
     const name = segs[i].replace(/\[\d+\]$/, "");
-    if (p.decls.some((d) => d.kind === "Component" && d.name === name)) {
-      const rest = segs.slice(i + 1).join("/");
-      out.push(rest ? `${name}/${rest}` : name);
+    // Only with a path below it: a component as the last segment is its use in the parent.
+    if (i < segs.length - 1 && p.decls.some((d) => d.kind === "Component" && d.name === name)) {
+      out.push(`${name}/${segs.slice(i + 1).join("/")}`);
       break;
     }
   }
@@ -254,6 +270,7 @@ function applyOp(p: Program, op: Op, firstFile: string) {
     return;
   }
 
+  normalize(p, op);
   let t: Target;
   try {
     t = resolveLoose(p, op.target, loc);
@@ -265,7 +282,7 @@ function applyOp(p: Program, op: Op, firstFile: string) {
     if (!(e instanceof CompileError) || !comp || !(op.op.startsWith("insert") || op.op === "append") || !op.body.trim()) throw e;
     const body = parseComponentBody(op.body, PATCH_FILE, bodyLine);
     if (body.view.length || !body.members.length) throw e;
-    comp.members.push(...body.members);
+    addMembers(comp, body.members);
     return;
   }
 
@@ -275,6 +292,16 @@ function applyOp(p: Program, op: Op, firstFile: string) {
     else if (t.kind === "field") t.model.fields.splice(t.i, 1);
     else if (t.node) t.list.splice(t.i, 1);
     else bodyErr("remove can't delete an `else` branch; replace the `if`", "a path to a node");
+    return;
+  }
+
+  if (op.op === "set" && t.kind === "decl" && t.decl.kind === "Model") {
+    if (!op.args) bodyErr("`set` needs fields on the same line", `set ${t.decl.name} stock: Number`);
+    for (const f of parseFields(op.args.split(",").map((x) => x.trim()).join("\n"), PATCH_FILE, loc.line)) {
+      const i = t.decl.fields.findIndex((x) => x.name === f.name);
+      if (i >= 0) t.decl.fields[i] = f;
+      else t.decl.fields.push(f);
+    }
     return;
   }
 
@@ -292,6 +319,23 @@ function applyOp(p: Program, op: Op, firstFile: string) {
 
   needBody();
 
+  // `replace Catalog` (or `append Catalog`) followed by members and/or view instead of the whole
+  // declaration: members replace those with the same name, a view replaces the view.
+  if (t.kind === "decl" && t.decl.kind === "Component" && op.sig !== undefined) {
+    t.decl.params = op.sig.trim() ? parseParams(op.sig, PATCH_FILE, loc.line) : [];
+    if (!op.body.trim()) return;
+  }
+  if (t.kind === "decl" && t.decl.kind === "Component" && !DECL_START.test(op.body.trimStart())) {
+    const body = parseComponentBody(op.body, PATCH_FILE, bodyLine);
+    addMembers(t.decl, body.members);
+    if (body.view.length) {
+      if (op.op === "replace") t.decl.view = body.view;
+      else if (op.op === "append") t.decl.view.push(...body.view);
+      else bodyErr(`'${op.op}' next to a component needs whole declarations`, "component Name { ... }");
+    }
+    return;
+  }
+
   if (t.kind === "decl") {
     const decls = () => retag(parse(op.body, PATCH_FILE, bodyLine).decls, t.decl.loc.file);
     const at = op.op === "insert after" ? t.i + 1 : t.i;
@@ -301,7 +345,7 @@ function applyOp(p: Program, op: Op, firstFile: string) {
     else if (t.decl.kind !== "Component") bodyErr(`\`append\` doesn't apply to ${t.decl.name}`, "replace " + t.decl.name);
     else {
       const body = parseComponentBody(op.body, PATCH_FILE, bodyLine);
-      t.decl.members.push(...body.members);
+      addMembers(t.decl, body.members);
       t.decl.view.push(...body.view);
     }
     return;
@@ -311,8 +355,8 @@ function applyOp(p: Program, op: Op, firstFile: string) {
     const body = parseComponentBody(op.body, PATCH_FILE, bodyLine);
     if (body.view.length) bodyErr("expected members (state, computed, fn), got view", "state | computed | fn");
     if (op.op === "append") bodyErr("`append` doesn't apply to a member; use `insert after`", "insert after Component.member");
-    const at = op.op === "insert after" ? t.i + 1 : t.i;
-    t.comp.members.splice(at, op.op === "replace" ? 1 : 0, ...body.members);
+    if (op.op === "replace") t.comp.members.splice(t.i, 1);
+    addMembers(t.comp, body.members, op.op === "insert after" ? t.i + 1 : t.i);
     return;
   }
 
@@ -327,8 +371,8 @@ function applyOp(p: Program, op: Op, firstFile: string) {
   const body = parseComponentBody(op.body, PATCH_FILE, bodyLine);
   // Members have no place in the view: inserted next to a view node, they just join the component.
   if (body.members.length) {
-    if (op.op === "replace") bodyErr("a view node can't be replaced by members; use `append Component` for members", "view elements");
-    t.comp.members.push(...body.members);
+    if (op.op === "replace" && !body.view.length) bodyErr("a view node can't be replaced by members; use `append Component` for members", "view elements");
+    addMembers(t.comp, body.members);
     if (!body.view.length) return;
   }
   if (op.op === "append") {
@@ -352,6 +396,44 @@ function setProps(el: Element, items: string, loc: Loc) {
     const i = el.props.findIndex((p) => p.name === np.name);
     if (i >= 0) el.props[i] = np;
     else el.props.push(np);
+  }
+}
+
+const DECL_START = /^(use|model|api|auth|server|component|page|layout)\b/;
+
+// Adds members; one with the name of an existing member replaces it (models often "add"
+// `state shown` to turn `computed shown` into a state).
+function addMembers(comp: ComponentDecl, members: Member[], at = comp.members.length) {
+  for (const m of members) {
+    const i = m.kind === "Mount" || m.kind === "Effect" ? -1 : comp.members.findIndex((x) => x.name === m.name);
+    if (i >= 0) comp.members[i] = m;
+    else comp.members.splice(at++, 0, m);
+  }
+}
+
+// Variants LLMs write, rewritten to the canonical form before resolving:
+//   `shop.art/Shop/...`             → `Shop/...`
+//   `replace Catalog/state query`   → `replace Catalog.query`
+//   `set Catalog/computed shown` + body, `set X/row` + body → `replace ...`
+function normalize(p: Program, op: Op) {
+  op.target = op.target.replace(/^[\w.-]+\.art\//, "").replace(/^(\w+)\.(?:state|computed|fn|data|ref)\.(\w+)$/, "$1.$2");
+  // `replace CouponsRow(item: Item, onRemove: Fn)`: the signature written on the operation line.
+  const sig = /^(\w+)\((.*)\)\s*\{?$/.exec(`${op.target} ${op.args}`.trim());
+  if (sig) {
+    op.target = sig[1];
+    op.args = "";
+    op.sig = sig[2];
+  }
+  const segs = op.target.split("/");
+  const root = segs[0];
+  const comp = p.decls.find((d): d is ComponentDecl => d.kind === "Component" && d.name === root);
+  if (comp && /^\w+$/.test(op.args) && comp.members.some((m) => m.name === op.args) && (segs.length === 1 || MEMBER_KW.has(segs[segs.length - 1]))) {
+    op.target = `${root}.${op.args}`;
+    op.args = "";
+  }
+  if (op.op === "set" && op.body.trim() && (!op.args || /^\w+$/.test(op.args))) {
+    op.op = "replace";
+    op.args = "";
   }
 }
 

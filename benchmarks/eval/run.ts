@@ -371,8 +371,45 @@ async function promptSizes() {
   }
 }
 
+// `--replay <results.json> [...]`: re-checks every attempt the model made, with the current compiler,
+// `art patch` and behavior checks, without calling the API. Shows how many answers that failed
+// would pass now (each answer is judged on its own, as if it were the first one).
+async function replay(files: string[]) {
+  let before = 0, after = 0, total = 0;
+  const fixed: string[] = [], broken: string[] = [];
+  for (const f of files) {
+    const data = JSON.parse(readFileSync(f, "utf8"));
+    for (const r of data.results as RunResult[]) {
+      if (!STACK_IDS.includes(r.stack) || !TASK_IDS.includes(r.task)) continue;
+      const task = TASKS.find((t) => t.id === r.task);
+      if (!task) continue;
+      for (const [i, h] of (r.history ?? []).entries()) {
+        let errors: string[];
+        const edited = h.edit ? applyEditAnswer(task, r.stack, h.edit) : null;
+        if (edited && "errors" in edited) errors = edited.errors;
+        else {
+          const fs = edited ? edited.files : h.files;
+          errors = Object.keys(fs).length ? await validate(r.stack, fs) : ["no files"];
+          if (!errors.length && BEHAVIOR) errors = await behave(task, r.stack, fs);
+        }
+        total++;
+        if (!h.errors.length) before++;
+        if (!errors.length) after++;
+        const id = `${r.task}/${r.stack}#${r.run} attempt ${i + 1}`;
+        if (h.errors.length && !errors.length) fixed.push(id);
+        if (!h.errors.length && errors.length) broken.push(`${id}: ${errors[0].slice(0, 160)}`);
+        if (h.errors.length && errors.length) console.log(`still failing ${id}: ${errors[0].slice(0, 220)}`);
+      }
+    }
+  }
+  console.log(`\n${total} answers: ${before} passed when they ran, ${after} pass now`);
+  console.log(`fixed (${fixed.length}):\n  ${fixed.join("\n  ")}`);
+  if (broken.length) console.log(`BROKEN (${broken.length}):\n  ${broken.join("\n  ")}`);
+}
+
 async function main() {
   if (args.includes("--prompt-sizes")) return promptSizes();
+  if (args.includes("--replay")) return replay(args.slice(args.indexOf("--replay") + 1).filter((a) => a.endsWith(".json")));
   if (!PRICES[MODEL]) throw new Error(`modelo sin precio cargado: ${MODEL}. Disponibles: ${Object.keys(PRICES).join(", ")}`);
   if (DRY) return dryRun();
   if (existsSync(join(REPO, ".env"))) process.loadEnvFile(join(REPO, ".env"));

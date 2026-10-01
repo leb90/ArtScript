@@ -41,14 +41,15 @@ use "./lib/money.ts" { toUSD }          // your own JS/TS module: the way out fo
 ```
 state count = 0                  // reactive; type inferred
 state users: User[] = []         // explicit type
-computed total = count * 2       // derived, read-only
+computed total = count * 2       // derived; assigning it overrides it until count changes
 fn add(x) {                      // function; body = JS statements
   if x == "" { return }
   users.push({ id: crypto.randomUUID(), name: x, tags: [] })
 }
 ```
 
-- Assigning to a `state` updates the UI: `count++`, `name = "x"`, `users.push(u)`, `user.name = "x"`.
+- Assigning to a `state` updates the UI: `count++`, `name = "x"`, `users.push(u)`, `user.name = "x"`, also through a fn parameter (`fn sell(p) { p.stock-- }`).
+- A component that assigns its prop (`items = items.filter(...)`) changes the parent's state: pass a state (`List items=items`).
 - No hooks, setters or manual dependencies.
 - Statements: expression, `let x = ...`, `if cond { } else { }`, `return`, `try { } catch (e) { }`.
 - Only for DOM libraries (charts, maps, editors), timers and subscriptions:

@@ -103,6 +103,39 @@ export type CompInfo = Map<string, { params: { name: string; ty: Ty; required: b
 // DOM events accepted by `on:<event>` (typos get the closest one).
 const EVENTS = ["click", "dblclick", "input", "change", "submit", "keydown", "keyup", "focus", "blur", "mouseenter", "mouseleave", "mousedown", "mouseup", "mousemove", "pointerdown", "pointerup", "pointermove", "touchstart", "touchend", "wheel", "scroll", "contextmenu", "dragstart", "dragover", "dragleave", "drop", "paste", "copy", "load", "error", "ended", "play", "pause", "timeupdate", "toggle", "close"];
 
+function walkNodes(x: unknown, fn: (n: any) => void) {
+  if (Array.isArray(x)) for (const y of x) walkNodes(y, fn);
+  else if (x && typeof x === "object") {
+    fn(x);
+    for (const [k, v] of Object.entries(x)) if (k !== "loc") walkNodes(v, fn);
+  }
+}
+
+// Props a component assigns (`items = items.filter(...)`), directly or by passing them on to a
+// child that does: these are bound two-way, so the parent must pass something assignable.
+export function twoWayProps(program: Program): Map<string, Set<string>> {
+  const comps = program.decls.filter((d): d is ComponentDecl => d.kind === "Component");
+  const out = new Map(comps.map((c) => [c.name, new Set<string>()]));
+  const passes: [string, string, string, string][] = []; // [component, its prop, child, child prop]
+  for (const c of comps) {
+    const params = new Set(c.params.map((p) => p.name));
+    walkNodes([c.members, c.view], (n) => {
+      const t = n.kind === "Assign" ? n.target : n.kind === "Update" ? n.arg : null;
+      if (t?.kind === "Ident" && params.has(t.name)) out.get(c.name)!.add(t.name);
+      if (n.kind === "Element" && /^[A-Z]/.test(n.tag)) {
+        for (const p of n.props) if (p.value?.kind === "Ident" && params.has(p.value.name)) passes.push([c.name, p.value.name, n.tag, p.name]);
+      }
+    });
+  }
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const [c, p, child, q] of passes) {
+      if (out.get(child)?.has(q) && !out.get(c)!.has(p)) { out.get(c)!.add(p); changed = true; }
+    }
+  }
+  return out;
+}
+
 function hasSlot(nodes: ViewNode[]): boolean {
   return nodes.some((n) => n.kind === "IfView" ? hasSlot(n.then) || hasSlot(n.else ?? []) : n.kind === "ForView" ? hasSlot(n.body) : n.tag === "slot" || hasSlot(n.children));
 }
@@ -135,6 +168,7 @@ class Checker {
   imports = new Map<string, Ty>(); // names brought in by `use`, visible everywhere
   inLayout = false;
   inHook = false;
+  twoWay = new Map<string, Set<string>>();
   slots = 0;
   importFrom = new Map<string, string>(); // imported name → module
   idFields = new Map<string, Set<string>>(); // model → fields declared as ID (assigned by the server on create)
@@ -216,6 +250,7 @@ class Checker {
       });
     }
     this.routes();
+    this.twoWay = twoWayProps(this.program);
     for (const d of this.program.decls) if (d.kind === "Component") this.component(d);
     return this.diags;
   }
@@ -375,6 +410,7 @@ class Checker {
       } else if (m.kind === "Fn") {
         const fs = new Scope(scope);
         for (const p of m.params) fs.vars.set(p, { kind: "param", ty: ANY });
+        for (const d of m.defaults ?? []) if (d) this.infer(d, scope);
         this.stmts(m.body, fs);
       }
     }
@@ -529,6 +565,11 @@ class Checker {
       }
       given.add(p.name);
       this.expectTy(p.value, this.infer(p.value, scope), param.ty);
+      if (this.twoWay.get(el.tag)?.has(p.name) && !this.writable(p.value, scope)) {
+        this.err("NOT_BINDABLE", `${el.tag} assigns its prop '${p.name}', so it needs a state (or a field of one) here`, p.value.loc, {
+          expr: printExpr(p.value), fixes: [`declare \`state ${p.name} = ...\` and pass \`${p.name}=${p.name}\``],
+        });
+      }
     }
     for (const p of comp.params) {
       if (p.required && !given.has(p.name)) {
@@ -633,6 +674,15 @@ class Checker {
     return e.kind === "Ident" ? e : null;
   }
 
+  // What a two-way prop can be bound to: a state, data, computed or two-way prop, or a field of one.
+  writable(e: Expr, scope: Scope): boolean {
+    const root = this.rootIdent(e);
+    const sym = root && scope.get(root.name);
+    if (!root) return false;
+    if (!sym) return true;
+    return ["state", "data", "computed", "prop"].includes(sym.kind) || (e.kind !== "Ident" && sym.kind === "loop");
+  }
+
   bindable(e: Expr, scope: Scope): boolean {
     const root = this.rootIdent(e);
     if (!root) return false;
@@ -643,7 +693,10 @@ class Checker {
 
   // Validates an assignment target and returns its type.
   target(t: Expr, scope: Scope): Ty {
-    const root = this.rootIdent(t);
+    // `items.find(x => x.id == id).active = true` assigns into `items`.
+    let r: Expr = t;
+    while (r.kind === "Member" || r.kind === "Index" || (r.kind === "Call" && r.callee.kind === "Member")) r = r.kind === "Call" ? (r.callee as Expr & { kind: "Member" }).object : r.object;
+    const root = r.kind === "Ident" ? r : null;
     if (!root) {
       this.err("ASSIGN_READONLY", "can't assign to this expression", t.loc, { expr: printExpr(t) });
       return ANY;
@@ -652,9 +705,11 @@ class Checker {
     const ty = this.infer(t, scope);
     if (!sym) return ty;
     const direct = t.kind === "Ident";
-    const ok = sym.kind === "state" || sym.kind === "data" || sym.kind === "let" || (sym.kind === "global" && !direct) || (!direct && (sym.kind === "loop" || sym.kind === "param" || sym.kind === "prop"));
+    // A computed can be assigned (it keeps that value until a dependency changes); a prop assigned
+    // directly is bound two-way to the parent's state (checked where the component is used).
+    const ok = sym.kind === "state" || sym.kind === "data" || sym.kind === "let" || sym.kind === "computed" || sym.kind === "prop" || (sym.kind === "global" && !direct) || (!direct && (sym.kind === "loop" || sym.kind === "param"));
     if (!ok) {
-      const fixes = sym.kind === "computed" ? [`change \`computed ${root.name}\` to \`state ${root.name}\``] : sym.kind === "prop" ? ["pass a callback prop or use a local state"] : [];
+      const fixes = sym.kind === "loop" ? ["change a field (`item.done = true`) or assign the list"] : [];
       this.err("ASSIGN_READONLY", `'${root.name}' is a ${sym.kind} and can't be changed`, t.loc, { expr: printExpr(t), actual: sym.kind, expected: "state|let", fixes });
     }
     return ty;
@@ -757,7 +812,8 @@ class Checker {
         if (t.k === "opt" && !e.optional) {
           this.err("POSSIBLY_EMPTY", "the value may be null", e.loc, { expr: printExpr(e), actual: show(t), fixes: [printExpr({ ...e, optional: true })] });
         }
-        if (base.k === "list") return opt(base.of);
+        // Like TypeScript (without noUncheckedIndexedAccess): `xs[i]` is T. `find()` stays T?.
+        if (base.k === "list") return base.of;
         if (base.k === "str") return STR;
         return ANY;
       }
