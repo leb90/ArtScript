@@ -19,7 +19,7 @@ test("mcp: initialize, list, and the tools", () => {
 
   assert.match(call("art_spec", { kind: "edit" }).content[0].text, /spec for changing existing code/);
   assert.deepEqual(call("art_check", {}), { content: [{ type: "text", text: "ok" }], isError: false });
-  assert.match(call("art_context", { names: ["Todos"] }).content[0].text, /Todos\/column\/title/);
+  assert.match(call("art_context", { names: ["Todos"] }).content[0].text, /page Todos "\/"/);
 
   const bad = call("art_patch", { patch: "replace Todos/column/nope\n  text \"x\"" });
   assert.equal(bad.isError, true);
