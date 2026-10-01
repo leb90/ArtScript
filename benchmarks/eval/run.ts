@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 import { TASKS, type Task } from "./tasks.ts";
 import { analyze } from "../../src/checker.ts";
 import { parseProject } from "../../src/compile.ts";
-import { declContext, projectMap } from "../../src/context.ts";
+import { declContexts, projectMap } from "../../src/context.ts";
 import { formatAI } from "../../src/errors.ts";
 import { applyPatch } from "../../src/patch.ts";
 import { behave } from "./behavior.ts";
@@ -95,18 +95,26 @@ const fence = (files: Files) => Object.entries(files).map(([n, s]) => `\`\`\`${n
 // Larger project: the whole project ("full"), or what a good agent would read ("focus").
 function projectPrompt(task: Task, stack: Stack): string {
   const files = baseFiles(task, stack);
-  const tail = `Tarea: ${task.prompt}\n\n${EDIT_HINT[stack]}`;
+  const tail = `Tarea: ${task.prompt}\n\n${PROJECT_EDIT_HINT[stack]}`;
   if (task.context === "full") return `Proyecto actual (todos los archivos):\n\n${fence(files)}\n\n${tail}`;
   const focus = task.focus![stack];
   if (stack === "artscript") {
     const { program } = parseProject(Object.entries(files).map(([file, src]) => ({ file, src })));
     const a = analyze(program);
-    const parts = focus.map((name) => `$ art context ${name}\n${declContext(program, a, name)}`);
-    return `Mapa del proyecto (art context):\n${projectMap(program, a)}\n\nContexto de las partes relevantes:\n\n${parts.join("\n\n")}\n\n${tail}`;
+    return `$ art context\n${projectMap(program, a)}\n\n$ art context ${focus.join(" ")}\n${declContexts(program, a, focus)}\n\n${tail}`;
   }
   const relevant = Object.fromEntries(focus.map((n) => [n, files[n]]));
   return `Archivos del proyecto: ${Object.keys(files).join(", ")}\n\nArchivos relevantes:\n\n${fence(relevant)}\n\n${tail}`;
 }
+
+// Project tasks ask every stack for minimal changes in its edit format (the original modify tasks
+// keep EDIT_HINT, so their published results stay comparable).
+const MINIMAL = "Devolvé solo los cambios, no archivos completos (salvo que cambie casi todo el archivo).";
+const PROJECT_EDIT_HINT: Record<Stack, string> = {
+  artscript: `${MINIMAL} Usá un bloque \`\`\`patch (art patch, ver la spec).`,
+  react: `${MINIMAL} Usá bloques de edición (el texto SEARCH debe coincidir exactamente y una sola vez):\n\`\`\`edit App.tsx\n<<<<<<< SEARCH\ntexto original\n=======\ntexto nuevo\n>>>>>>> REPLACE\n\`\`\``,
+  svelte: `${MINIMAL} Usá bloques de edición (el texto SEARCH debe coincidir exactamente y una sola vez):\n\`\`\`edit App.svelte\n<<<<<<< SEARCH\ntexto original\n=======\ntexto nuevo\n>>>>>>> REPLACE\n\`\`\``,
+};
 
 function userPrompt(task: Task, stack: Stack): string {
   if (task.fullstack) return `Tarea: ${task.prompt}\n\n${FULLSTACK_HINT[stack]}`;
@@ -302,17 +310,17 @@ async function dryRun() {
     const errs = await behave(task, st, files);
     console.log(`${errs.length ? "✗" : "✓"} behavior ${t}/${st}${errs.length ? ": " + errs[0] : ""}`);
   }
-  // The larger project works as written in every stack.
-  for (const st of STACK_IDS) {
-    const dir = join(HERE, "projects", "shop", st);
-    const files = Object.fromEntries(readdirSync(dir).map((f) => [f, readFileSync(join(dir, f), "utf8")]));
-    const errs = await behave({ id: "shop-base", prompt: "" }, st, files);
-    console.log(`${errs.length ? "✗" : "✓"} behavior shop (base project)/${st}${errs.length ? ": " + errs[0] : ""}`);
-  }
-  // Reference patches for the project tasks: they apply and pass the task's behavior check.
-  const patchDir = join(HERE, "refs", "shop");
-  if (existsSync(patchDir)) {
-    const dir = join(HERE, "projects", "shop", "artscript");
+  // The larger projects work as written in every stack, and their reference patches pass.
+  for (const project of readdirSync(join(HERE, "projects")).filter((d) => !d.endsWith(".ts"))) {
+    for (const st of STACK_IDS) {
+      const dir = join(HERE, "projects", project, st);
+      const files = Object.fromEntries(readdirSync(dir).map((f) => [f, readFileSync(join(dir, f), "utf8")]));
+      const errs = await behave({ id: `${project}-base`, prompt: "" }, st, files);
+      console.log(`${errs.length ? "✗" : "✓"} behavior ${project} (base project)/${st}${errs.length ? ": " + errs[0] : ""}`);
+    }
+    const patchDir = join(HERE, "refs", project);
+    if (!existsSync(patchDir)) continue;
+    const dir = join(HERE, "projects", project, "artscript");
     const sources = readdirSync(dir).map((f) => ({ file: f, src: readFileSync(join(dir, f), "utf8") }));
     for (const f of readdirSync(patchDir)) {
       const id = f.replace(/\.patch$/, "");

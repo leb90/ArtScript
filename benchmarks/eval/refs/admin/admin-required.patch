@@ -1,0 +1,17 @@
+append CustomersForm
+  state error = ""
+replace CustomersForm.submit
+  fn submit() {
+    if name.trim() == "" {
+      error = "Nombre requerido"
+      return
+    }
+    error = ""
+    onAdd(name, amount)
+    name = ""
+    amount = 0
+  }
+insert after CustomersForm/row
+  if error != "" {
+    text error bold
+  }

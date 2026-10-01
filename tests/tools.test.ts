@@ -32,14 +32,14 @@ test("context: project map with inferred types", () => {
   const { program, a } = todo();
   const map = projectMap(program, a);
   assert.match(map, /^model Todo \{ id: ID, title: String, done: Bool \}$/m);
-  assert.match(map, /page Todos "\/" state\[todos: Todo\[\], draft: String\] computed\[pending: Number\] fn\[add\(\)\] uses\[TodoItem\]/);
+  assert.match(map, /^app\.art: TodoItem\(todo, remove\), page Todos "\/"$/m);
 });
 
 test("context: with room for the source, only what the source doesn't say plus the source", () => {
   const { program, a } = todo();
   const out = declContext(program, a, "Todos/TodoItem")!;
-  assert.match(out, /^component TodoItem\(todo: Todo, remove: Fn\) @/);
-  assert.match(out, /^used_by: Todos$/m);
+  assert.match(out, /^# app\.art · used by Todos$/m);
+  assert.match(out, /^component TodoItem\(todo: Todo, remove: Fn\) \{$/m);
   assert.match(out, /^model Todo/m);
   assert.match(out, /button "x" danger small -> remove\(todo.id\)/);
   assert.doesNotMatch(out, /^(props|events|paths):/m, "nothing the source already shows");
@@ -62,4 +62,9 @@ test("errors --ai: one JSON line without empty fields", () => {
 
 test("suggest: never offers the same name as a fix", () => {
   assert.deepEqual(suggest("muted", ["muted", "mute", "bold"]), ["mute"]);
+});
+
+test("fmt: else-if chains stay flat in views and statements", () => {
+  const src = 'page P {\n  state n = 0\n  fn f() {\n    if n == 0 {\n      n = 1\n    } else if n == 1 {\n      n = 2\n    } else {\n      n = 0\n    }\n  }\n\n  if n == 0 {\n    text "a"\n  } else if n == 1 {\n    text "b"\n  } else {\n    text "c"\n  }\n}\n';
+  assert.equal(printProgram(parse(src, "t")), src);
 });

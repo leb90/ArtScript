@@ -122,7 +122,14 @@ export function printStmts(stmts: Stmt[], depth: number): string[] {
   for (const s of stmts) {
     if (s.kind === "If") {
       out.push(`${pad}if ${printExpr(s.cond)} {`, ...printStmts(s.then, depth + 1));
-      if (s.else) out.push(`${pad}} else {`, ...printStmts(s.else, depth + 1));
+      // `else if` chains stay flat instead of nesting one level per branch.
+      let els = s.else;
+      while (els && els.length === 1 && els[0].kind === "If") {
+        const e: Stmt & { kind: "If" } = els[0];
+        out.push(`${pad}} else if ${printExpr(e.cond)} {`, ...printStmts(e.then, depth + 1));
+        els = e.else;
+      }
+      if (els) out.push(`${pad}} else {`, ...printStmts(els, depth + 1));
       out.push(`${pad}}`);
     } else if (s.kind === "Try") {
       out.push(`${pad}try {`, ...printStmts(s.body, depth + 1), `${pad}} catch${s.param ? ` (${s.param})` : ""} {`, ...printStmts(s.handler, depth + 1), `${pad}}`);
@@ -149,7 +156,13 @@ export function printView(nodes: ViewNode[], depth: number): string[] {
   for (const n of nodes) {
     if (n.kind === "IfView") {
       out.push(`${pad}if ${printExpr(n.cond)} {`, ...printView(n.then, depth + 1));
-      if (n.else) out.push(`${pad}} else {`, ...printView(n.else, depth + 1));
+      let els = n.else;
+      while (els && els.length === 1 && els[0].kind === "IfView") {
+        const e: ViewNode & { kind: "IfView" } = els[0];
+        out.push(`${pad}} else if ${printExpr(e.cond)} {`, ...printView(e.then, depth + 1));
+        els = e.else;
+      }
+      if (els) out.push(`${pad}} else {`, ...printView(els, depth + 1));
       out.push(`${pad}}`);
     } else if (n.kind === "ForView") {
       out.push(`${pad}for ${n.item}${n.index ? `, ${n.index}` : ""} in ${printExpr(n.list)} {`, ...printView(n.body, depth + 1), `${pad}}`);

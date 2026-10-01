@@ -1,0 +1,51 @@
+model Item {
+  id: Number
+  name: String
+  amount: Number
+  active: Bool
+}
+
+page Admin "/" {
+  state page = "products"
+
+  column gap=4 pad=4 {
+    title "Panel" large
+    Nav page=page onChange=(p => page = p)
+    if page == "products" {
+      ProductsPage
+    } else if page == "customers" {
+      CustomersPage
+    } else if page == "orders" {
+      OrdersPage
+    } else if page == "suppliers" {
+      SuppliersPage
+    } else if page == "employees" {
+      EmployeesPage
+    } else if page == "categories" {
+      CategoriesPage
+    } else if page == "warehouses" {
+      WarehousesPage
+    } else if page == "invoices" {
+      InvoicesPage
+    } else if page == "coupons" {
+      CouponsPage
+    } else if page == "reviews" {
+      ReviewsPage
+    }
+  }
+}
+
+component Nav(page: String, onChange: Fn) {
+  row gap=2 wrap {
+    button "Productos" primary=(page == "products") -> onChange("products")
+    button "Clientes" primary=(page == "customers") -> onChange("customers")
+    button "Pedidos" primary=(page == "orders") -> onChange("orders")
+    button "Proveedores" primary=(page == "suppliers") -> onChange("suppliers")
+    button "Empleados" primary=(page == "employees") -> onChange("employees")
+    button "Categorías" primary=(page == "categories") -> onChange("categories")
+    button "Depósitos" primary=(page == "warehouses") -> onChange("warehouses")
+    button "Facturas" primary=(page == "invoices") -> onChange("invoices")
+    button "Cupones" primary=(page == "coupons") -> onChange("coupons")
+    button "Reseñas" primary=(page == "reviews") -> onChange("reviews")
+  }
+}

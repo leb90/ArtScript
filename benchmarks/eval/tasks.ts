@@ -80,5 +80,32 @@ const SHOP: Omit<Task, "context">[] = [
     focus: { artscript: ["Catalog"], react: ["Catalog.tsx"], svelte: ["Catalog.svelte"] },
   },
 ];
-for (const t of SHOP) for (const context of ["full", "focus"] as const) TASKS.push({ ...t, id: `${t.id}@${context}`, project: "shop", context });
+// Modifications on a 42-component admin panel (benchmarks/eval/projects/admin, see gen-admin.ts).
+const files = (stack: "react" | "svelte", names: string[]) => [...names.map((n) => `${n}.${stack === "react" ? "tsx" : "svelte"}`), "data.ts"];
+const ADMIN: Omit<Task, "context">[] = [
+  {
+    id: "admin-total",
+    prompt: "En la página de Proveedores, mostrá 'Total: N' con la suma de la Deuda de todos los proveedores.",
+    focus: { artscript: ["SuppliersPage", "SuppliersList"], react: files("react", ["SuppliersPage", "SuppliersList"]), svelte: files("svelte", ["SuppliersPage", "SuppliersList"]) },
+  },
+  {
+    id: "admin-toggle",
+    prompt: "En cada fila de Empleados agregá un botón 'Alternar' que activa o desactiva al empleado; los inactivos muestran '(inactivo)' junto al nombre.",
+    focus: { artscript: ["EmployeesRow", "EmployeesList", "EmployeesPage"], react: files("react", ["EmployeesRow", "EmployeesList", "EmployeesPage"]), svelte: files("svelte", ["EmployeesRow", "EmployeesList", "EmployeesPage"]) },
+  },
+  {
+    id: "admin-delete",
+    prompt: "En cada fila de Cupones agregá un botón 'Eliminar' que quita ese cupón de la lista.",
+    focus: { artscript: ["CouponsRow", "CouponsList", "CouponsPage"], react: files("react", ["CouponsRow", "CouponsList", "CouponsPage"]), svelte: files("svelte", ["CouponsRow", "CouponsList", "CouponsPage"]) },
+  },
+  {
+    id: "admin-required",
+    prompt: "En el formulario de Clientes, si el nombre está vacío al tocar 'Agregar', mostrá 'Nombre requerido' y no agregues nada.",
+    focus: { artscript: ["CustomersForm"], react: files("react", ["CustomersForm"]), svelte: files("svelte", ["CustomersForm"]) },
+  },
+];
+
+for (const [project, list] of [["shop", SHOP], ["admin", ADMIN]] as const) {
+  for (const t of list) for (const context of ["full", "focus"] as const) TASKS.push({ ...t, id: `${t.id}@${context}`, project, context });
+}
 

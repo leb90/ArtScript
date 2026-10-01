@@ -1,0 +1,4 @@
+replace EmployeesRow/row/text[0]
+  text item.active ? item.name : `${item.name} (inactivo)` bold
+append EmployeesRow/row
+  button "Alternar" small -> item.active = !item.active

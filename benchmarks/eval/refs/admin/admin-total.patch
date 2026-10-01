@@ -1,0 +1,2 @@
+insert after SuppliersPage/column/title
+  text `Total: ${items.reduce((s, i) => s + i.amount, 0)}` bold

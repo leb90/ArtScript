@@ -156,6 +156,53 @@ const CHECKS: Record<string, Check> = {
     await p.until(() => has(p, "Lapicera"), 'que "Agregar" del primer producto ordenado agregue la Lapicera');
   },
 
+  // ---------- larger project: the admin panel (sections show Alfa 10, Beta 20, Gama 30 inactive) ----------
+  async "admin-base"(p) {
+    await p.click("Proveedores");
+    await p.until(() => has(p, "Deuda: 20") && has(p, "Gama"), 'la sección Proveedores con "Deuda: 20"');
+    await p.fill("Nombre", "Zeta");
+    await p.fill("Deuda", "5");
+    await p.click("Agregar");
+    await p.until(() => has(p, "Zeta") && has(p, "Deuda: 5"), 'que "Agregar" sume a Zeta');
+  },
+
+  async "admin-total"(p) {
+    await p.click("Proveedores");
+    await p.until(() => has(p, "Total: 60"), '"Total: 60" en Proveedores');
+    await p.fill("Nombre", "Zeta");
+    await p.fill("Deuda", "5");
+    await p.click("Agregar");
+    await p.until(() => has(p, "Total: 65"), '"Total: 65" después de agregar una deuda de 5');
+  },
+
+  async "admin-toggle"(p) {
+    const inactive = () => p.text().split("(inactivo)").length - 1;
+    await p.click("Empleados");
+    await p.until(() => inactive() === 1 && p.count("Alternar") === 3, 'tres botones "Alternar" y un solo "(inactivo)" (Gama)');
+    await p.click("Alternar", 0);
+    await p.until(() => inactive() === 2, 'dos "(inactivo)" tras desactivar a Alfa');
+    await p.click("Alternar", 2);
+    await p.until(() => inactive() === 1, 'un solo "(inactivo)" tras activar a Gama');
+  },
+
+  async "admin-delete"(p) {
+    await p.click("Cupones");
+    await p.until(() => p.count("Eliminar") === 3, 'un botón "Eliminar" por cupón');
+    await p.click("Eliminar", 1);
+    await p.until(() => !has(p, "Beta") && has(p, "Alfa") && has(p, "Gama"), 'que "Eliminar" quite a Beta');
+  },
+
+  async "admin-required"(p) {
+    const rows = () => p.text().split("Saldo:").length - 1;
+    await p.click("Clientes");
+    await p.click("Agregar");
+    await p.until(() => has(p, "Nombre requerido") && rows() === 3, '"Nombre requerido" y ningún cliente nuevo');
+    await p.fill("Nombre", "Zeta");
+    await p.fill("Saldo", "5");
+    await p.click("Agregar");
+    await p.until(() => has(p, "Zeta") && !has(p, "Nombre requerido") && rows() === 4, 'que con nombre se agregue Zeta y se borre el error');
+  },
+
   async "fs-users"(p) {
     await p.until(() => p.count("Agregar") === 1, 'el botón "Agregar"');
     const add = async (name: string, email: string) => { await p.fill("Nombre", name); await p.fill("Email", email); await p.click("Agregar"); };

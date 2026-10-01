@@ -8,7 +8,7 @@ import { brotliCompressSync, gzipSync } from "node:zlib";
 import { analyze } from "./checker.ts";
 import { compile, parseProject, type Source } from "./compile.ts";
 import { htmlShell, serverEntry, type ServerSchema } from "./codegen.ts";
-import { declContext, projectMap } from "./context.ts";
+import { declContexts, projectMap } from "./context.ts";
 import { formatAI, formatHuman, type Diagnostic } from "./errors.ts";
 import { parse } from "./parser.ts";
 import { applyPatch } from "./patch.ts";
@@ -28,7 +28,7 @@ const HELP = `art ${PKG.version} — the ArtScript compiler
   art fmt [path] [--write]          canonical format (without --write it only prints)
   art patch [file|-] [--dir path] [--dry-run] [--ai]
                                     apply structured edits (reads stdin without a file)
-  art context [Name] [--dir path] [--budget N]
+  art context [Name...] [--dir path] [--budget N]
                                     compact context for AI (without a name: project map)
   art ast <file>                    AST as JSON
   art bench                         benchmarks (only inside the ArtScript repo)
@@ -217,8 +217,8 @@ switch (cmd) {
     const budget = flag("--budget") ? Number(flag("--budget")) : Infinity;
     if (!pos[0]) console.log(projectMap(program, a, budget));
     else {
-      const out = declContext(program, a, pos[0], budget);
-      if (out === null) die(`'${pos[0]}' doesn't exist. Available: ${program.decls.map((d) => d.name).join(", ")}`);
+      const out = declContexts(program, a, pos, budget);
+      if (out === null) die(`'${pos.find((n) => !program.decls.some((d) => d.name === n.split("/").pop()))}' doesn't exist. Available: ${program.decls.map((d) => d.name).join(", ")}`);
       console.log(out);
     }
     break;
