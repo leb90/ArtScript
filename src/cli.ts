@@ -54,6 +54,17 @@ for (let i = 1; i < argv.length; i++) {
 const flag = (name: string) => flags.get(name);
 
 // ---------- utilities ----------
+function findFiles(dir: string, ext: string): string[] {
+  const out: string[] = [];
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (e.name.startsWith(".") || e.name === "node_modules" || e.name === "dist") continue;
+    const p = join(dir, e.name);
+    if (e.isDirectory()) out.push(...findFiles(p, ext));
+    else if (extname(e.name) === ext) out.push(p);
+  }
+  return out.sort();
+}
+
 function findArt(dir: string): string[] {
   const out: string[] = [];
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -120,7 +131,14 @@ async function buildFiles(target: string, minify: boolean): Promise<{ files: Rec
       bundle: true, format: "esm", platform: "browser", write: false, minify, logLevel: "silent",
       define: { "process.env.NODE_ENV": minify ? '"production"' : '"development"' },
     });
-    return { files: { "index.html": htmlShell(), "app.js": out.outputFiles[0].text }, server: r.server };
+    // Every .css file of the project (outside dist/public) becomes app.css, loaded after the
+    // runtime's styles so it can override them (and the --a-* theme variables).
+    const root = projectRoot(target);
+    const cssFiles = findFiles(root, ".css").filter((f) => !relative(root, f).startsWith("public"));
+    const css = cssFiles.map((f) => `/* ${relative(root, f)} */\n${readFileSync(f, "utf8")}`).join("\n");
+    const files: Record<string, string> = { "index.html": htmlShell("ArtScript", "", "", !!css), "app.js": out.outputFiles[0].text };
+    if (css) files["app.css"] = css;
+    return { files, server: r.server };
   } catch (e: any) {
     const loc = { file: target, line: 1, col: 1 };
     return { diagnostics: (e.errors ?? [{ text: String(e) }]).map((x: any) => ({ code: "E1050", type: "UNKNOWN_MODULE", msg: x.text, loc })) };
@@ -167,7 +185,7 @@ switch (cmd) {
         const page = await prerender(pathToFileURL(join(outDir, "app.js")).href, path);
         const file = path === "/" ? join(outDir, "index.html") : join(outDir, path, "index.html");
         mkdirSync(dirname(file), { recursive: true });
-        writeFileSync(file, htmlShell(page.title || "ArtScript", page.head, page.html));
+        writeFileSync(file, htmlShell(page.title || "ArtScript", page.head, page.html, "app.css" in r.files));
       }
       console.log(`prerendered: ${paths.join(" ")}`);
     }
@@ -357,7 +375,7 @@ switch (cmd) {
     const watchDir = isDir(target) ? target : dirname(target);
     let timer: ReturnType<typeof setTimeout> | undefined;
     watch(watchDir, { recursive: true }, (_e, changed) => {
-      if (!changed || !String(changed).endsWith(".art")) return;
+      if (!changed || !/\.(art|css)$/.test(String(changed)) || String(changed).includes("dist")) return;
       clearTimeout(timer);
       timer = setTimeout(async () => {
         const ok = await rebuild();

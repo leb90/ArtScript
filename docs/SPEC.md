@@ -132,7 +132,7 @@ column gap=4 align=center {
 | `list` > `item` | item: text | item: click | | item: muted |
 | `table` > `tr` > `th` `td` | th/td: text | tr: click | | td: muted |
 
-- All take `class style id`.
+- All take `class style id`. Any `.css` file in the project is bundled and loaded after the built-in styles; the theme is CSS variables: `:root { --a-primary: #e11d48; --a-radius: 4px; --a-font: Inter, sans-serif }` (also `--a-bg --a-fg --a-surface --a-border --a-muted --a-danger --a-success`).
 - Conditional flag: `text t.title muted=t.done` applies the flag while the value is `true`.
 - `gap=4` and `pad=4`: 1 unit = 4px. `align=start|center|end|stretch`. `justify=start|center|end|between|around`. `cols=3`.
 - `type=text|number|email|password|checkbox|date`. With `type=checkbox`, `input` binds a Bool.

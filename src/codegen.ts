@@ -155,9 +155,10 @@ export function serverEntry(schema: ServerSchema): string {
 }
 
 // `head`/`body`: a prerendered page's extra <head> tags and the HTML inside #app.
-export function htmlShell(title = "ArtScript", head = "", body = ""): string {
+// `css`: the project has its own styles (app.css), linked last so they override the runtime's.
+export function htmlShell(title = "ArtScript", head = "", body = "", css = false): string {
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${head}</head><body><div id="app">${body}</div><script type="module" src="/app.js"></script></body></html>\n`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${head}${css ? '<link rel="stylesheet" href="/app.css">' : ""}</head><body><div id="app">${body}</div><script type="module" src="/app.js"></script></body></html>\n`;
 }
 
 class ComponentGen {
