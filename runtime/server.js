@@ -13,6 +13,11 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const COOKIE = "art_session";
 const MIN_PASSWORD = 8;
 const SESSION_DAYS = 30;
+// Largest JSON body accepted (bytes).
+const MAX_JSON = Number(process.env.ART_MAX_JSON ?? 1024 * 1024);
+// Failed logins allowed per email and address in LOGIN_WINDOW before answering 429.
+const LOGIN_TRIES = 10;
+const LOGIN_WINDOW = 15 * 60_000;
 // Largest upload accepted (bytes); a `File` field's `max=` can only lower it.
 const MAX_UPLOAD = Number(process.env.ART_MAX_UPLOAD ?? 10 * 1024 * 1024);
 // Uploaded files shown inline; anything else is downloaded (an uploaded page can't run here).
@@ -367,11 +372,13 @@ function accepts(accept, { name, type }) {
 async function files(req, res, id, sql, dataDir) {
   const dir = join(dataDir, "files");
   if (req.method === "POST" && !id) {
+    const tooLarge = () => { req.resume(); return new HttpError(413, "TOO_LARGE", `the file is larger than ${MAX_UPLOAD} bytes`); };
+    if (Number(req.headers["content-length"] ?? 0) > MAX_UPLOAD) throw tooLarge();
     const chunks = [];
     let size = 0;
     for await (const chunk of req) {
       size += chunk.length;
-      if (size > MAX_UPLOAD) throw new HttpError(413, "TOO_LARGE", `the file is larger than ${MAX_UPLOAD} bytes`);
+      if (size > MAX_UPLOAD) throw tooLarge();
       chunks.push(chunk);
     }
     const meta = {
@@ -404,8 +411,14 @@ function send(res, status, body, headers = {}) {
 }
 
 async function readJson(req) {
+  // Too large: the rest is discarded (unread, the client would see a reset instead of the 413).
+  const tooLarge = () => { req.resume(); return new HttpError(413, "TOO_LARGE", `the request body is larger than ${MAX_JSON} bytes`); };
+  if (Number(req.headers["content-length"] ?? 0) > MAX_JSON) throw tooLarge();
   let raw = "";
-  for await (const chunk of req) raw += chunk;
+  for await (const chunk of req) {
+    raw += chunk;
+    if (raw.length > MAX_JSON) throw tooLarge();
+  }
   if (!raw) return {};
   try { return JSON.parse(raw); } catch { throw new HttpError(400, "BAD_JSON", "invalid JSON body"); }
 }
@@ -458,6 +471,7 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
     remove: (id) => t.remove(id, ALL),
   }]));
   const fail = (message, status = 400) => { throw new HttpError(status, "FAILED", String(message)); };
+  const failedLogins = new Map(); // "email|address" → times of failed attempts
 
   // A job never overlaps itself; a failure is logged and the next run happens as scheduled.
   const timers = Object.entries(jobs).map(([name, job]) => {
@@ -483,7 +497,14 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
         req.on("close", () => { clearInterval(ping); streams.delete(res); });
         return true;
       }
+      if (url.pathname === "/api/_health") return send(res, 200, { ok: true }), true;
+      // CSRF: a cross-site page can't send these without a CORS preflight (which this server never
+      // answers): writes must be JSON, uploads must carry x-file-name.
       const fm = /^\/api\/_files(?:\/([\w-]+))?$/.exec(url.pathname);
+      const writes = req.method === "POST" || req.method === "PUT" || req.method === "PATCH"; // a cross-site DELETE needs a preflight anyway
+      if (writes && (fm ? req.headers["x-file-name"] === undefined : !String(req.headers["content-type"] ?? "").startsWith("application/json"))) {
+        throw new HttpError(415, "UNSUPPORTED_MEDIA_TYPE", fm ? "uploads need an x-file-name header" : "send JSON (content-type: application/json)");
+      }
       if (fm) return await files(req, res, fm[1], sql, dataDir), true;
       const me = currentUser(req);
       const publicMe = me && users.out(me);
@@ -509,8 +530,16 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
           const user = users.create(fields, ALL);
           return send(res, 201, user, startSession(user)), true;
         }
+        const key = `${String(body.email).toLowerCase()}|${req.socket?.remoteAddress ?? ""}`;
+        const now = Date.now();
+        const tries = (failedLogins.get(key) ?? []).filter((t) => now - t < LOGIN_WINDOW);
+        if (tries.length >= LOGIN_TRIES) throw new HttpError(429, "TOO_MANY_ATTEMPTS", "too many failed logins; try again in a few minutes");
         const user = users.byEmail(body.email);
-        if (!user || !checkPassword(body.password, user.password)) throw new HttpError(401, "LOGIN_FAILED", "wrong email or password");
+        if (!user || !checkPassword(body.password, user.password)) {
+          failedLogins.set(key, [...tries, now]);
+          throw new HttpError(401, "LOGIN_FAILED", "wrong email or password");
+        }
+        failedLogins.delete(key);
         return send(res, 200, users.out(user), startSession(user)), true;
       }
 
@@ -571,6 +600,20 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 const PRIVATE = new Set(["server.js", "server-runtime.js"]);
 
 // Production server: the apis plus the built static files. Data lives in ART_DATA_DIR (default ./data).
+// Headers for pages and assets. ART_CSP=off disables the CSP, or replaces it with its value.
+const CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+function securityHeaders(req) {
+  const csp = process.env.ART_CSP === "off" ? null : process.env.ART_CSP ?? CSP;
+  return {
+    "x-content-type-options": "nosniff",
+    "referrer-policy": "strict-origin-when-cross-origin",
+    "x-frame-options": "DENY",
+    ...(csp ? { "content-security-policy": csp } : {}),
+    // Behind an HTTPS proxy, browsers keep using HTTPS.
+    ...(req.headers["x-forwarded-proto"] === "https" ? { "strict-transport-security": "max-age=31536000; includeSubDomains" } : {}),
+  };
+}
+
 export function serve(schema, fns, rootUrl, port = Number(process.env.PORT ?? 3000), jobs = {}) {
   const root = resolve(fileURLToPath(rootUrl));
   const dataDir = resolve(process.env.ART_DATA_DIR ?? join(root, "data"));
@@ -582,7 +625,7 @@ export function serve(schema, fns, rootUrl, port = Number(process.env.PORT ?? 30
     const blocked = (!file.startsWith(root + sep) && file !== root) || file.startsWith(dataDir + sep) || PRIVATE.has(basename(file));
     // Unknown paths fall back to index.html (client-side routing).
     if (blocked || !existsSync(file) || statSync(file).isDirectory()) file = join(root, "index.html");
-    res.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream" }).end(readFileSync(file));
+    res.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream", ...securityHeaders(req) }).end(readFileSync(file));
   });
   server.listen(port, () => console.log(`ArtScript server → http://localhost:${port}`));
   return server;

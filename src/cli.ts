@@ -113,7 +113,8 @@ async function buildFiles(target: string, minify: boolean): Promise<{ files: Rec
   const esbuild = await import("esbuild");
   try {
     const out = await esbuild.build({
-      stdin: { contents: r.js.replace('"./runtime.js"', JSON.stringify(RUNTIME)), resolveDir: resolve(projectRoot(target)), loader: "js" },
+      // The bundle starts the app itself, so index.html has no inline script (a strict CSP works).
+      stdin: { contents: r.js.replace('"./runtime.js"', JSON.stringify(RUNTIME)) + "\nstart();\n", resolveDir: resolve(projectRoot(target)), loader: "js" },
       bundle: true, format: "esm", platform: "browser", write: false, minify, logLevel: "silent",
       define: { "process.env.NODE_ENV": minify ? '"production"' : '"development"' },
     });

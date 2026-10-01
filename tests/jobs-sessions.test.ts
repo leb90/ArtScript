@@ -67,7 +67,7 @@ test("sessions: expire on the server, log out everywhere, end on a password chan
 
   // Log out everywhere.
   const c = cookieOf(await fetch(`${base}/_auth/login`, json({ email: "a@x.co", password: "abcdefgh" })));
-  await fetch(`${base}/_auth/logout-all`, { method: "POST", headers: { cookie: a } });
+  await fetch(`${base}/_auth/logout-all`, { method: "POST", headers: { cookie: a, "content-type": "application/json" } });
   assert.equal(await me(a), "null");
   assert.equal(await me(c), "null");
 

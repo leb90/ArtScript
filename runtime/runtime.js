@@ -118,9 +118,13 @@ export function $el(parent, tag, cls) {
   return n;
 }
 export function $text(n, fn) { effect(() => { n.textContent = str(fn()); }); }
+// URLs from data can't run code: `javascript:` (and `vbscript:`, `data:text/html`) become "#".
+const URL_ATTRS = new Set(["href", "src", "action", "formAction", "poster"]);
+const unsafeUrl = (v) => typeof v === "string" && /^\s*(javascript|vbscript|data:text\/html)/i.test(v.replace(/[\u0000-\u001f]/g, ""));
 export function $attr(n, name, fn) {
   effect(() => {
-    const v = fn();
+    let v = fn();
+    if (URL_ATTRS.has(name) && unsafeUrl(v)) v = "#";
     if (name in n) n[name] = v ?? "";
     else if (v == null || v === false) n.removeAttribute(name);
     else n.setAttribute(name, v === true ? "" : v);
@@ -381,7 +385,8 @@ async function uploads(v) {
 // `quiet` reads resolve to null instead of failing when the resource is missing or needs a login.
 async function request(method, path, body, quiet = method === "GET") {
   if (body !== undefined && method !== "GET") body = await uploads(body);
-  const init = body === undefined ? { method } : { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
+  // Writes are always JSON (the server requires it, as CSRF protection), even without a body.
+  const init = method === "GET" ? { method } : { method, headers: { "content-type": "application/json" }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) };
   const res = await fetch(`${apiBase}/api/${path}`, { credentials: "same-origin", ...init });
   const data = res.status === 204 ? null : await res.json();
   if (res.ok) return data;
