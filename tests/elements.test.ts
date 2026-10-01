@@ -150,3 +150,27 @@ test("notify: a toast that goes away, and the name can be the app's own", async 
     await GlobalRegistrator.unregister();
   }
 });
+
+test("icon: a known name, only used icons in the app, accessible", async () => {
+  assert.deepEqual(types('page P {\n  icon "check" size=16 success\n  icon "trash" label="Delete"\n}'), []);
+  const [d] = check(parse('page P {\n  icon "chek"\n}', "t"));
+  assert.deepEqual([d.type, d.fixes?.[0]], ["UNKNOWN_ELEMENT", "check"]);
+  assert.deepEqual(types('page P {\n  state n = "x"\n  icon n\n}'), ["TYPE_MISMATCH"]);
+  const r = compile([{ file: "app.art", src: 'page P {\n  icon "check" success\n  icon "trash" label="Delete"\n}\n' }]);
+  assert.match(r.js!, /M20 6 9 17l-5-5/, "the check icon's path is in the app");
+  assert.doesNotMatch(r.js!, /lucide|circle-help/, "unused icons aren't");
+  const dir = mkdtempSync(join(tmpdir(), "art-icon-"));
+  writeFileSync(join(dir, "app.js"), r.js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    const app = await import(pathToFileURL(join(dir, "app.js")).href);
+    app.start(document.getElementById("app"));
+    const [check, trash] = [...document.querySelectorAll(".a-icon")];
+    assert.ok(check.classList.contains("a-success") && check.querySelector("svg[aria-hidden=true] path"));
+    assert.equal(trash.getAttribute("aria-label"), "Delete");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});

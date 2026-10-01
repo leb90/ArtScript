@@ -35,6 +35,7 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   audio: { html: "audio", content: "src", action: null, children: false, props: [], flags: MEDIA, attrs: MEDIA },
   link: { html: "a", content: "text", action: null, children: false, props: ["to", "href"], flags: ["muted"] },
   badge: { html: "span", cls: "a-badge", content: "text", action: null, children: false, props: [], flags: ["primary", "success", "danger"] },
+  icon: { html: "span", cls: "a-icon", content: "text", action: null, children: false, props: ["size", "label"], flags: ["muted", "primary", "success", "danger"] },
   spinner: { html: "span", cls: "a-spinner", content: null, action: null, children: false, props: [], flags: [] },
   divider: { html: "hr", content: null, action: null, children: false, props: [], flags: [] },
   row: { html: "div", cls: "a-row", content: null, action: null, children: true, props: LAYOUT, flags: ["wrap"] },

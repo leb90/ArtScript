@@ -4,6 +4,7 @@ import { specifier } from "./modules.ts";
 import { printDecl, printType } from "./printer.ts";
 import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
 import { slotNames, twoWayProps } from "./checker.ts";
+import { ICONS } from "./icons.ts";
 
 // Props each component assigns (bound two-way), for the program being generated.
 let twoWay = new Map<string, Set<string>>();
@@ -352,6 +353,7 @@ class ComponentGen {
   }
 
   element(el: Element, parent: string, scope: Scope) {
+    if (el.tag === "icon") return this.icon(el, parent, scope);
     const spec = ELEMENTS[el.tag];
     const isAttr = (name: string) => !!spec.attrs?.includes(name);
     const isFlag = (name: string) => spec.flags.includes(name) && !isAttr(name);
@@ -474,6 +476,17 @@ class ComponentGen {
     const weight = bp ? Object.keys(BREAKPOINTS).indexOf(bp) + 2 : 1;
     const rule = `${`.${cls}`.repeat(weight)}{${decl}}`;
     this.emit(`$.$css(${v}, "${cls}", "${bp ? `@media(min-width:${BREAKPOINTS[bp]}px){${rule}}` : rule}");`);
+  }
+
+  // The icon's SVG markup is inlined here, so the app carries only the icons it uses.
+  icon(el: Element, parent: string, scope: Scope) {
+    const name = el.content?.kind === "Str" ? el.content.value : "";
+    const v = this.v();
+    const flags = el.props.filter((p) => !p.value && p.name !== "size" && p.name !== "label").map((p) => ` a-${p.name}`).join("");
+    const size = el.props.find((p) => p.name === "size")?.value;
+    const label = el.props.find((p) => p.name === "label")?.value;
+    this.emit(`const ${v} = $.$icon(${parent}, ${JSON.stringify(ICONS[name] ?? "")}, ${size ? this.expr(size, scope) : 20}, ${label ? this.expr(label, scope) : "null"}, ${JSON.stringify("a-icon" + flags)});`);
+    for (const p of el.props) if (p.value && (p.name === "class" || p.name === "id" || p.name === "style")) this.attr(v, p.name === "class" ? "className" : p.name, p.value, scope);
   }
 
   labelText(parent: string, val: Expr, scope: Scope) {

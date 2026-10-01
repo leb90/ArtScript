@@ -59,6 +59,13 @@ class Comment extends Node {
 
 class Fragment extends Node {}
 
+// Markup set with innerHTML (icons): written out as is.
+class Raw extends Node {
+  constructor(html) { super(); this.raw = html; }
+  get textContent() { return ""; }
+  html() { return this.raw; }
+}
+
 // Properties the runtime sets directly that show up as HTML attributes.
 const REFLECTED = ["id", "href", "src", "alt", "type", "placeholder", "name", "rows", "accept", "width", "height", "poster", "title", "role"];
 const BOOLEAN = ["disabled", "checked", "multiple", "required", "controls", "autoplay", "loop", "muted", "open", "selected", "hidden"];
@@ -100,6 +107,7 @@ class Element extends Node {
     }
     return null;
   }
+  set innerHTML(v) { this.textContent = ""; this.appendChild(new Raw(String(v))); }
   getBoundingClientRect() { return { left: 0, right: 0, top: 0, bottom: 0 }; }
   showModal() { this.open = true; }
   close() { this.open = false; }

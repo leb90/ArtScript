@@ -1,6 +1,7 @@
 // Type checker: small type system, null safety and errors with fixes.
 import type { ComponentDecl, Element, Expr, Field, Loc, ModelDecl, Program, ServerFnDecl, Stmt, TestDecl, TypeRef, UseDecl, ViewNode } from "./ast.ts";
 import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, RESPONSIVE_PROPS } from "./elements.ts";
+import { ICONS } from "./icons.ts";
 import { CATALOG, diag, suggest, type Diagnostic } from "./errors.ts";
 import { inspectModule, isLocal, packageName } from "./modules.ts";
 import { printDecl, printExpr, printType } from "./printer.ts";
@@ -571,6 +572,11 @@ class Checker {
         expr: el.tag, fixes: suggest(el.tag, [...Object.keys(ELEMENTS), ...this.comps.keys()]),
       });
       return;
+    }
+    // `icon "check"`: a literal name of the built-in set (only used icons go into the app).
+    if (el.tag === "icon" && el.content) {
+      if (el.content.kind !== "Str") this.err("TYPE_MISMATCH", "an icon's name must be written as text: `icon \"check\"` (use `if` to switch icons)", el.content.loc, { expr: printExpr(el.content), expected: '"check"' });
+      else if (!ICONS[el.content.value]) this.err("UNKNOWN_ELEMENT", `unknown icon '${el.content.value}'`, el.content.loc, { expr: el.content.value, expected: "a Lucide icon name", fixes: suggest(el.content.value, Object.keys(ICONS)) });
     }
     if (el.content) {
       if (spec.content === "bind") {

@@ -125,6 +125,7 @@ column gap=4 align=center {
 | `video` `audio` | src | — | video: width height poster | controls autoplay loop muted |
 | `link` | text | — | to href | muted |
 | `badge` | text | — | | primary success danger |
+| `icon` | Lucide name (`"check" "trash" "edit" "search" "user" "home"`...) | — | size label | muted primary success danger |
 | `spinner` `divider` | — | — | | |
 | `row` `column` `card` | — | — | gap pad align justify | row: wrap |
 | `grid` | — | — | gap pad align justify cols | |
