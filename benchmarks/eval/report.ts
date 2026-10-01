@@ -20,9 +20,11 @@ type Usage = { input: number; output: number; cacheRead: number; cacheWrite: num
 type Run = { task: string; stack: string; ok: boolean; attempts: number; usage: Usage; usd: number; codeTokens: number | null; size?: { raw: number; brotli: number } };
 type ResultFile = { model: string; effort: string; runs: number; prices: { in: number; out: number; cacheRead: number; cacheWrite: number }; pricesDate: string; results: Run[] };
 
-const STACKS = ["artscript", "react", "svelte"];
-const NAMES: Record<string, string> = { artscript: "**ArtScript**", react: "React + TS", svelte: "Svelte 5" };
-const PLAIN: Record<string, string> = { artscript: "ArtScript", react: "React + TS", svelte: "Svelte 5" };
+// Stacks shown for the model being reported: those present in its results, in this order.
+const ORDER = ["artscript", "react", "svelte", "vue", "solid"];
+let STACKS: string[] = ORDER;
+const NAMES: Record<string, string> = { artscript: "**ArtScript**", react: "React + TS", svelte: "Svelte 5", vue: "Vue 3", solid: "SolidJS" };
+const PLAIN: Record<string, string> = { artscript: "ArtScript", react: "React + TS", svelte: "Svelte 5", vue: "Vue 3", solid: "SolidJS" };
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 const usd = (n: number) => `$${n.toFixed(4)}`;
@@ -108,6 +110,7 @@ function section(loaded: Loaded[]): string {
   const out: string[] = [START, "", "## Cost eval results", ""];
   for (const { path, data: all, paths, reruns } of loaded) {
     // Larger-project tasks ("<task>@full" / "<task>@focus") get their own table below.
+    STACKS = ORDER.filter((k) => all.results.some((r) => r.stack === k));
     const f = { ...all, results: all.results.filter((r) => !r.task.includes("@")) };
     const project = all.results.filter((r) => r.task.includes("@"));
     const s = Object.fromEntries(STACKS.map((k) => [k, stats(f, k)]));

@@ -11,7 +11,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { TASKS, type Task } from "./tasks.ts";
+import { focusFor, TASKS, type Task } from "./tasks.ts";
 import { analyze } from "../../src/checker.ts";
 import { parseProject } from "../../src/compile.ts";
 import { declContexts, projectMap } from "../../src/context.ts";
@@ -66,6 +66,12 @@ function systemPrompt(stack: Stack): string {
   if (stack === "react") {
     return `Sos un desarrollador web experto. Stack: React 19 + TypeScript (TSX), componentes funcionales y hooks, estilos con clases de Tailwind. Todo en un solo archivo App.tsx con export default. ${FORMAT}`;
   }
+  if (stack === "vue") {
+    return `Sos un desarrollador web experto. Stack: Vue 3 con <script setup lang="ts"> (Composition API: ref, computed, defineProps, defineEmits), estilos con clases de Tailwind. El componente raíz es App.vue; otros componentes van en archivos .vue aparte. ${FORMAT}`;
+  }
+  if (stack === "solid") {
+    return `Sos un desarrollador web experto. Stack: SolidJS + TypeScript (TSX): createSignal, createMemo, <For>, <Show>; estilos con clases de Tailwind. El componente raíz es App.tsx con export default; otros componentes pueden ir en archivos .tsx aparte. ${FORMAT}`;
+  }
   return `Sos un desarrollador web experto. Stack: Svelte 5 con runes ($state, $derived, $props) y <script lang="ts">, estilos con clases de Tailwind. El componente raíz es App.svelte; otros componentes van en archivos .svelte aparte. ${FORMAT}`;
 }
 
@@ -82,6 +88,8 @@ const EDIT_HINT: Record<Stack, string> = {
   artscript: "Respondé con un bloque ```patch (art patch, ver la spec) con los cambios, o con los archivos completos si lo preferís.",
   react: "Respondé con bloques de edición, o con los archivos completos si lo preferís. Formato de edición (el texto SEARCH debe coincidir exactamente y una sola vez):\n```edit App.tsx\n<<<<<<< SEARCH\ntexto original\n=======\ntexto nuevo\n>>>>>>> REPLACE\n```",
   svelte: "Respondé con bloques de edición, o con los archivos completos si lo preferís. Formato de edición (el texto SEARCH debe coincidir exactamente y una sola vez):\n```edit App.svelte\n<<<<<<< SEARCH\ntexto original\n=======\ntexto nuevo\n>>>>>>> REPLACE\n```",
+  vue: "Respondé con bloques de edición, o con los archivos completos si lo preferís. Formato de edición (el texto SEARCH debe coincidir exactamente y una sola vez):\n```edit App.vue\n<<<<<<< SEARCH\ntexto original\n=======\ntexto nuevo\n>>>>>>> REPLACE\n```",
+  solid: "Respondé con bloques de edición, o con los archivos completos si lo preferís. Formato de edición (el texto SEARCH debe coincidir exactamente y una sola vez):\n```edit App.tsx\n<<<<<<< SEARCH\ntexto original\n=======\ntexto nuevo\n>>>>>>> REPLACE\n```",
 };
 
 // Full-stack tasks: ArtScript uses its `api`; React and Svelte write their own Node server.
@@ -89,6 +97,8 @@ const FULLSTACK_HINT: Record<Stack, string> = {
   artscript: "Es una app full-stack: usá `api` (ver la spec) para el backend.",
   react: "Es una app full-stack. Además de App.tsx, escribí server.ts: un servidor Node con node:http (sin dependencias externas) que escuche en process.env.PORT y exponga bajo /api/ lo que necesites, guardando los datos en memoria. El frontend lo llama con rutas relativas (fetch(\"/api/...\")). No sirvas archivos estáticos.",
   svelte: "Es una app full-stack. Además de App.svelte, escribí server.ts: un servidor Node con node:http (sin dependencias externas) que escuche en process.env.PORT y exponga bajo /api/ lo que necesites, guardando los datos en memoria. El frontend lo llama con rutas relativas (fetch(\"/api/...\")). No sirvas archivos estáticos.",
+  vue: "Es una app full-stack. Además de App.vue, escribí server.ts: un servidor Node con node:http (sin dependencias externas) que escuche en process.env.PORT y exponga bajo /api/ lo que necesites, guardando los datos en memoria. El frontend lo llama con rutas relativas (fetch(\"/api/...\")). No sirvas archivos estáticos.",
+  solid: "Es una app full-stack. Además de App.tsx, escribí server.ts: un servidor Node con node:http (sin dependencias externas) que escuche en process.env.PORT y exponga bajo /api/ lo que necesites, guardando los datos en memoria. El frontend lo llama con rutas relativas (fetch(\"/api/...\")). No sirvas archivos estáticos.",
 };
 
 const fence = (files: Files) => Object.entries(files).map(([n, s]) => `\`\`\`${n}\n${s}\`\`\``).join("\n\n");
@@ -98,7 +108,7 @@ function projectPrompt(task: Task, stack: Stack): string {
   const files = baseFiles(task, stack);
   const tail = `Tarea: ${task.prompt}\n\n${PROJECT_EDIT_HINT[stack]}`;
   if (task.context === "full") return `Proyecto actual (todos los archivos):\n\n${fence(files)}\n\n${tail}`;
-  const focus = task.focus![stack];
+  const focus = focusFor(task, stack);
   if (stack === "artscript") {
     const { program } = parseProject(Object.entries(files).map(([file, src]) => ({ file, src })));
     const a = analyze(program);
@@ -115,6 +125,8 @@ const PROJECT_EDIT_HINT: Record<Stack, string> = {
   artscript: `${MINIMAL} Usá un bloque \`\`\`patch (art patch, ver la spec).`,
   react: `${MINIMAL} Usá bloques de edición (el texto SEARCH debe coincidir exactamente y una sola vez):\n\`\`\`edit App.tsx\n<<<<<<< SEARCH\ntexto original\n=======\ntexto nuevo\n>>>>>>> REPLACE\n\`\`\``,
   svelte: `${MINIMAL} Usá bloques de edición (el texto SEARCH debe coincidir exactamente y una sola vez):\n\`\`\`edit App.svelte\n<<<<<<< SEARCH\ntexto original\n=======\ntexto nuevo\n>>>>>>> REPLACE\n\`\`\``,
+  vue: `${MINIMAL} Usá bloques de edición (el texto SEARCH debe coincidir exactamente y una sola vez):\n\`\`\`edit App.vue\n<<<<<<< SEARCH\ntexto original\n=======\ntexto nuevo\n>>>>>>> REPLACE\n\`\`\``,
+  solid: `${MINIMAL} Usá bloques de edición (el texto SEARCH debe coincidir exactamente y una sola vez):\n\`\`\`edit App.tsx\n<<<<<<< SEARCH\ntexto original\n=======\ntexto nuevo\n>>>>>>> REPLACE\n\`\`\``,
 };
 
 function userPrompt(task: Task, stack: Stack): string {
@@ -284,6 +296,8 @@ async function dryRun() {
     artscript: { "app.art": "page A {\n  state n = 0\n  text m\n}\n" },
     react: { "App.tsx": "export default function App() { const n: number = 'x'; return <div>{n}</div>; }\n" },
     svelte: { "App.svelte": "<script lang=\"ts\">let n = $state(0)</script>\n{#if n}<p>x</p>\n" },
+    vue: { "App.vue": "<template>\n  <div>{{ n </div>\n</template>\n" },
+    solid: { "App.tsx": "export default function App() { const n: number = 'x'; return <div>{n}</div>; }\n" },
   };
   for (const stack of STACK_IDS) {
     const errs = await validate(stack, broken[stack]);
@@ -294,6 +308,8 @@ async function dryRun() {
     artscript: "```patch\ninsert after Todos/column/for\n  button \"Borrar completadas\" -> todos = todos.filter(t => !t.done)\n```",
     react: "```edit Todos.tsx\n<<<<<<< SEARCH\n      <h2>Tareas</h2>\n=======\n      <h2>Tareas</h2>\n      <button onClick={() => setTodos([])}>Borrar</button>\n>>>>>>> REPLACE\n```",
     svelte: "```edit Todos.svelte\n<<<<<<< SEARCH\n  <h2>Tareas</h2>\n=======\n  <h2>Tareas</h2>\n  <button onclick={() => (todos = [])}>Borrar</button>\n>>>>>>> REPLACE\n```",
+    vue: "```edit Todos.vue\n<<<<<<< SEARCH\n    <h2>Tareas</h2>\n=======\n    <h2>Tareas</h2>\n    <button @click=\"todos = []\">Borrar</button>\n>>>>>>> REPLACE\n```",
+    solid: "```edit Todos.tsx\n<<<<<<< SEARCH\n      <h2>Tareas</h2>\n=======\n      <h2>Tareas</h2>\n      <button onClick={() => setTodos([])}>Borrar</button>\n>>>>>>> REPLACE\n```",
   };
   for (const stack of STACK_IDS) {
     const r = applyEditAnswer(todoMod, stack, answers[stack]);
@@ -317,6 +333,7 @@ async function dryRun() {
   for (const project of readdirSync(join(HERE, "projects")).filter((d) => !d.endsWith(".ts"))) {
     for (const st of STACK_IDS) {
       const dir = join(HERE, "projects", project, st);
+      if (!existsSync(dir)) { console.log(`· no ${project} project for ${st} yet`); continue; }
       const files = Object.fromEntries(readdirSync(dir).map((f) => [f, readFileSync(join(dir, f), "utf8")]));
       const errs = await behave({ id: `${project}-base`, prompt: "" }, st, files);
       console.log(`${errs.length ? "✗" : "✓"} behavior ${project} (base project)/${st}${errs.length ? ": " + errs[0] : ""}`);

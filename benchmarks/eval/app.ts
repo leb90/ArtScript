@@ -12,7 +12,23 @@ import * as esbuild from "esbuild";
 import { compile } from "../../src/compile.ts";
 // @ts-ignore: runtime is plain JS
 import { createApi } from "../../runtime/server.js";
-import type { Files, Stack } from "./validate.ts";
+import { compileVue, type Files, type Stack } from "./validate.ts";
+
+// Solid's JSX compiles to DOM code with its Babel preset (esbuild only knows React-style JSX).
+const solidJsx: esbuild.Plugin = {
+  name: "solid-jsx",
+  setup(build) {
+    build.onLoad({ filter: /\.tsx$/ }, async (args) => {
+      const babel = await import("@babel/core");
+      const src = (await import("node:fs")).readFileSync(args.path, "utf8");
+      const out = await babel.transformAsync(src, {
+        filename: args.path, babelrc: false, configFile: false,
+        presets: [["babel-preset-solid", { generate: "dom" }], ["@babel/preset-typescript", { isTSX: true, allExtensions: true }]],
+      });
+      return { contents: out!.code!, loader: "js" };
+    });
+  },
+};
 
 const WORK = join(import.meta.dirname, ".work");
 
@@ -40,6 +56,27 @@ async function bundle(stack: Stack, files: Files, dir: string): Promise<{ path: 
     if (!root) throw new BehaviorError("no hay un componente .tsx");
     write("entry.tsx", `import App from "./${root}";\nimport { createRoot } from "react-dom/client";\ncreateRoot(document.getElementById("app")!).render(<App />);\n`);
     entry = "entry.tsx";
+  } else if (stack === "vue") {
+    // Each .vue becomes X.vue.ts (script setup with the template compiled inline).
+    const names = Object.keys(files).filter((n) => n.endsWith(".vue"));
+    for (const n of Object.keys(files)) if (!n.endsWith(".vue") && n !== "server.ts") write(n, files[n]);
+    for (const n of names) {
+      let js: string;
+      try { js = compileVue(n, files[n]); } catch (e: any) { throw new BehaviorError(`${n} no compila: ${String(e?.message ?? e).split("\n")[0]}`); }
+      write(`${n}.ts`, js.replace(/(from\s+["'][^"']+\.vue)(["'])/g, "$1.ts$2"));
+    }
+    const imported = (n: string) => names.some((m) => m !== n && files[m].includes(n.replace(/^.*\//, "")));
+    const root = names.find((n) => n === "App.vue") ?? names.find((n) => !imported(n)) ?? names[0];
+    if (!root) throw new BehaviorError("no hay un componente .vue");
+    write("entry.ts", `import { createApp } from "vue";\nimport App from "./${root}.ts";\ncreateApp(App).mount("#app");\n`);
+    entry = "entry.ts";
+  } else if (stack === "solid") {
+    const names = Object.keys(files).filter((n) => n.endsWith(".tsx"));
+    for (const n of Object.keys(files)) if (n !== "server.ts") write(n, files[n]);
+    const root = names.find((n) => n === "App.tsx") ?? names.find((n) => /export\s+default/.test(files[n])) ?? names[0];
+    if (!root) throw new BehaviorError("no hay un componente .tsx");
+    write("entry.tsx", `import { render } from "solid-js/web";\nimport App from "./${root}";\nrender(() => <App />, document.getElementById("app")!);\n`);
+    entry = "entry.tsx";
   } else {
     const { compile: compileSvelte } = await import("svelte/compiler");
     const names = Object.keys(files).filter((n) => n.endsWith(".svelte"));
@@ -58,7 +95,9 @@ async function bundle(stack: Stack, files: Files, dir: string): Promise<{ path: 
   try {
     const out = await esbuild.build({
       entryPoints: [join(dir, entry)], bundle: true, format: "esm", platform: "browser", write: false, jsx: "automatic",
-      conditions: ["browser"], define: { "process.env.NODE_ENV": '"production"' }, logLevel: "silent", minify: true,
+      conditions: ["browser"], logLevel: "silent", minify: true,
+      define: { "process.env.NODE_ENV": '"production"', __VUE_OPTIONS_API__: "true", __VUE_PROD_DEVTOOLS__: "false", __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: "false" },
+      plugins: stack === "solid" ? [solidJsx] : [],
     });
     write("bundle.mjs", out.outputFiles[0].text);
     const bytes = Buffer.from(out.outputFiles[0].text);
@@ -149,8 +188,14 @@ export class Page {
     let out = "";
     let prev: Node | null = null;
     const walker = document.createTreeWalker(document.body, 4 /* NodeFilter.SHOW_TEXT */);
+    // Comments between text nodes (framework markers, e.g. Solid's) don't separate them.
+    const adjacent = (a: Node, b: Node) => {
+      let x = a.nextSibling;
+      while (x && x !== b && x.nodeType === 8) x = x.nextSibling;
+      return x === b;
+    };
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-      out += (prev && prev.nextSibling === n ? "" : " ") + (n.textContent ?? "");
+      out += (prev && adjacent(prev, n) ? "" : " ") + (n.textContent ?? "");
       prev = n;
     }
     return norm(out);

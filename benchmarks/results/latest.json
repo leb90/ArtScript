@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-01T12:51:31.384Z",
+  "date": "2026-10-01T13:39:39.669Z",
   "tokenizer": "o200k_base (js-tiktoken)",
   "exact": true,
   "results": {
@@ -18,6 +18,16 @@
         "bytes": 485,
         "lines": 17,
         "tokens": 154
+      },
+      "vue": {
+        "bytes": 564,
+        "lines": 19,
+        "tokens": 167
+      },
+      "solid": {
+        "bytes": 670,
+        "lines": 21,
+        "tokens": 193
       }
     },
     "todo": {
@@ -35,6 +45,16 @@
         "bytes": 1354,
         "lines": 43,
         "tokens": 400
+      },
+      "vue": {
+        "bytes": 1467,
+        "lines": 45,
+        "tokens": 412
+      },
+      "solid": {
+        "bytes": 1778,
+        "lines": 47,
+        "tokens": 492
       }
     }
   }

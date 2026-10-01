@@ -1,13 +1,13 @@
 // Measures the source code of equivalent tasks in ArtScript, React+TS and Svelte.
 // Source size only. It does NOT measure spec tokens, agent iterations or USD cost
 // Those numbers come from the agent eval (benchmarks/eval).
-import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TASKS = join(HERE, "tasks");
-const STACKS = ["artscript", "react", "svelte"] as const;
+const STACKS = ["artscript", "react", "svelte", "vue", "solid"] as const;
 
 type Counter = { name: string; count: (s: string) => number; exact: boolean };
 
@@ -32,6 +32,7 @@ export async function runBench() {
   for (const task of readdirSync(TASKS).sort()) {
     results[task] = {};
     for (const stack of STACKS) {
+      if (!existsSync(join(TASKS, task, stack))) continue;
       const src = readStack(join(TASKS, task, stack));
       results[task][stack] = { bytes: Buffer.byteLength(src), lines: src.trimEnd().split("\n").length, tokens: tok.count(src) };
     }
@@ -42,6 +43,7 @@ export async function runBench() {
   for (const [task, r] of Object.entries(results)) {
     for (const stack of STACKS) {
       const x = r[stack];
+      if (!x) continue;
       const vs = stack === "react" ? "—" : `${Math.round((x.tokens / r.react.tokens - 1) * 100)}%`;
       console.log(`${task.padEnd(10)} ${stack.padEnd(10)} ${String(x.bytes).padStart(7)} ${String(x.lines).padStart(7)} ${String(x.tokens).padStart(7)} ${vs.padStart(9)}`);
     }

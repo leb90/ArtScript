@@ -7,8 +7,17 @@
 // of the relevant components; React/Svelte: the file list plus the relevant files), listed in `focus`.
 export type Task = {
   id: string; prompt: string; base?: string; fullstack?: boolean;
-  project?: string; context?: "full" | "focus"; focus?: Record<"artscript" | "react" | "svelte", string[]>;
+  project?: string; context?: "full" | "focus"; focus?: Partial<Record<"artscript" | "react" | "svelte" | "vue" | "solid", string[]>>;
 };
+
+// Vue and Solid read the same files as React: Solid keeps .tsx, Vue uses .vue.
+export function focusFor(task: Task, stack: string): string[] {
+  const f = task.focus ?? {};
+  if (stack in f) return f[stack as keyof typeof f]!;
+  if (stack === "solid") return f.react ?? [];
+  if (stack === "vue") return (f.react ?? []).map((n) => n.replace(/\.tsx$/, ".vue"));
+  return [];
+}
 
 export const TASKS: Task[] = [
   {

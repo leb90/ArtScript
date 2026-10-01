@@ -269,6 +269,238 @@ ${ENTITIES.map((e, i) => `  ${i === 0 ? "{#if" : "{:else if"} page === "${key(e.
 `);
 }
 
+// ---------- Vue ----------
+function vue() {
+  write("vue", "data.ts", `
+export type Item = { id: number; name: string; amount: number; active: boolean };
+
+export const SEED: Item[] = ${JSON.stringify(SEED, null, 2).replace(/"(\w+)":/g, "$1:")};
+`);
+  for (const e of ENTITIES) {
+    const N = e.name;
+    write("vue", `${N}Page.vue`, `
+<script setup lang="ts">
+import { ref } from "vue";
+import { SEED, type Item } from "./data";
+import ${N}Form from "./${N}Form.vue";
+import ${N}List from "./${N}List.vue";
+
+const items = ref<Item[]>(SEED.map((i) => ({ ...i })));
+
+function add(name: string, amount: number) {
+  items.value.push({ id: Date.now(), name, amount, active: true });
+}
+</script>
+
+<template>
+  <div class="flex flex-col gap-2">
+    <h2 class="text-xl font-bold">${e.label}</h2>
+    <${N}Form @add="add" />
+    <${N}List :items="items" />
+  </div>
+</template>
+`);
+    write("vue", `${N}List.vue`, `
+<script setup lang="ts">
+import type { Item } from "./data";
+import ${N}Row from "./${N}Row.vue";
+
+defineProps<{ items: Item[] }>();
+</script>
+
+<template>
+  <span v-if="items.length === 0" class="text-gray-500">Sin registros</span>
+  <div v-else class="flex flex-col gap-1">
+    <${N}Row v-for="item in items" :key="item.id" :item="item" />
+  </div>
+</template>
+`);
+    write("vue", `${N}Row.vue`, `
+<script setup lang="ts">
+import type { Item } from "./data";
+
+defineProps<{ item: Item }>();
+</script>
+
+<template>
+  <div class="flex gap-2">
+    <span class="font-semibold">{{ item.name }}</span>
+    <span>${e.amount}: {{ item.amount }}</span>
+  </div>
+</template>
+`);
+    write("vue", `${N}Form.vue`, `
+<script setup lang="ts">
+import { ref } from "vue";
+
+const emit = defineEmits<{ add: [name: string, amount: number] }>();
+const name = ref("");
+const amount = ref("");
+
+function submit() {
+  emit("add", name.value, Number(amount.value) || 0);
+  name.value = "";
+  amount.value = "";
+}
+</script>
+
+<template>
+  <div class="flex gap-2">
+    <input v-model="name" placeholder="Nombre" />
+    <input v-model="amount" placeholder="${e.amount}" type="number" />
+    <button class="primary" @click="submit">Agregar</button>
+  </div>
+</template>
+`);
+  }
+  write("vue", "Nav.vue", `
+<script setup lang="ts">
+const SECTIONS = ${JSON.stringify(ENTITIES.map((e) => ({ key: key(e.name), label: e.label })))};
+
+defineProps<{ page: string }>();
+const emit = defineEmits<{ change: [page: string] }>();
+</script>
+
+<template>
+  <div class="flex flex-wrap gap-2">
+    <button v-for="s in SECTIONS" :key="s.key" :class="page === s.key ? 'font-bold' : ''" @click="emit('change', s.key)">{{ s.label }}</button>
+  </div>
+</template>
+`);
+  write("vue", "App.vue", `
+<script setup lang="ts">
+import { ref } from "vue";
+import Nav from "./Nav.vue";
+${ENTITIES.map((e) => `import ${e.name}Page from "./${e.name}Page.vue";`).join("\n")}
+
+const page = ref("products");
+</script>
+
+<template>
+  <div class="flex flex-col gap-4 p-4">
+    <h1 class="text-2xl font-bold">Panel</h1>
+    <Nav :page="page" @change="(p) => (page = p)" />
+${ENTITIES.map((e, i) => `    <${e.name}Page ${i === 0 ? "v-if" : "v-else-if"}="page === '${key(e.name)}'" />`).join("\n")}
+  </div>
+</template>
+`);
+}
+
+// ---------- Solid ----------
+function solid() {
+  write("solid", "data.ts", `
+export type Item = { id: number; name: string; amount: number; active: boolean };
+
+export const SEED: Item[] = ${JSON.stringify(SEED, null, 2).replace(/"(\w+)":/g, "$1:")};
+`);
+  for (const e of ENTITIES) {
+    const N = e.name;
+    write("solid", `${N}Page.tsx`, `
+import { createSignal } from "solid-js";
+import { SEED, type Item } from "./data";
+import ${N}Form from "./${N}Form";
+import ${N}List from "./${N}List";
+
+export default function ${N}Page() {
+  const [items, setItems] = createSignal<Item[]>(SEED.map((i) => ({ ...i })));
+
+  function add(name: string, amount: number) {
+    setItems([...items(), { id: Date.now(), name, amount, active: true }]);
+  }
+
+  return (
+    <div class="flex flex-col gap-2">
+      <h2 class="text-xl font-bold">${e.label}</h2>
+      <${N}Form onAdd={add} />
+      <${N}List items={items()} />
+    </div>
+  );
+}
+`);
+    write("solid", `${N}List.tsx`, `
+import { For, Show } from "solid-js";
+import type { Item } from "./data";
+import ${N}Row from "./${N}Row";
+
+export default function ${N}List(props: { items: Item[] }) {
+  return (
+    <Show when={props.items.length > 0} fallback={<span class="text-gray-500">Sin registros</span>}>
+      <div class="flex flex-col gap-1">
+        <For each={props.items}>{(item) => <${N}Row item={item} />}</For>
+      </div>
+    </Show>
+  );
+}
+`);
+    write("solid", `${N}Row.tsx`, `
+import type { Item } from "./data";
+
+export default function ${N}Row(props: { item: Item }) {
+  return (
+    <div class="flex gap-2">
+      <span class="font-semibold">{props.item.name}</span>
+      <span>${e.amount}: {props.item.amount}</span>
+    </div>
+  );
+}
+`);
+    write("solid", `${N}Form.tsx`, `
+import { createSignal } from "solid-js";
+
+export default function ${N}Form(props: { onAdd: (name: string, amount: number) => void }) {
+  const [name, setName] = createSignal("");
+  const [amount, setAmount] = createSignal("");
+
+  function submit() {
+    props.onAdd(name(), Number(amount()) || 0);
+    setName("");
+    setAmount("");
+  }
+
+  return (
+    <div class="flex gap-2">
+      <input placeholder="Nombre" value={name()} onInput={(e) => setName(e.currentTarget.value)} />
+      <input placeholder="${e.amount}" type="number" value={amount()} onInput={(e) => setAmount(e.currentTarget.value)} />
+      <button class="primary" onClick={submit}>Agregar</button>
+    </div>
+  );
+}
+`);
+  }
+  write("solid", "Nav.tsx", `
+import { For } from "solid-js";
+
+const SECTIONS = ${JSON.stringify(ENTITIES.map((e) => ({ key: key(e.name), label: e.label })))};
+
+export default function Nav(props: { page: string; onChange: (page: string) => void }) {
+  return (
+    <div class="flex flex-wrap gap-2">
+      <For each={SECTIONS}>{(s) => <button class={props.page === s.key ? "font-bold" : ""} onClick={() => props.onChange(s.key)}>{s.label}</button>}</For>
+    </div>
+  );
+}
+`);
+  write("solid", "App.tsx", `
+import { createSignal, Match, Switch } from "solid-js";
+import Nav from "./Nav";
+${ENTITIES.map((e) => `import ${e.name}Page from "./${e.name}Page";`).join("\n")}
+
+export default function App() {
+  const [page, setPage] = createSignal("products");
+
+  return (
+    <div class="flex flex-col gap-4 p-4">
+      <h1 class="text-2xl font-bold">Panel</h1>
+      <Nav page={page()} onChange={setPage} />
+      <Switch>
+${ENTITIES.map((e) => `        <Match when={page() === "${key(e.name)}"}>\n          <${e.name}Page />\n        </Match>`).join("\n")}
+      </Switch>
+    </div>
+  );
+}
+`);
+}
+
 // ---------- ArtScript ----------
 function artscript() {
   const seed = `[${SEED.map((s) => `{ id: ${s.id}, name: "${s.name}", amount: ${s.amount}, active: ${s.active} }`).join(", ")}]`;
@@ -357,6 +589,8 @@ for (const [name, count] of [["admin", 10], ["adminxl", 25]] as const) {
   rmSync(OUT, { recursive: true, force: true });
   react();
   svelte();
+  vue();
+  solid();
   artscript();
   console.log(`generated ${OUT} (${count} sections, ${count * 4 + 2} components)`);
 }
