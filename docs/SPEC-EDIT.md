@@ -41,7 +41,7 @@ remove Todos/column/if/else/text
 
 `tag content prop=value flag -> action { children }`, one element per line.
 
-- Elements: `text title button input textarea select radio tabs checkbox file modal image link badge spinner divider row column card grid form list item table tr th td`, and components (`Name prop=value`).
+- Elements: `text title button input textarea select radio tabs checkbox file modal image link badge icon spinner divider row column card grid form list item table tr th td`, and components (`Name prop=value`). `icon "trash"` (Lucide names); `notify("Saved", "success")` shows a message.
 - `button "x" -> action` (click), `input state -> action` (Enter; binds the state), `form { } -> action` (submit), `select x options=[...]`.
 - Flags: `text`/`title`: `bold muted small large danger primary success`; `button`: `primary danger small`. Conditional flag: `muted=t.done`.
 - Layout props: `gap=4 pad=4` (×4px), `align=start|center|end`, `justify=start|center|end|between`, `cols=3`.
