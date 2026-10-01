@@ -105,6 +105,12 @@ const EVENTS = ["click", "dblclick", "input", "change", "submit", "keydown", "ke
 
 const DATA_STATE: Record<string, Ty> = { loading: BOOL, error: { k: "opt", of: STR }, reload: fn({ k: "void" }) };
 
+export function isJsonLiteral(e: Expr): boolean {
+  if (e.kind === "Str" || e.kind === "Num" || e.kind === "Bool" || e.kind === "Null") return true;
+  if (e.kind === "Unary" && e.op === "-") return e.arg.kind === "Num";
+  return e.kind === "Array" && e.items.length === 0;
+}
+
 function walkNodes(x: unknown, fn: (n: any) => void) {
   if (Array.isArray(x)) for (const y of x) walkNodes(y, fn);
   else if (x && typeof x === "object") {
@@ -198,6 +204,10 @@ class Checker {
         if (f.name in fields) this.err("DUPLICATE_NAME", `duplicate field '${f.name}'`, f.loc, { expr: f.name });
         fields[f.name] = this.resolve(f.type);
         this.rules(f, d.name);
+        if (f.default) {
+          if (!isJsonLiteral(f.default)) this.err("TYPE_MISMATCH", "a field default must be a literal", f.default.loc, { expr: printExpr(f.default), expected: '0, "", false, [] or null' });
+          else this.expectTy(f.default, this.infer(f.default, new Scope(null)), fields[f.name]);
+        }
       }
       this.idFields.set(d.name, new Set(d.fields.filter((f) => f.type.name === "ID" && !f.type.list).map((f) => f.name)));
     }
@@ -1017,6 +1027,9 @@ class Checker {
   // Fields the server fills in on create: ids, and `owner` on private apis.
   autoFields(api: string, model: string): Set<string> {
     const s = new Set(this.idFields.get(model) ?? []);
+    // Fields with a default are filled in by the server too.
+    const decl = this.program.decls.find((d): d is ModelDecl => d.kind === "Model" && d.name === model);
+    for (const f of decl?.fields ?? []) if (f.default) s.add(f.name);
     if (!this.privateApis.has(api)) s.delete("owner");
     return s;
   }

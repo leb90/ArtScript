@@ -18,8 +18,10 @@ export type ModelDecl = { kind: "Model"; name: string; fields: Field[]; loc: Loc
 // Rules checked by the server on create/update: `name: String min=2 max=50`, `email: Email unique`,
 // `code: String match="^[A-Z]{3}$"`. min/max: length of a String or list, value of a Number.
 // `author: User cascade`: deleting the user deletes the rows that reference it (see relations).
-export type FieldRules = { min?: number; max?: number; match?: string; unique?: boolean; cascade?: boolean };
-export type Field = { name: string; type: TypeRef; rules?: FieldRules; loc: Loc };
+// `was="name"`: the field was renamed; existing rows are migrated on the next start.
+export type FieldRules = { min?: number; max?: number; match?: string; unique?: boolean; cascade?: boolean; was?: string };
+// `default`: `stock: Number = 0` fills it on create and in existing rows when the field is added.
+export type Field = { name: string; type: TypeRef; default?: Expr; rules?: FieldRules; loc: Loc };
 
 // `api users: User [login|private]`: REST resource for a model (list, get, create, update, remove),
 // persisted on the server. `login` requires a session; `private` also scopes rows to their `owner`;

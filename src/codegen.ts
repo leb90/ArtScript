@@ -77,6 +77,8 @@ export type ServerSchema = {
   rules: Record<string, Record<string, FieldRules>>;
   // Relations: per model, the fields that reference another stored model (by the api storing it).
   refs: Record<string, Record<string, { api: string; list: boolean }>>;
+  // Field defaults per model (JSON values), for create and for migrating existing rows.
+  defaults: Record<string, Record<string, unknown>>;
   apis: Record<string, { model: string; access: ApiAccess }>;
   auth: string | null;
   fns: string;
@@ -87,12 +89,15 @@ export function serverSchema(program: Program): ServerSchema | null {
   const models: ServerSchema["models"] = {};
   let auth: string | null = null;
   const rules: ServerSchema["rules"] = {};
+  const defaults: ServerSchema["defaults"] = {};
   for (const d of program.decls) {
     if (d.kind === "Api") apis[d.name] = { model: d.model, access: d.access };
     if (d.kind === "Model") {
       models[d.name] = Object.fromEntries(d.fields.map((f) => [f.name, printType(f.type)]));
       const withRules = d.fields.filter((f) => f.rules);
       if (withRules.length) rules[d.name] = Object.fromEntries(withRules.map((f) => [f.name, f.rules!]));
+      const withDefault = d.fields.filter((f) => f.default);
+      if (withDefault.length) defaults[d.name] = Object.fromEntries(withDefault.map((f) => [f.name, jsonValue(f.default!)]));
     }
     if (d.kind === "Auth") auth = d.api;
   }
@@ -107,7 +112,7 @@ export function serverSchema(program: Program): ServerSchema | null {
       if (api) (refs[d.name] ??= {})[f.name] = { api, list: f.type.list };
     }
   }
-  return { models, rules, refs, apis, auth, fns: serverFnsModule(program, fns) };
+  return { models, rules, refs, defaults, apis, auth, fns: serverFnsModule(program, fns) };
 }
 
 // Each server fn becomes `async name({ db, me, fail }, ...params)`.
@@ -560,6 +565,13 @@ function hasAwait(stmts: Stmt[]): boolean {
     if (s.kind === "Cleanup") return false;
     return exprHasAwait(s.cond) || hasAwait(s.then) || (s.else !== null && hasAwait(s.else));
   });
+}
+
+// The value of a literal field default (`0`, `-1`, `""`, `false`, `null`, `[]`).
+function jsonValue(e: Expr): unknown {
+  if (e.kind === "Str" || e.kind === "Num" || e.kind === "Bool") return e.value;
+  if (e.kind === "Unary" && e.arg.kind === "Num") return -e.arg.value;
+  return e.kind === "Array" ? [] : null;
 }
 
 const printExprName = (e: Expr) => (e.kind === "Ident" ? e.name : "undefined");

@@ -261,7 +261,6 @@ switch (cmd) {
       const schema = JSON.stringify(r.server);
       if (schema !== apiSchema) {
         apiSchema = schema;
-        // Server fns are compiled to an ES module and loaded straight from memory.
         // Server fns are written next to the project so their `use` imports resolve like the app's.
         let fns = {};
         if (r.server) {
@@ -271,7 +270,17 @@ switch (cmd) {
           fns = (await import(pathToFileURL(file).href)).fns;
           rmSync(file, { force: true });
         }
-        api = r.server ? createApi(r.server, dataDir, fns) : null;
+        try {
+          api = r.server ? createApi(r.server, dataDir, fns) : null;
+        } catch (e) {
+          // A migration that can't run (a new required field without a default): shown like a
+          // compile error, retried on the next save.
+          api = null;
+          apiSchema = "";
+          lastError = (e as Error).message;
+          console.log(lastError);
+          return false;
+        }
       }
       return true;
     };

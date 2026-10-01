@@ -97,7 +97,7 @@ export function printProgram(p: Program): string {
 
 export function printRules(r: Field["rules"]): string {
   if (!r) return "";
-  return (r.min !== undefined ? ` min=${r.min}` : "") + (r.max !== undefined ? ` max=${r.max}` : "") + (r.match !== undefined ? ` match=${JSON.stringify(r.match)}` : "") + (r.unique ? " unique" : "") + (r.cascade ? " cascade" : "");
+  return (r.min !== undefined ? ` min=${r.min}` : "") + (r.max !== undefined ? ` max=${r.max}` : "") + (r.match !== undefined ? ` match=${JSON.stringify(r.match)}` : "") + (r.unique ? " unique" : "") + (r.cascade ? " cascade" : "") + (r.was !== undefined ? ` was=${JSON.stringify(r.was)}` : "");
 }
 
 export function printParams(f: { params: string[]; defaults?: (Expr | null)[] }): string {
@@ -110,7 +110,7 @@ export function printDecl(d: Decl): string {
   if (d.kind === "Auth") return `auth ${d.api}`;
   if (d.kind === "ServerFn") return `server fn ${d.name}(${printParams(d)}) {\n${printStmts(d.body, 1).join("\n")}\n}`;
   if (d.kind === "Model") {
-    return `model ${d.name} {\n${d.fields.map((f) => `${IND}${f.name}: ${printType(f.type)}${printRules(f.rules)}`).join("\n")}\n}`;
+    return `model ${d.name} {\n${d.fields.map((f) => `${IND}${f.name}: ${printType(f.type)}${f.default ? ` = ${printExpr(f.default)}` : ""}${printRules(f.rules)}`).join("\n")}\n}`;
   }
   let head = d.page ? `page ${d.name}` : d.layout ? `layout ${d.name}` : `component ${d.name}`;
   if (d.page && d.path) head += ` ${JSON.stringify(d.path)}`;

@@ -108,18 +108,21 @@ class Parser {
       const f = this.ident("a field name");
       this.expect(":");
       const type = this.type();
+      // A default: a literal (`= 0`, `= ""`, `= false`, `= []`, `= null`).
+      const def = this.eat("=") ? this.unary() : undefined;
       const rules: Record<string, number | string | boolean> = {};
       while (this.tok.t === "id") {
-        if (!["min", "max", "match", "unique", "cascade"].includes(this.tok.v)) this.fail("min=, max=, match=\"regex\", unique or cascade");
+        if (!["min", "max", "match", "unique", "cascade", "was"].includes(this.tok.v)) this.fail("min=, max=, match=\"regex\", unique, cascade or was=\"old name\"");
         const r = this.next().v;
         if (r === "unique" || r === "cascade") { rules[r] = true; continue; }
         this.expect("=");
+        const text = r === "match" || r === "was";
         const neg = this.eat("-");
-        if ((this.tok.t as string) !== (r === "match" ? "str" : "num")) this.fail(r === "match" ? "a string" : "a number");
+        if ((this.tok.t as string) !== (text ? "str" : "num")) this.fail(text ? "a string" : "a number");
         const v = this.next().v;
-        rules[r] = r === "match" ? v : (neg ? -1 : 1) * Number(v);
+        rules[r] = text ? v : (neg ? -1 : 1) * Number(v);
       }
-      fields.push({ name: f.v, type, ...(Object.keys(rules).length ? { rules } : {}), loc: f.loc });
+      fields.push({ name: f.v, type, ...(def ? { default: def } : {}), ...(Object.keys(rules).length ? { rules } : {}), loc: f.loc });
       this.skipSep();
     }
     this.expect("}");

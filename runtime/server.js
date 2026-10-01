@@ -95,13 +95,59 @@ const ALL = Symbol("all");
 const sqlValue = (v) => (typeof v === "boolean" ? (v ? 1 : 0) : v);
 
 // A table: validated CRUD and queries over one api's rows. `me` scopes private apis to their owner.
-function makeTable(schema, db, dataDir, name, { model, access }) {
+// Brings the stored rows of an api in line with its model when the model changed since the last
+// start: renamed fields (`was="old"`) move, removed fields are dropped, added fields get their
+// default (an optional one stays null). A copy of the database is saved before the first change.
+// A new required field without a default stops the server with the fix.
+function migrate(db, name, model, schema, defaults, backup) {
+  const T = `"api_${name}"`;
+  db.exec("CREATE TABLE IF NOT EXISTS _schema (api TEXT PRIMARY KEY, fields TEXT NOT NULL)");
+  const fields = schema.models[model] ?? {};
+  const current = JSON.stringify(fields);
+  const stored = db.prepare("SELECT fields FROM _schema WHERE api = ?").get(name)?.fields;
+  if (stored === current) return;
+  const before = stored ? JSON.parse(stored) : null;
+  const renames = Object.entries(schema.rules?.[model] ?? {}).filter(([, r]) => r.was).map(([f, r]) => [r.was, f]);
+  const rows = db.prepare(`SELECT id, data FROM ${T}`).all();
+  const changed = [];
+  const missing = new Set();
+  for (const { id, data } of rows) {
+    const row = JSON.parse(data);
+    const next = { ...row };
+    for (const [from, to] of renames) if (from in next && !(to in next)) { next[to] = next[from]; delete next[from]; }
+    for (const k of Object.keys(next)) if (!(k in fields) && k !== "owner" && (before === null || k in before || renames.some(([f]) => f === k))) delete next[k];
+    for (const [f, t] of Object.entries(fields)) {
+      if (next[f] !== undefined) continue;
+      if (f in defaults) next[f] = structuredClone(defaults[f]);
+      else if (t.endsWith("?")) continue;
+      else if (t.endsWith("[]")) next[f] = [];
+      else missing.add(f);
+    }
+    if (JSON.stringify(next) !== data) changed.push([id, next]);
+  }
+  if (missing.size) {
+    const f = [...missing][0];
+    throw new Error(`ArtScript: ${name} has rows without '${f}', a new required field of ${model}. Give it a default (\`${f}: ${fields[f]} = ...\`) or make it optional (\`${f}: ${fields[f]}?\`).`);
+  }
+  if (changed.length) {
+    backup();
+    const update = db.prepare(`UPDATE ${T} SET data = ? WHERE id = ?`);
+    db.exec("BEGIN");
+    for (const [id, row] of changed) update.run(JSON.stringify(row), id);
+    db.exec("COMMIT");
+  }
+  db.prepare("INSERT OR REPLACE INTO _schema VALUES (?, ?)").run(name, current);
+}
+
+function makeTable(schema, db, dataDir, name, { model, access }, backup) {
   const fields = schema.models[model] ?? {};
   const key = idField(fields);
   const isAuth = schema.auth === name;
   const userKey = schema.auth ? idField(schema.models[schema.apis[schema.auth].model]) : null;
   const T = `"api_${name}"`;
   db.exec(`CREATE TABLE IF NOT EXISTS ${T} (id TEXT PRIMARY KEY, owner TEXT, data TEXT NOT NULL)`);
+  const defaults = schema.defaults?.[model] ?? {};
+  migrate(db, name, model, schema, defaults, backup);
   const legacy = join(dataDir, `${name}.json`);
   if (existsSync(legacy)) {
     for (const row of JSON.parse(readFileSync(legacy, "utf8"))) db.prepare(`INSERT OR IGNORE INTO ${T} VALUES (?, ?, ?)`).run(String(row[key]), row.owner ?? null, JSON.stringify(row));
@@ -228,6 +274,7 @@ function makeTable(schema, db, dataDir, name, { model, access }) {
     hasAdmin: () => !!db.prepare(`SELECT 1 FROM ${T} WHERE json_extract(data, '$.role') = 'admin' LIMIT 1`).get(),
     create(body, me) {
       const row = { ...body };
+      for (const [f, v] of Object.entries(defaults)) if (row[f] === undefined) row[f] = structuredClone(v);
       if (key && (row[key] === undefined || row[key] === null)) row[key] = randomUUID();
       if (access === "private" && me && me !== ALL) row.owner = String(me[userKey]);
       check(row, me);
@@ -297,7 +344,13 @@ const cookieOf = (req) => Object.fromEntries((req.headers.cookie ?? "").split(";
 // `fns`: the compiled server functions ({ name: async ({ db, me, fail }, ...args) => any }).
 export function createApi(schema, dataDir, fns = {}) {
   const sql = openDb(dataDir);
-  const tables = Object.fromEntries(Object.entries(schema.apis).map(([n, a]) => [n, makeTable(schema, sql, dataDir, n, a)]));
+  let saved = false; // one backup per start, before the first migration
+  const backup = () => {
+    if (saved) return;
+    saved = true;
+    sql.exec(`VACUUM INTO '${join(dataDir, `art-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.db`).replace(/'/g, "''")}'`);
+  };
+  const tables = Object.fromEntries(Object.entries(schema.apis).map(([n, a]) => [n, makeTable(schema, sql, dataDir, n, a, backup)]));
   for (const t of Object.values(tables)) t.link(tables);
   const users = schema.auth ? tables[schema.auth] : null;
   const hasRoles = !!users && "role" in (schema.models[users.model] ?? {});
