@@ -21,13 +21,15 @@ test("meta: props are checked", () => {
 test("prerender: static routes get their HTML and tags; the live app takes over without duplicates", async () => {
   const dir = mkdtempSync(join(tmpdir(), "art-pre-"));
   cpSync("examples/blog", dir, { recursive: true });
-  execFileSync(process.execPath, ["src/cli.ts", "build", dir, "--prerender"], { stdio: "pipe" });
+  execFileSync(process.execPath, ["src/cli.ts", "build", dir, "--prerender", "--site", "https://blog.example/"], { stdio: "pipe" });
   const dist = join(dir, "dist");
   const home = readFileSync(join(dist, "index.html"), "utf8");
   assert.match(home, /<title>Blog<\/title>/);
   assert.match(home, /<meta name="description" content="Notes about ArtScript.">/);
   assert.match(home, /<a href="\/posts\/hello">Hello, ArtScript<\/a>/);
   assert.ok(existsSync(join(dist, "about", "index.html")));
+  assert.match(readFileSync(join(dist, "sitemap.xml"), "utf8"), /<loc>https:\/\/blog.example\/<\/loc>[\s\S]*<loc>https:\/\/blog.example\/about<\/loc>/);
+  assert.match(readFileSync(join(dist, "robots.txt"), "utf8"), /Sitemap: https:\/\/blog.example\/sitemap.xml/);
   assert.doesNotMatch(readFileSync(join(dist, "_app.html"), "utf8"), /Hello, ArtScript/, "the fallback shell is empty");
 
   GlobalRegistrator.register({ url: "http://localhost/" });

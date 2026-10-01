@@ -34,7 +34,8 @@ const HELP = `art ${PKG.version} — the ArtScript compiler
 
   art init <name> [--template t]                   create a new project
   art dev [path] [--port 3000]      dev server with live reload
-  art build [path] [--out dist]     build for production
+  art build [path] [--out dist] [--prerender [--site url]]
+                                    build for production (prerender: HTML per route; site: sitemap.xml)
   art check [path] [--ai]           typecheck; --ai = one JSON line per error
   art fmt [path] [--write]          canonical format (without --write it only prints)
   art patch [file|-] [--dir path] [--dry-run] [--ai]
@@ -58,7 +59,7 @@ for (let i = 1; i < argv.length; i++) {
   const a = argv[i];
   if (a.startsWith("--")) {
     const next = argv[i + 1];
-    if (next !== undefined && !next.startsWith("--") && ["--out", "--port", "--dir", "--budget", "--template"].includes(a)) { flags.set(a, next); i++; }
+    if (next !== undefined && !next.startsWith("--") && ["--out", "--port", "--dir", "--budget", "--template", "--site"].includes(a)) { flags.set(a, next); i++; }
     else flags.set(a, true);
   } else pos.push(a);
 }
@@ -207,6 +208,14 @@ switch (cmd) {
         writeFileSync(file, htmlShell(page.title || "ArtScript", page.head, page.html, "app.css" in r.files));
       }
       console.log(`prerendered: ${paths.join(" ")}`);
+      // --site https://example.com: sitemap.xml with those routes, and robots.txt pointing to it.
+      const site = (flag("--site") as string | undefined)?.replace(/\/+$/, "");
+      if (site) {
+        const urls = paths.map((p) => `  <url><loc>${site}${p}</loc></url>`).join("\n");
+        writeFileSync(join(outDir, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
+        writeFileSync(join(outDir, "robots.txt"), `User-agent: *\nAllow: /\nSitemap: ${site}/sitemap.xml\n`);
+        console.log(`sitemap: ${site}/sitemap.xml`);
+      }
     }
     const pub = join(projectRoot(target), "public");
     if (isDir(pub)) cpSync(pub, outDir, { recursive: true });
