@@ -18,6 +18,16 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const RUNTIME = join(ROOT, "runtime", "runtime.js");
 const SERVER_RUNTIME = join(ROOT, "runtime", "server.js");
 const SSR_RUNTIME = join(ROOT, "runtime", "ssr.js");
+// dist/Dockerfile for apps with a server: Node only (server.js is self-contained), data on a volume.
+const DOCKERFILE = `FROM node:24-alpine
+WORKDIR /app
+COPY . .
+ENV NODE_ENV=production PORT=3000 ART_DATA_DIR=/data
+VOLUME /data
+EXPOSE 3000
+HEALTHCHECK CMD wget -qO- http://localhost:3000/api/_health || exit 1
+CMD ["node", "server.js"]
+`;
 const PKG = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
 
 const HELP = `art ${PKG.version} — the ArtScript compiler
@@ -193,9 +203,19 @@ switch (cmd) {
     if (isDir(pub)) cpSync(pub, outDir, { recursive: true });
     console.log(`build ok → ${relative(process.cwd(), outDir) || outDir}\n${sizes(r.files)}`);
     if (r.server) {
-      writeFileSync(join(outDir, "server.js"), serverEntry(r.server));
-      writeFileSync(join(outDir, "server-runtime.js"), readFileSync(SERVER_RUNTIME, "utf8"));
-      console.log(`\n  with api: node ${join(relative(process.cwd(), outDir) || outDir, "server.js")}  (data in ./data, or ART_DATA_DIR)`);
+      // One self-contained file: the server runtime and the npm packages server fns use are bundled
+      // in, so dist/ runs anywhere with Node (no node_modules).
+      const esbuild = await import("esbuild");
+      const entry = serverEntry(r.server).replace('"./server-runtime.js"', JSON.stringify(SERVER_RUNTIME));
+      const out = await esbuild.build({
+        stdin: { contents: entry, resolveDir: resolve(projectRoot(target)), loader: "js" },
+        bundle: true, format: "esm", platform: "node", target: "node24", write: false, logLevel: "silent",
+        banner: { js: 'import { createRequire as __cr } from "node:module"; const require = __cr(import.meta.url);' },
+      });
+      writeFileSync(join(outDir, "server.js"), out.outputFiles[0].text);
+      writeFileSync(join(outDir, "Dockerfile"), DOCKERFILE);
+      writeFileSync(join(outDir, ".dockerignore"), "data\n");
+      console.log(`\n  with api: node ${join(relative(process.cwd(), outDir) || outDir, "server.js")}  (data in ./data, or ART_DATA_DIR)\n  docker:   docker build -t app ${relative(process.cwd(), outDir) || outDir} && docker run -p 3000:3000 -v app-data:/data app`);
     }
     break;
   }

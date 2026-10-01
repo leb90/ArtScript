@@ -618,7 +618,13 @@ export function serve(schema, fns, rootUrl, port = Number(process.env.PORT ?? 30
   const root = resolve(fileURLToPath(rootUrl));
   const dataDir = resolve(process.env.ART_DATA_DIR ?? join(root, "data"));
   const api = createApi(schema, dataDir, fns, jobs);
+  // ART_LOG=json: one JSON line per request (time, method, path, status, ms) for log collectors.
+  const log = process.env.ART_LOG === "json";
   const server = createServer(async (req, res) => {
+    if (log) {
+      const t0 = performance.now();
+      res.on("finish", () => process.stdout.write(JSON.stringify({ t: new Date().toISOString(), method: req.method, path: req.url, status: res.statusCode, ms: Math.round(performance.now() - t0) }) + "\n"));
+    }
     if (await api(req, res)) return;
     const path = decodeURIComponent(new URL(req.url ?? "/", "http://localhost").pathname);
     let file = resolve(root, "." + path);

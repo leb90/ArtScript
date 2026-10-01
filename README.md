@@ -67,7 +67,7 @@ page Users {
 }
 ```
 
-The client is typed end to end: `create` is checked against the model at compile time. `art dev` serves the api; `art build` also emits `dist/server.js` (`node dist/server.js`, no dependencies).
+The client is typed end to end: `create` is checked against the model at compile time. `art dev` serves the api; `art build` also emits `dist/server.js`, a single self-contained file (`node dist/server.js`, no `node_modules`), and a `Dockerfile` (data on a volume, health check at `/api/_health`, `ART_LOG=json` for one JSON log line per request).
 
 Accounts, per-user data and server logic are one line each:
 
