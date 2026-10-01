@@ -1,0 +1,16 @@
+replace Shop.add
+  fn add(product) {
+    products = products.map(p => p.id == product.id ? { ...p, stock: p.stock - 1 } : p)
+    let found = cart.find(i => i.product.id == product.id)
+    if found {
+      found.qty++
+    } else {
+      cart.push({ product, qty: 1 })
+    }
+  }
+replace ProductCard/card/button
+  if product.stock > 0 {
+    button "Agregar" primary -> onAdd(product)
+  } else {
+    text "Sin stock" muted
+  }

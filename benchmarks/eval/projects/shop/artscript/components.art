@@ -1,0 +1,74 @@
+component Header(count: Number) {
+  row justify=between {
+    title "Tienda"
+    text `Carrito (${count})` muted
+  }
+}
+
+component Nav(tab: String, onChange: Fn) {
+  row gap=2 {
+    button "Catálogo" primary=(tab == "catalog") -> onChange("catalog")
+    button "Carrito" primary=(tab == "cart") -> onChange("cart")
+  }
+}
+
+component Catalog(products: Product[], onAdd: Fn) {
+  state query = ""
+  computed shown = products.filter(p => p.name.toLowerCase().includes(query.toLowerCase()))
+
+  column gap=2 {
+    input query placeholder="Buscar"
+    grid cols=3 gap=2 {
+      for p in shown {
+        ProductCard product=p onAdd=onAdd
+      }
+    }
+    if shown.length == 0 {
+      text "Sin resultados" muted
+    }
+  }
+}
+
+component ProductCard(product: Product, onAdd: Fn) {
+  card gap=1 {
+    text product.name bold
+    text `$${product.price.toFixed(2)}`
+    button "Agregar" primary -> onAdd(product)
+  }
+}
+
+component CartView(cart: CartItem[], onChangeQty: Fn, onClear: Fn) {
+  if cart.length == 0 {
+    text "El carrito está vacío" muted
+  } else {
+    column gap=2 {
+      for item in cart {
+        CartItemRow item=item onChangeQty=onChangeQty
+      }
+      Summary cart=cart onClear=onClear
+    }
+  }
+}
+
+component CartItemRow(item: CartItem, onChangeQty: Fn) {
+  row gap=2 {
+    text item.product.name
+    button "-" -> onChangeQty(item.product.id, -1)
+    text item.qty
+    button "+" -> onChangeQty(item.product.id, 1)
+    text `$${(item.product.price * item.qty).toFixed(2)}`
+  }
+}
+
+component Summary(cart: CartItem[], onClear: Fn) {
+  computed total = cart.reduce((sum, i) => sum + i.product.price * i.qty, 0)
+
+  row justify=between {
+    text `Total: $${total.toFixed(2)}` bold
+    button "Vaciar carrito" danger -> onClear()
+  }
+}
+
+component Footer {
+  text "Gracias por visitar la tienda" small muted
+}

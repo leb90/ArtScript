@@ -1,0 +1,7 @@
+append Summary
+  computed discount = total > 50 ? total * 0.1 : 0
+insert after Summary/row
+  if discount > 0 {
+    text "Descuento 10%" muted
+    text `Total final: $${(total - discount).toFixed(2)}` bold
+  }

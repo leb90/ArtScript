@@ -39,6 +39,8 @@ async function bundle(stack: Stack, files: Files, dir: string): Promise<string> 
   } else {
     const { compile: compileSvelte } = await import("svelte/compiler");
     const names = Object.keys(files).filter((n) => n.endsWith(".svelte"));
+    // Plain modules (e.g. data.ts) are bundled as they are; server.ts runs separately.
+    for (const n of Object.keys(files)) if (!n.endsWith(".svelte") && n !== "server.ts") write(n, files[n]);
     for (const n of names) {
       const js = compileSvelte(files[n], { filename: n, generate: "client" }).js.code;
       write(`${n}.js`, js.replace(/(from\s+["'][^"']+)\.svelte(["'])/g, "$1.svelte.js$2"));
@@ -128,13 +130,18 @@ export class Page {
 
   async settle(ms = 30) { await new Promise((r) => setTimeout(r, ms)); }
 
-  // Visible text with a space between text nodes, so "<h1>Directorio</h1><p>0 resultados</p>" reads
-  // "Directorio 0 resultados" (textContent would glue it into "Directorio0 resultados").
+  // Visible text like a browser shows it: adjacent text nodes of the same element join directly
+  // (React renders "Carrito ({count})" as three nodes), different elements are separated by a space
+  // ("<h1>Directorio</h1><p>0 resultados</p>" reads "Directorio 0 resultados", not "Directorio0").
   text(): string {
-    const parts: string[] = [];
+    let out = "";
+    let prev: Node | null = null;
     const walker = document.createTreeWalker(document.body, 4 /* NodeFilter.SHOW_TEXT */);
-    for (let n = walker.nextNode(); n; n = walker.nextNode()) parts.push(n.textContent ?? "");
-    return norm(parts.join(" "));
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      out += (prev && prev.nextSibling === n ? "" : " ") + (n.textContent ?? "");
+      prev = n;
+    }
+    return norm(out);
   }
 
   private buttons(): HTMLElement[] {

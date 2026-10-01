@@ -1,0 +1,2 @@
+append CartItemRow/row
+  button "Quitar" small -> onChangeQty(item.product.id, -item.qty)

@@ -35,22 +35,24 @@ test("context: project map with inferred types", () => {
   assert.match(map, /page Todos "\/" state\[todos: Todo\[\], draft: String\] computed\[pending: Number\] fn\[add\(\)\] uses\[TodoItem\]/);
 });
 
-test("context: component detail with dependencies, usage and events", () => {
+test("context: with room for the source, only what the source doesn't say plus the source", () => {
   const { program, a } = todo();
   const out = declContext(program, a, "Todos/TodoItem")!;
-  assert.match(out, /^props: todo: Todo, remove: Fn$/m);
+  assert.match(out, /^component TodoItem\(todo: Todo, remove: Fn\) @/);
   assert.match(out, /^used_by: Todos$/m);
   assert.match(out, /^model Todo/m);
-  assert.match(out, /button "x" -> remove\(todo.id\)/);
-  assert.match(out, /^source:$/m);
+  assert.match(out, /button "x" danger small -> remove\(todo.id\)/);
+  assert.doesNotMatch(out, /^(props|events|paths):/m, "nothing the source already shows");
 });
 
-test("context: --budget trims to paths, then to lines", () => {
+test("context: --budget without room for the source gives a summary and the patch paths", () => {
   const { program, a } = todo();
   const full = declContext(program, a, "Todos")!;
   const small = declContext(program, a, "Todos", 120)!;
   assert.ok(estimateTokens(small) < estimateTokens(full));
-  assert.doesNotMatch(small, /^source:$/m);
+  assert.match(small, /^state: todos: Todo\[\], draft: String$/m);
+  assert.match(small, /^paths:$/m);
+  assert.doesNotMatch(small, /fn add\(\) \{/);
 });
 
 test("errors --ai: one JSON line without empty fields", () => {

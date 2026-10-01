@@ -110,3 +110,27 @@ test("enum prop keywords win over a state with the same name (type=email next to
   assert.equal(all(root, "input")[0].type, "email");
   assert.equal(all(root, "div")[0].style.alignItems, "center");
 });
+
+test("mutating through a let alias of a state element updates the UI", async () => {
+  const { root } = await mountApp(`model Item {
+  id: Number
+  qty: Number
+}
+
+page P {
+  state cart: Item[] = [{ id: 1, qty: 1 }]
+  computed total = cart.reduce((n, i) => n + i.qty, 0)
+  fn add(id) {
+    let found = cart.find(i => i.id == id)
+    if found {
+      found.qty++
+    }
+  }
+
+  button "+" -> add(1)
+  text total
+}`);
+  all(root, "button")[0].click();
+  all(root, "button")[0].click();
+  assert.equal(all(root, "span")[0].textContent, "3");
+});

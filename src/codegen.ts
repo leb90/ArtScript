@@ -248,7 +248,8 @@ class ComponentGen {
       if (s.kind === "ExprStmt") this.emit(this.expr(s.expr, scope) + ";");
       else if (s.kind === "Let") {
         this.emit(`let ${s.name} = ${this.expr(s.init, scope)};`);
-        scope.vars.set(s.name, { kind: "let" });
+        // `let found = cart.find(...)`: mutating `found` must still notify `cart`.
+        scope.vars.set(s.name, { kind: "let", sig: this.signalOf(s.init, scope) });
       } else if (s.kind === "Return") this.emit(s.value ? `return ${this.expr(s.value, scope)};` : "return;");
       else if (s.kind === "Try") {
         this.emit("try {");

@@ -105,6 +105,57 @@ const CHECKS: Record<string, Check> = {
     await p.until(() => !has(p, "Leche") && has(p, "Pan") && p.count("Borrar completadas") === 0, 'que borre "Leche", deje "Pan" y oculte el botón');
   },
 
+  // ---------- larger project: the shop ----------
+  // Product order in the catalog: Remera $15, Taza $8, Gorra $12, Mochila $45, Lapicera $2, Cuaderno $6.
+  async "shop-base"(p) {
+    await p.click("Agregar", 0);
+    await p.click("Agregar", 0);
+    await p.click("Agregar", 1);
+    await p.until(() => has(p, "Carrito (3)"), '"Carrito (3)" en el encabezado');
+    await p.click("Carrito");
+    await p.until(() => has(p, "Total: $38.00"), '"Total: $38.00" con 2 remeras y una taza');
+    await p.click("-", 0);
+    await p.until(() => has(p, "Total: $23.00"), 'que "-" baje el total a $23.00');
+    await p.click("Vaciar carrito");
+    await p.until(() => has(p, "El carrito está vacío"), '"El carrito está vacío"');
+  },
+
+  async "shop-remove"(p) {
+    await p.click("Agregar", 0);
+    await p.click("Agregar", 1);
+    await p.click("Carrito");
+    await p.until(() => has(p, "Remera") && has(p, "Taza"), "Remera y Taza en el carrito");
+    await p.click("Quitar", 0);
+    await p.until(() => !has(p, "Remera") && has(p, "Taza") && has(p, "Carrito (1)"), 'que "Quitar" elimine la Remera del carrito');
+  },
+
+  async "shop-stock"(p) {
+    await p.until(() => p.count("Agregar") === 6 && !has(p, "Sin stock"), '6 productos con "Agregar" y ninguno "Sin stock"');
+    await p.click("Agregar", 1);
+    await p.until(() => has(p, "Sin stock") && p.count("Agregar") === 5, 'que la Taza (stock 1) muestre "Sin stock" en lugar de "Agregar"');
+    await p.click("Agregar", 0);
+    await p.click("Carrito");
+    await p.until(() => has(p, "Taza") && has(p, "Remera") && has(p, "Carrito (2)"), "la Taza y la Remera en el carrito");
+  },
+
+  async "shop-discount"(p) {
+    await p.click("Agregar", 3);
+    await p.click("Agregar", 0);
+    await p.click("Carrito");
+    await p.until(() => has(p, "Descuento 10%") && has(p, "Total final: $54.00"), '"Descuento 10%" y "Total final: $54.00" con $60 en el carrito');
+    await p.click("-", 1);
+    await p.until(() => !has(p, "Descuento 10%") && has(p, "Total: $45.00"), 'que el descuento desaparezca con $45');
+  },
+
+  async "shop-sort"(p) {
+    const order = () => ["Lapicera", "Cuaderno", "Taza", "Gorra", "Remera", "Mochila"].map((n) => p.text().indexOf(n));
+    await p.click("Ordenar por precio");
+    await p.until(() => order().every((i, k, a) => i >= 0 && (k === 0 || a[k - 1] < i)), "los productos de menor a mayor precio: Lapicera, Cuaderno, Taza, Gorra, Remera, Mochila");
+    await p.click("Agregar", 0);
+    await p.click("Carrito");
+    await p.until(() => has(p, "Lapicera"), 'que "Agregar" del primer producto ordenado agregue la Lapicera');
+  },
+
   async "fs-users"(p) {
     await p.until(() => p.count("Agregar") === 1, 'el botón "Agregar"');
     const add = async (name: string, email: string) => { await p.fill("Nombre", name); await p.fill("Email", email); await p.click("Agregar"); };
@@ -138,8 +189,11 @@ const CHECKS: Record<string, Check> = {
 };
 
 // Runs the task's behavior check in this process (it installs happy-dom globals while it runs).
+// Variants of a task (e.g. "shop-sort@focus") share its check.
+const checkFor = (task: Task) => CHECKS[task.id.split("@")[0]];
+
 async function runCheck(task: Task, stack: Stack, files: Files): Promise<string[]> {
-  const check = CHECKS[task.id];
+  const check = checkFor(task);
   if (!check) return [];
   let app: Awaited<ReturnType<typeof launch>> | null = null;
   try {
@@ -156,7 +210,7 @@ async function runCheck(task: Task, stack: Stack, files: Files): Promise<string[
 // Runs the check in a separate Node process, so the simulated browser's globals never touch the
 // eval's own fetch/timers and every run starts clean. Returns the failures (empty = it works).
 export function behave(task: Task, stack: Stack, files: Files): Promise<string[]> {
-  if (!CHECKS[task.id]) return Promise.resolve([]);
+  if (!checkFor(task)) return Promise.resolve([]);
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [fileURLToPath(import.meta.url), "--worker"], { stdio: ["pipe", "pipe", "pipe"] });
     let out = "", err = "";

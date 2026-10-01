@@ -1,0 +1,6 @@
+append Catalog
+  state sorted = false
+replace Catalog.shown
+  computed shown = (sorted ? [...products].sort((a, b) => a.price - b.price) : products).filter(p => p.name.toLowerCase().includes(query.toLowerCase()))
+insert before Catalog/column/input
+  button "Ordenar por precio" small -> sorted = true

@@ -12,6 +12,9 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { TASKS, type Task } from "./tasks.ts";
+import { analyze } from "../../src/checker.ts";
+import { parseProject } from "../../src/compile.ts";
+import { declContext, projectMap } from "../../src/context.ts";
 import { formatAI } from "../../src/errors.ts";
 import { applyPatch } from "../../src/patch.ts";
 import { behave } from "./behavior.ts";
@@ -66,8 +69,8 @@ function systemPrompt(stack: Stack): string {
 }
 
 function baseFiles(task: Task, stack: Stack): Files {
-  if (!task.base) return {};
-  const dir = join(REPO, "benchmarks", "tasks", task.base, stack);
+  if (!task.base && !task.project) return {};
+  const dir = task.project ? join(HERE, "projects", task.project, stack) : join(REPO, "benchmarks", "tasks", task.base!, stack);
   return Object.fromEntries(readdirSync(dir).map((f) => [f, readFileSync(join(dir, f), "utf8")]));
 }
 
@@ -87,8 +90,27 @@ const FULLSTACK_HINT: Record<Stack, string> = {
   svelte: "Es una app full-stack. Además de App.svelte, escribí server.ts: un servidor Node con node:http (sin dependencias externas) que escuche en process.env.PORT y exponga bajo /api/ lo que necesites, guardando los datos en memoria. El frontend lo llama con rutas relativas (fetch(\"/api/...\")). No sirvas archivos estáticos.",
 };
 
+const fence = (files: Files) => Object.entries(files).map(([n, s]) => `\`\`\`${n}\n${s}\`\`\``).join("\n\n");
+
+// Larger project: the whole project ("full"), or what a good agent would read ("focus").
+function projectPrompt(task: Task, stack: Stack): string {
+  const files = baseFiles(task, stack);
+  const tail = `Tarea: ${task.prompt}\n\n${EDIT_HINT[stack]}`;
+  if (task.context === "full") return `Proyecto actual (todos los archivos):\n\n${fence(files)}\n\n${tail}`;
+  const focus = task.focus![stack];
+  if (stack === "artscript") {
+    const { program } = parseProject(Object.entries(files).map(([file, src]) => ({ file, src })));
+    const a = analyze(program);
+    const parts = focus.map((name) => `$ art context ${name}\n${declContext(program, a, name)}`);
+    return `Mapa del proyecto (art context):\n${projectMap(program, a)}\n\nContexto de las partes relevantes:\n\n${parts.join("\n\n")}\n\n${tail}`;
+  }
+  const relevant = Object.fromEntries(focus.map((n) => [n, files[n]]));
+  return `Archivos del proyecto: ${Object.keys(files).join(", ")}\n\nArchivos relevantes:\n\n${fence(relevant)}\n\n${tail}`;
+}
+
 function userPrompt(task: Task, stack: Stack): string {
   if (task.fullstack) return `Tarea: ${task.prompt}\n\n${FULLSTACK_HINT[stack]}`;
+  if (task.project) return projectPrompt(task, stack);
   const base = baseFiles(task, stack);
   const code = Object.entries(base).map(([n, s]) => `\`\`\`${n}\n${s}\`\`\``).join("\n\n");
   return code ? `Código actual:\n\n${code}\n\nTarea: ${task.prompt}\n\n${EDIT_HINT[stack]}` : `Tarea: ${task.prompt}`;
@@ -96,7 +118,7 @@ function userPrompt(task: Task, stack: Stack): string {
 
 // Applies a patch / edit answer to the task's base files; null if the answer has none.
 function applyEditAnswer(task: Task, stack: Stack, text: string): { files: Files } | { errors: string[] } | null {
-  if (!task.base) return null;
+  if (!task.base && !task.project) return null;
   const base = baseFiles(task, stack);
   if (stack === "artscript") {
     const patch = extractPatch(text);
@@ -162,7 +184,8 @@ async function runOne(client: Anthropic, task: Task, stack: Stack, run: number):
     const text = res.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map((b) => b.text).join("\n");
     const edited = applyEditAnswer(task, stack, text);
     if (edited && "errors" in edited) { files = {}; errors = edited.errors; }
-    else { files = edited ? edited.files : extractFiles(text); errors = await validate(stack, files); }
+    // Full files returned for a modification replace those files; the rest of the project stays.
+    else { files = edited ? edited.files : { ...baseFiles(task, stack), ...extractFiles(text) }; errors = await validate(stack, files); }
     if (!errors.length && BEHAVIOR) errors = await behave(task, stack, files);
     history.push({ files, errors: errors.slice(0, 10), ...(edited ? { edit: text } : {}) });
     if (!errors.length) return done(true, attempt);
@@ -279,6 +302,25 @@ async function dryRun() {
     const errs = await behave(task, st, files);
     console.log(`${errs.length ? "✗" : "✓"} behavior ${t}/${st}${errs.length ? ": " + errs[0] : ""}`);
   }
+  // The larger project works as written in every stack.
+  for (const st of STACK_IDS) {
+    const dir = join(HERE, "projects", "shop", st);
+    const files = Object.fromEntries(readdirSync(dir).map((f) => [f, readFileSync(join(dir, f), "utf8")]));
+    const errs = await behave({ id: "shop-base", prompt: "" }, st, files);
+    console.log(`${errs.length ? "✗" : "✓"} behavior shop (base project)/${st}${errs.length ? ": " + errs[0] : ""}`);
+  }
+  // Reference patches for the project tasks: they apply and pass the task's behavior check.
+  const patchDir = join(HERE, "refs", "shop");
+  if (existsSync(patchDir)) {
+    const dir = join(HERE, "projects", "shop", "artscript");
+    const sources = readdirSync(dir).map((f) => ({ file: f, src: readFileSync(join(dir, f), "utf8") }));
+    for (const f of readdirSync(patchDir)) {
+      const id = f.replace(/\.patch$/, "");
+      const r = applyPatch(sources, readFileSync(join(patchDir, f), "utf8"));
+      const errs = r.diagnostics.length ? r.diagnostics.map(formatAI) : await behave({ id, prompt: "" }, "artscript", r.files);
+      console.log(`${errs.length ? "✗" : "✓"} reference patch ${id}/artscript${errs.length ? ": " + errs[0] : ""}`);
+    }
+  }
   // And a buggy app must fail, with a message that says what was expected.
   const buggy = { "app.art": readFileSync(join(REPO, "examples", "counter", "app.art"), "utf8").replace("count * 2", "count * 3") };
   const caught = await behave(TASKS.find((x) => x.id === "counter")!, "artscript", buggy);
@@ -290,7 +332,18 @@ async function dryRun() {
   console.log(`model ${MODEL}, spending cap --max-usd ${MAX_USD}`);
 }
 
+// `--prompt-sizes`: prints the user prompt size of each project task, per stack (no API calls).
+async function promptSizes() {
+  const { getEncoding } = await import("js-tiktoken");
+  const enc = getEncoding("o200k_base");
+  console.log(`${"task".padEnd(22)} ${STACK_IDS.map((s) => s.padStart(10)).join(" ")}   (o200k tokens of the user prompt)`);
+  for (const t of TASKS.filter((x) => x.project && TASK_IDS.includes(x.id))) {
+    console.log(`${t.id.padEnd(22)} ${STACK_IDS.map((s) => String(enc.encode(userPrompt(t, s)).length).padStart(10)).join(" ")}`);
+  }
+}
+
 async function main() {
+  if (args.includes("--prompt-sizes")) return promptSizes();
   if (!PRICES[MODEL]) throw new Error(`modelo sin precio cargado: ${MODEL}. Disponibles: ${Object.keys(PRICES).join(", ")}`);
   if (DRY) return dryRun();
   if (existsSync(join(REPO, ".env"))) process.loadEnvFile(join(REPO, ".env"));
