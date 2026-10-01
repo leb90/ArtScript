@@ -1,9 +1,9 @@
 import type {
-  ApiAccess, ApiDecl, ComponentDecl, Decl, Element, Expr, Field, FnDecl, Loc, Member, ModelDecl, ObjProp, Param, Program, Prop, ServerFnDecl, Stmt, TypeRef, UseDecl, ViewNode,
+  ApiAccess, ApiDecl, Commented, ComponentDecl, Decl, Element, Expr, Field, FnDecl, Loc, Member, ModelDecl, ObjProp, Param, Program, Prop, ServerFnDecl, Stmt, TypeRef, UseDecl, ViewNode,
 } from "./ast.ts";
 import { ELEMENTS } from "./elements.ts";
 import { CompileError, diag, type Diagnostic } from "./errors.ts";
-import { lex, type Token } from "./lexer.ts";
+import { lex, type Comment, type Token } from "./lexer.ts";
 
 const BINARY_PREC: Record<string, number> = {
   "??": 1, "||": 2, "&&": 3,
@@ -16,18 +16,20 @@ const ASSIGN_OPS = new Set(["=", "+=", "-=", "*=", "/=", "%=", "**=", "??="]);
 const CANONICAL: Record<string, string> = { "===": "==", "!==": "!=" };
 
 export function parse(src: string, file: string, startLine = 1): Program {
-  return new Parser(lex(src, file, startLine)).program();
+  const comments: Comment[] = [];
+  return new Parser(lex(src, file, startLine, 1, comments), comments).program();
 }
 
 // Like parse, but keeps going after a syntax error (from the next declaration, or the next member
 // or view line of a component) and returns every error, so one compile reports them all.
 export function parseAll(src: string, file: string): { program: Program; errors: Diagnostic[] } {
   let toks: Token[];
-  try { toks = lex(src, file, 1); } catch (e) {
+  const comments: Comment[] = [];
+  try { toks = lex(src, file, 1, 1, comments); } catch (e) {
     if (e instanceof CompileError) return { program: { kind: "Program", decls: [] }, errors: [e.diagnostic] };
     throw e;
   }
-  const p = new Parser(toks);
+  const p = new Parser(toks, comments);
   p.errors = [];
   const program = p.program();
   return { program, errors: p.errors };
@@ -59,8 +61,37 @@ class Parser {
   toks: Token[];
   i = 0;
   errors: Diagnostic[] | null = null; // collecting (parseAll) instead of stopping at the first error
-  constructor(toks: Token[]) {
+  comments: Comment[];
+  ci = 0; // comments before index ci are attached
+  constructor(toks: Token[], comments: Comment[] = []) {
     this.toks = toks;
+    this.comments = comments;
+  }
+
+  // Comments on lines before `line` not attached yet.
+  lead(line: number): string[] | undefined {
+    const out: string[] = [];
+    while (this.ci < this.comments.length && this.comments[this.ci].line < line) out.push(this.comments[this.ci++].text);
+    return out.length ? out : undefined;
+  }
+  // Parses a node with `fn` and gives it the comments before it (taken first, so the node's own
+  // children don't take them).
+  noted<T extends object | null>(fn: () => T): T {
+    const c = this.lead(this.tok.loc.line);
+    const node = fn();
+    if (c && node) (node as Commented).comments = c;
+    return node;
+  }
+  note<T extends object>(node: T, line: number): T {
+    const c = this.lead(line);
+    if (c) (node as Commented).comments = c;
+    return node;
+  }
+  // Comments right before a block's `}`: after its last node (or left for whatever comes next).
+  closing(nodes: object[]) {
+    if (!nodes.length) return;
+    const c = this.lead(this.tok.loc.line);
+    if (c) { const last = nodes[nodes.length - 1] as Commented; last.after = [...(last.after ?? []), ...c]; }
   }
 
   // ---------- utilities ----------
@@ -115,11 +146,12 @@ class Parser {
     const decls: Decl[] = [];
     this.skipNl();
     while (this.tok.t !== "eof") {
-      const d = this.recover(1, () => this.decl());
+      const d = this.noted(() => this.recover(1, () => this.decl()));
       if (d) decls.push(d);
       this.skipNl();
     }
-    return { kind: "Program", decls };
+    const rest = this.lead(Infinity);
+    return { kind: "Program", decls, ...(rest ? { comments: rest } : {}) };
   }
 
   decl(): Decl {
@@ -162,9 +194,10 @@ class Parser {
         const v = this.next().v;
         rules[r] = text ? v : (neg ? -1 : 1) * Number(v);
       }
-      fields.push({ name: f.v, type, ...(def ? { default: def } : {}), ...(Object.keys(rules).length ? { rules } : {}), loc: f.loc });
+      fields.push(this.note({ name: f.v, type, ...(def ? { default: def } : {}), ...(Object.keys(rules).length ? { rules } : {}), loc: f.loc }, f.loc.line));
       this.skipSep();
     }
+    this.closing(fields);
     this.expect("}");
     return { kind: "Model", name, fields, loc };
   }
@@ -297,11 +330,12 @@ class Parser {
       // A bad member or view line is reported and the next line of the component is parsed.
       const col = this.tok.loc.col;
       this.recover(col, () => {
-        if (this.memberAhead()) members.push(this.member());
-        else view.push(this.viewNode());
+        if (this.memberAhead()) members.push(this.noted(() => this.member()));
+        else view.push(this.noted(() => this.viewNode()));
       });
       this.skipSep();
     }
+    this.closing(view.length ? view : members);
     this.expect("}");
     return { kind: "Component", page, ...(layout ? { layout: true } : {}), name, path, ...(layoutName ? { layoutName } : {}), params, members, view, loc: kw.loc };
   }
@@ -345,9 +379,10 @@ class Parser {
     this.skipSep();
     while (!this.is("}")) {
       if (this.tok.t === "eof") this.fail("'}'");
-      nodes.push(this.viewNode());
+      nodes.push(this.noted(() => this.viewNode()));
       this.skipSep();
     }
+    this.closing(nodes);
     this.expect("}");
     return nodes;
   }
@@ -434,9 +469,10 @@ class Parser {
     this.skipSep();
     while (!this.is("}")) {
       if (this.tok.t === "eof") this.fail("'}'");
-      out.push(this.stmt());
+      out.push(this.noted(() => this.stmt()));
       this.skipSep();
     }
+    this.closing(out);
     this.expect("}");
     return out;
   }

@@ -1,5 +1,5 @@
 // Prints the AST as canonical ArtScript. Basis for `art fmt`, errors and `art context`.
-import type { Decl, Element, Expr, Field, Program, Stmt, TypeRef, ViewNode } from "./ast.ts";
+import type { Commented, Decl, Element, Expr, Field, Program, Stmt, TypeRef, ViewNode } from "./ast.ts";
 
 const PREC: Record<string, number> = {
   "??": 1, "||": 2, "&&": 3, "==": 4, "!=": 4, "<": 5, ">": 5, "<=": 5, ">=": 5, "+": 6, "-": 6, "*": 7, "/": 7, "%": 7, "**": 8,
@@ -92,8 +92,16 @@ export function printBlockInline(stmts: Stmt[]): string {
 const IND = "  ";
 
 export function printProgram(p: Program): string {
-  return p.decls.map(printDecl).join("\n\n") + "\n";
+  const decls = p.decls.map((d) => [...before(d, ""), printDecl(d), ...after(d, "")].join("\n"));
+  return [...decls, ...(p.comments ? [p.comments.join("\n")] : [])].join("\n\n") + "\n";
 }
+
+// A node's comments, each line at the node's indentation (a block comment keeps its inner lines).
+const commentLines = (c: string[] | undefined, pad: string) => (c ?? []).map((t) => pad + t);
+const before = (n: object, pad: string) => commentLines((n as Commented).comments, pad);
+const after = (n: object, pad: string) => commentLines((n as Commented).after, pad);
+// `lines` of a node, wrapped in its comments.
+const withComments = (n: object, pad: string, lines: string[]) => [...before(n, pad), ...lines, ...after(n, pad)];
 
 export function printRules(r: Field["rules"]): string {
   if (!r) return "";
@@ -111,7 +119,7 @@ export function printDecl(d: Decl): string {
   if (d.kind === "ServerFn" && d.every) return `server job ${d.name} every ${JSON.stringify(d.every)} {\n${printStmts(d.body, 1).join("\n")}\n}`;
   if (d.kind === "ServerFn") return `server fn ${d.name}(${printParams(d)}) {\n${printStmts(d.body, 1).join("\n")}\n}`;
   if (d.kind === "Model") {
-    return `model ${d.name} {\n${d.fields.map((f) => `${IND}${f.name}: ${printType(f.type)}${f.default ? ` = ${printExpr(f.default)}` : ""}${printRules(f.rules)}`).join("\n")}\n}`;
+    return `model ${d.name} {\n${d.fields.flatMap((f) => withComments(f, IND, [`${IND}${f.name}: ${printType(f.type)}${f.default ? ` = ${printExpr(f.default)}` : ""}${printRules(f.rules)}`])).join("\n")}\n}`;
   }
   let head = d.page ? `page ${d.name}` : d.layout ? `layout ${d.name}` : `component ${d.name}`;
   if (d.page && d.path) head += ` ${JSON.stringify(d.path)}`;
@@ -119,12 +127,14 @@ export function printDecl(d: Decl): string {
   if (d.params.length) head += `(${d.params.map((p) => `${p.name}: ${printType(p.type)}${p.default ? ` = ${printExpr(p.default)}` : ""}`).join(", ")})`;
   const out: string[] = [];
   for (const m of d.members) {
-    if (m.kind === "State") out.push(`${IND}state ${m.name}${m.type ? `: ${printType(m.type)}` : ""} = ${printExpr(m.init)}`);
-    else if (m.kind === "Computed") out.push(`${IND}computed ${m.name} = ${printExpr(m.expr)}`);
-    else if (m.kind === "Data") out.push(`${IND}data ${m.name} = ${printExpr(m.expr)}${m.live ? " live" : ""}`);
-    else if (m.kind === "Ref") out.push(`${IND}ref ${m.name}`);
-    else if (m.kind === "Mount" || m.kind === "Effect") out.push(`${IND}${m.name} {`, ...printStmts(m.body, 2), `${IND}}`);
-    else if (m.kind === "Fn") out.push(`${IND}fn ${m.name}(${printParams(m)}) {`, ...printStmts(m.body, 2), `${IND}}`);
+    const lines: string[] = [];
+    if (m.kind === "State") lines.push(`${IND}state ${m.name}${m.type ? `: ${printType(m.type)}` : ""} = ${printExpr(m.init)}`);
+    else if (m.kind === "Computed") lines.push(`${IND}computed ${m.name} = ${printExpr(m.expr)}`);
+    else if (m.kind === "Data") lines.push(`${IND}data ${m.name} = ${printExpr(m.expr)}${m.live ? " live" : ""}`);
+    else if (m.kind === "Ref") lines.push(`${IND}ref ${m.name}`);
+    else if (m.kind === "Mount" || m.kind === "Effect") lines.push(`${IND}${m.name} {`, ...printStmts(m.body, 2), `${IND}}`);
+    else if (m.kind === "Fn") lines.push(`${IND}fn ${m.name}(${printParams(m)}) {`, ...printStmts(m.body, 2), `${IND}}`);
+    out.push(...withComments(m, IND, lines));
   }
   if (d.members.length && d.view.length) out.push("");
   out.push(...printView(d.view, 1));
@@ -135,6 +145,16 @@ export function printStmts(stmts: Stmt[], depth: number): string[] {
   const pad = IND.repeat(depth);
   const out: string[] = [];
   for (const s of stmts) {
+    const start = out.length;
+    printStmt1(s, depth, pad, out);
+    out.splice(start, 0, ...before(s, pad));
+    out.push(...after(s, pad));
+  }
+  return out;
+}
+
+function printStmt1(s: Stmt, depth: number, pad: string, out: string[]) {
+  {
     if (s.kind === "If") {
       out.push(`${pad}if ${printExpr(s.cond)} {`, ...printStmts(s.then, depth + 1));
       // `else if` chains stay flat instead of nesting one level per branch.
@@ -152,7 +172,6 @@ export function printStmts(stmts: Stmt[], depth: number): string[] {
       out.push(`${pad}try {`, ...printStmts(s.body, depth + 1), `${pad}} catch${s.param ? ` (${s.param})` : ""} {`, ...printStmts(s.handler, depth + 1), `${pad}}`);
     } else out.push(pad + printStmt(s));
   }
-  return out;
 }
 
 function propValue(e: Expr): string {
@@ -171,6 +190,16 @@ export function printView(nodes: ViewNode[], depth: number): string[] {
   const pad = IND.repeat(depth);
   const out: string[] = [];
   for (const n of nodes) {
+    const start = out.length;
+    printNode(n, depth, pad, out);
+    out.splice(start, 0, ...before(n, pad));
+    out.push(...after(n, pad));
+  }
+  return out;
+}
+
+function printNode(n: ViewNode, depth: number, pad: string, out: string[]) {
+  {
     if (n.kind === "IfView") {
       out.push(`${pad}if ${printExpr(n.cond)} {`, ...printView(n.then, depth + 1));
       let els = n.else;
@@ -198,5 +227,4 @@ export function printView(nodes: ViewNode[], depth: number): string[] {
       out.push(...lines);
     }
   }
-  return out;
 }

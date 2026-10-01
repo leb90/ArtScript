@@ -493,9 +493,6 @@ export function applyPatch(sources: Source[], patchText: string): PatchResult {
     const before = sources.find((s) => s.file === file)?.src ?? null;
     files[file] = out;
     if (out === before) continue;
-    if (before !== null && /\/\/|\/\*/.test(before)) {
-      return { files: {}, changed: [], diagnostics: [diag("PATCH_COMMENTS", `${file} has comments; the patch would lose them`, { file, line: 1, col: 1 }, { fixes: ["remove the comments or edit the file by hand"] })] };
-    }
     changed.push(file);
   }
   return { files, changed, diagnostics: [] };

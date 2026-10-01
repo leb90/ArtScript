@@ -104,13 +104,17 @@ test("atomic: a type error in the result changes nothing and points at the patch
   assert.deepEqual([d.loc.file, d.loc.line], ["patch", 2]);
 });
 
-test("bad bodies and files with comments are rejected", () => {
+test("bad bodies are rejected", () => {
   assert.equal(fails("append Todos.draft\n  state x = 1")[0].type, "PATCH_BODY");
   assert.match(ok("append Todos/column\n  state x = 1"), /state x = 1/, "members appended to a view node join the component");
   assert.equal(fails("set Todos.draft gap=1")[0].type, "PATCH_BODY");
   assert.equal(fails("hola")[0].type, "PATCH_SYNTAX");
-  const commented = [{ file: "app.art", src: "// nota\npage P {\n  text \"a\"\n}\n" }];
-  assert.equal(fails('append P\n  text "b"', commented)[0].type, "PATCH_COMMENTS");
+});
+
+test("comments survive a patch (those of a replaced node go with it)", () => {
+  const src = '// the app\npage P {\n  // the counter\n  state n = 0\n\n  column {\n    // shown first\n    text "a"\n    // replaced below\n    text "b"\n  }\n}\n';
+  const out = ok('append P/column\n  // new\n  text "c"\nreplace P/column/text[1]\n  text "B"', [{ file: "app.art", src }]);
+  assert.equal(out, '// the app\npage P {\n  // the counter\n  state n = 0\n\n  column {\n    // shown first\n    text "a"\n    text "B"\n    // new\n    text "c"\n  }\n}\n');
 });
 
 test("members inserted next to a view node or an unknown member just join the component (from the eval)", () => {

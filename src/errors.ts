@@ -51,7 +51,6 @@ export const CATALOG: Record<string, { code: string; desc: string }> = {
   TARGET_NOT_FOUND: { code: "E3002", desc: "The patch path doesn't exist." },
   AMBIGUOUS_TARGET: { code: "E3003", desc: "The path matches several nodes: add an index `[n]`." },
   PATCH_BODY: { code: "E3004", desc: "The patch body isn't valid for that target." },
-  PATCH_COMMENTS: { code: "E3005", desc: "The file has comments, which patch doesn't preserve yet." },
 };
 
 export function diag(type: keyof typeof CATALOG, msg: string, loc: Loc, extra: Partial<Diagnostic> = {}): Diagnostic {

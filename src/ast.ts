@@ -6,7 +6,11 @@ export type TypeRef = { name: string; list: boolean; optional: boolean; loc: Loc
 
 // ---------- Top-level declarations ----------
 
-export type Program = { kind: "Program"; decls: Decl[] };
+// `comments` on Program: those after the last declaration.
+export type Program = { kind: "Program"; decls: Decl[]; comments?: string[] };
+// Comments are kept for fmt and patch: `comments` go before a node, `after` after it (they were
+// right before the `}` that closes its block). Any declaration, field, member, view node or statement.
+export type Commented = { comments?: string[]; after?: string[] };
 
 export type Decl = ModelDecl | ComponentDecl | ApiDecl | AuthDecl | ServerFnDecl | UseDecl;
 

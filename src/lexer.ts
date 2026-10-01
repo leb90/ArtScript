@@ -24,7 +24,10 @@ const CONTINUATION = /^[ \t\r]*(\?(?!\?)|:|\.(?!\.\.)|&&|\|\||\?\?)/;
 
 const ESCAPES: Record<string, string> = { n: "\n", t: "\t", r: "\r", "\\": "\\", '"': '"', "'": "'", "`": "`", $: "$", "0": "\0" };
 
-export function lex(src: string, file: string, startLine = 1, startCol = 1): Token[] {
+// Comments are not tokens; when `comments` is given they're collected there (for fmt and patch).
+export type Comment = { line: number; text: string };
+
+export function lex(src: string, file: string, startLine = 1, startCol = 1, comments?: Comment[]): Token[] {
   const out: Token[] = [];
   let i = 0;
   let line = startLine;
@@ -54,13 +57,17 @@ export function lex(src: string, file: string, startLine = 1, startCol = 1): Tok
     }
     if (c === " " || c === "\t" || c === "\r") { adv(); continue; }
     if (c === "/" && src[i + 1] === "/") {
+      const from = i, at = line;
       while (i < src.length && src[i] !== "\n") adv();
+      comments?.push({ line: at, text: src.slice(from, i).trimEnd() });
       continue;
     }
     if (c === "/" && src[i + 1] === "*") {
+      const from = i, at = line;
       adv(2);
       while (i < src.length && !(src[i] === "*" && src[i + 1] === "/")) adv();
       adv(2);
+      comments?.push({ line: at, text: src.slice(from, i) });
       continue;
     }
 
