@@ -275,7 +275,12 @@ class Parser {
     }
     if (kw.v === "computed" || kw.v === "data") {
       this.expect("=");
-      return { kind: kw.v === "data" ? "Data" : "Computed", name, expr: this.expr(), loc: kw.loc };
+      const expr = this.expr();
+      if (kw.v === "data" && this.is("live")) {
+        this.next();
+        return { kind: "Data", name, expr, live: true, loc: kw.loc };
+      }
+      return { kind: kw.v === "data" ? "Data" : "Computed", name, expr, loc: kw.loc };
     }
     const { params, defaults } = this.fnParams();
     const fn: FnDecl = { kind: "Fn", name, params, ...(defaults.some(Boolean) ? { defaults } : {}), body: this.block(), loc: kw.loc };

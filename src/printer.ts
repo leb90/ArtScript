@@ -120,7 +120,7 @@ export function printDecl(d: Decl): string {
   for (const m of d.members) {
     if (m.kind === "State") out.push(`${IND}state ${m.name}${m.type ? `: ${printType(m.type)}` : ""} = ${printExpr(m.init)}`);
     else if (m.kind === "Computed") out.push(`${IND}computed ${m.name} = ${printExpr(m.expr)}`);
-    else if (m.kind === "Data") out.push(`${IND}data ${m.name} = ${printExpr(m.expr)}`);
+    else if (m.kind === "Data") out.push(`${IND}data ${m.name} = ${printExpr(m.expr)}${m.live ? " live" : ""}`);
     else if (m.kind === "Ref") out.push(`${IND}ref ${m.name}`);
     else if (m.kind === "Mount" || m.kind === "Effect") out.push(`${IND}${m.name} {`, ...printStmts(m.body, 2), `${IND}}`);
     else if (m.kind === "Fn") out.push(`${IND}fn ${m.name}(${printParams(m)}) {`, ...printStmts(m.body, 2), `${IND}}`);

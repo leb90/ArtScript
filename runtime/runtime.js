@@ -427,6 +427,34 @@ export function $server() {
   });
 }
 
+// `data x = ... live`: one stream of server-sent events per page; each event names an api that
+// changed, and every `data` reloads (they reload after this client's writes anyway). Reconnects.
+let live = false;
+export function $live() {
+  if (live || typeof fetch === "undefined") return;
+  live = true;
+  const connect = async (wait) => {
+    try {
+      const res = await fetch(`${apiBase}/api/_events`, { credentials: "same-origin" });
+      const reader = res.body.getReader();
+      const text = new TextDecoder();
+      let buf = "";
+      wait = 500;
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += text.decode(value, { stream: true });
+        const events = buf.split("\n\n");
+        buf = events.pop();
+        if (events.some((e) => e.startsWith("data:"))) bump();
+      }
+    } catch { /* retried below */ }
+    // `unref`: in Node (tests, server rendering) a retry doesn't keep the process alive.
+    setTimeout(() => connect(Math.min(wait * 2, 10000)), wait)?.unref?.();
+  };
+  connect(500);
+}
+
 // `data x = expr`: runs `expr` tracking its dependencies and stores the result when it resolves.
 // Re-runs when a dependency changes; responses that arrive out of order are ignored.
 // `x.loading` is true until the first response arrives (reloads keep showing the current data, so

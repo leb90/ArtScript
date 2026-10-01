@@ -181,6 +181,7 @@ class ComponentGen {
         // Lists start as [] so views can iterate right away, counts as 0; anything else as null.
         const method = m.expr.kind === "Call" && m.expr.callee.kind === "Member" ? m.expr.callee.prop : "";
         this.emit(`const ${m.name} = $.$data(() => ${this.expr(m.expr, scope)}, ${method === "list" ? "[]" : method === "count" ? "0" : "null"});`);
+        if (m.live) this.emit("$.$live();");
       } else if (m.kind === "Fn") {
         const fs = scope.child();
         for (const p of m.params) fs.vars.set(p, { kind: "param" });

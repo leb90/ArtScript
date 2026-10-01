@@ -167,6 +167,7 @@ function makeTable(schema, db, dataDir, name, { model, access }, backup) {
   const vschema = Object.keys(refs).length
     ? { ...schema, models: { ...schema.models, [model]: Object.fromEntries(Object.entries(fields).map(([f, t]) => [f, refs[f] ? t.replace(/^\w+/, "ID") : t])) } }
     : schema;
+  let changedHook = () => {};
   const peek = (id) => parse(db.prepare(`SELECT data FROM ${T} WHERE id = ?`).get(String(id)));
   // Auth passwords never leave the server.
   const out = (row, deep = true) => {
@@ -301,6 +302,7 @@ function makeTable(schema, db, dataDir, name, { model, access }, backup) {
       check(row, me);
       if (db.prepare(`SELECT 1 FROM ${T} WHERE id = ?`).get(String(row[key]))) throw new HttpError(409, "CONFLICT", `${key} '${row[key]}' already exists`);
       db.prepare(`INSERT INTO ${T} VALUES (?, ?, ?)`).run(String(row[key]), row.owner ?? null, JSON.stringify(row));
+      changedHook(name);
       return out(row);
     },
     // The key and the owner never change; `replace` (PUT) drops omitted fields, update (PATCH) merges.
@@ -311,6 +313,7 @@ function makeTable(schema, db, dataDir, name, { model, access }, backup) {
       if (isAuth && changes.password === undefined) row.password = prev.password;
       check(row, me);
       db.prepare(`UPDATE ${T} SET data = ? WHERE id = ?`).run(JSON.stringify(row), String(prev[key]));
+      changedHook(name);
       return out(row);
     },
     // Rows that reference this one block the delete (409), unless their field is `cascade`:
@@ -332,6 +335,7 @@ function makeTable(schema, db, dataDir, name, { model, access }, backup) {
         }
         db.prepare(`DELETE FROM ${T} WHERE id = ?`).run(String(prev[key]));
         db.exec("RELEASE art_remove");
+        changedHook(name);
       } catch (e) {
         db.exec("ROLLBACK TO art_remove");
         db.exec("RELEASE art_remove");
@@ -340,7 +344,7 @@ function makeTable(schema, db, dataDir, name, { model, access }, backup) {
       return null;
     },
     refs, peek,
-    link: (all) => { tables = all; },
+    link: (all, onChange) => { tables = all; changedHook = onChange; },
     referencing: (f, list, id) => db.prepare(list
       ? `SELECT id FROM ${T} WHERE EXISTS (SELECT 1 FROM json_each(data, '$.${f}') WHERE value = ?)`
       : `SELECT id FROM ${T} WHERE json_extract(data, '$.${f}') = ?`).all(String(id)).map((r) => r.id),
@@ -414,7 +418,10 @@ export function createApi(schema, dataDir, fns = {}) {
     sql.exec(`VACUUM INTO '${join(dataDir, `art-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.db`).replace(/'/g, "''")}'`);
   };
   const tables = Object.fromEntries(Object.entries(schema.apis).map(([n, a]) => [n, makeTable(schema, sql, dataDir, n, a, backup)]));
-  for (const t of Object.values(tables)) t.link(tables);
+  // Live clients (`data ... live`) get the name of each api that changes; never the data.
+  const streams = new Set();
+  const changed = (name) => { for (const res of streams) res.write(`data: ${name}\n\n`); };
+  for (const t of Object.values(tables)) t.link(tables, changed);
   const users = schema.auth ? tables[schema.auth] : null;
   const hasRoles = !!users && "role" in (schema.models[users.model] ?? {});
   const isAdmin = (me) => hasRoles && me?.role === "admin";
@@ -445,6 +452,14 @@ export function createApi(schema, dataDir, fns = {}) {
     const url = new URL(req.url ?? "/", "http://localhost");
     if (!url.pathname.startsWith("/api/")) return false;
     try {
+      if (url.pathname === "/api/_events" && req.method === "GET") {
+        res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
+        res.write(": live\n\n");
+        streams.add(res);
+        const ping = setInterval(() => res.write(": ping\n\n"), 25000);
+        req.on("close", () => { clearInterval(ping); streams.delete(res); });
+        return true;
+      }
       const fm = /^\/api\/_files(?:\/([\w-]+))?$/.exec(url.pathname);
       if (fm) return await files(req, res, fm[1], sql, dataDir), true;
       const me = currentUser(req);

@@ -60,7 +60,8 @@ export type ComputedDecl = { kind: "Computed"; name: string; expr: Expr; loc: Lo
 // `defaults[i]`: default value of params[i] (`fn sort(asc = true)`), when any param has one.
 export type FnDecl = { kind: "Fn"; name: string; params: string[]; defaults?: (Expr | null)[]; body: Stmt[]; loc: Loc };
 // `data users = api.users.list()`: async value, loaded on mount and reloaded when its api changes.
-export type DataDecl = { kind: "Data"; name: string; expr: Expr; loc: Loc };
+// `live`: also reloads when another client writes (server-sent events).
+export type DataDecl = { kind: "Data"; name: string; expr: Expr; live?: boolean; loc: Loc };
 // `ref canvas`: holds the element marked `ref=canvas` (null until the view is built).
 export type RefDecl = { kind: "Ref"; name: string; loc: Loc };
 // `mount { ... }` runs once after the view is in the page; `effect { ... }` re-runs when what it
