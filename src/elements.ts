@@ -14,7 +14,7 @@ const LAYOUT = ["gap", "pad", "align", "justify"];
 const COMMON = ["class", "style", "id"];
 
 export const ELEMENTS: Record<string, ElementSpec> = {
-  text: { html: "span", content: "text", action: null, children: false, props: [], flags: ["bold", "muted", "small", "large"] },
+  text: { html: "span", content: "text", action: null, children: false, props: [], flags: ["bold", "muted", "small", "large", "danger"] },
   title: { html: "h2", content: "text", action: null, children: false, props: [], flags: ["muted", "small", "large"] },
   button: { html: "button", content: "text", action: "click", children: false, props: ["disabled"], flags: ["primary", "danger", "small"] },
   input: { html: "input", content: "bind", action: "enter", children: false, props: ["placeholder", "type", "disabled"], flags: [] },

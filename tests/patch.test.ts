@@ -126,3 +126,14 @@ test("members inserted next to a view node or an unknown member just join the co
   // Replacing a view node with members is still an error: the intent isn't clear.
   assert.equal(applyPatch(shop, "replace Summary/row\n  state x = 1").diagnostics[0].type, "PATCH_BODY");
 });
+
+test("paths may skip if/else/for wrappers when one node matches (from the eval)", () => {
+  const dir = "benchmarks/eval/projects/shop/artscript";
+  const shop = ["shop.art", "components.art"].map((f) => ({ file: f, src: readFileSync(`${dir}/${f}`, "utf8") }));
+  // Claude wrote CartView/column/for/CartItemRow; the real path is CartView/if/else/column/for/CartItemRow.
+  const r = applyPatch(shop, 'replace CartView/column/for/CartItemRow\n  CartItemRow item=item onChangeQty=onChangeQty');
+  assert.deepEqual(r.diagnostics, []);
+  // Ambiguous skips still fail and list the real paths.
+  const src = [{ file: "a.art", src: 'page P {\n  state n = 0\n  if n == 0 {\n    text "a"\n  } else {\n    text "b"\n  }\n}\n' }];
+  assert.equal(applyPatch(src, 'remove P/text').diagnostics[0].type, "TARGET_NOT_FOUND");
+});

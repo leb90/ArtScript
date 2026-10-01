@@ -381,8 +381,12 @@ class Checker {
     for (const p of el.props) {
       const param = comp.params.find((x) => x.name === p.name);
       if (!param || p.value === null) {
+        // A typo gets the closest prop; a new prop gets the exact signature to declare it.
+        const close = suggest(p.name, comp.params.map((x) => x.name));
+        const ty = p.value ? this.infer(p.value, scope) : BOOL;
+        const signature = `component ${el.tag}(${[...comp.params.map((x) => `${x.name}: ${show(x.ty)}`), `${p.name}: ${show(ty)}`].join(", ")})`;
         this.err("UNKNOWN_PROP", `'${el.tag}' has no prop '${p.name}'`, p.loc, {
-          expr: p.name, expected: comp.params.map((x) => x.name).join("|") || "no props", fixes: suggest(p.name, comp.params.map((x) => x.name)),
+          expr: p.name, expected: comp.params.map((x) => x.name).join("|") || "no props", fixes: close.length ? close : [signature],
         });
         continue;
       }

@@ -63,8 +63,18 @@ function merge(files: { path: string; data: ResultFile }[]): Loaded[] {
   return [...byModel.values()];
 }
 
-// Modifications on the larger project, per context mode.
-function projectTable(rs: Run[]): string[] {
+// Modifications on the larger projects, one table per project, per context mode.
+const PROJECTS: Record<string, string> = { shop: "an 11-component shop", admin: "a 42-component admin panel" };
+
+function projectTables(rs: Run[]): string[] {
+  const out: string[] = [];
+  for (const project of [...new Set(rs.map((r) => r.task.split("-")[0]))]) {
+    out.push(...projectTable(rs.filter((r) => r.task.startsWith(project + "-")), PROJECTS[project] ?? project), "");
+  }
+  return out;
+}
+
+function projectTable(rs: Run[], what: string): string[] {
   const tasks = [...new Set(rs.map((r) => r.task.split("@")[0]))];
   const cell = (stack: string, mode: string) => {
     const x = rs.filter((r) => r.stack === stack && r.task.endsWith("@" + mode));
@@ -73,7 +83,7 @@ function projectTable(rs: Run[]): string[] {
     const input = avg(x.map((r) => r.usage.input + r.usage.cacheRead + r.usage.cacheWrite));
     return { text: ok.length ? `${usd(cost / ok.length)} (${ok.length}/${x.length})` : `✗ (0/${x.length})`, perSolved: ok.length ? cost / ok.length : Infinity, input };
   };
-  const out = [`#### Larger project: ${tasks.length} modifications to an 11-component shop`, "",
+  const out = [`#### Larger project: ${tasks.length} modifications to ${what}`, "",
     "Whole project in the prompt (\"full\") vs. what a good agent would read (\"focus\": ArtScript gets `art context` of the relevant parts, React/Svelte the file list plus the relevant files). Each change is applied to the whole project and the app is used in the simulated browser.", "",
     "| Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus |", "|---|---|---|---|---|"];
   for (const k of STACKS) {
@@ -115,7 +125,7 @@ function section(loaded: Loaded[]): string {
     const links = paths.map((p) => `[\`${relative(REPO, p)}\`](${relative(REPO, p)})`).join(", ");
     const rerun = replaced.length ? ` Re-run after fixing bugs that run uncovered: ${replaced.join(", ")} (the model's first answers there were correct; the failures came from the eval harness and, for login/artscript, an ArtScript compiler bug).` : "";
     out.push("", "</details>", "");
-    if (project.length) out.push(...projectTable(project), "");
+    if (project.length) out.push(...projectTables(project));
     out.push(`Run ${date}: ${tasks.length} tasks × ${STACKS.length} stacks × ${f.runs} runs, total $${total.toFixed(2)}, prices as of ${f.pricesDate}.${rerun} Raw data: ${links}.`, "");
   }
   out.push("### Methodology and limitations", "",

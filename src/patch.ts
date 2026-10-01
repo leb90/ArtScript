@@ -69,6 +69,19 @@ type Target =
 const tagOf = (n: ViewNode) => (n.kind === "Element" ? n.tag : n.kind === "IfView" ? "if" : "for");
 const childrenOf = (n: ViewNode): ViewNode[] => (n.kind === "Element" ? n.children : n.kind === "IfView" ? n.then : n.body);
 
+// Nodes with `tag` reachable from `list` only through control flow (if/else branches, for bodies).
+function inside(list: ViewNode[], tag: string): { n: ViewNode; i: number; list: ViewNode[] }[] {
+  const out: { n: ViewNode; i: number; list: ViewNode[] }[] = [];
+  for (const n of list) {
+    const branches = n.kind === "IfView" ? [n.then, n.else ?? []] : n.kind === "ForView" ? [n.body] : [];
+    for (const b of branches) {
+      b.forEach((c, i) => { if (tagOf(c) === tag) out.push({ n: c, i, list: b }); });
+      out.push(...inside(b, tag));
+    }
+  }
+  return out;
+}
+
 // Valid next path segments inside a list, used as fix suggestions.
 function segLabels(list: ViewNode[]): string[] {
   return list.map((n) => {
@@ -124,7 +137,13 @@ function resolve(p: Program, path: string, loc: Loc): Target {
     if (cur) list = childrenOf(cur);
     const sm = /^([A-Za-z_]\w*)(?:\[(\d+)\])?$/.exec(seg);
     if (!sm) fail("TARGET_NOT_FOUND", `invalid segment '${seg}'`, segLabels(list).map((l) => `${walked}/${l}`));
-    const matches = list.map((n, i) => ({ n, i })).filter((x) => tagOf(x.n) === sm![1]);
+    let matches = list.map((n, i) => ({ n, i, list })).filter((x) => tagOf(x.n) === sm![1]);
+    // A path may skip `if`/`else`/`for` wrappers (`CartView/column` for `CartView/if/else/column`)
+    // when exactly one node matches through them.
+    if (!matches.length && sm![2] === undefined) {
+      const through = inside(list, sm![1]);
+      if (through.length === 1) matches = through;
+    }
     if (!matches.length) {
       const labels = segLabels(list);
       const close = suggest(sm![1], labels);
@@ -138,7 +157,7 @@ function resolve(p: Program, path: string, loc: Loc): Target {
       fail("AMBIGUOUS_TARGET", `there are ${matches.length} '${sm![1]}' inside ${walked}`, matches.map((_, k) => `${walked}/${sm![1]}[${k}]`));
     }
     cur = pick.n;
-    curList = list;
+    curList = pick.list;
     curIndex = pick.i;
     walked += "/" + seg;
   }

@@ -132,3 +132,9 @@ test("narrowing: ternary, && in expressions, if in views and nested paths", () =
   assert.deepEqual(types(src), []);
   assert.deepEqual(types(src.replace('text u ? u.profile?.name : "-"', 'text u.profile?.name ?? "-"')), ["POSSIBLY_EMPTY"]);
 });
+
+test("a new prop on a component suggests the exact signature to declare it", () => {
+  const [d] = errs('component Row(id: Number) {\n  text id\n}\npage P {\n  Row id=1 onRemove=(x => x)\n}');
+  assert.equal(d.type, "UNKNOWN_PROP");
+  assert.deepEqual(d.fixes, ["component Row(id: Number, onRemove: Fn)"]);
+});

@@ -79,7 +79,7 @@ column gap=4 align=center {
 
 | Element | Content | `->` fires on | Props | Flags |
 |---|---|---|---|---|
-| `text` | text | — | | bold muted small large |
+| `text` | text | — | | bold muted small large danger |
 | `title` | text | — | | muted small large |
 | `button` | text | click | disabled | primary danger small |
 | `input` | **state to bind** (two-way) | Enter | placeholder type disabled | |
