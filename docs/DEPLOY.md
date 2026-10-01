@@ -93,6 +93,7 @@ app.example.com {
 | `ART_RATE_LIMIT` | Api requests per address per minute (600; 0 = off). |
 | `ART_RESEND_KEY`, `ART_EMAIL_FROM` | Send emails through Resend. |
 | `ART_EMAIL_WEBHOOK` | Send emails as a JSON POST to this URL. |
+| `ART_S3_BUCKET`, `ART_S3_KEY`, `ART_S3_SECRET`, `ART_S3_REGION`, `ART_S3_ENDPOINT` | Keep uploads in S3 or a compatible store (Cloudflare R2, MinIO, ...) instead of the data directory. |
 | `ART_GOOGLE_ID`, `ART_GOOGLE_SECRET`, `ART_GITHUB_ID`, `ART_GITHUB_SECRET` | Sign-in with Google / GitHub. |
 
 ## Monitoring

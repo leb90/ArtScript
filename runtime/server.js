@@ -2,7 +2,7 @@
 // email + password auth with cookie sessions and roles, per-user private data and server functions.
 // Node only, no dependencies. `art dev` mounts createApi in its dev server; `art build` emits a
 // server.js that calls serve().
-import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 import { appendFileSync, createReadStream, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { basename, extname, join, resolve, sep } from "node:path";
@@ -409,6 +409,52 @@ const providerConf = (name) => {
   return { ...base, id: env[`ART_${P}_ID`], secret: env[`ART_${P}_SECRET`], authorize: env[`ART_${P}_AUTHORIZE`] ?? base.authorize, token: env[`ART_${P}_TOKEN`] ?? base.token, user: env[`ART_${P}_USER`] ?? base.user };
 };
 
+// AWS Signature V4 for S3 and compatible stores (R2, MinIO): the Authorization header for a request.
+// `headers` must include host, x-amz-date and x-amz-content-sha256.
+export function signV4({ method, url, headers, region, secret, key, service = "s3" }) {
+  const u = new URL(url);
+  const date = headers["x-amz-date"];
+  const day = date.slice(0, 8);
+  const names = Object.keys(headers).map((h) => h.toLowerCase()).sort();
+  const lower = Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), String(v).trim()]));
+  const query = [...u.searchParams].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&");
+  const canonical = [method, u.pathname.split("/").map((p) => encodeURIComponent(decodeURIComponent(p))).join("/"), query, ...names.map((h) => `${h}:${lower[h]}`), "", names.join(";"), lower["x-amz-content-sha256"]].join("\n");
+  const scope = `${day}/${region}/${service}/aws4_request`;
+  const toSign = ["AWS4-HMAC-SHA256", date, scope, sha256(canonical)].join("\n");
+  const hmac = (k, s) => createHmac("sha256", k).update(s).digest();
+  const signingKey = hmac(hmac(hmac(hmac(`AWS4${secret}`, day), region), service), "aws4_request");
+  const signature = createHmac("sha256", signingKey).update(toSign).digest("hex");
+  return `AWS4-HMAC-SHA256 Credential=${key}/${scope}, SignedHeaders=${names.join(";")}, Signature=${signature}`;
+}
+
+// Where uploads live: the data directory, or an S3-compatible bucket (ART_S3_BUCKET, ART_S3_KEY,
+// ART_S3_SECRET, ART_S3_REGION, ART_S3_ENDPOINT for R2/MinIO/...). Objects are always served
+// through the api, with this server's headers.
+function fileStore(dataDir) {
+  const env = process.env;
+  if (!env.ART_S3_BUCKET) {
+    const dir = join(dataDir, "files");
+    return {
+      put: async (id, body) => { mkdirSync(dir, { recursive: true }); writeFileSync(join(dir, id), body); },
+      open: async (id) => createReadStream(join(dir, id)),
+    };
+  }
+  const region = env.ART_S3_REGION ?? "us-east-1";
+  const endpoint = (env.ART_S3_ENDPOINT ?? `https://s3.${region}.amazonaws.com`).replace(/\/$/, "");
+  const call = async (method, id, body, type) => {
+    const url = `${endpoint}/${env.ART_S3_BUCKET}/uploads/${id}`;
+    const headers = { host: new URL(url).host, "x-amz-date": new Date().toISOString().replace(/[-:]|\.\d{3}/g, ""), "x-amz-content-sha256": body ? createHash("sha256").update(body).digest("hex") : sha256(""), ...(type ? { "content-type": type } : {}) };
+    const authorization = signV4({ method, url, headers, region, secret: env.ART_S3_SECRET, key: env.ART_S3_KEY });
+    const res = await fetch(url, { method, headers: { ...headers, authorization }, body });
+    if (!res.ok) throw new HttpError(502, "STORAGE", `file storage answered ${res.status}`);
+    return res;
+  };
+  return {
+    put: async (id, body, type) => { await call("PUT", id, body, type); },
+    open: async (id) => (await call("GET", id)).body,
+  };
+}
+
 // `accept="image/*,.pdf"`: MIME types (with `type/*`) or extensions, like <input accept>.
 function accepts(accept, { name, type }) {
   return accept.split(",").map((a) => a.trim().toLowerCase()).some((a) =>
@@ -417,8 +463,7 @@ function accepts(accept, { name, type }) {
 
 // POST /api/_files (the raw body, `content-type` and `x-file-name` headers) → { url, name, type, size };
 // GET /api/_files/<id> → the file.
-async function files(req, res, id, sql, dataDir) {
-  const dir = join(dataDir, "files");
+async function files(req, res, id, sql, store) {
   if (req.method === "POST" && !id) {
     const tooLarge = () => { req.resume(); return new HttpError(413, "TOO_LARGE", `the file is larger than ${MAX_UPLOAD} bytes`); };
     if (Number(req.headers["content-length"] ?? 0) > MAX_UPLOAD) throw tooLarge();
@@ -435,13 +480,13 @@ async function files(req, res, id, sql, dataDir) {
       type: String(req.headers["content-type"] ?? "application/octet-stream").split(";")[0].trim().toLowerCase(),
       size,
     };
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, meta.id), Buffer.concat(chunks));
+    await store.put(meta.id, Buffer.concat(chunks), meta.type);
     sql.prepare("INSERT INTO _files VALUES (?, ?, ?, ?)").run(meta.id, meta.name, meta.type, meta.size);
     return send(res, 201, { url: `/api/_files/${meta.id}`, name: meta.name, type: meta.type, size: meta.size });
   }
   const meta = req.method === "GET" && id && sql.prepare("SELECT * FROM _files WHERE id = ?").get(id);
   if (!meta) throw new HttpError(404, "NOT_FOUND", "no such file");
+  const body = await store.open(meta.id); // before the headers, so a storage error is a proper 502
   res.writeHead(200, {
     "content-type": meta.type,
     "content-length": meta.size,
@@ -450,7 +495,8 @@ async function files(req, res, id, sql, dataDir) {
     "content-security-policy": "sandbox",
     "cache-control": "public, max-age=31536000, immutable",
   });
-  createReadStream(join(dir, meta.id)).pipe(res);
+  for await (const chunk of body) res.write(chunk);
+  res.end();
 }
 
 function send(res, status, body, headers = {}) {
@@ -511,6 +557,7 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
   };
   // Server fns get unscoped, synchronous tables; `me` is the logged-in user without password.
   const email = (to, subject, text) => sendEmail(dataDir, { to, subject, text });
+  const store = fileStore(dataDir);
   const db = Object.fromEntries(Object.entries(tables).map(([n, t]) => [n, {
     list: (q) => t.list(ALL, q),
     count: (q) => t.count(ALL, q),
@@ -590,7 +637,7 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
       if (writes && (fm ? req.headers["x-file-name"] === undefined : !String(req.headers["content-type"] ?? "").startsWith("application/json"))) {
         throw new HttpError(415, "UNSUPPORTED_MEDIA_TYPE", fm ? "uploads need an x-file-name header" : "send JSON (content-type: application/json)");
       }
-      if (fm) return await files(req, res, fm[1], sql, dataDir), true;
+      if (fm) return await files(req, res, fm[1], sql, store), true;
       const me = currentUser(req);
       const publicMe = me && users.out(me);
       const body = req.method === "POST" || req.method === "PATCH" || req.method === "PUT" ? await readJson(req) : undefined;
