@@ -161,7 +161,7 @@ src/
   cli.ts        the `art` command
 runtime/runtime.js   signals + DOM helpers + api client (~2.9 KB brotli)
 runtime/server.js    api server: REST from models, validation, SQLite storage, queries, auth, roles, server fns
-examples/            counter, todo, users (full-stack CRUD), notes (auth + private data), catalog (roles, queries), blog (routes, layout)
+examples/            counter, todo, users (full-stack CRUD), notes (auth + private data), catalog (roles, queries), blog (routes, layout), crm (relations, uploads, live data, modal)
 benchmarks/          equivalent tasks in ArtScript / React / Svelte + measurement
 docs/SPEC.md         compact spec to give an AI (~1.1K tokens)
 templates/default/   starter project created by `art init`

@@ -1,0 +1,184 @@
+model User {
+  id: ID
+  email: Email
+  password: String
+  name: String min=2
+}
+
+model Company {
+  id: ID
+  name: String min=2 unique
+  logo: File? max=1000000 accept="image/*"
+}
+
+model Contact {
+  id: ID
+  name: String min=2
+  email: Email unique
+  company: Company cascade
+  stage: String = "lead"
+}
+
+api users: User
+
+api companies: Company login
+
+api contacts: Contact login
+
+auth users
+
+layout Main {
+  data me = auth.me()
+
+  column gap=4 {
+    row justify=between {
+      row gap=3 {
+        link "Contacts" to="/"
+        link "Companies" to="/companies"
+      }
+      if me {
+        row gap=2 {
+          text me.name muted
+          button "Log out" small -> auth.logout()
+        }
+      }
+    }
+    if me {
+      slot
+    } else {
+      Login
+    }
+  }
+}
+
+component Login {
+  state name = ""
+  state email = ""
+  state password = ""
+  state error = ""
+  fn enter(isNew) {
+    try {
+      if isNew {
+        await auth.signup({ name, email, password })
+      } else {
+        await auth.login(email, password)
+      }
+    } catch (e) {
+      error = e.message
+    }
+  }
+
+  card gap=2 {
+    title "Sign in"
+    input name placeholder="Name (to sign up)"
+    input email placeholder="Email" type=email
+    input password placeholder="Password" type=password
+    row gap=2 {
+      button "Log in" primary -> enter(false)
+      button "Sign up" -> enter(true)
+    }
+    text error danger
+  }
+}
+
+page Contacts "/" {
+  data contacts = api.contacts.list({ sort: "name" }) live
+  data companies = api.companies.list()
+  state stage = "all"
+  state adding = false
+  state name = ""
+  state email = ""
+  state company = ""
+  state error = ""
+  computed shown = stage == "all" ? contacts : contacts.filter(c => c.stage == stage)
+  fn add() {
+    try {
+      await api.contacts.create({ name, email, company })
+      name = ""
+      email = ""
+      adding = false
+      error = ""
+    } catch (e) {
+      error = e.message
+    }
+  }
+
+  meta title="Contacts" description="Everyone you're talking to."
+  row justify=between {
+    tabs stage options=["all", "lead", "customer"]
+    button "New contact" primary -> adding = true
+  }
+  if contacts.loading {
+    spinner
+  } else if shown.length == 0 {
+    text "No contacts yet" muted
+  } else {
+    table {
+      tr {
+        th "Name"
+        th "Company"
+        th "Stage"
+        th ""
+      }
+      for c in shown key c.id {
+        tr {
+          td c.name
+          td c.company.name
+          td {
+            badge c.stage success=(c.stage == "customer")
+          }
+          td {
+            button "Won" small -> api.contacts.update(c.id, { stage: "customer" })
+          }
+        }
+      }
+    }
+  }
+  modal adding gap=2 {
+    title "New contact"
+    input name placeholder="Name"
+    input email placeholder="Email" type=email
+    select company options=companies placeholder="Company"
+    text error danger
+    row gap=2 {
+      button "Save" primary -> add()
+      button "Cancel" -> adding = false
+    }
+  }
+}
+
+page Companies "/companies" {
+  data companies = api.companies.list({ sort: "name" })
+  state name = ""
+  state logo = null
+  state error = ""
+  fn add() {
+    try {
+      await api.companies.create({ name, logo })
+      name = ""
+      logo = null
+      error = ""
+    } catch (e) {
+      error = e.message
+    }
+  }
+
+  meta title="Companies"
+  row gap=2 {
+    input name placeholder="Company"
+    file logo accept="image/*"
+    button "Add company" primary -> add()
+  }
+  text error danger
+  grid cols=1 md:cols=3 gap=3 {
+    for co in companies key co.id {
+      card gap=2 {
+        if co.logo {
+          image co.logo.url alt=co.name
+        }
+        text co.name bold
+        button "Delete" small danger -> api.companies.remove(co.id)
+      }
+    }
+  }
+}

@@ -133,7 +133,8 @@ async function startServer(stack: Stack, files: Files, dir: string): Promise<Run
     const api = createApi(r.server, join(dir, "data"), fns);
     const server: Server = createServer(async (req, res) => { if (!(await api(req, res))) res.writeHead(404).end(); });
     await new Promise<void>((r) => server.listen(0, r));
-    return { port: (server.address() as AddressInfo).port, stop: () => server.close() };
+    // Open connections (a live data stream) would keep close() waiting.
+    return { port: (server.address() as AddressInfo).port, stop: () => { server.closeAllConnections(); server.close(); } };
   }
   if (!files["server.ts"]) throw new BehaviorError("falta server.ts");
   try {

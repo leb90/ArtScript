@@ -494,6 +494,7 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
         res.write(": live\n\n");
         streams.add(res);
         const ping = setInterval(() => res.write(": ping\n\n"), 25000);
+        ping.unref?.(); // an open stream doesn't keep the process alive
         req.on("close", () => { clearInterval(ping); streams.delete(res); });
         return true;
       }
