@@ -2,8 +2,8 @@
 import type { Program } from "./ast.ts";
 import { check } from "./checker.ts";
 import { generate, serverSchema, type ServerSchema } from "./codegen.ts";
-import { CompileError, type Diagnostic } from "./errors.ts";
-import { parse } from "./parser.ts";
+import type { Diagnostic } from "./errors.ts";
+import { parseAll } from "./parser.ts";
 
 export type Source = { file: string; src: string };
 // `server`: what the server runtime needs when the program declares apis (null otherwise).
@@ -13,13 +13,11 @@ export type Result = { program: Program; diagnostics: Diagnostic[]; js: string |
 export function parseProject(sources: Source[]): { program: Program; diagnostics: Diagnostic[] } {
   const program: Program = { kind: "Program", decls: [] };
   const diagnostics: Diagnostic[] = [];
+  // Every syntax error of every file is reported at once (an AI fixes them in one round).
   for (const s of sources) {
-    try {
-      program.decls.push(...parse(s.src, s.file).decls);
-    } catch (e) {
-      if (e instanceof CompileError) diagnostics.push(e.diagnostic);
-      else throw e;
-    }
+    const r = parseAll(s.src, s.file);
+    program.decls.push(...r.program.decls);
+    diagnostics.push(...r.errors);
   }
   return { program, diagnostics };
 }

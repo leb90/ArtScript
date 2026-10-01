@@ -2,7 +2,7 @@ import type {
   ApiAccess, ApiDecl, ComponentDecl, Decl, Element, Expr, Field, FnDecl, Loc, Member, ModelDecl, ObjProp, Param, Program, Prop, ServerFnDecl, Stmt, TypeRef, UseDecl, ViewNode,
 } from "./ast.ts";
 import { ELEMENTS } from "./elements.ts";
-import { CompileError, diag } from "./errors.ts";
+import { CompileError, diag, type Diagnostic } from "./errors.ts";
 import { lex, type Token } from "./lexer.ts";
 
 const BINARY_PREC: Record<string, number> = {
@@ -17,6 +17,20 @@ const CANONICAL: Record<string, string> = { "===": "==", "!==": "!=" };
 
 export function parse(src: string, file: string, startLine = 1): Program {
   return new Parser(lex(src, file, startLine)).program();
+}
+
+// Like parse, but keeps going after a syntax error (from the next declaration, or the next member
+// or view line of a component) and returns every error, so one compile reports them all.
+export function parseAll(src: string, file: string): { program: Program; errors: Diagnostic[] } {
+  let toks: Token[];
+  try { toks = lex(src, file, 1); } catch (e) {
+    if (e instanceof CompileError) return { program: { kind: "Program", decls: [] }, errors: [e.diagnostic] };
+    throw e;
+  }
+  const p = new Parser(toks);
+  p.errors = [];
+  const program = p.program();
+  return { program, errors: p.errors };
 }
 
 // Fragment parsers for `art patch`. `line` is the source line where the fragment starts,
@@ -44,6 +58,7 @@ export function parseExpression(src: string, file = "<expr>"): Expr {
 class Parser {
   toks: Token[];
   i = 0;
+  errors: Diagnostic[] | null = null; // collecting (parseAll) instead of stopping at the first error
   constructor(toks: Token[]) {
     this.toks = toks;
   }
@@ -79,23 +94,48 @@ class Parser {
   }
 
   // ---------- declarations ----------
+  // Runs `fn`; when collecting errors, a syntax error is recorded and parsing resumes at the next
+  // token that starts a line at column `col` or less (or at eof), never at the same place.
+  recover<T>(col: number, fn: () => T): T | null {
+    if (!this.errors) return fn();
+    const start = this.i;
+    try {
+      return fn();
+    } catch (e) {
+      if (!(e instanceof CompileError)) throw e;
+      this.errors.push(e.diagnostic);
+      if (this.i === start) this.i++;
+      while (this.tok.t !== "eof" && !(this.toks[this.i - 1]?.t === "nl" && this.tok.t !== "nl" && this.tok.loc.col <= col)) this.i++;
+      if (col === 1 && this.is("}")) this.i++; // the `}` that closes the broken declaration
+      return null;
+    }
+  }
+
   program(): Program {
     const decls: Decl[] = [];
     this.skipNl();
     while (this.tok.t !== "eof") {
-      if (this.is("model")) decls.push(this.model());
-      else if (this.is("api")) decls.push(this.api());
-      else if (this.is("use")) decls.push(this.use());
-      else if (this.is("auth")) {
-        const loc = this.next().loc;
-        const api = this.ident("the users api").v;
-        decls.push({ kind: "Auth", name: "auth", api, loc });
-      } else if (this.is("server")) decls.push(this.serverFn());
-      else if (this.is("component") || this.is("page") || this.is("layout")) decls.push(this.component());
-      else this.fail("'use', 'model', 'api', 'auth', 'server fn', 'component' or 'page'");
+      const d = this.recover(1, () => this.decl());
+      if (d) decls.push(d);
       this.skipNl();
     }
     return { kind: "Program", decls };
+  }
+
+  decl(): Decl {
+    {
+      if (this.is("model")) return this.model();
+      if (this.is("api")) return this.api();
+      if (this.is("use")) return this.use();
+      if (this.is("auth")) {
+        const loc = this.next().loc;
+        const api = this.ident("the users api").v;
+        return { kind: "Auth", name: "auth", api, loc };
+      }
+      if (this.is("server")) return this.serverFn();
+      if (this.is("component") || this.is("page") || this.is("layout")) return this.component();
+      return this.fail("'use', 'model', 'api', 'auth', 'server fn', 'component' or 'page'");
+    }
   }
 
   model(): ModelDecl {
@@ -254,8 +294,12 @@ class Parser {
     this.skipSep();
     while (!this.is("}")) {
       if (this.tok.t === "eof") this.fail("'}'");
-      if (this.memberAhead()) members.push(this.member());
-      else view.push(this.viewNode());
+      // A bad member or view line is reported and the next line of the component is parsed.
+      const col = this.tok.loc.col;
+      this.recover(col, () => {
+        if (this.memberAhead()) members.push(this.member());
+        else view.push(this.viewNode());
+      });
       this.skipSep();
     }
     this.expect("}");

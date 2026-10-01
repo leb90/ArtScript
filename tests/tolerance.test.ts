@@ -141,3 +141,10 @@ test("TS function types, props without commas, one-line if", () => {
   assert.deepEqual(r2.diagnostics.map((d) => d.expected), ["big: Bool", "extra: Any"]);
   assert.deepEqual(types('page P {\n  state n = ""\n  fn go() {\n    if n.trim() == "" return\n    n = "x"\n  }\n\n  text n\n}'), []);
 });
+
+test("every syntax error of a file is reported in one compile", () => {
+  const src = 'model A {\n  id: ID\n  n: = 3\n}\n\ncomponent C {\n  text "ok"\n  button "x" -> )\n  row gap= {\n  }\n  text "still parsed"\n}\n\npage P {\n  state x = \n  text "y"\n}\n';
+  const r = compile([{ file: "a.art", src }]);
+  assert.deepEqual(r.diagnostics.map((d) => d.loc.line), [3, 8, 15]);
+  assert.ok(r.diagnostics.every((d) => d.type === "UNEXPECTED_TOKEN"));
+});
