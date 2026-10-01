@@ -1,0 +1,39 @@
+model User {
+  id: ID
+  name: String
+  email: Email
+}
+
+api users: User
+
+page Users "/" {
+  data users = api.users.list()
+  state name = ""
+  state email = ""
+  state error = ""
+  fn add() {
+    if !email.includes("@") {
+      error = "Email inválido"
+      return
+    }
+    await api.users.create({ name, email })
+    name = ""
+    email = ""
+    error = ""
+  }
+
+  column gap=2 {
+    input name placeholder="Nombre"
+    input email placeholder="Email"
+    button "Agregar" primary -> add()
+    if error != "" {
+      text error bold
+    }
+    for u in users {
+      row gap=2 {
+        text `${u.name} (${u.email})`
+        button "Borrar" small -> api.users.remove(u.id)
+      }
+    }
+  }
+}

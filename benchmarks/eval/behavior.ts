@@ -1,0 +1,154 @@
+// Behavior checks: each task is used like a person would, through what's on screen (texts,
+// buttons, placeholders), so the same check applies to every stack. A failure explains what was
+// expected and what the screen showed; that message is fed back to the model.
+import { BehaviorError, exclusive, launch, type Page } from "./app.ts";
+import type { Task } from "./tasks.ts";
+import type { Files, Stack } from "./validate.ts";
+
+type Check = (p: Page) => Promise<void>;
+const has = (p: Page, s: string) => p.text().includes(s);
+const twoDecimals = (p: Page) => (p.text().match(/\d+[.,]\d{2}\b/g) ?? []).join("|");
+
+const CHECKS: Record<string, Check> = {
+  async counter(p) {
+    await p.until(() => has(p, "Contador") && has(p, "El doble es 0"), 'el título "Contador" y "El doble es 0"');
+    for (let i = 0; i < 6; i++) await p.click("+");
+    await p.until(() => has(p, "El doble es 12") && has(p, "¡Más de 5!"), 'tras 6 clics en "+": "El doble es 12" y "¡Más de 5!"');
+    await p.click("-");
+    await p.until(() => has(p, "El doble es 10") && !has(p, "¡Más de 5!"), 'tras "-": "El doble es 10" y sin "¡Más de 5!"');
+  },
+
+  async todo(p) {
+    const box = "¿Qué hay que hacer?";
+    await p.until(() => has(p, "No hay tareas"), '"No hay tareas" con la lista vacía');
+    await p.fill(box, "Comprar pan");
+    await p.press(box, "Enter");
+    await p.until(() => has(p, "Comprar pan"), 'que Enter agregue "Comprar pan"');
+    await p.fill(box, "Estudiar");
+    await p.click("Agregar");
+    await p.until(() => has(p, "Estudiar"), 'que el botón "Agregar" agregue "Estudiar"');
+    await p.fill(box, "   ");
+    await p.click("Agregar");
+    await p.until(() => p.count("x") === 2 && has(p, "2 pendientes"), 'que el texto vacío se ignore: 2 tareas y "2 pendientes"');
+    await p.check(0);
+    await p.until(() => has(p, "1 pendientes"), 'tras completar una tarea: "1 pendientes"');
+    await p.click("x", 0);
+    await p.until(() => !has(p, "Comprar pan") && has(p, "Estudiar"), 'que "x" borre "Comprar pan"');
+  },
+
+  async login(p) {
+    const entrar = () => p.button("Entrar");
+    await p.until(() => entrar().disabled, '"Entrar" deshabilitado al inicio');
+    await p.fill("type:email", "ana");
+    await p.fill("type:password", "12345678");
+    await p.until(() => entrar().disabled, '"Entrar" deshabilitado si el email no tiene "@"');
+    await p.fill("type:email", "ana@x.co");
+    await p.until(() => !entrar().disabled, '"Entrar" habilitado con email con "@" y contraseña de 8 caracteres');
+    await p.fill("type:password", "1234567");
+    await p.until(() => entrar().disabled, '"Entrar" deshabilitado con contraseña de 7 caracteres');
+    await p.fill("type:password", "12345678");
+    await p.click("Entrar");
+    await p.until(() => has(p, "Bienvenido, ana@x.co") && !document.querySelector("input[type=password]"), '"Bienvenido, ana@x.co" en lugar del formulario');
+  },
+
+  async search(p) {
+    const emails = () => (p.text().match(/@/g) ?? []).length;
+    await p.until(() => emails() === 4, "4 usuarios con su email");
+    await p.fill("#0", "zzzzzz");
+    await p.until(() => emails() === 0 && /\b0\b/.test(p.text()), 'sin resultados y la cantidad "0" al buscar "zzzzzz"');
+    await p.fill("#0", "");
+    await p.until(() => emails() === 4, "los 4 usuarios otra vez al borrar la búsqueda");
+  },
+
+  async cart(p) {
+    await p.until(() => p.count("Agregar") === 3, '3 productos con botón "Agregar"');
+    await p.click("Agregar", 0);
+    await p.until(() => p.count("+") === 1 && twoDecimals(p) !== "", 'el ítem en el carrito con "+" y "-", y el total con 2 decimales');
+    const before = twoDecimals(p);
+    await p.click("+");
+    await p.until(() => twoDecimals(p) !== before, 'que "+" cambie el total');
+    await p.click("-");
+    await p.click("-");
+    await p.until(() => p.count("+") === 0, 'que el ítem se quite del carrito al llegar a 0');
+  },
+
+  async tabs(p) {
+    await p.until(() => p.count("Perfil") === 1 && p.count("Ajustes") === 1 && p.count("Ayuda") === 1, 'botones "Perfil", "Ajustes" y "Ayuda"');
+    const perfil = p.text();
+    await p.click("Ajustes");
+    await p.until(() => p.text() !== perfil, 'que "Ajustes" cambie el contenido');
+    const ajustes = p.text();
+    await p.click("Ayuda");
+    await p.until(() => p.text() !== ajustes && p.text() !== perfil, 'que "Ayuda" muestre otro contenido');
+    await p.click("Perfil");
+    await p.until(() => p.text() === perfil, 'que "Perfil" vuelva al contenido inicial');
+  },
+
+  async "counter-mod"(p) {
+    for (let i = 0; i < 12; i++) await p.click("+");
+    await p.until(() => has(p, "El doble es 20") && !has(p, "El doble es 22"), 'tope en 10: "El doble es 20" tras 12 clics en "+"');
+    await p.click("Reset");
+    await p.until(() => has(p, "El doble es 0"), '"Reset" vuelve a 0');
+    await p.click("-");
+    await p.until(() => has(p, "El doble es 0") && !has(p, "-2"), 'que no baje de 0');
+  },
+
+  async "todo-mod"(p) {
+    const box = "¿Qué hay que hacer?";
+    for (const t of ["Leche", "Pan"]) { await p.fill(box, t); await p.click("Agregar"); }
+    await p.until(() => has(p, "2 pendientes") && p.count("Borrar completadas") === 0, '2 tareas y sin "Borrar completadas"');
+    await p.check(0);
+    await p.until(() => p.count("Borrar completadas") === 1, '"Borrar completadas" visible con una tarea completada');
+    await p.click("Borrar completadas");
+    await p.until(() => !has(p, "Leche") && has(p, "Pan") && p.count("Borrar completadas") === 0, 'que borre "Leche", deje "Pan" y oculte el botón');
+  },
+
+  async "fs-users"(p) {
+    await p.until(() => p.count("Agregar") === 1, 'el botón "Agregar"');
+    const add = async (name: string, email: string) => { await p.fill("Nombre", name); await p.fill("Email", email); await p.click("Agregar"); };
+    await add("Ana", "ana@x.co");
+    await p.until(() => has(p, "ana@x.co"), 'que se agregue "ana@x.co"');
+    await add("Zed", "nope");
+    await p.until(() => has(p, "Email inválido") && !has(p, "Zed"), '"Email inválido" y que no se agregue el usuario');
+    await add("Ceci", "ceci@x.co");
+    await p.until(() => has(p, "ceci@x.co"), 'que se agregue "ceci@x.co"');
+    await p.open();
+    await p.until(() => has(p, "ana@x.co") && has(p, "ceci@x.co"), "los usuarios guardados en el servidor después de recargar");
+    await p.click("Borrar", 0);
+    await p.until(() => !has(p, "ana@x.co") && has(p, "ceci@x.co"), 'que "Borrar" quite al primer usuario');
+    await p.open();
+    await p.until(() => !has(p, "ana@x.co") && has(p, "ceci@x.co"), "que el borrado persista después de recargar");
+  },
+
+  async "fs-shopping"(p) {
+    await p.until(() => p.count("Agregar") === 1, 'el botón "Agregar"');
+    for (const item of ["Leche", "Pan"]) { await p.fill("Producto", item); await p.click("Agregar"); }
+    await p.until(() => has(p, "Leche") && has(p, "Pan") && has(p, "2 por comprar"), '"Leche", "Pan" y "2 por comprar"');
+    await p.click("Comprado", 0);
+    await p.until(() => has(p, "1 por comprar") && has(p, "✓"), 'tras "Comprado": "1 por comprar" y "✓"');
+    await p.open();
+    await p.until(() => has(p, "1 por comprar") && has(p, "✓") && has(p, "Pan"), "los datos guardados en el servidor después de recargar");
+    await p.click("Borrar", 1);
+    await p.until(() => !has(p, "Pan") && has(p, "0 por comprar"), 'que "Borrar" quite "Pan" y quede "0 por comprar"');
+    await p.open();
+    await p.until(() => !has(p, "Pan") && has(p, "Leche"), "que el borrado persista después de recargar");
+  },
+};
+
+// Runs the task's behavior check; returns the failures (empty = it works).
+export function behave(task: Task, stack: Stack, files: Files): Promise<string[]> {
+  const check = CHECKS[task.id];
+  if (!check) return Promise.resolve([]);
+  return exclusive(async () => {
+    let app: Awaited<ReturnType<typeof launch>> | null = null;
+    try {
+      app = await launch(stack, files, !!task.fullstack);
+      await check(app.page);
+      return [];
+    } catch (e: any) {
+      return [`Prueba de comportamiento: ${e instanceof BehaviorError ? e.message : `error en la app: ${String(e?.message ?? e).slice(0, 300)}`}`];
+    } finally {
+      await app?.close();
+    }
+  });
+}

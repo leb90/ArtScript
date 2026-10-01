@@ -1,7 +1,8 @@
 // Cost eval tasks. The same functional request for every stack.
 // `base`: a benchmarks/tasks/ task whose code is the starting point (modification tasks).
 
-export type Task = { id: string; prompt: string; base?: string };
+// `fullstack`: the app needs a backend; React/Svelte also write a server.ts, ArtScript uses `api`.
+export type Task = { id: string; prompt: string; base?: string; fullstack?: boolean };
 
 export const TASKS: Task[] = [
   {
@@ -14,7 +15,7 @@ export const TASKS: Task[] = [
   },
   {
     id: "login",
-    prompt: "Creá un formulario de login con campos email y contraseña. El botón 'Entrar' está deshabilitado hasta que el email contenga '@' y la contraseña tenga al menos 8 caracteres. Al enviar, reemplazar el formulario por el texto 'Bienvenido, <email>'.",
+    prompt: "Creá un formulario de login con campos email y contraseña. El botón 'Entrar' está deshabilitado hasta que el email contenga '@' y la contraseña tenga al menos 8 caracteres. Al enviar, reemplazar el formulario por el texto 'Bienvenido, <email>'. Usá inputs de tipo email y password.",
   },
   {
     id: "search",
@@ -37,5 +38,15 @@ export const TASKS: Task[] = [
     id: "todo-mod",
     base: "todo",
     prompt: "Modificá la app: agregá un botón 'Borrar completadas' que elimina las tareas completadas; solo se muestra si hay al menos una completada.",
+  },
+  {
+    id: "fs-users",
+    fullstack: true,
+    prompt: "Creá una app full-stack de usuarios: inputs con placeholder 'Nombre' y 'Email' y un botón 'Agregar' que crea el usuario en el servidor. Si el email no contiene '@', mostrá 'Email inválido' y no crees nada. Mostrá cada usuario con su nombre, su email y un botón 'Borrar' que lo elimina del servidor. Los datos viven en el servidor: al recargar la página siguen ahí.",
+  },
+  {
+    id: "fs-shopping",
+    fullstack: true,
+    prompt: "Creá una lista de compras full-stack: un input con placeholder 'Producto' y un botón 'Agregar' que crea el ítem en el servidor. Cada ítem muestra su nombre, un botón 'Comprado' que lo marca como comprado en el servidor (y entonces muestra '✓' junto al nombre) y un botón 'Borrar'. Arriba mostrá 'N por comprar' con la cantidad de ítems no comprados. Los datos viven en el servidor: al recargar la página siguen ahí.",
   },
 ];

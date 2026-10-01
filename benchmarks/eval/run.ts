@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { TASKS, type Task } from "./tasks.ts";
 import { formatAI } from "../../src/errors.ts";
 import { applyPatch } from "../../src/patch.ts";
+import { behave } from "./behavior.ts";
 import { applyEdits, extractFiles, extractPatch, validate, type Files, type Stack } from "./validate.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -44,6 +45,8 @@ const CONCURRENCY = Number(opt("concurrency", "4"));
 const TASK_IDS = opt("tasks", TASKS.map((t) => t.id).join(",")).split(",");
 const STACK_IDS = opt("stacks", STACKS.join(",")).split(",") as Stack[];
 const DRY = args.includes("--dry-run");
+// Behavior checks run each app in a simulated browser; --no-behavior only checks that it compiles.
+const BEHAVIOR = !args.includes("--no-behavior");
 
 // ---------- prompts ----------
 const FORMAT = "Respondé SOLO con los archivos completos, cada uno en un bloque de código cuyo encabezado es el nombre del archivo, por ejemplo:\n```App.tsx\n...\n```\nSin explicaciones.";
@@ -74,7 +77,15 @@ const EDIT_HINT: Record<Stack, string> = {
   svelte: "Respondé con bloques de edición, o con los archivos completos si lo preferís. Formato de edición (el texto SEARCH debe coincidir exactamente y una sola vez):\n```edit App.svelte\n<<<<<<< SEARCH\ntexto original\n=======\ntexto nuevo\n>>>>>>> REPLACE\n```",
 };
 
+// Full-stack tasks: ArtScript uses its `api`; React and Svelte write their own Node server.
+const FULLSTACK_HINT: Record<Stack, string> = {
+  artscript: "Es una app full-stack: usá `api` (ver la spec) para el backend.",
+  react: "Es una app full-stack. Además de App.tsx, escribí server.ts: un servidor Node con node:http (sin dependencias externas) que escuche en process.env.PORT y exponga bajo /api/ lo que necesites, guardando los datos en memoria. El frontend lo llama con rutas relativas (fetch(\"/api/...\")). No sirvas archivos estáticos.",
+  svelte: "Es una app full-stack. Además de App.svelte, escribí server.ts: un servidor Node con node:http (sin dependencias externas) que escuche en process.env.PORT y exponga bajo /api/ lo que necesites, guardando los datos en memoria. El frontend lo llama con rutas relativas (fetch(\"/api/...\")). No sirvas archivos estáticos.",
+};
+
 function userPrompt(task: Task, stack: Stack): string {
+  if (task.fullstack) return `Tarea: ${task.prompt}\n\n${FULLSTACK_HINT[stack]}`;
   const base = baseFiles(task, stack);
   const code = Object.entries(base).map(([n, s]) => `\`\`\`${n}\n${s}\`\`\``).join("\n\n");
   return code ? `Código actual:\n\n${code}\n\nTarea: ${task.prompt}\n\n${EDIT_HINT[stack]}` : `Tarea: ${task.prompt}`;
@@ -149,6 +160,7 @@ async function runOne(client: Anthropic, task: Task, stack: Stack, run: number):
     const edited = applyEditAnswer(task, stack, text);
     if (edited && "errors" in edited) { files = {}; errors = edited.errors; }
     else { files = edited ? edited.files : extractFiles(text); errors = await validate(stack, files); }
+    if (!errors.length && BEHAVIOR) errors = await behave(task, stack, files);
     history.push({ files, errors: errors.slice(0, 10), ...(edited ? { edit: text } : {}) });
     if (!errors.length) return done(true, attempt);
     const fix = edited ? "Devolvé el cambio corregido (se aplica sobre el código original)." : "Devolvé los archivos completos corregidos.";
@@ -253,6 +265,21 @@ async function dryRun() {
   }
   const bad = applyEditAnswer(todoMod, "react", "```edit Todos.tsx\n<<<<<<< SEARCH\nno existe\n=======\nx\n>>>>>>> REPLACE\n```");
   console.log(`${bad && "errors" in bad ? "✓" : "✗"} detecta SEARCH inexistente`);
+  // Behavior checks against reference solutions: proves the harness itself works for every stack.
+  const refs: [string, string, Stack][] = [];
+  for (const t of ["counter", "todo"]) for (const st of STACK_IDS) refs.push([t, join(REPO, "benchmarks", "tasks", t, st), st]);
+  const refRoot = join(HERE, "refs");
+  if (existsSync(refRoot)) for (const t of readdirSync(refRoot)) for (const st of readdirSync(join(refRoot, t)) as Stack[]) if (STACK_IDS.includes(st)) refs.push([t, join(refRoot, t, st), st]);
+  for (const [t, dir, st] of refs) {
+    const task = TASKS.find((x) => x.id === t)!;
+    const files = Object.fromEntries(readdirSync(dir).map((f) => [f, readFileSync(join(dir, f), "utf8")]));
+    const errs = await behave(task, st, files);
+    console.log(`${errs.length ? "✗" : "✓"} comportamiento ${t}/${st}${errs.length ? ": " + errs[0] : ""}`);
+  }
+  // And a buggy app must fail, with a message that says what was expected.
+  const buggy = { "app.art": readFileSync(join(REPO, "examples", "counter", "app.art"), "utf8").replace("count * 2", "count * 3") };
+  const caught = await behave(TASKS.find((x) => x.id === "counter")!, "artscript", buggy);
+  console.log(`${caught.length ? "✓" : "✗"} detecta una app con un bug: ${caught[0]?.slice(0, 110) ?? "NO DETECTÓ"}`);
   const text = "```app.art\npage A {\n}\n```\nnada\n```App.tsx\nx\n```";
   console.log(`✓ extracción de archivos: ${Object.keys(extractFiles(text)).join(", ")}`);
   const calls = TASK_IDS.length * STACK_IDS.length * RUNS;

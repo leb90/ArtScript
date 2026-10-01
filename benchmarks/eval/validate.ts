@@ -31,8 +31,14 @@ function validateArt(files: Files): string[] {
 }
 
 let seq = 0;
+// Typechecks .ts/.tsx with strict tsc; a server.ts gets Node's types.
 function validateReact(files: Files): string[] {
   const tsx = Object.keys(files).filter((n) => /\.tsx?$/.test(n));
+  return tsc(files, tsx);
+}
+
+function tsc(files: Files, include: string[]): string[] {
+  const tsx = include;
   if (!tsx.length) return ["no hay archivos .tsx"];
   const dir = join(WORK, `react-${process.pid}-${seq++}`);
   mkdirSync(dir, { recursive: true });
@@ -44,7 +50,7 @@ function validateReact(files: Files): string[] {
     writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
       compilerOptions: {
         jsx: "react-jsx", strict: true, noEmit: true, skipLibCheck: true, target: "es2022",
-        module: "esnext", moduleResolution: "bundler", lib: ["es2022", "dom", "dom.iterable"], types: [],
+        module: "esnext", moduleResolution: "bundler", lib: ["es2022", "dom", "dom.iterable"], types: tsx.includes("server.ts") ? ["node"] : [],
         typeRoots: [join(REPO, "node_modules", "@types")],
       },
       include: tsx,
@@ -64,7 +70,7 @@ async function validateSvelte(files: Files): Promise<string[]> {
   const svelte = Object.keys(files).filter((n) => n.endsWith(".svelte"));
   if (!svelte.length) return ["no hay archivos .svelte"];
   const { compile: compileSvelte } = await import("svelte/compiler");
-  const errs: string[] = [];
+  const errs: string[] = files["server.ts"] ? tsc(files, ["server.ts"]) : [];
   for (const n of svelte) {
     try {
       compileSvelte(files[n], { filename: n, generate: "client" });

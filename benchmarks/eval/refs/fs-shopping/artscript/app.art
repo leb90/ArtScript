@@ -1,0 +1,32 @@
+model Item {
+  id: ID
+  name: String
+  bought: Bool
+}
+
+api items: Item
+
+page Shopping "/" {
+  data items = api.items.list()
+  state name = ""
+  computed pending = items.filter(i => !i.bought).length
+  fn add() {
+    await api.items.create({ name, bought: false })
+    name = ""
+  }
+
+  column gap=2 {
+    text `${pending} por comprar` bold
+    row gap=2 {
+      input name placeholder="Producto"
+      button "Agregar" primary -> add()
+    }
+    for i in items {
+      row gap=2 {
+        text i.bought ? `${i.name} ✓` : i.name
+        button "Comprado" small -> api.items.update(i.id, { bought: true })
+        button "Borrar" small -> api.items.remove(i.id)
+      }
+    }
+  }
+}
