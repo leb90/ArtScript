@@ -168,6 +168,7 @@ remove Todos/column/if/else/text
 ```
 
 - Operations: `replace`, `insert before`, `insert after`, `append` (children of a node, members/view of a component, or fields of a model), `remove`, `set` (props on the same line; `-name` removes one), `add [file.art]` (new declarations).
+- New component props without rewriting it: `set Row onRemove: Fn, compact: Bool = false`.
 - Paths: `Component/tag/tag[n]` (n = 0-based index among siblings with the same tag; also `if`, `for`, `if/else`), `Component.member`, `Model.field`. `art context Component` shows its source (paths follow the view structure).
 - Applied in order and atomic: if anything fails, nothing changes.
 

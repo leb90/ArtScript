@@ -30,6 +30,10 @@ export function parseFields(src: string, file: string, line: number): Field[] {
   return (parse(`model __Patch {\n${src}\n}`, file, line - 1).decls[0] as ModelDecl).fields;
 }
 
+export function parseParams(src: string, file: string, line: number): ComponentDecl["params"] {
+  return (parse(`component __Patch(${src}) {\n}`, file, line).decls[0] as ComponentDecl).params;
+}
+
 export function parseExpression(src: string, file = "<expr>"): Expr {
   const p = new Parser(lex(src, file));
   const e = p.expr();

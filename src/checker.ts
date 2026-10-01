@@ -523,7 +523,7 @@ class Checker {
         const ty = p.value ? this.infer(p.value, scope) : BOOL;
         const signature = `component ${el.tag}(${[...comp.params.map((x) => `${x.name}: ${show(x.ty)}`), `${p.name}: ${show(ty)}`].join(", ")})`;
         this.err("UNKNOWN_PROP", `'${el.tag}' has no prop '${p.name}'`, p.loc, {
-          expr: p.name, expected: comp.params.map((x) => x.name).join("|") || "no props", fixes: close.length ? close : [signature],
+          expr: p.name, expected: comp.params.map((x) => x.name).join("|") || "no props", fixes: close.length ? close : [signature, `in a patch: set ${el.tag} ${p.name}: ${show(ty)}`],
         });
         continue;
       }

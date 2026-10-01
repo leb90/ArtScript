@@ -137,3 +137,27 @@ test("paths may skip if/else/for wrappers when one node matches (from the eval)"
   const src = [{ file: "a.art", src: 'page P {\n  state n = 0\n  if n == 0 {\n    text "a"\n  } else {\n    text "b"\n  }\n}\n' }];
   assert.equal(applyPatch(src, 'remove P/text').diagnostics[0].type, "TARGET_NOT_FOUND");
 });
+
+test("members written as view paths and paths through a child component still resolve", () => {
+  // `Todos/fn/add`, `Todos/column/fn/add` and `Todos/add` all mean `Todos.add`.
+  for (const target of ["Todos/fn/add", "Todos/column/fn/add", "Todos/add"]) {
+    const out = ok(`replace ${target}\n  fn add() {\n    todos.push({ id: crypto.randomUUID(), title: draft.toUpperCase(), done: false })\n  }\n`);
+    assert.match(out, /draft\.toUpperCase\(\)/);
+  }
+  assert.match(ok("replace Todos/state/draft\n  state draft = \"x\"\n"), /state draft = "x"/);
+  // The only computed of the component.
+  assert.match(ok("replace Todos/computed\n  computed pending = 0\n"), /computed pending = 0/);
+  // Members appended at a view-ish path join the component.
+  assert.match(ok("append Todos/state\n  state filter = \"all\"\n"), /state filter = "all"/);
+  // A path that walks into a child component re-roots there.
+  assert.match(ok("set Todos/column/for/TodoItem/row gap=9\n"), /row .*gap=9/);
+  // Misses on member-like paths point to the members.
+  const [d] = fails("replace Todos/fn/nope\n  fn nope() {\n  }\n");
+  assert.ok(d.fixes!.includes("Todos.add"));
+});
+
+test("set Component adds, changes and removes props", () => {
+  const out = ok("set TodoItem compact: Bool = false, label: String = \"x\"\n");
+  assert.match(out, /component TodoItem\(todo: Todo, remove: Fn, compact: Bool = false, label: String = "x"\)/);
+  assert.match(ok("set TodoItem -remove\nreplace TodoItem/row/button\n  text \"no remove\"\nset Todos/column/for/TodoItem -remove\n"), /component TodoItem\(todo: Todo\)/);
+});

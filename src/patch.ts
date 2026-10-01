@@ -6,6 +6,7 @@
 //   append <path>                           add children (element / if / else / for), members or view (component), fields (model)
 //   remove <path>
 //   set <view path> gap=6 muted -align      set props/flags on an element; `-name` removes one
+//   set Component onSave: Fn, n: Number = 1  add (or change) component props; `-name` removes one
 //   add [file.art]                          add new top-level declarations
 //
 // Operations apply in order. The whole patch is atomic: if any operation fails or the result
@@ -14,7 +15,7 @@ import type { ComponentDecl, Decl, Element, Field, Loc, Member, ModelDecl, Progr
 import { check } from "./checker.ts";
 import { parseProject, type Source } from "./compile.ts";
 import { CompileError, diag, suggest, type Diagnostic } from "./errors.ts";
-import { parse, parseComponentBody, parseFields } from "./parser.ts";
+import { parse, parseComponentBody, parseFields, parseParams } from "./parser.ts";
 import { printProgram } from "./printer.ts";
 
 export type PatchResult = { files: Record<string, string>; changed: string[]; diagnostics: Diagnostic[] };
@@ -166,6 +167,55 @@ function resolve(p: Program, path: string, loc: Loc): Target {
   return { kind: "view", list: curList, i: curIndex, node: cur, comp };
 }
 
+// AIs often write members as view paths (`Shop/fn/add`, `Shop/column/state/items`, `Shop/add`) or
+// reach a child component through its parent (`Shop/column/Catalog/grid`). On a miss, these
+// readings are tried in order; the first that resolves wins.
+const MEMBER_KW = new Set(["state", "computed", "fn", "data", "ref", "mount", "effect"]);
+
+function alternatives(p: Program, path: string): string[] {
+  const segs = path.split("/").filter(Boolean);
+  const root = segs[0]?.split(".")[0];
+  const comp = p.decls.find((d): d is ComponentDecl => d.kind === "Component" && d.name === root);
+  const out: string[] = [];
+  if (comp) {
+    const names = new Set(comp.members.map((m) => m.name));
+    for (let i = 1; i < segs.length; i++) {
+      const s = segs[i], next = segs[i + 1];
+      if (MEMBER_KW.has(s) && next && names.has(next)) out.push(`${root}.${next}`);
+      else if (MEMBER_KW.has(s) && !next) {
+        // `Catalog/computed`: the only member of that kind.
+        const ms = comp.members.filter((m) => m.kind.toLowerCase() === s);
+        if (ms.length === 1) out.push(`${root}.${ms[0].name}`);
+      } else if (!next && names.has(s)) out.push(`${root}.${s}`);
+    }
+  }
+  for (let i = segs.length - 1; i >= 1; i--) {
+    const name = segs[i].replace(/\[\d+\]$/, "");
+    if (p.decls.some((d) => d.kind === "Component" && d.name === name)) {
+      const rest = segs.slice(i + 1).join("/");
+      out.push(rest ? `${name}/${rest}` : name);
+      break;
+    }
+  }
+  return out;
+}
+
+function resolveLoose(p: Program, path: string, loc: Loc): Target {
+  try {
+    return resolve(p, path, loc);
+  } catch (e) {
+    if (!(e instanceof CompileError)) throw e;
+    for (const alt of alternatives(p, path)) {
+      try { return resolve(p, alt, loc); } catch { /* next */ }
+    }
+    // Members addressed like view nodes: point to the `Component.member` form.
+    const root = path.split(/[/.]/)[0];
+    const comp = p.decls.find((d): d is ComponentDecl => d.kind === "Component" && d.name === root);
+    if (comp && path.split("/").some((s) => MEMBER_KW.has(s))) e.diagnostic.fixes = comp.members.map((m) => `${root}.${m.name}`);
+    throw e;
+  }
+}
+
 // Every addressable view path of a component, for `art context`.
 export function viewPaths(comp: ComponentDecl): { path: string; node: ViewNode }[] {
   const out: { path: string; node: ViewNode }[] = [];
@@ -206,13 +256,13 @@ function applyOp(p: Program, op: Op, firstFile: string) {
 
   let t: Target;
   try {
-    t = resolve(p, op.target, loc);
+    t = resolveLoose(p, op.target, loc);
   } catch (e) {
-    // `insert before Catalog.computed` with members: the position of members doesn't change their
-    // meaning, so an unknown member target of an insert just adds them to the component.
-    const m = /^(\w+)\.\w+$/.exec(op.target);
-    const comp = m && p.decls.find((d): d is ComponentDecl => d.kind === "Component" && d.name === m[1]);
-    if (!(e instanceof CompileError) || !comp || !op.op.startsWith("insert") || !op.body.trim()) throw e;
+    // `insert before Catalog.computed` / `append Catalog/state` with members: the position of members
+    // doesn't change their meaning, so an unknown target in that component just adds them to it.
+    const root = /^(\w+)/.exec(op.target)?.[1];
+    const comp = root && p.decls.find((d): d is ComponentDecl => d.kind === "Component" && d.name === root);
+    if (!(e instanceof CompileError) || !comp || !(op.op.startsWith("insert") || op.op === "append") || !op.body.trim()) throw e;
     const body = parseComponentBody(op.body, PATCH_FILE, bodyLine);
     if (body.view.length || !body.members.length) throw e;
     comp.members.push(...body.members);
@@ -226,6 +276,11 @@ function applyOp(p: Program, op: Op, firstFile: string) {
     else if (t.node) t.list.splice(t.i, 1);
     else bodyErr("remove can't delete an `else` branch; replace the `if`", "a path to a node");
     return;
+  }
+
+  if (op.op === "set" && t.kind === "decl" && t.decl.kind === "Component") {
+    if (!op.args) bodyErr("`set` needs props on the same line", `set ${t.decl.name} onSave: Fn`);
+    return setParams(t.decl, op.args, loc);
   }
 
   if (op.op === "set") {
@@ -297,6 +352,19 @@ function setProps(el: Element, items: string, loc: Loc) {
     const i = el.props.findIndex((p) => p.name === np.name);
     if (i >= 0) el.props[i] = np;
     else el.props.push(np);
+  }
+}
+
+// `onSave: Fn, n: Number = 1 -old`: add or replace component props; `-name` removes one.
+function setParams(comp: ComponentDecl, items: string, loc: Loc) {
+  const remove = [...items.matchAll(/(?:^|[\s,])-([A-Za-z_]\w*)/g)].map((x) => x[1]);
+  const rest = items.replace(/(?:^|[\s,])-[A-Za-z_]\w*/g, " ").trim().replace(/^,|,$/g, "");
+  comp.params = comp.params.filter((p) => !remove.includes(p.name));
+  if (!rest) return;
+  for (const np of parseParams(rest, PATCH_FILE, loc.line)) {
+    const i = comp.params.findIndex((p) => p.name === np.name);
+    if (i >= 0) comp.params[i] = np;
+    else comp.params.push(np);
   }
 }
 
