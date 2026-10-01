@@ -95,6 +95,7 @@ export function printProgram(p: Program): string {
 }
 
 export function printDecl(d: Decl): string {
+  if (d.kind === "Use") return `use ${JSON.stringify(d.source)}${d.default ? ` as ${d.default}` : ""}${d.names.length ? ` { ${d.names.join(", ")} }` : ""}`;
   if (d.kind === "Api") return `api ${d.name}: ${d.model}${d.access === "public" ? "" : " " + d.access}`;
   if (d.kind === "Auth") return `auth ${d.api}`;
   if (d.kind === "ServerFn") return `server fn ${d.name}(${d.params.join(", ")}) {\n${printStmts(d.body, 1).join("\n")}\n}`;

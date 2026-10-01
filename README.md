@@ -93,6 +93,13 @@ data products = api.products.list({ search, sort: "-price", limit: 20, offset: p
 data total = api.products.count({ search })
 ```
 
+Any npm package or JS/TS module of your own can be used with `use`; the compiler checks that the module and every imported name exist, and `art build` bundles everything into one minified file:
+
+```
+use "date-fns" { format }
+use "./lib/money.ts" { toUSD }
+```
+
 To change existing code, an AI can send a small `art patch` instead of rewriting files; the whole patch is typechecked and applied atomically:
 
 ```

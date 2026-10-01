@@ -1,7 +1,8 @@
 // Type checker: small type system, null safety and errors with fixes.
-import type { ComponentDecl, Element, Expr, Loc, ModelDecl, Program, ServerFnDecl, Stmt, TypeRef, ViewNode } from "./ast.ts";
+import type { ComponentDecl, Element, Expr, Loc, ModelDecl, Program, ServerFnDecl, Stmt, TypeRef, UseDecl, ViewNode } from "./ast.ts";
 import { ELEMENTS, ENUM_PROPS } from "./elements.ts";
 import { CATALOG, diag, suggest, type Diagnostic } from "./errors.ts";
+import { inspectModule, isLocal, packageName } from "./modules.ts";
 import { printDecl, printExpr } from "./printer.ts";
 
 export type Ty =
@@ -124,6 +125,8 @@ class Checker {
   authModel: string | null = null; // model of the `auth` api
   serverFns = new Map<string, Ty>(); // server fn name → return type
   returns: Ty[] | null = null; // return types collected while checking a server fn
+  imports = new Map<string, Ty>(); // names brought in by `use`, visible everywhere
+  importFrom = new Map<string, string>(); // imported name → module
   idFields = new Map<string, Set<string>>(); // model → fields declared as ID (assigned by the server on create)
   constructor(program: Program) {
     this.program = program;
@@ -136,6 +139,7 @@ class Checker {
   run(): Diagnostic[] {
     const seen = new Set<string>();
     for (const d of this.program.decls) {
+      if (d.kind === "Use") continue; // several files may use the same module
       if (seen.has(d.name)) this.err("DUPLICATE_NAME", `'${d.name}' is already declared`, d.loc, { expr: d.name });
       seen.add(d.name);
       if (d.kind === "Model") this.models.set(d.name, {});
@@ -191,6 +195,7 @@ class Checker {
         this.err("MISSING_FIELD", `'admin' needs ${this.authModel} to have \`role: String\``, d.loc, { expr: printDecl(d), expected: "role: String", fixes: [`add \`role: String\` to model ${this.authModel}`] });
       }
     }
+    for (const d of this.program.decls) if (d.kind === "Use") this.use(d);
     for (const d of this.program.decls) if (d.kind === "ServerFn") this.serverFn(d);
     for (const d of this.program.decls) {
       if (d.kind !== "Component") continue;
@@ -215,11 +220,50 @@ class Checker {
     return ty;
   }
 
+  // ---------- imports ----------
+  // Checks a `use`: the module exists and exports what's imported. Imported values are typed Any.
+  use(d: UseDecl) {
+    this.at = d.name;
+    const declared = new Set(this.program.decls.filter((x) => x.kind !== "Use").map((x) => x.name));
+    for (const name of [...(d.default ? [d.default] : []), ...d.names]) {
+      // The same name from the same module in several files is fine; from another module it clashes.
+      const from = this.importFrom.get(name);
+      if ((from !== undefined && from !== d.source) || declared.has(name)) this.err("DUPLICATE_NAME", `'${name}' is already declared`, d.loc, { expr: name });
+      this.imports.set(name, ANY);
+      this.importFrom.set(name, d.source);
+    }
+    const info = inspectModule(d.source, d.loc.file);
+    if (!info) return; // no bundler available to inspect modules
+    if (!info.found) {
+      const fixes = isLocal(d.source) ? [`check the path (relative to ${d.loc.file})`] : [`npm install ${packageName(d.source)}`];
+      this.err("UNKNOWN_MODULE", `module '${d.source}' not found`, d.loc, { expr: d.source, fixes });
+      return;
+    }
+    if (d.default && !info.hasDefault) {
+      const named = info.exports ?? [];
+      this.err("UNKNOWN_EXPORT", `'${d.source}' has no default export`, d.loc, {
+        expr: `as ${d.default}`, fixes: named.length ? [`use "${d.source}" { ${(suggest(d.default, named)[0] ?? named[0])} }`] : [],
+      });
+    }
+    if (!info.exports) return; // CommonJS: names can't be known statically
+    for (const name of d.names) {
+      if (!info.exports.includes(name)) {
+        this.err("UNKNOWN_EXPORT", `'${d.source}' doesn't export '${name}'`, d.loc, { expr: name, fixes: suggest(name, info.exports) });
+      }
+    }
+  }
+
+  // Imported names are visible in every component and server fn.
+  withImports(scope: Scope) {
+    for (const [name, ty] of this.imports) scope.vars.set(name, { kind: "global", ty });
+  }
+
   // ---------- server functions ----------
   // Run on the server with `db.<api>` (sync, unscoped), `me` (the logged-in user or null) and `fail(message)`.
   serverFn(d: ServerFnDecl) {
     this.at = d.name;
     const scope = new Scope(null);
+    this.withImports(scope);
     const fields: Record<string, Ty> = {};
     for (const [name, model] of this.apis) fields[name] = { k: "api", name, model, sync: true };
     scope.vars.set("db", { kind: "global", ty: { k: "obj", fields } });
@@ -237,6 +281,7 @@ class Checker {
   component(c: ComponentDecl) {
     this.at = c.name;
     const scope = new Scope(null);
+    this.withImports(scope);
     const declare = (name: string, sym: Sym, loc: Loc) => {
       if (scope.vars.has(name)) this.err("DUPLICATE_NAME", `'${name}' is already declared in ${c.name}`, loc, { expr: name });
       scope.vars.set(name, sym);

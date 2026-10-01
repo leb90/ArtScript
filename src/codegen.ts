@@ -1,6 +1,7 @@
 // Generates an ES module that builds the DOM directly (no virtual DOM) using runtime.js.
 import type { ApiAccess, ComponentDecl, Element, Expr, Program, ServerFnDecl, Stmt, ViewNode } from "./ast.ts";
-import { printType } from "./printer.ts";
+import { specifier } from "./modules.ts";
+import { printDecl, printType } from "./printer.ts";
 import { ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
 
 type Kind = "state" | "computed" | "prop" | "fn" | "let" | "loop" | "param";
@@ -25,8 +26,23 @@ const MUTATORS = new Set(["push", "pop", "shift", "unshift", "splice", "sort", "
 const ALIGN: Record<string, string> = { start: "flex-start", end: "flex-end", center: "center", stretch: "stretch", between: "space-between", around: "space-around" };
 const JS_OPS: Record<string, string> = { "==": "===", "!=": "!==" };
 
+// `use` declarations as ES imports; only those whose names appear in `onlyFor` when given.
+function importLines(program: Program, onlyFor?: string): string[] {
+  const out: string[] = [];
+  for (const d of program.decls) {
+    if (d.kind !== "Use") continue;
+    const used = (n: string) => onlyFor === undefined || new RegExp(`\\b${n}\\b`).test(onlyFor);
+    const def = d.default && used(d.default) ? d.default : null;
+    const names = d.names.filter(used);
+    if (!def && !names.length) continue;
+    const what = [def, names.length ? `{ ${names.join(", ")} }` : null].filter(Boolean).join(", ");
+    out.push(`import ${what} from ${JSON.stringify(specifier(d.source, d.loc.file))};`);
+  }
+  return out;
+}
+
 export function generate(program: Program): string {
-  const out: string[] = ['import * as $ from "./runtime.js";', ""];
+  const out: string[] = ['import * as $ from "./runtime.js";', ...importLines(program), ""];
   const apis = program.decls.filter((d) => d.kind === "Api");
   // Typed REST client: one entry per `api` declaration.
   if (apis.length) out.push(`const api = { ${apis.map((a) => `${a.name}: $.$api(${JSON.stringify(a.name)})`).join(", ")} };`, "");
@@ -63,13 +79,14 @@ export function serverSchema(program: Program): ServerSchema | null {
   }
   const fns = program.decls.filter((d) => d.kind === "ServerFn");
   if (!Object.keys(apis).length && !fns.length) return null;
-  return { models, apis, auth, fns: serverFnsModule(fns) };
+  return { models, apis, auth, fns: serverFnsModule(program, fns) };
 }
 
 // Each server fn becomes `async name({ db, me, fail }, ...params)`.
-function serverFnsModule(fns: ServerFnDecl[]): string {
+function serverFnsModule(program: Program, fns: ServerFnDecl[]): string {
   const host: ComponentDecl = { kind: "Component", page: false, name: "server", path: null, params: [], members: [], view: [], loc: { file: "", line: 0, col: 0 } };
-  const out = ["export const fns = {"];
+  // Server fns import only the `use` names they mention (client-only libraries stay out).
+  const out = [...importLines(program, fns.map((f) => printDecl(f)).join("\n")), "export const fns = {"];
   for (const f of fns) {
     const g = new ComponentGen(host);
     g.ind = 2;

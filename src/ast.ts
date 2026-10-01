@@ -8,7 +8,11 @@ export type TypeRef = { name: string; list: boolean; optional: boolean; loc: Loc
 
 export type Program = { kind: "Program"; decls: Decl[] };
 
-export type Decl = ModelDecl | ComponentDecl | ApiDecl | AuthDecl | ServerFnDecl;
+export type Decl = ModelDecl | ComponentDecl | ApiDecl | AuthDecl | ServerFnDecl | UseDecl;
+
+// `use "date-fns" { format }`, `use "canvas-confetti" as confetti`, `use "./lib/money.ts" { toUSD }`:
+// imports from npm packages or local JS/TS modules, visible in every component and server fn.
+export type UseDecl = { kind: "Use"; name: string; source: string; default: string | null; names: string[]; loc: Loc };
 
 export type ModelDecl = { kind: "Model"; name: string; fields: Field[]; loc: Loc };
 export type Field = { name: string; type: TypeRef; loc: Loc };

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ArtScript CLI: `art <command>`. Short output; machine-readable with --ai.
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, watch, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, watch, writeFileSync } from "node:fs";
 import { createServer, type ServerResponse } from "node:http";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -104,12 +104,24 @@ function sizes(files: Record<string, string>): string {
   return [header, ...rows.map((r) => line(...r)), line("total", ...total)].join("\n");
 }
 
-// Compiles in memory: { "index.html", "app.js", "runtime.js" } or the diagnostics.
+// Compiles in memory: { "index.html", "app.js" } or the diagnostics. app.js is one bundle with the
+// runtime and every `use` module (npm packages resolve from the project's node_modules).
 // With apis, `server` is the schema for the server runtime.
-function buildFiles(target: string): { files: Record<string, string>; server: ServerSchema | null } | { diagnostics: Diagnostic[] } {
+async function buildFiles(target: string, minify: boolean): Promise<{ files: Record<string, string>; server: ServerSchema | null } | { diagnostics: Diagnostic[] }> {
   const r = compile(sources(target));
   if (!r.js) return { diagnostics: r.diagnostics };
-  return { files: { "index.html": htmlShell(), "app.js": r.js, "runtime.js": readFileSync(RUNTIME, "utf8") }, server: r.server };
+  const esbuild = await import("esbuild");
+  try {
+    const out = await esbuild.build({
+      stdin: { contents: r.js.replace('"./runtime.js"', JSON.stringify(RUNTIME)), resolveDir: resolve(projectRoot(target)), loader: "js" },
+      bundle: true, format: "esm", platform: "browser", write: false, minify, logLevel: "silent",
+      define: { "process.env.NODE_ENV": minify ? '"production"' : '"development"' },
+    });
+    return { files: { "index.html": htmlShell(), "app.js": out.outputFiles[0].text }, server: r.server };
+  } catch (e: any) {
+    const loc = { file: target, line: 1, col: 1 };
+    return { diagnostics: (e.errors ?? [{ text: String(e) }]).map((x: any) => ({ code: "E1050", type: "UNKNOWN_MODULE", msg: x.text, loc })) };
+  }
 }
 
 // ---------- commands ----------
@@ -137,7 +149,7 @@ switch (cmd) {
   case "build": {
     const target = pos[0] ?? defaultTarget();
     const outDir = (flag("--out") as string) ?? join(projectRoot(target), "dist");
-    const r = buildFiles(target);
+    const r = await buildFiles(target, true);
     if ("diagnostics" in r) { report(r.diagnostics, false); process.exit(1); }
     mkdirSync(outDir, { recursive: true });
     for (const [f, s] of Object.entries(r.files)) writeFileSync(join(outDir, f), s);
@@ -238,7 +250,7 @@ switch (cmd) {
     let api: ((req: unknown, res: unknown) => Promise<boolean>) | null = null;
     let apiSchema = "";
     const rebuild = async (): Promise<boolean> => {
-      const r = buildFiles(target);
+      const r = await buildFiles(target, false);
       if ("diagnostics" in r) {
         lastError = r.diagnostics.map(formatHuman).join("\n\n");
         console.log(lastError);
@@ -250,7 +262,15 @@ switch (cmd) {
       if (schema !== apiSchema) {
         apiSchema = schema;
         // Server fns are compiled to an ES module and loaded straight from memory.
-        const fns = r.server ? (await import(`data:text/javascript,${encodeURIComponent(r.server.fns)}`)).fns : {};
+        // Server fns are written next to the project so their `use` imports resolve like the app's.
+        let fns = {};
+        if (r.server) {
+          const file = join(projectRoot(target), ".art", `server-fns-${Date.now()}.mjs`);
+          mkdirSync(dirname(file), { recursive: true });
+          writeFileSync(file, r.server.fns);
+          fns = (await import(pathToFileURL(file).href)).fns;
+          rmSync(file, { force: true });
+        }
         api = r.server ? createApi(r.server, dataDir, fns) : null;
       }
       return true;

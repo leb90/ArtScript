@@ -1,5 +1,5 @@
 import type {
-  ApiAccess, ApiDecl, ComponentDecl, Decl, Element, Expr, Field, FnDecl, Loc, Member, ModelDecl, ObjProp, Param, Program, Prop, ServerFnDecl, Stmt, TypeRef, ViewNode,
+  ApiAccess, ApiDecl, ComponentDecl, Decl, Element, Expr, Field, FnDecl, Loc, Member, ModelDecl, ObjProp, Param, Program, Prop, ServerFnDecl, Stmt, TypeRef, UseDecl, ViewNode,
 } from "./ast.ts";
 import { ELEMENTS } from "./elements.ts";
 import { CompileError, diag } from "./errors.ts";
@@ -81,13 +81,14 @@ class Parser {
     while (this.tok.t !== "eof") {
       if (this.is("model")) decls.push(this.model());
       else if (this.is("api")) decls.push(this.api());
+      else if (this.is("use")) decls.push(this.use());
       else if (this.is("auth")) {
         const loc = this.next().loc;
         const api = this.ident("the users api").v;
         decls.push({ kind: "Auth", name: "auth", api, loc });
       } else if (this.is("server")) decls.push(this.serverFn());
       else if (this.is("component") || this.is("page")) decls.push(this.component());
-      else this.fail("'model', 'api', 'auth', 'server fn', 'component' or 'page'");
+      else this.fail("'use', 'model', 'api', 'auth', 'server fn', 'component' or 'page'");
       this.skipNl();
     }
     return { kind: "Program", decls };
@@ -117,6 +118,26 @@ class Parser {
     let access: ApiAccess = "public";
     if (this.is("login") || this.is("private") || this.is("admin")) access = this.next().v as ApiAccess;
     return { kind: "Api", name, model: model.v, access, modelLoc: model.loc, loc };
+  }
+
+  use(): UseDecl {
+    const loc = this.next().loc;
+    if (this.tok.t !== "str") this.fail("a module name in quotes, e.g. \"date-fns\"");
+    const source = this.next().v;
+    const def = this.eat("as") ? this.ident("a name for the default export").v : null;
+    const names: string[] = [];
+    if (this.eat("{")) {
+      this.skipNl();
+      while (!this.is("}")) {
+        names.push(this.ident("an exported name").v);
+        this.skipNl();
+        if (!this.eat(",")) break;
+        this.skipNl();
+      }
+      this.expect("}");
+    }
+    if (!def && !names.length) this.fail("`as name` or `{ names }` after the module");
+    return { kind: "Use", name: `use ${source}`, source, default: def, names, loc };
   }
 
   serverFn(): ServerFnDecl {

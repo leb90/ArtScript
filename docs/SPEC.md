@@ -24,6 +24,17 @@ page Users "/users" {
 - Types: `String Number Bool ID Email Date Fn Any`, `model` names, `T[]` list, `T?` optional (may be null).
 - `page` = component with a route (hash routing: `#/users`). Without a route: `/lowercase-name`. Unknown route → first page.
 
+## Imports: `use`
+
+```
+use "date-fns" { format, addDays }      // npm package (install it with npm first)
+use "canvas-confetti" as confetti       // default export
+use "./lib/money.ts" { toUSD }          // your own JS/TS module: the way out for anything not built in
+```
+
+- Imported names work in every component and server fn; their values are typed `Any`.
+- A missing module or name is a compile error with a fix (`npm install ...`, the closest export).
+
 ## Members (inside component/page, before the view)
 
 ```

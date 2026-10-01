@@ -1,0 +1,12 @@
+use "./lib/money.ts" as round { toUSD }
+
+page Prices "/" {
+  state price = 2.5
+  computed total = round(price * 3)
+
+  column gap=2 {
+    text toUSD(price)
+    text `Total: ${toUSD(total)}`
+    button "+1" -> price++
+  }
+}

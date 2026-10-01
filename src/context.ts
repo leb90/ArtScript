@@ -62,6 +62,7 @@ export function projectMap(p: Program, _a: Analysis, budget = Infinity): string 
   const lines = [`# project: ${p.decls.length} declarations`];
   for (const d of p.decls) {
     if (d.kind === "Model") lines.push(modelLine(d.name, p));
+    if (d.kind === "Use") lines.push(printDecl(d));
     if (d.kind === "Api") lines.push(`${printDecl(d)} → /api/${d.name}`);
     if (d.kind === "Auth") lines.push(`auth ${d.api} → auth.signup/login/logout/me`);
   }
@@ -94,6 +95,7 @@ export function declContexts(p: Program, a: Analysis, targets: string[], budget 
     if (d.kind === "Api") { models.add(d.model); blocks.push([`${printDecl(d)} → /api/${d.name} (list, count, get, create, update, remove) — ${d.loc.file}`]); continue; }
     if (d.kind === "Auth") { blocks.push([`auth ${d.api} → auth.signup(obj), auth.login(email, password), auth.logout(), auth.me() — ${d.loc.file}`]); continue; }
     if (d.kind === "ServerFn") { blocks.push([`server fn ${d.name} → server.${d.name}(${d.params.join(", ")}) — ${d.loc.file}`, printDecl(d)]); continue; }
+    if (d.kind === "Use") { blocks.push([`${printDecl(d)} — ${d.loc.file}`]); continue; }
     for (const m of modelDeps(d, a)) models.add(m);
     const by = usedBy(d.name);
     // The source starts with the signature, so the header only adds where it lives and who uses it.
