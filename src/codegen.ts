@@ -1,5 +1,5 @@
 // Generates an ES module that builds the DOM directly (no virtual DOM) using runtime.js.
-import type { ApiAccess, ComponentDecl, FieldRules, Element, Expr, Program, ServerFnDecl, Stmt, ViewNode } from "./ast.ts";
+import type { ApiAccess, ComponentDecl, FieldRules, Element, Expr, Loc, Program, ServerFnDecl, Stmt, ViewNode } from "./ast.ts";
 import { specifier } from "./modules.ts";
 import { printDecl, printType } from "./printer.ts";
 import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
@@ -48,6 +48,12 @@ function importLines(program: Program, onlyFor?: string): string[] {
 }
 
 export function generate(program: Program): string {
+  return generateMapped(program).js;
+}
+
+// The JS and, per JS line, the .art location it comes from (undefined for glue code).
+export function generateMapped(program: Program): { js: string; marks: (Loc | undefined)[] } {
+  const marks: (Loc | undefined)[] = [];
   const out: string[] = ['import * as $ from "./runtime.js";', ...importLines(program), "const navigate = $.navigate;", ""];
   const apis = program.decls.filter((d) => d.kind === "Api");
   // Typed REST client: one entry per `api` declaration.
@@ -59,7 +65,10 @@ export function generate(program: Program): string {
   slotsOf = new Map(program.decls.flatMap((d) => (d.kind === "Component" ? [[d.name, slotNames(d.view)] as const] : [])));
   for (const d of program.decls) {
     if (d.kind !== "Component") continue;
-    out.push(new ComponentGen(d).gen(), "");
+    while (marks.length < out.join("\n").split("\n").length) marks.push(undefined);
+    const g = new ComponentGen(d);
+    out.push(g.gen(), "");
+    marks.push(d.loc, ...g.marks, d.loc, undefined); // `function X(...) {`, its lines, `}`, blank
     if (d.page) {
       // Without an explicit layout, a page uses the only layout there is (if exactly one).
       const layouts = program.decls.filter((x) => x.kind === "Component" && x.layout);
@@ -69,7 +78,32 @@ export function generate(program: Program): string {
   }
   out.push(`export const routes = [${pages.join(", ")}];`);
   out.push("export const start = (el) => $.start(routes, el);", "");
-  return out.join("\n");
+  return { js: out.join("\n"), marks };
+}
+
+// A source map (v3) from per-line marks: each generated line maps to the start of its .art line.
+const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+function vlq(n: number): string {
+  let v = n < 0 ? (-n << 1) | 1 : n << 1, out = "";
+  do {
+    let digit = v & 31;
+    v >>>= 5;
+    if (v) digit |= 32;
+    out += B64[digit];
+  } while (v);
+  return out;
+}
+export function sourceMap(marks: (Loc | undefined)[], sources: { file: string; src: string }[]): string {
+  const files = sources.map((s) => s.file);
+  let prevSrc = 0, prevLine = 0, prevCol = 0;
+  const lines = marks.map((m) => {
+    const i = m ? files.indexOf(m.file) : -1;
+    if (!m || i < 0) return "";
+    const seg = vlq(0) + vlq(i - prevSrc) + vlq(m.line - 1 - prevLine) + vlq(m.col - 1 - prevCol);
+    [prevSrc, prevLine, prevCol] = [i, m.line - 1, m.col - 1];
+    return seg;
+  });
+  return JSON.stringify({ version: 3, sources: files, sourcesContent: sources.map((s) => s.src), names: [], mappings: lines.join(";") });
 }
 
 // What the server runtime needs: field types per model, each api's model and access, the auth api,
@@ -173,11 +207,18 @@ class ComponentGen {
     this.c = c;
   }
 
-  emit(s: string) { this.lines.push("  ".repeat(this.ind) + s); }
+  // `marks[i]`: the .art location lines[i] comes from (for source maps).
+  marks: (Loc | undefined)[] = [];
+  at: Loc | undefined;
+  emit(s: string) {
+    this.lines.push("  ".repeat(this.ind) + s);
+    for (const _ of s.split("\n")) this.marks.push(this.at); // a multi-line template literal spans lines
+  }
   v(prefix = "e"): string { return `${prefix}${this.n++}`; }
 
   gen(): string {
     const c = this.c;
+    this.at = c.loc;
     const scope = new Scope(null);
     for (const p of c.params) scope.vars.set(p.name, { kind: "prop" });
     // Pages read their route params and query string as props from the router.
@@ -196,6 +237,7 @@ class ComponentGen {
       this.emit(`const ${p.name} = $p.${p.name} ?? ${def};`);
     }
     for (const m of c.members) {
+      this.at = m.loc;
       if (m.kind === "Mount" || m.kind === "Effect") continue; // after the view, so refs are set
       if (m.kind === "Ref") this.emit(`let ${m.name} = null;`);
       else if (m.kind === "State") this.emit(`const ${m.name} = $.signal(${this.expr(m.init, scope)});`);
@@ -229,6 +271,7 @@ class ComponentGen {
   // ---------- view ----------
   view(nodes: ViewNode[], parent: string, scope: Scope) {
     for (const node of nodes) {
+      this.at = node.loc;
       if (node.kind === "IfView") {
         const fa = this.v("f"), fb = this.v("f");
         this.emit(`$.$if(${parent}, () => ${this.expr(node.cond, scope)}, (${fa}) => {`);
@@ -445,6 +488,7 @@ class ComponentGen {
   // ---------- statements ----------
   stmts(list: Stmt[], scope: Scope) {
     for (const s of list) {
+      this.at = s.loc;
       if (s.kind === "ExprStmt") this.emit(this.expr(s.expr, scope) + ";");
       else if (s.kind === "Let") {
         this.emit(`let ${s.name} = ${this.expr(s.init, scope)};`);
