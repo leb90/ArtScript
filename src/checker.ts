@@ -393,6 +393,7 @@ class Checker {
       this.err("TYPE_MISMATCH", `invalid interval "${d.every}"`, d.loc, { expr: d.every, expected: '"30s", "5m", "1h" or "1d"' });
     }
     scope.vars.set("fail", { kind: "global", ty: fn({ k: "void" }) });
+    scope.vars.set("email", { kind: "global", ty: fn({ k: "async", of: { k: "void" } }) }); // email(to, subject, text)
     for (const p of d.params) scope.vars.set(p, { kind: "param", ty: ANY });
     this.returns = [];
     this.stmts(d.body, scope);
@@ -1061,15 +1062,18 @@ class Checker {
       logout: fn({ k: "async", of: { k: "void" } }),
       logoutAll: fn({ k: "async", of: { k: "void" } }),
       me: fn({ k: "async", of: opt(user) }),
+      requestReset: fn({ k: "async", of: { k: "void" } }),
+      resetPassword: fn({ k: "async", of: { k: "void" } }),
+      verifyEmail: fn({ k: "async", of: { k: "void" } }),
     };
     if (prop in methods) return methods[prop];
-    const synonyms: Record<string, string> = { register: "signup", signUp: "signup", signin: "login", signIn: "login", logIn: "login", signout: "logout", signOut: "logout", logOut: "logout", user: "me", current: "me", currentUser: "me", getUser: "me" };
+    const synonyms: Record<string, string> = { forgotPassword: "requestReset", sendReset: "requestReset", resetRequest: "requestReset", reset: "resetPassword", setPassword: "resetPassword", verify: "verifyEmail", confirmEmail: "verifyEmail", register: "signup", signUp: "signup", signin: "login", signIn: "login", logIn: "login", signout: "logout", signOut: "logout", logOut: "logout", user: "me", current: "me", currentUser: "me", getUser: "me" };
     this.err("UNKNOWN_FIELD", `auth has no method '${prop}'`, e.loc, { expr: printExpr(e), expected: Object.keys(methods).join("|"), fixes: synonyms[prop] ? [synonyms[prop]] : suggest(prop, Object.keys(methods)) });
     return ANY;
   }
 
   authArgs(t: Ty & { k: "auth" }, method: string, args: Expr[], tys: Ty[], loc: Loc) {
-    const sig: Record<string, [number, string]> = { signup: [1, "signup(obj)"], login: [2, "login(email, password)"], logout: [0, "logout()"], logoutAll: [0, "logoutAll()"], me: [0, "me()"] };
+    const sig: Record<string, [number, string]> = { signup: [1, "signup(obj)"], login: [2, "login(email, password)"], logout: [0, "logout()"], logoutAll: [0, "logoutAll()"], me: [0, "me()"], requestReset: [1, "requestReset(email)"], resetPassword: [2, "resetPassword(token, password)"], verifyEmail: [1, "verifyEmail(token)"] };
     if (!sig[method]) return;
     if (args.length !== sig[method][0]) {
       this.err("TYPE_MISMATCH", `auth.${sig[method][1]} takes ${sig[method][0]} argument(s)`, loc, { expected: sig[method][1], actual: `${args.length} argument(s)` });

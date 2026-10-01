@@ -2,8 +2,8 @@
 // email + password auth with cookie sessions and roles, per-user private data and server functions.
 // Node only, no dependencies. `art dev` mounts createApi in its dev server; `art build` emits a
 // server.js that calls serve().
-import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
-import { createReadStream, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
+import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
+import { appendFileSync, createReadStream, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { basename, extname, join, resolve, sep } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -96,6 +96,8 @@ function openDb(dataDir) {
     db.exec(`ALTER TABLE _sessions ADD COLUMN expires INTEGER; UPDATE _sessions SET expires = ${Date.now() + SESSION_DAYS * 86_400_000}`);
   }
   db.exec("CREATE TABLE IF NOT EXISTS _files (id TEXT PRIMARY KEY, name TEXT NOT NULL, type TEXT NOT NULL, size INTEGER NOT NULL)");
+  // One-time tokens for password resets and email verification (only their hash is stored).
+  db.exec("CREATE TABLE IF NOT EXISTS _tokens (hash TEXT PRIMARY KEY, kind TEXT NOT NULL, user TEXT NOT NULL, expires INTEGER NOT NULL)");
   const legacy = join(dataDir, "_sessions.json");
   if (existsSync(legacy)) {
     for (const [token, user] of Object.entries(JSON.parse(readFileSync(legacy, "utf8")))) db.prepare("INSERT OR IGNORE INTO _sessions VALUES (?, ?, ?)").run(token, user, Date.now() + SESSION_DAYS * 86_400_000);
@@ -361,6 +363,32 @@ function makeTable(schema, db, dataDir, name, { model, access }, backup) {
   };
 }
 
+// Sends an email: through Resend (ART_RESEND_KEY, from ART_EMAIL_FROM), through any service that
+// takes a JSON POST (ART_EMAIL_WEBHOOK: { to, subject, text }), or, with neither, written to the
+// console and to <data>/outbox.jsonl (development).
+export async function sendEmail(dataDir, { to, subject, text }) {
+  const env = process.env;
+  if (env.ART_RESEND_KEY) {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { authorization: `Bearer ${env.ART_RESEND_KEY}`, "content-type": "application/json" },
+      body: JSON.stringify({ from: env.ART_EMAIL_FROM ?? "onboarding@resend.dev", to, subject, text }),
+    });
+    if (!res.ok) throw new Error(`email not sent (${res.status})`);
+    return;
+  }
+  if (env.ART_EMAIL_WEBHOOK) {
+    const res = await fetch(env.ART_EMAIL_WEBHOOK, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ to, subject, text }) });
+    if (!res.ok) throw new Error(`email not sent (${res.status})`);
+    return;
+  }
+  mkdirSync(dataDir, { recursive: true });
+  appendFileSync(join(dataDir, "outbox.jsonl"), JSON.stringify({ t: new Date().toISOString(), to, subject, text }) + "\n");
+  console.log(`[email to ${to}] ${subject}\n${text}\n`);
+}
+
+const sha256 = (s) => createHash("sha256").update(s).digest("hex");
+
 // `accept="image/*,.pdf"`: MIME types (with `type/*`) or extensions, like <input accept>.
 function accepts(accept, { name, type }) {
   return accept.split(",").map((a) => a.trim().toLowerCase()).some((a) =>
@@ -462,6 +490,7 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
     return { "set-cookie": `${COOKIE}=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_DAYS * 86_400}` };
   };
   // Server fns get unscoped, synchronous tables; `me` is the logged-in user without password.
+  const email = (to, subject, text) => sendEmail(dataDir, { to, subject, text });
   const db = Object.fromEntries(Object.entries(tables).map(([n, t]) => [n, {
     list: (q) => t.list(ALL, q),
     count: (q) => t.count(ALL, q),
@@ -471,7 +500,16 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
     remove: (id) => t.remove(id, ALL),
   }]));
   const fail = (message, status = 400) => { throw new HttpError(status, "FAILED", String(message)); };
-  const failedLogins = new Map(); // "email|address" → times of failed attempts
+  const failedLogins = new Map(); // "email|address" → times of failed attempts (also reset requests)
+  // Email verification is on when the accounts model has `verified: Bool`.
+  const verifies = !!users && schema.models[users.model]?.verified === "Bool";
+  // Emails a one-time link (`<origin><path>?token=...`, valid 1 hour) to the user.
+  const mailToken = async (req, user, kind, subject, path, action) => {
+    const token = randomBytes(32).toString("hex");
+    sql.prepare("INSERT INTO _tokens VALUES (?, ?, ?, ?)").run(sha256(token), kind, String(user[users.key]), Date.now() + 3_600_000);
+    const origin = req.headers.origin ?? `${req.headers["x-forwarded-proto"] ?? "http"}://${req.headers.host}`;
+    await sendEmail(dataDir, { to: user.email, subject, text: `${action}: ${origin}${path}?token=${token}\n\nThe link works for one hour. If you didn't ask for it, ignore this email.` });
+  };
 
   // A job never overlaps itself; a failure is logged and the next run happens as scheduled.
   const timers = Object.entries(jobs).map(([name, job]) => {
@@ -479,7 +517,7 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
     const timer = setInterval(async () => {
       if (running) return;
       running = true;
-      try { await job.run({ db, fail }); } catch (e) { console.error(`server job ${name}:`, e?.message ?? e); } finally { running = false; }
+      try { await job.run({ db, fail, email }); } catch (e) { console.error(`server job ${name}:`, e?.message ?? e); } finally { running = false; }
     }, job.every);
     timer.unref?.();
     return timer;
@@ -512,7 +550,7 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
       const body = req.method === "POST" || req.method === "PATCH" || req.method === "PUT" ? await readJson(req) : undefined;
 
       // ---------- auth ----------
-      const a = /^\/api\/_auth\/(signup|login|logout|logout-all|me)$/.exec(url.pathname);
+      const a = /^\/api\/_auth\/(signup|login|logout|logout-all|me|reset-request|reset|verify)$/.exec(url.pathname);
       if (a) {
         if (!users) throw new HttpError(404, "NOT_FOUND", "auth is not enabled");
         if (a[1] === "me") return send(res, 200, publicMe), true;
@@ -526,10 +564,34 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
           return send(res, 204, undefined, { "set-cookie": `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0` }), true;
         }
         if (a[1] === "signup") {
-          // Nobody picks their own role: the first account is the admin, the rest are users.
-          const fields = hasRoles ? { ...body, role: users.hasAdmin() ? "user" : "admin" } : body;
+          // Nobody picks their own role (the first account is the admin, the rest are users) and
+          // nobody marks their own email as verified.
+          const fields = { ...body, ...(hasRoles ? { role: users.hasAdmin() ? "user" : "admin" } : {}), ...(verifies ? { verified: false } : {}) };
           const user = users.create(fields, ALL);
+          if (verifies) await mailToken(req, user, "verify", "Confirm your email", "/verify-email", "Confirm your email address");
           return send(res, 201, user, startSession(user)), true;
+        }
+        // Password reset: the same answer whether the account exists or not (no enumeration).
+        if (a[1] === "reset-request") {
+          const user = users.byEmail(String(body.email));
+          const key = `reset|${String(body.email).toLowerCase()}`;
+          const recent = (failedLogins.get(key) ?? []).filter((t) => Date.now() - t < 3_600_000);
+          if (user && recent.length < 5) {
+            failedLogins.set(key, [...recent, Date.now()]);
+            await mailToken(req, user, "reset", "Reset your password", "/reset-password", "Set a new password");
+          }
+          return send(res, 204), true;
+        }
+        if (a[1] === "reset" || a[1] === "verify") {
+          const kind = a[1] === "reset" ? "reset" : "verify";
+          const row = sql.prepare("SELECT user, expires FROM _tokens WHERE hash = ? AND kind = ?").get(sha256(String(body.token ?? "")), kind);
+          if (!row || row.expires < Date.now()) throw new HttpError(400, "BAD_TOKEN", "this link is invalid or has expired");
+          sql.prepare("DELETE FROM _tokens WHERE hash = ?").run(sha256(String(body.token)));
+          if (kind === "reset") {
+            users.update(row.user, { password: String(body.password ?? "") }, ALL);
+            sql.prepare("DELETE FROM _sessions WHERE user = ?").run(row.user); // every device signs in again
+          } else users.update(row.user, { verified: true }, ALL);
+          return send(res, 204), true;
         }
         const key = `${String(body.email).toLowerCase()}|${req.socket?.remoteAddress ?? ""}`;
         const now = Date.now();
@@ -548,7 +610,7 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
       const f = /^\/api\/_fn\/([\w$]+)$/.exec(url.pathname);
       if (f) {
         if (!Object.hasOwn(fns, f[1]) || req.method !== "POST") throw new HttpError(404, "NOT_FOUND", `no server fn named '${f[1]}'`);
-        const result = await fns[f[1]]({ db, me: publicMe, fail }, ...(Array.isArray(body.args) ? body.args : []));
+        const result = await fns[f[1]]({ db, me: publicMe, fail, email }, ...(Array.isArray(body.args) ? body.args : []));
         return send(res, 200, result ?? null), true;
       }
 

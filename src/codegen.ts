@@ -124,7 +124,7 @@ function serverFnsModule(program: Program, fns: ServerFnDecl[]): string {
     const g = new ComponentGen(host);
     g.ind = 2;
     const scope = new Scope(null);
-    for (const name of ["db", "me", "fail", ...f.params]) scope.vars.set(name, { kind: "param" });
+    for (const name of ["db", "me", "fail", "email", ...f.params]) scope.vars.set(name, { kind: "param" });
     g.stmts(f.body, scope);
     return { g, scope };
   };
@@ -133,9 +133,9 @@ function serverFnsModule(program: Program, fns: ServerFnDecl[]): string {
     const g = new ComponentGen(host);
     g.ind = 2;
     const scope = new Scope(null);
-    for (const name of ["db", "me", "fail", ...f.params]) scope.vars.set(name, { kind: "param" });
+    for (const name of ["db", "me", "fail", "email", ...f.params]) scope.vars.set(name, { kind: "param" });
     g.stmts(f.body, scope);
-    out.push(`  async ${f.name}({ db, me, fail }${f.params.map((p, i) => `, ${p}${f.defaults?.[i] ? ` = ${g.expr(f.defaults[i]!, scope)}` : ""}`).join("")}) {`, ...g.lines, "  },");
+    out.push(`  async ${f.name}({ db, me, fail, email }${f.params.map((p, i) => `, ${p}${f.defaults?.[i] ? ` = ${g.expr(f.defaults[i]!, scope)}` : ""}`).join("")}) {`, ...g.lines, "  },");
   }
   out.push("};");
   // Scheduled jobs: { name: { every: ms, run } }.
@@ -143,7 +143,7 @@ function serverFnsModule(program: Program, fns: ServerFnDecl[]): string {
   out.push("export const jobs = {");
   for (const f of jobs) {
     const { g } = body(f);
-    out.push(`  ${f.name}: { every: ${Number(f.every!.slice(0, -1)) * ms[f.every!.slice(-1)]}, async run({ db, fail }) {`, ...g.lines, "  } },");
+    out.push(`  ${f.name}: { every: ${Number(f.every!.slice(0, -1)) * ms[f.every!.slice(-1)]}, async run({ db, fail, email }) {`, ...g.lines, "  } },");
   }
   out.push("};");
   return out.join("\n");

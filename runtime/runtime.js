@@ -416,6 +416,9 @@ export function $auth() {
     login: (email, password) => request("POST", "_auth/login", { email, password }).then(bump),
     logout: () => request("POST", "_auth/logout").then(bump),
     logoutAll: () => request("POST", "_auth/logout-all").then(bump),
+    requestReset: (email) => request("POST", "_auth/reset-request", { email }),
+    resetPassword: (token, password) => request("POST", "_auth/reset", { token, password }).then(bump),
+    verifyEmail: (token) => request("POST", "_auth/verify", { token }).then(bump),
     me: () => { dataVersion.v; return request("GET", "_auth/me"); },
   };
 }
