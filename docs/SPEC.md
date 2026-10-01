@@ -145,10 +145,9 @@ JavaScript: literals, `` `template ${x}` ``, `a.b`, `a?.b`, `a[i]`, `f(x)`, `x =
 
 ## Rules the compiler checks
 
-- `list[i]` is `T?`: use `list[i]?.field` or `?? value`.
+- `list.find(...)` and `api.x.get(id)` are `T?`: use `?.field`, `?? value` or `if x { }`.
 - Inside `if x { }`, `if x != null`, `x && ...`, `x ? ... : ...` or after `if !x { return }`, `x` is no longer null.
 - Objects passed as a `model` need every non-optional field and no extra fields.
-- `computed` values and props can't be assigned directly.
 - Unknown names, elements, props and flags → error with a suggestion.
 
 ## Changing existing code: `art patch`

@@ -58,10 +58,15 @@ const BEHAVIOR = !args.includes("--no-behavior");
 // ---------- prompts ----------
 const FORMAT = "Respondé SOLO con los archivos completos, cada uno en un bloque de código cuyo encabezado es el nombre del archivo, por ejemplo:\n```App.tsx\n...\n```\nSin explicaciones.";
 
-function systemPrompt(stack: Stack): string {
+// `--spec edit`: modification tasks get docs/SPEC-EDIT.md (the code shows the syntax) instead of
+// the full spec. Creation tasks always get the full spec.
+const SPEC_MODE = opt("spec", "full") as "full" | "edit";
+
+function systemPrompt(stack: Stack, task?: Task): string {
   if (stack === "artscript") {
-    const spec = readFileSync(join(REPO, "docs", "SPEC.md"), "utf8");
-    return `Sos un desarrollador web experto. Stack: ArtScript. Todo el código va en app.art. ${FORMAT}\n\nSpec completa de ArtScript:\n\n${spec}`;
+    const edit = SPEC_MODE === "edit" && !!(task?.base || task?.project);
+    const spec = readFileSync(join(REPO, "docs", edit ? "SPEC-EDIT.md" : "SPEC.md"), "utf8");
+    return `Sos un desarrollador web experto. Stack: ArtScript. Todo el código va en app.art. ${FORMAT}\n\n${edit ? "Spec de ArtScript para modificar código" : "Spec completa de ArtScript"}:\n\n${spec}`;
   }
   if (stack === "react") {
     return `Sos un desarrollador web experto. Stack: React 19 + TypeScript (TSX), componentes funcionales y hooks, estilos con clases de Tailwind. Todo en un solo archivo App.tsx con export default. ${FORMAT}`;
@@ -172,7 +177,7 @@ type RunResult = {
 let spent = 0;
 
 async function runOne(client: Anthropic, task: Task, stack: Stack, run: number): Promise<RunResult> {
-  const system: Anthropic.TextBlockParam[] = [{ type: "text", text: systemPrompt(stack), cache_control: { type: "ephemeral" } }];
+  const system: Anthropic.TextBlockParam[] = [{ type: "text", text: systemPrompt(stack, task), cache_control: { type: "ephemeral" } }];
   const messages: Anthropic.MessageParam[] = [{ role: "user", content: userPrompt(task, stack) }];
   const usage = zero();
   let errors: string[] = [];

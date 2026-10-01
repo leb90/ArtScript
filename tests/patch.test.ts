@@ -161,3 +161,11 @@ test("set Component adds, changes and removes props", () => {
   assert.match(out, /component TodoItem\(todo: Todo, remove: Fn, compact: Bool = false, label: String = "x"\)/);
   assert.match(ok("set TodoItem -remove\nreplace TodoItem/row/button\n  text \"no remove\"\nset Todos/column/for/TodoItem -remove\n"), /component TodoItem\(todo: Todo\)/);
 });
+
+test("the patch example in docs/SPEC-EDIT.md applies to examples/todo", () => {
+  const doc = readFileSync("docs/SPEC-EDIT.md", "utf8");
+  const patch = /```patch\n([\s\S]*?)```/.exec(doc)![1];
+  const out = ok(patch);
+  assert.match(out, /title "My tasks"/);
+  assert.match(out, /component TodoItem\(todo: Todo, remove: Fn, compact: Bool = false\)/);
+});
