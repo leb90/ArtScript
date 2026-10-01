@@ -115,7 +115,7 @@ class Parser {
     this.expect(":");
     const model = this.ident("the api's model");
     let access: ApiAccess = "public";
-    if (this.is("login") || this.is("private")) access = this.next().v as ApiAccess;
+    if (this.is("login") || this.is("private") || this.is("admin")) access = this.next().v as ApiAccess;
     return { kind: "Api", name, model: model.v, access, modelLoc: model.loc, loc };
   }
 

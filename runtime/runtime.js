@@ -200,8 +200,10 @@ async function request(method, path, body, quiet = method === "GET") {
 export function $api(name) {
   const read = (path) => { dataVersion.v; return request("GET", path); };
   const at = (id) => `${name}/${encodeURIComponent(id)}`;
+  const qs = (q) => (q && Object.keys(q).length ? `?q=${encodeURIComponent(JSON.stringify(q))}` : "");
   return {
-    list: () => read(name),
+    list: (q) => read(name + qs(q)),
+    count: (q) => read(`${name}/_count${qs(q)}`),
     get: (id) => read(at(id)),
     create: (obj) => request("POST", name, obj).then(bump),
     update: (id, changes) => request("PATCH", at(id), changes).then(bump),

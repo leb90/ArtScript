@@ -14,8 +14,9 @@ export type ModelDecl = { kind: "Model"; name: string; fields: Field[]; loc: Loc
 export type Field = { name: string; type: TypeRef; loc: Loc };
 
 // `api users: User [login|private]`: REST resource for a model (list, get, create, update, remove),
-// persisted on the server. `login` requires a session; `private` also scopes rows to their `owner`.
-export type ApiAccess = "public" | "login" | "private";
+// persisted on the server. `login` requires a session; `private` also scopes rows to their `owner`;
+// `admin`: anyone reads, only users with role "admin" write.
+export type ApiAccess = "public" | "login" | "private" | "admin";
 export type ApiDecl = { kind: "Api"; name: string; model: string; access: ApiAccess; modelLoc: Loc; loc: Loc };
 
 // `auth users`: email + password accounts on that api (signup, login, logout, me).

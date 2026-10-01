@@ -47,14 +47,15 @@ api users: User                    // REST at /api/users: validated against the 
 ```
 
 - The model needs an `ID` field (if `create` omits it, the server assigns it).
-- Typed client in any component: `api.users.list()`, `get(id)`, `create(obj)`, `update(id, changes)`, `remove(id)`.
-- `data users = api.users.list()` loads on mount and **reloads by itself** after any write. A list starts as `[]`; `get` starts as `null` (`T?`).
+- Typed client in any component: `api.users.list(query?)`, `count(query?)`, `get(id)`, `create(obj)`, `update(id, changes)`, `remove(id)`.
+- Query: `list({ where: { active: true }, search: "pan", sort: "-price", limit: 20, offset: 40 })` (`sort`: field, `-` = descending; `search`: text fields contain it). `count({ where, search })`. Inside `data`, they re-run when the states they use change (e.g. `offset: page * 20`).
+- `data users = api.users.list()` loads on mount and **reloads by itself** after any write. A list starts as `[]`, a count as `0`; `get` starts as `null` (`T?`).
 - `await` and `try { } catch (e) { }` work as in JS; `e.message` explains a validation error.
-- Access: `api notes: Note login` requires a session; `api notes: Note private` also scopes rows per user (the model needs `owner: ID`, filled in automatically).
+- Access: `api notes: Note login` requires a session; `private` also scopes rows per user (the model needs `owner: ID`, filled in automatically); `admin`: anyone reads, only admins write (the accounts model needs `role: String`; the first account is "admin", later ones "user"; only admins change roles).
 - `auth users` (the model needs `email: Email` and `password: String`): `auth.signup(obj)`, `auth.login(email, password)`, `auth.logout()`, `data me = auth.me()` (`T?`). Passwords are stored hashed and never returned.
 - `server fn name(a, b) { ... }` runs on the server; call it as `server.name(a, b)` (also in `data`). Inside: `db.<api>` (no `await`, not scoped per user), `me` (logged-in user or `null`) and `fail("message", status?)`.
 - After any write, login or logout, every `data` reloads.
-- `art dev` serves the api; `art build` emits `dist/server.js` (`node dist/server.js`).
+- Data is stored in SQLite (built into Node). `art dev` serves the api; `art build` emits `dist/server.js` (`node dist/server.js`).
 
 ## View
 

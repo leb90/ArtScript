@@ -184,6 +184,13 @@ class Checker {
       }
       this.authModel = model;
     }
+    // `admin` apis need a role on the accounts model ("admin" | "user", set by the server).
+    const roleOk = this.authModel !== null && this.program.decls.some((x) => x.kind === "Model" && x.name === this.authModel && x.fields.some((f) => f.name === "role" && f.type.name === "String"));
+    for (const d of this.program.decls) {
+      if (d.kind === "Api" && d.access === "admin" && this.authModel && !roleOk) {
+        this.err("MISSING_FIELD", `'admin' needs ${this.authModel} to have \`role: String\``, d.loc, { expr: printDecl(d), expected: "role: String", fixes: [`add \`role: String\` to model ${this.authModel}`] });
+      }
+    }
     for (const d of this.program.decls) if (d.kind === "ServerFn") this.serverFn(d);
     for (const d of this.program.decls) {
       if (d.kind !== "Component") continue;
@@ -266,7 +273,8 @@ class Checker {
       } else if (m.kind === "Data") {
         // Lists start as [] and objects as null until the request resolves.
         const t = this.infer(m.expr, scope);
-        if (t.k === "async") sym.ty = t.of.k === "list" ? t.of : opt(t.of);
+        // count() starts at 0, so it isn't nullable either.
+        if (t.k === "async") sym.ty = t.of.k === "list" || t.of.k === "num" ? t.of : opt(t.of);
         else if (t.k !== "any") this.err("TYPE_MISMATCH", "`data` needs an api call", m.expr.loc, { expr: printExpr(m.expr), expected: "api.<name>.list() | get(id)", actual: show(t) });
       } else {
         const fs = new Scope(scope);
@@ -679,6 +687,7 @@ class Checker {
     const res = (r: Ty): Ty => fn(t.sync ? r : { k: "async", of: r });
     const methods: Record<string, Ty> = {
       list: res(list(model)),
+      count: res(NUM),
       get: res(opt(model)),
       create: res(model),
       update: res(model),
@@ -697,10 +706,11 @@ class Checker {
   }
 
   apiArgs(t: Ty & { k: "api" }, method: string, args: Expr[], tys: Ty[], loc: Loc) {
-    const expectCount = { list: 0, get: 1, create: 1, update: 2, remove: 1 }[method];
+    if (method === "list" || method === "count") return this.queryArgs(t, method, args, tys, loc);
+    const expectCount = { get: 1, create: 1, update: 2, remove: 1 }[method];
     if (expectCount === undefined) return;
     if (args.length !== expectCount) {
-      const sig = { list: "list()", get: "get(id)", create: "create(obj)", update: "update(id, changes)", remove: "remove(id)" }[method]!;
+      const sig = { get: "get(id)", create: "create(obj)", update: "update(id, changes)", remove: "remove(id)" }[method]!;
       this.err("TYPE_MISMATCH", `${t.sync ? "db" : "api"}.${t.name}.${sig} takes ${expectCount} argument(s)`, loc, { expected: sig, actual: `${args.length} argument(s)` });
       return;
     }
@@ -709,6 +719,38 @@ class Checker {
     if (!obj) return;
     if (obj.kind === "Object") this.modelLiteral(obj, t.model, method === "create" ? { skip: this.autoFields(t.name, t.model) } : { partial: true });
     else this.expectTy(obj, objTy, { k: "model", name: t.model });
+  }
+
+  // list({ where, search, sort, limit, offset }) / count({ where, search }): checked against the model.
+  queryArgs(t: Ty & { k: "api" }, method: string, args: Expr[], tys: Ty[], loc: Loc) {
+    const sig = method === "list" ? "list({ where, search, sort, limit, offset })" : "count({ where, search })";
+    if (args.length > 1) {
+      this.err("TYPE_MISMATCH", `${t.sync ? "db" : "api"}.${t.name}.${method} takes at most 1 argument`, loc, { expected: sig, actual: `${args.length} argument(s)` });
+      return;
+    }
+    const q = args[0];
+    if (!q) return;
+    if (q.kind !== "Object") { this.expectTy(q, tys[0], { k: "obj", fields: {} }); return; }
+    const keys = method === "list" ? ["where", "search", "sort", "limit", "offset"] : ["where", "search"];
+    const fields = Object.keys(this.models.get(t.model) ?? {});
+    for (const p of q.props) {
+      if ("spread" in p) continue;
+      if (!keys.includes(p.key)) {
+        this.err("UNKNOWN_FIELD", `${method}() has no option '${p.key}'`, p.value.loc, { expr: p.key, expected: keys.join("|"), fixes: suggest(p.key, keys) });
+        continue;
+      }
+      const ty = this.types.get(p.value) ?? ANY;
+      if (p.key === "where") {
+        if (p.value.kind === "Object") this.modelLiteral(p.value, t.model, { partial: true });
+        else this.expectTy(p.value, ty, { k: "obj", fields: {} });
+      } else if (p.key === "sort") {
+        this.expectTy(p.value, ty, STR);
+        // A literal sort is checked now: "field" ascending, "-field" descending.
+        if (p.value.kind === "Str" && !fields.includes(p.value.value.replace(/^-/, ""))) {
+          this.err("UNKNOWN_FIELD", `${t.model} has no field '${p.value.value.replace(/^-/, "")}' to sort by`, p.value.loc, { expr: p.value.value, expected: fields.join("|"), fixes: suggest(p.value.value.replace(/^-/, ""), fields) });
+        }
+      } else this.expectTy(p.value, ty, p.key === "search" ? STR : NUM);
+    }
   }
 
   // Fields the server fills in on create: ids, and `owner` on private apis.
@@ -740,7 +782,8 @@ class Checker {
       return;
     }
     if (method === "signup") {
-      if (args[0].kind === "Object") this.modelLiteral(args[0], t.model, { skip: this.idFields.get(t.model) });
+      // The server assigns ids and the role.
+      if (args[0].kind === "Object") this.modelLiteral(args[0], t.model, { skip: new Set([...(this.idFields.get(t.model) ?? []), "role"]) });
       else this.expectTy(args[0], tys[0], { k: "model", name: t.model });
     }
   }

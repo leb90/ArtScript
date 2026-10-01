@@ -14,7 +14,7 @@ const todo = () => {
 };
 
 test("fmt: examples are already canonical and fmt is idempotent", () => {
-  for (const f of ["examples/counter/app.art", "examples/todo/app.art", "templates/default/src/app.art", "examples/users/app.art", "examples/notes/app.art"]) {
+  for (const f of ["examples/counter/app.art", "examples/todo/app.art", "templates/default/src/app.art", "examples/users/app.art", "examples/notes/app.art", "examples/catalog/app.art"]) {
     const src = readFileSync(f, "utf8");
     const once = printProgram(parse(src, f));
     assert.equal(once, src, `${f} is not canonical (run: art fmt ${f} --write)`);

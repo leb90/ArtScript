@@ -30,7 +30,7 @@ export function printExpr(e: Expr): string {
     case "Num": return String(e.value);
     case "Str": return JSON.stringify(e.value);
     case "Template":
-      return "`" + e.quasis.map((q, i) => q.replace(/[`\\$]/g, "\\$&") + (i < e.exprs.length ? "${" + printExpr(e.exprs[i]) + "}" : "")).join("") + "`";
+      return "`" + e.quasis.map((q, i) => q.replace(/[`\\]|\$(?=\{)/g, "\\$&") + (i < e.exprs.length ? "${" + printExpr(e.exprs[i]) + "}" : "")).join("") + "`";
     case "Bool": return String(e.value);
     case "Null": return "null";
     case "Ident": return e.name;

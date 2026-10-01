@@ -117,9 +117,9 @@ class ComponentGen {
       if (m.kind === "State") this.emit(`const ${m.name} = $.signal(${this.expr(m.init, scope)});`);
       else if (m.kind === "Computed") this.emit(`const ${m.name} = $.computed(() => ${this.expr(m.expr, scope)});`);
       else if (m.kind === "Data") {
-        // Lists start as [] so views can iterate right away; anything else starts as null.
-        const isList = m.expr.kind === "Call" && m.expr.callee.kind === "Member" && m.expr.callee.prop === "list";
-        this.emit(`const ${m.name} = $.$data(() => ${this.expr(m.expr, scope)}, ${isList ? "[]" : "null"});`);
+        // Lists start as [] so views can iterate right away, counts as 0; anything else as null.
+        const method = m.expr.kind === "Call" && m.expr.callee.kind === "Member" ? m.expr.callee.prop : "";
+        this.emit(`const ${m.name} = $.$data(() => ${this.expr(m.expr, scope)}, ${method === "list" ? "[]" : method === "count" ? "0" : "null"});`);
       } else {
         const fs = scope.child();
         for (const p of m.params) fs.vars.set(p, { kind: "param" });
@@ -288,7 +288,7 @@ class ComponentGen {
     switch (e.kind) {
       case "Num": return String(e.value);
       case "Str": return JSON.stringify(e.value);
-      case "Template": return "`" + e.quasis.map((q, i) => q.replace(/[`\\$]/g, "\\$&") + (i < e.exprs.length ? "${" + x(e.exprs[i]) + "}" : "")).join("") + "`";
+      case "Template": return "`" + e.quasis.map((q, i) => q.replace(/[`\\]|\$(?=\{)/g, "\\$&") + (i < e.exprs.length ? "${" + x(e.exprs[i]) + "}" : "")).join("") + "`";
       case "Bool": return String(e.value);
       case "Null": return "null";
       case "Ident": {

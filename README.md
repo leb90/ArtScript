@@ -30,6 +30,7 @@ npm run dev            # todo example at http://localhost:3000 (reloads on save)
 npm run dev:counter    # counter example
 npm run art -- dev examples/users   # full-stack CRUD example (api + data)
 npm run art -- dev examples/notes   # accounts, private data and a server fn
+npm run art -- dev examples/catalog # admin role, search, sort and pagination
 npm test               # tests
 npm run typecheck      # compiler types
 npm run bench          # tokens and bytes vs React/Svelte
@@ -83,7 +84,14 @@ server fn stats() {         // runs on the server, called as server.stats()
 }
 ```
 
-Passwords are never returned, and the accounts api only lets each user change or delete their own account.
+Passwords are never returned, and the accounts api only lets each user change or delete their own account. `api products: Product admin` lets anyone read and only admins write; the first account becomes the admin and nobody can give themselves a role.
+
+Data lives in SQLite (built into Node, no dependencies), with typed queries:
+
+```
+data products = api.products.list({ search, sort: "-price", limit: 20, offset: page * 20 })
+data total = api.products.count({ search })
+```
 
 To change existing code, an AI can send a small `art patch` instead of rewriting files; the whole patch is typechecked and applied atomically:
 
@@ -118,8 +126,8 @@ src/
   compile.ts    full pipeline
   cli.ts        the `art` command
 runtime/runtime.js   signals + DOM helpers + api client (~2.9 KB brotli)
-runtime/server.js    api server: REST from models, validation, JSON storage, auth, server fns
-examples/            counter, todo, users (full-stack CRUD), notes (auth + private data)
+runtime/server.js    api server: REST from models, validation, SQLite storage, queries, auth, roles, server fns
+examples/            counter, todo, users (full-stack CRUD), notes (auth + private data), catalog (roles, queries)
 benchmarks/          equivalent tasks in ArtScript / React / Svelte + measurement
 docs/SPEC.md         compact spec to give an AI (~1.1K tokens)
 templates/default/   starter project created by `art init`
