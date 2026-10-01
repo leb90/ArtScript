@@ -1,5 +1,5 @@
 import type {
-  ApiDecl, ComponentDecl, Decl, Element, Expr, Field, FnDecl, Loc, Member, ModelDecl, ObjProp, Param, Program, Prop, Stmt, TypeRef, ViewNode,
+  ApiAccess, ApiDecl, ComponentDecl, Decl, Element, Expr, Field, FnDecl, Loc, Member, ModelDecl, ObjProp, Param, Program, Prop, ServerFnDecl, Stmt, TypeRef, ViewNode,
 } from "./ast.ts";
 import { ELEMENTS } from "./elements.ts";
 import { CompileError, diag } from "./errors.ts";
@@ -81,8 +81,13 @@ class Parser {
     while (this.tok.t !== "eof") {
       if (this.is("model")) decls.push(this.model());
       else if (this.is("api")) decls.push(this.api());
+      else if (this.is("auth")) {
+        const loc = this.next().loc;
+        const api = this.ident("la api de usuarios").v;
+        decls.push({ kind: "Auth", name: "auth", api, loc });
+      } else if (this.is("server")) decls.push(this.serverFn());
       else if (this.is("component") || this.is("page")) decls.push(this.component());
-      else this.fail("'model', 'api', 'component' o 'page'");
+      else this.fail("'model', 'api', 'auth', 'server fn', 'component' o 'page'");
       this.skipNl();
     }
     return { kind: "Program", decls };
@@ -109,7 +114,23 @@ class Parser {
     const name = this.ident("nombre de la api").v;
     this.expect(":");
     const model = this.ident("el model de la api");
-    return { kind: "Api", name, model: model.v, modelLoc: model.loc, loc };
+    let access: ApiAccess = "public";
+    if (this.is("login") || this.is("private")) access = this.next().v as ApiAccess;
+    return { kind: "Api", name, model: model.v, access, modelLoc: model.loc, loc };
+  }
+
+  serverFn(): ServerFnDecl {
+    const loc = this.next().loc;
+    this.expect("fn");
+    const name = this.ident("nombre de la función").v;
+    this.expect("(");
+    const params: string[] = [];
+    while (!this.is(")")) {
+      params.push(this.ident("nombre de parámetro").v);
+      if (!this.eat(",")) break;
+    }
+    this.expect(")");
+    return { kind: "ServerFn", name, params, body: this.block(), loc };
   }
 
   type(): TypeRef {

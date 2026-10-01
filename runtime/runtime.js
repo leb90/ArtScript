@@ -180,28 +180,56 @@ export function $for(parent, list, render) {
 let apiBase = "";
 export function setApiBase(url) { apiBase = url; }
 
-// Typed REST client for `api <name>: <Model>`. Reads track a version signal, so `data` that read
-// this api re-fetch after any write (create/update/remove) to it.
+// Every read (api list/get, auth.me, server fns inside `data`) tracks this version; every write
+// (create/update/remove, signup/login/logout, server fns called from actions) bumps it, so all
+// `data` re-fetch. Simple and always correct, also when login changes what each user can see.
+const dataVersion = new Signal(0);
+const bump = (v) => { dataVersion.v = dataVersion._v + 1; return v; };
+
+// `quiet` reads resolve to null instead of failing when the resource is missing or needs a login.
+async function request(method, path, body, quiet = method === "GET") {
+  const init = body === undefined ? { method } : { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
+  const res = await fetch(`${apiBase}/api/${path}`, { credentials: "same-origin", ...init });
+  const data = res.status === 204 ? null : await res.json();
+  if (res.ok) return data;
+  if (quiet && (res.status === 404 || res.status === 401)) return null;
+  throw Object.assign(new Error(data?.message ?? res.statusText), { status: res.status, details: data });
+}
+
+// Typed REST client for `api <name>: <Model>`.
 export function $api(name) {
-  const version = new Signal(0);
-  const call = async (method, path, body) => {
-    const init = body === undefined ? { method } : { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
-    const res = await fetch(`${apiBase}/api/${name}${path}`, init);
-    const data = res.status === 204 ? null : await res.json();
-    if (res.ok) return data;
-    if (res.status === 404 && method === "GET") return null;
-    throw Object.assign(new Error(data?.message ?? res.statusText), { status: res.status, details: data });
-  };
-  const read = (path) => { version.v; return call("GET", path); };
-  const write = (p) => p.then((v) => { version.v = version._v + 1; return v; });
-  const at = (id) => "/" + encodeURIComponent(id);
+  const read = (path) => { dataVersion.v; return request("GET", path); };
+  const at = (id) => `${name}/${encodeURIComponent(id)}`;
   return {
-    list: () => read(""),
+    list: () => read(name),
     get: (id) => read(at(id)),
-    create: (obj) => write(call("POST", "", obj)),
-    update: (id, changes) => write(call("PATCH", at(id), changes)),
-    remove: (id) => write(call("DELETE", at(id))),
+    create: (obj) => request("POST", name, obj).then(bump),
+    update: (id, changes) => request("PATCH", at(id), changes).then(bump),
+    remove: (id) => request("DELETE", at(id)).then(bump),
   };
+}
+
+// `auth`: email + password accounts with a cookie session.
+export function $auth() {
+  return {
+    signup: (obj) => request("POST", "_auth/signup", obj).then(bump),
+    login: (email, password) => request("POST", "_auth/login", { email, password }).then(bump),
+    logout: () => request("POST", "_auth/logout").then(bump),
+    me: () => { dataVersion.v; return request("GET", "_auth/me"); },
+  };
+}
+
+// `server.<fn>(...args)`: calls a `server fn`. Inside `data` it's a tracked read; from an action
+// it may write, so it bumps the data version when it resolves.
+export function $server() {
+  return new Proxy({}, {
+    get: (_, fn) => (...args) => {
+      const reading = listener !== null;
+      if (reading) dataVersion.v;
+      const p = request("POST", `_fn/${String(fn)}`, { args }, reading);
+      return reading ? p : p.then(bump);
+    },
+  });
 }
 
 // `data x = expr`: runs `expr` tracking its dependencies and stores the result when it resolves.

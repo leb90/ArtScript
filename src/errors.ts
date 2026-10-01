@@ -31,6 +31,7 @@ export const CATALOG: Record<string, { code: string; desc: string }> = {
   NOT_A_LIST: { code: "E1024", desc: "`for` necesita una lista." },
   // Assignment
   ASSIGN_READONLY: { code: "E1030", desc: "Solo se puede asignar a `state` o variables `let`." },
+  AUTH_REQUIRED: { code: "E1040", desc: "`login` y `private` necesitan una declaración `auth`." },
   // View
   UNKNOWN_ELEMENT: { code: "E2001", desc: "Elemento de UI o componente desconocido." },
   UNKNOWN_PROP: { code: "E2002", desc: "Prop no válida para este elemento o componente." },

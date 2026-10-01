@@ -1,0 +1,86 @@
+model User {
+  id: ID
+  email: Email
+  password: String
+  name: String
+}
+
+model Note {
+  id: ID
+  owner: ID
+  text: String
+  done: Bool
+}
+
+api users: User login
+
+api notes: Note private
+
+auth users
+
+server fn stats() {
+  if !me {
+    fail("Iniciá sesión", 401)
+  }
+  let mine = db.notes.list().filter(n => n.owner == me.id)
+  return { total: mine.length, done: mine.filter(n => n.done).length }
+}
+
+page Notes "/" {
+  data me = auth.me()
+  data notes = api.notes.list()
+  data stats = server.stats()
+  state name = ""
+  state email = ""
+  state password = ""
+  state text = ""
+  state error = ""
+  fn enter(isNew) {
+    try {
+      if isNew {
+        await auth.signup({ name, email, password })
+      } else {
+        await auth.login(email, password)
+      }
+      error = ""
+    } catch (e) {
+      error = e.message
+    }
+  }
+  fn add() {
+    await api.notes.create({ text, done: false })
+    text = ""
+  }
+
+  column gap=4 {
+    if me {
+      row justify=between {
+        title `Notas de ${me.name}`
+        button "Salir" -> auth.logout()
+      }
+      form gap=2 -> add() {
+        input text placeholder="Nueva nota"
+      }
+      text `${stats?.done ?? 0} de ${stats?.total ?? 0} hechas` muted
+      for n in notes {
+        row gap=2 {
+          button n.done ? "✓" : "○" small -> api.notes.update(n.id, { done: !n.done })
+          text n.text muted=n.done
+          button "x" danger small -> api.notes.remove(n.id)
+        }
+      }
+    } else {
+      title "Notas"
+      input name placeholder="Nombre"
+      input email placeholder="Email" type=email
+      input password placeholder="Contraseña" type=password
+      row gap=2 {
+        button "Entrar" primary -> enter(false)
+        button "Crear cuenta" -> enter(true)
+      }
+      if error != "" {
+        text error bold
+      }
+    }
+  }
+}

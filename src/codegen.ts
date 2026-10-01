@@ -1,5 +1,5 @@
 // Generates an ES module that builds the DOM directly (no virtual DOM) using runtime.js.
-import type { ComponentDecl, Element, Expr, Program, Stmt, ViewNode } from "./ast.ts";
+import type { ApiAccess, ComponentDecl, Element, Expr, Program, ServerFnDecl, Stmt, ViewNode } from "./ast.ts";
 import { printType } from "./printer.ts";
 import { ELEMENTS, SPACING_PROPS } from "./elements.ts";
 
@@ -30,6 +30,8 @@ export function generate(program: Program): string {
   const apis = program.decls.filter((d) => d.kind === "Api");
   // Typed REST client: one entry per `api` declaration.
   if (apis.length) out.push(`const api = { ${apis.map((a) => `${a.name}: $.$api(${JSON.stringify(a.name)})`).join(", ")} };`, "");
+  if (program.decls.some((d) => d.kind === "Auth")) out.push("const auth = $.$auth();", "");
+  if (program.decls.some((d) => d.kind === "ServerFn")) out.push("const server = $.$server();", "");
   const pages: string[] = [];
   for (const d of program.decls) {
     if (d.kind !== "Component") continue;
@@ -41,21 +43,48 @@ export function generate(program: Program): string {
   return out.join("\n");
 }
 
-// Schema the server runtime needs: field types per model and the model of each api.
-export type ServerSchema = { models: Record<string, Record<string, string>>; apis: Record<string, string> };
+// What the server runtime needs: field types per model, each api's model and access, the auth api,
+// and the compiled `server fn`s (an ES module exporting `fns`).
+export type ServerSchema = {
+  models: Record<string, Record<string, string>>;
+  apis: Record<string, { model: string; access: ApiAccess }>;
+  auth: string | null;
+  fns: string;
+};
 
 export function serverSchema(program: Program): ServerSchema | null {
-  const apis: Record<string, string> = {};
-  const models: Record<string, Record<string, string>> = {};
+  const apis: ServerSchema["apis"] = {};
+  const models: ServerSchema["models"] = {};
+  let auth: string | null = null;
   for (const d of program.decls) {
-    if (d.kind === "Api") apis[d.name] = d.model;
+    if (d.kind === "Api") apis[d.name] = { model: d.model, access: d.access };
     if (d.kind === "Model") models[d.name] = Object.fromEntries(d.fields.map((f) => [f.name, printType(f.type)]));
+    if (d.kind === "Auth") auth = d.api;
   }
-  return Object.keys(apis).length ? { models, apis } : null;
+  const fns = program.decls.filter((d) => d.kind === "ServerFn");
+  if (!Object.keys(apis).length && !fns.length) return null;
+  return { models, apis, auth, fns: serverFnsModule(fns) };
+}
+
+// Each server fn becomes `async name({ db, me, fail }, ...params)`.
+function serverFnsModule(fns: ServerFnDecl[]): string {
+  const host: ComponentDecl = { kind: "Component", page: false, name: "server", path: null, params: [], members: [], view: [], loc: { file: "", line: 0, col: 0 } };
+  const out = ["export const fns = {"];
+  for (const f of fns) {
+    const g = new ComponentGen(host);
+    g.ind = 2;
+    const scope = new Scope(null);
+    for (const name of ["db", "me", "fail", ...f.params]) scope.vars.set(name, { kind: "param" });
+    g.stmts(f.body, scope);
+    out.push(`  async ${f.name}({ db, me, fail }${f.params.map((p) => `, ${p}`).join("")}) {`, ...g.lines, "  },");
+  }
+  out.push("};");
+  return out.join("\n");
 }
 
 export function serverEntry(schema: ServerSchema): string {
-  return `import { serve } from "./server-runtime.js";\n\nserve(${JSON.stringify(schema)}, new URL(".", import.meta.url));\n`;
+  const { fns, ...rest } = schema;
+  return `import { serve } from "./server-runtime.js";\n\n${fns}\n\nserve(${JSON.stringify(rest)}, fns, new URL(".", import.meta.url));\n`;
 }
 
 export function htmlShell(title = "ArtScript"): string {

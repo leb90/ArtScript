@@ -1,8 +1,8 @@
 // Type checker: small type system, null safety and errors with fixes.
-import type { ComponentDecl, Element, Expr, Loc, Program, Stmt, TypeRef, ViewNode } from "./ast.ts";
+import type { ComponentDecl, Element, Expr, Loc, ModelDecl, Program, ServerFnDecl, Stmt, TypeRef, ViewNode } from "./ast.ts";
 import { ELEMENTS, ENUM_PROPS } from "./elements.ts";
 import { CATALOG, diag, suggest, type Diagnostic } from "./errors.ts";
-import { printExpr } from "./printer.ts";
+import { printDecl, printExpr } from "./printer.ts";
 
 export type Ty =
   | { k: "num" } | { k: "str" } | { k: "bool" } | { k: "null" } | { k: "any" } | { k: "void" }
@@ -12,7 +12,8 @@ export type Ty =
   | { k: "obj"; fields: Record<string, Ty> }
   | { k: "fn"; ret: Ty }
   | { k: "async"; of: Ty } // result of an api call; `await` or `data` unwraps it
-  | { k: "api"; name: string; model: string }; // `api.users`
+  | { k: "api"; name: string; model: string; sync?: boolean } // `api.users` (client, async) or `db.users` (server, sync)
+  | { k: "auth"; model: string }; // `auth`
 
 const NUM: Ty = { k: "num" }, STR: Ty = { k: "str" }, BOOL: Ty = { k: "bool" }, NULL: Ty = { k: "null" }, ANY: Ty = { k: "any" };
 const fn = (ret: Ty): Ty => ({ k: "fn", ret });
@@ -43,7 +44,8 @@ export function show(t: Ty): string {
     case "obj": return "{ " + Object.entries(t.fields).map(([k, v]) => `${k}: ${show(v)}`).join(", ") + " }";
     case "fn": return "Fn";
     case "async": return `Async<${show(t.of)}>`;
-    case "api": return `Api<${t.model}>`;
+    case "api": return `${t.sync ? "Db" : "Api"}<${t.model}>`;
+    case "auth": return `Auth<${t.model}>`;
   }
 }
 
@@ -118,6 +120,10 @@ class Checker {
   types = new WeakMap<Expr, Ty>(); // inferred type of every expression
   symbols = new Map<string, Map<string, Sym>>(); // component-level symbols, for `art context`
   apis = new Map<string, string>(); // api name → model name
+  privateApis = new Set<string>(); // apis whose rows belong to a user (`owner` is set automatically)
+  authModel: string | null = null; // model of the `auth` api
+  serverFns = new Map<string, Ty>(); // server fn name → return type
+  returns: Ty[] | null = null; // return types collected while checking a server fn
   idFields = new Map<string, Set<string>>(); // model → fields declared as ID (assigned by the server on create)
   constructor(program: Program) {
     this.program = program;
@@ -153,7 +159,32 @@ class Checker {
         this.err("MISSING_FIELD", `la api '${d.name}' necesita que ${d.model} tenga un campo de tipo ID`, d.modelLoc, { expr: d.model, expected: "id: ID", fixes: [`agregar \`id: ID\` a model ${d.model}`] });
       }
       this.apis.set(d.name, d.model);
+      if (d.access === "private") {
+        this.privateApis.add(d.name);
+        if (this.models.has(d.model) && !this.idFields.get(d.model)?.has("owner")) {
+          this.err("MISSING_FIELD", `la api private '${d.name}' necesita que ${d.model} tenga \`owner: ID\``, d.modelLoc, { expr: d.model, expected: "owner: ID", fixes: [`agregar \`owner: ID\` a model ${d.model}`] });
+        }
+      }
+      if (d.access !== "public" && !this.program.decls.some((x) => x.kind === "Auth")) {
+        this.err("AUTH_REQUIRED", `'${d.access}' necesita usuarios: falta \`auth <api>\``, d.loc, { expr: printDecl(d), fixes: ["auth users"] });
+      }
     }
+    for (const d of this.program.decls) {
+      if (d.kind !== "Auth") continue;
+      this.at = "auth";
+      const model = this.apis.get(d.api);
+      if (!model) {
+        this.err("UNKNOWN_TYPE", `\`auth\` necesita una api de usuarios: no existe '${d.api}'`, d.loc, { expr: d.api, fixes: suggest(d.api, this.apis.keys()) });
+        continue;
+      }
+      const decl = this.program.decls.find((x): x is ModelDecl => x.kind === "Model" && x.name === model);
+      const typeOf = (f: string) => decl?.fields.find((x) => x.name === f)?.type.name;
+      if (typeOf("email") !== "Email" || typeOf("password") !== "String") {
+        this.err("MISSING_FIELD", `\`auth\` necesita que ${model} tenga \`email: Email\` y \`password: String\``, d.loc, { expr: model, expected: "email: Email, password: String" });
+      }
+      this.authModel = model;
+    }
+    for (const d of this.program.decls) if (d.kind === "ServerFn") this.serverFn(d);
     for (const d of this.program.decls) {
       if (d.kind !== "Component") continue;
       this.at = d.name;
@@ -177,6 +208,24 @@ class Checker {
     return ty;
   }
 
+  // ---------- server functions ----------
+  // Run on the server with `db.<api>` (sync, unscoped), `me` (the logged-in user or null) and `fail(message)`.
+  serverFn(d: ServerFnDecl) {
+    this.at = d.name;
+    const scope = new Scope(null);
+    const fields: Record<string, Ty> = {};
+    for (const [name, model] of this.apis) fields[name] = { k: "api", name, model, sync: true };
+    scope.vars.set("db", { kind: "global", ty: { k: "obj", fields } });
+    if (this.authModel) scope.vars.set("me", { kind: "let", ty: opt({ k: "model", name: this.authModel }) });
+    scope.vars.set("fail", { kind: "global", ty: fn({ k: "void" }) });
+    for (const p of d.params) scope.vars.set(p, { kind: "param", ty: ANY });
+    this.returns = [];
+    this.stmts(d.body, scope);
+    const rs = this.returns.filter((t) => t.k !== "void");
+    this.returns = null;
+    this.serverFns.set(d.name, !rs.length ? { k: "void" } : rs.every((t) => show(t) === show(rs[0])) ? rs[0] : ANY);
+  }
+
   // ---------- components ----------
   component(c: ComponentDecl) {
     this.at = c.name;
@@ -189,11 +238,17 @@ class Checker {
       declare(p.name, { kind: "prop", ty: this.resolve(p.type) }, p.loc);
       if (p.default) this.expectTy(p.default, this.infer(p.default, scope), scope.get(p.name)!.ty);
     }
-    // `api.<name>` is available in every component when the program declares apis.
+    // `api.<name>`, `auth` and `server.<fn>` are available in every component when declared.
     if (this.apis.size) {
       const fields: Record<string, Ty> = {};
       for (const [name, model] of this.apis) fields[name] = { k: "api", name, model };
       scope.vars.set("api", { kind: "global", ty: { k: "obj", fields } });
+    }
+    if (this.authModel) scope.vars.set("auth", { kind: "global", ty: { k: "auth", model: this.authModel } });
+    if (this.serverFns.size) {
+      const fields: Record<string, Ty> = {};
+      for (const [name, ret] of this.serverFns) fields[name] = fn({ k: "async", of: ret });
+      scope.vars.set("server", { kind: "global", ty: { k: "obj", fields } });
     }
     // Declare everything first (allows forward references), then infer types in order.
     const kindOf = { State: "state", Computed: "computed", Data: "data", Fn: "fn" } as const;
@@ -340,7 +395,10 @@ class Checker {
     for (const s of list) {
       if (s.kind === "ExprStmt") this.infer(s.expr, scope);
       else if (s.kind === "Let") scope.vars.set(s.name, { kind: "let", ty: this.infer(s.init, scope) });
-      else if (s.kind === "Return") { if (s.value) this.infer(s.value, scope); }
+      else if (s.kind === "Return") {
+        const t = s.value ? this.infer(s.value, scope) : { k: "void" as const };
+        this.returns?.push(t);
+      }
       else if (s.kind === "Try") {
         this.stmts(s.body, new Scope(scope));
         const h = new Scope(scope);
@@ -353,7 +411,9 @@ class Checker {
         if (s.else) this.stmts(s.else, this.narrow(s.cond, false, scope));
         // Early exit (`if !x { return }`): the rest of the block runs only when the condition was false.
         const last = s.then[s.then.length - 1];
-        if (!s.else && last?.kind === "Return") this.applyNarrowing(s.cond, false, scope, scope);
+        // `fail(...)` (server fns) never returns either.
+        const exits = last?.kind === "Return" || (last?.kind === "ExprStmt" && last.expr.kind === "Call" && last.expr.callee.kind === "Ident" && last.expr.callee.name === "fail");
+        if (!s.else && exits) this.applyNarrowing(s.cond, false, scope, scope);
       }
     }
   }
@@ -546,6 +606,7 @@ class Checker {
         if (e.callee.kind === "Member") {
           const owner = this.types.get(e.callee.object);
           if (owner?.k === "api") this.apiArgs(owner, e.callee.prop, e.args, argTys, e.loc);
+          if (owner?.k === "auth") this.authArgs(owner, e.callee.prop, e.args, argTys, e.loc);
         }
         const base = t.k === "opt" ? t.of : t;
         if (base.k === "fn") return e.optional || t.k === "opt" ? opt(base.ret) : base.ret;
@@ -597,7 +658,14 @@ class Checker {
       case "Arrow": {
         const s = new Scope(scope);
         for (const p of e.params) s.vars.set(p, { kind: "param", ty: ANY });
-        if (Array.isArray(e.body)) { this.stmts(e.body, s); return fn(ANY); }
+        if (Array.isArray(e.body)) {
+          // Returns inside a callback belong to the callback, not to the enclosing server fn.
+          const outer = this.returns;
+          this.returns = null;
+          this.stmts(e.body, s);
+          this.returns = outer;
+          return fn(ANY);
+        }
         return fn(this.infer(e.body, s));
       }
       case "Spread": this.infer(e.arg, scope); return ANY;
@@ -607,12 +675,14 @@ class Checker {
   // Methods of `api.<name>`: the typed client generated for `api <name>: <Model>`.
   apiMethod(t: Ty & { k: "api" }, prop: string, e: Expr): Ty {
     const model: Ty = { k: "model", name: t.model };
+    // On the server (`db.<api>`) the same methods are synchronous.
+    const res = (r: Ty): Ty => fn(t.sync ? r : { k: "async", of: r });
     const methods: Record<string, Ty> = {
-      list: fn({ k: "async", of: list(model) }),
-      get: fn({ k: "async", of: opt(model) }),
-      create: fn({ k: "async", of: model }),
-      update: fn({ k: "async", of: model }),
-      remove: fn({ k: "async", of: { k: "void" } }),
+      list: res(list(model)),
+      get: res(opt(model)),
+      create: res(model),
+      update: res(model),
+      remove: res({ k: "void" }),
     };
     if (prop in methods) return methods[prop];
     // Names LLMs often reach for (REST verbs, ORM habits) map to the canonical method.
@@ -622,7 +692,7 @@ class Checker {
       find: "get", findById: "get", getById: "get", one: "get", read: "get",
     };
     const fixes = synonyms[prop] ? [synonyms[prop]] : suggest(prop, Object.keys(methods));
-    this.err("UNKNOWN_FIELD", `api.${t.name} no tiene el método '${prop}'`, e.loc, { expr: printExpr(e), expected: Object.keys(methods).join("|"), fixes });
+    this.err("UNKNOWN_FIELD", `${t.sync ? "db" : "api"}.${t.name} no tiene el método '${prop}'`, e.loc, { expr: printExpr(e), expected: Object.keys(methods).join("|"), fixes });
     return ANY;
   }
 
@@ -631,14 +701,48 @@ class Checker {
     if (expectCount === undefined) return;
     if (args.length !== expectCount) {
       const sig = { list: "list()", get: "get(id)", create: "create(obj)", update: "update(id, cambios)", remove: "remove(id)" }[method]!;
-      this.err("TYPE_MISMATCH", `api.${t.name}.${sig} recibe ${expectCount} argumento(s)`, loc, { expected: sig, actual: `${args.length} argumento(s)` });
+      this.err("TYPE_MISMATCH", `${t.sync ? "db" : "api"}.${t.name}.${sig} recibe ${expectCount} argumento(s)`, loc, { expected: sig, actual: `${args.length} argumento(s)` });
       return;
     }
     const obj = method === "create" ? args[0] : method === "update" ? args[1] : null;
     const objTy = method === "create" ? tys[0] : tys[1];
     if (!obj) return;
-    if (obj.kind === "Object") this.modelLiteral(obj, t.model, method === "create" ? { skip: this.idFields.get(t.model) } : { partial: true });
+    if (obj.kind === "Object") this.modelLiteral(obj, t.model, method === "create" ? { skip: this.autoFields(t.name, t.model) } : { partial: true });
     else this.expectTy(obj, objTy, { k: "model", name: t.model });
+  }
+
+  // Fields the server fills in on create: ids, and `owner` on private apis.
+  autoFields(api: string, model: string): Set<string> {
+    const s = new Set(this.idFields.get(model) ?? []);
+    if (!this.privateApis.has(api)) s.delete("owner");
+    return s;
+  }
+
+  authMethod(t: Ty & { k: "auth" }, prop: string, e: Expr): Ty {
+    const user: Ty = { k: "model", name: t.model };
+    const methods: Record<string, Ty> = {
+      signup: fn({ k: "async", of: user }),
+      login: fn({ k: "async", of: user }),
+      logout: fn({ k: "async", of: { k: "void" } }),
+      me: fn({ k: "async", of: opt(user) }),
+    };
+    if (prop in methods) return methods[prop];
+    const synonyms: Record<string, string> = { register: "signup", signUp: "signup", signin: "login", signIn: "login", logIn: "login", signout: "logout", signOut: "logout", logOut: "logout", user: "me", current: "me", currentUser: "me", getUser: "me" };
+    this.err("UNKNOWN_FIELD", `auth no tiene el método '${prop}'`, e.loc, { expr: printExpr(e), expected: Object.keys(methods).join("|"), fixes: synonyms[prop] ? [synonyms[prop]] : suggest(prop, Object.keys(methods)) });
+    return ANY;
+  }
+
+  authArgs(t: Ty & { k: "auth" }, method: string, args: Expr[], tys: Ty[], loc: Loc) {
+    const sig: Record<string, [number, string]> = { signup: [1, "signup(obj)"], login: [2, "login(email, password)"], logout: [0, "logout()"], me: [0, "me()"] };
+    if (!sig[method]) return;
+    if (args.length !== sig[method][0]) {
+      this.err("TYPE_MISMATCH", `auth.${sig[method][1]} recibe ${sig[method][0]} argumento(s)`, loc, { expected: sig[method][1], actual: `${args.length} argumento(s)` });
+      return;
+    }
+    if (method === "signup") {
+      if (args[0].kind === "Object") this.modelLiteral(args[0], t.model, { skip: this.idFields.get(t.model) });
+      else this.expectTy(args[0], tys[0], { k: "model", name: t.model });
+    }
   }
 
   memberTy(t: Ty, prop: string, e: Expr): Ty {
@@ -649,6 +753,7 @@ class Checker {
       return ANY;
     }
     if (t.k === "api") return this.apiMethod(t, prop, e);
+    if (t.k === "auth") return this.authMethod(t, prop, e);
     if (t.k === "obj") return t.fields[prop] ?? ANY;
     if (t.k === "list") return listMethod(prop, t.of, t) ?? ANY;
     if (t.k === "str") return strMethod(prop) ?? ANY;

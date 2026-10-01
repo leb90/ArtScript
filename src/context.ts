@@ -61,6 +61,9 @@ export function projectMap(p: Program, a: Analysis, budget = Infinity): string {
   const lines = [`# project: ${p.decls.length} decls`];
   for (const d of p.decls) {
     if (d.kind === "Model") lines.push(modelLine(d.name, p));
+    if (d.kind === "Api") lines.push(`${printDecl(d)} → /api/${d.name}`);
+    if (d.kind === "Auth") lines.push(`auth ${d.api} → auth.signup/login/logout/me`);
+    if (d.kind === "ServerFn") lines.push(`server fn ${d.name}(${d.params.join(", ")}) → server.${d.name}() @${fmtLoc(d.loc)}`);
   }
   for (const d of p.decls) {
     if (d.kind !== "Component") continue;
@@ -85,8 +88,10 @@ export function declContext(p: Program, a: Analysis, target: string, budget = In
 
   if (d.kind === "Api") {
     const refs = p.decls.filter((x): x is ComponentDecl => x.kind === "Component" && printDecl(x).includes(`api.${name}.`)).map((x) => x.name);
-    return fit([`api ${name}: ${d.model} → /api/${name} (list, get, create, update, remove) @${fmtLoc(d.loc)}`, modelLine(d.model, p), `used_by: ${refs.join(", ") || "-"}`], budget);
+    return fit([`${printDecl(d)} → /api/${name} (list, get, create, update, remove) @${fmtLoc(d.loc)}`, modelLine(d.model, p), `used_by: ${refs.join(", ") || "-"}`], budget);
   }
+  if (d.kind === "Auth") return fit([`auth ${d.api} → auth.signup(obj), auth.login(email, password), auth.logout(), auth.me() @${fmtLoc(d.loc)}`], budget);
+  if (d.kind === "ServerFn") return fit([`server fn ${name} → server.${name}(${d.params.join(", ")}) @${fmtLoc(d.loc)}`, "source:", printDecl(d)], budget);
 
   if (d.kind === "Model") {
     const refs = p.decls.filter((x): x is ComponentDecl => x.kind === "Component" && modelDeps(x, a).includes(name)).map((x) => x.name);

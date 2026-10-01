@@ -8,13 +8,21 @@ export type TypeRef = { name: string; list: boolean; optional: boolean; loc: Loc
 
 export type Program = { kind: "Program"; decls: Decl[] };
 
-export type Decl = ModelDecl | ComponentDecl | ApiDecl;
+export type Decl = ModelDecl | ComponentDecl | ApiDecl | AuthDecl | ServerFnDecl;
 
 export type ModelDecl = { kind: "Model"; name: string; fields: Field[]; loc: Loc };
 export type Field = { name: string; type: TypeRef; loc: Loc };
 
-// `api users: User`: REST resource for a model (list, get, create, update, remove), persisted on the server.
-export type ApiDecl = { kind: "Api"; name: string; model: string; modelLoc: Loc; loc: Loc };
+// `api users: User [login|private]`: REST resource for a model (list, get, create, update, remove),
+// persisted on the server. `login` requires a session; `private` also scopes rows to their `owner`.
+export type ApiAccess = "public" | "login" | "private";
+export type ApiDecl = { kind: "Api"; name: string; model: string; access: ApiAccess; modelLoc: Loc; loc: Loc };
+
+// `auth users`: email + password accounts on that api (signup, login, logout, me).
+export type AuthDecl = { kind: "Auth"; name: string; api: string; loc: Loc };
+
+// `server fn name(params) { ... }`: runs on the server with `db`, `me` and `fail`; called as `server.name()`.
+export type ServerFnDecl = { kind: "ServerFn"; name: string; params: string[]; body: Stmt[]; loc: Loc };
 
 // `page` and `component` share a shape; a page has a route and no params.
 export type ComponentDecl = {

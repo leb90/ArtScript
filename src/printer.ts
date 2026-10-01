@@ -95,7 +95,9 @@ export function printProgram(p: Program): string {
 }
 
 export function printDecl(d: Decl): string {
-  if (d.kind === "Api") return `api ${d.name}: ${d.model}`;
+  if (d.kind === "Api") return `api ${d.name}: ${d.model}${d.access === "public" ? "" : " " + d.access}`;
+  if (d.kind === "Auth") return `auth ${d.api}`;
+  if (d.kind === "ServerFn") return `server fn ${d.name}(${d.params.join(", ")}) {\n${printStmts(d.body, 1).join("\n")}\n}`;
   if (d.kind === "Model") {
     return `model ${d.name} {\n${d.fields.map((f) => `${IND}${f.name}: ${printType(f.type)}`).join("\n")}\n}`;
   }

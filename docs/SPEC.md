@@ -50,6 +50,10 @@ api users: User                    // REST en /api/users: validado con el model,
 - Cliente tipado en cualquier componente: `api.users.list()`, `get(id)`, `create(obj)`, `update(id, cambios)`, `remove(id)`.
 - `data users = api.users.list()` carga al montar y **se recarga sola** después de cualquier `create`/`update`/`remove` de esa api. Una lista empieza como `[]`; `get` empieza en `null` (`T?`).
 - `await` y `try { } catch (e) { }` funcionan como en JS; `e.message` explica el error de validación.
+- Acceso: `api notes: Note login` exige sesión; `api notes: Note private` además separa por usuario (el model necesita `owner: ID`, que se completa solo).
+- `auth users` (el model necesita `email: Email` y `password: String`): `auth.signup(obj)`, `auth.login(email, password)`, `auth.logout()`, `data me = auth.me()` (`T?`). La contraseña se guarda hasheada y nunca se devuelve.
+- `server fn nombre(a, b) { ... }` corre en el servidor; se llama como `server.nombre(a, b)` (también en `data`). Adentro: `db.<api>` (sin `await`, sin filtro por usuario), `me` (usuario logueado o `null`) y `fail("mensaje", status?)`.
+- Después de cualquier escritura, login o logout, todos los `data` se recargan.
 - `art dev` sirve la api; `art build` genera `dist/server.js` (`node dist/server.js`).
 
 ## Vista

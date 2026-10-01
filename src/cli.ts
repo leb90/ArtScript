@@ -237,7 +237,7 @@ switch (cmd) {
     const dataDir = join(projectRoot(target), ".art", "data");
     let api: ((req: unknown, res: unknown) => Promise<boolean>) | null = null;
     let apiSchema = "";
-    const rebuild = (): boolean => {
+    const rebuild = async (): Promise<boolean> => {
       const r = buildFiles(target);
       if ("diagnostics" in r) {
         lastError = r.diagnostics.map(formatHuman).join("\n\n");
@@ -249,11 +249,13 @@ switch (cmd) {
       const schema = JSON.stringify(r.server);
       if (schema !== apiSchema) {
         apiSchema = schema;
-        api = r.server ? createApi(r.server, dataDir) : null;
+        // Server fns are compiled to an ES module and loaded straight from memory.
+        const fns = r.server ? (await import(`data:text/javascript,${encodeURIComponent(r.server.fns)}`)).fns : {};
+        api = r.server ? createApi(r.server, dataDir, fns) : null;
       }
       return true;
     };
-    rebuild();
+    await rebuild();
 
     const types: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".ico": "image/x-icon" };
     const server = createServer(async (req, res) => {
@@ -296,8 +298,8 @@ switch (cmd) {
     watch(watchDir, { recursive: true }, (_e, changed) => {
       if (!changed || !String(changed).endsWith(".art")) return;
       clearTimeout(timer);
-      timer = setTimeout(() => {
-        const ok = rebuild();
+      timer = setTimeout(async () => {
+        const ok = await rebuild();
         if (ok) console.log(`recompilado (${String(changed)})`);
         const msg = ok ? "reload" : JSON.stringify(lastError);
         for (const c of clients) c.write(`data: ${msg}\n\n`);
