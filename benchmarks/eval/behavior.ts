@@ -237,7 +237,11 @@ const CHECKS: Record<string, Check> = {
 
 // Runs the task's behavior check in this process (it installs happy-dom globals while it runs).
 // Variants of a task (e.g. "shop-sort@focus") share its check.
-const checkFor = (task: Task) => CHECKS[task.id.split("@")[0]];
+// The 102-component panel ("xl-*", "adminxl-*") has the same sections as the admin panel.
+const checkFor = (task: Task) => {
+  const base = task.id.split("@")[0];
+  return CHECKS[base] ?? CHECKS[base.replace(/^(xl|adminxl)-/, "admin-")];
+};
 
 type Checked = { errors: string[]; size?: AppSize };
 

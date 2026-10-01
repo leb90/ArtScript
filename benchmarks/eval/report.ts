@@ -73,7 +73,7 @@ function merge(files: { path: string; data: ResultFile }[]): Loaded[] {
 }
 
 // Modifications on the larger projects, one table per project, per context mode.
-const PROJECTS: Record<string, string> = { shop: "an 11-component shop", admin: "a 42-component admin panel" };
+const PROJECTS: Record<string, string> = { shop: "an 11-component shop", admin: "a 42-component admin panel", xl: "a 102-component admin panel" };
 
 function projectTables(rs: Run[]): string[] {
   const out: string[] = [];

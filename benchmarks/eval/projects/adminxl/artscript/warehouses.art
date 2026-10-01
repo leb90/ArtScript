@@ -1,0 +1,47 @@
+component WarehousesPage {
+  state items: Item[] = [{ id: 1, name: "Alfa", amount: 10, active: true }, { id: 2, name: "Beta", amount: 20, active: true }, { id: 3, name: "Gama", amount: 30, active: false }]
+  fn add(name, amount) {
+    items.push({ id: Date.now(), name, amount, active: true })
+  }
+
+  column gap=2 {
+    title "Depósitos"
+    WarehousesForm onAdd=add
+    WarehousesList items=items
+  }
+}
+
+component WarehousesList(items: Item[]) {
+  if items.length == 0 {
+    text "Sin registros" muted
+  } else {
+    column gap=1 {
+      for item in items {
+        WarehousesRow item=item
+      }
+    }
+  }
+}
+
+component WarehousesRow(item: Item) {
+  row gap=2 {
+    text item.name bold
+    text `Capacidad: ${item.amount}`
+  }
+}
+
+component WarehousesForm(onAdd: Fn) {
+  state name = ""
+  state amount = 0
+  fn submit() {
+    onAdd(name, amount)
+    name = ""
+    amount = 0
+  }
+
+  row gap=2 {
+    input name placeholder="Nombre"
+    input amount placeholder="Capacidad" type=number
+    button "Agregar" primary -> submit()
+  }
+}

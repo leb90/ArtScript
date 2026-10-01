@@ -108,4 +108,8 @@ const ADMIN: Omit<Task, "context">[] = [
 for (const [project, list] of [["shop", SHOP], ["admin", ADMIN]] as const) {
   for (const t of list) for (const context of ["full", "focus"] as const) TASKS.push({ ...t, id: `${t.id}@${context}`, project, context });
 }
+// The same four changes on the 102-component panel ("xl-*" tasks reuse the admin checks).
+for (const t of ADMIN) {
+  for (const context of ["full", "focus"] as const) TASKS.push({ ...t, id: `${t.id.replace("admin-", "xl-")}@${context}`, project: "adminxl", context });
+}
 

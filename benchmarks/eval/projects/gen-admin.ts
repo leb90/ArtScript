@@ -1,13 +1,14 @@
-// Generates benchmarks/eval/projects/admin: an admin panel with 10 sections (page, list, row and
-// form each: 42 components) written idiomatically in ArtScript, React and Svelte, so modification
-// tasks run on a project big enough for context selection to matter.
+// Generates admin panels written idiomatically in ArtScript, React and Svelte, so modification tasks
+// run on projects big enough for context selection to matter. Each section has a page, list, row
+// and form: benchmarks/eval/projects/admin (10 sections, 42 components) and adminxl (25 sections,
+// 102 components). Both share the sections the tasks use.
 //
 //   node benchmarks/eval/projects/gen-admin.ts
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const OUT = join(import.meta.dirname, "admin");
-const ENTITIES = [
+let OUT = "";
+const ALL_ENTITIES = [
   { name: "Products", label: "Productos", amount: "Precio" },
   { name: "Customers", label: "Clientes", amount: "Saldo" },
   { name: "Orders", label: "Pedidos", amount: "Total" },
@@ -18,7 +19,23 @@ const ENTITIES = [
   { name: "Invoices", label: "Facturas", amount: "Importe" },
   { name: "Coupons", label: "Cupones", amount: "Descuento" },
   { name: "Reviews", label: "Reseñas", amount: "Puntaje" },
+  { name: "Shipments", label: "Envíos", amount: "Costo" },
+  { name: "Payments", label: "Pagos", amount: "Monto" },
+  { name: "Refunds", label: "Devoluciones", amount: "Reintegro" },
+  { name: "Branches", label: "Sucursales", amount: "Ventas" },
+  { name: "Vehicles", label: "Vehículos", amount: "Kilometraje" },
+  { name: "Projects", label: "Proyectos", amount: "Presupuesto" },
+  { name: "Tickets", label: "Tickets", amount: "Prioridad" },
+  { name: "Campaigns", label: "Campañas", amount: "Alcance" },
+  { name: "Contracts", label: "Contratos", amount: "Valor" },
+  { name: "Assets", label: "Activos", amount: "Valuación" },
+  { name: "Expenses", label: "Gastos", amount: "Gasto" },
+  { name: "Subscriptions", label: "Suscripciones", amount: "Cuota" },
+  { name: "Partners", label: "Socios", amount: "Aporte" },
+  { name: "Events", label: "Eventos", amount: "Asistentes" },
+  { name: "Courses", label: "Cursos", amount: "Cupo" },
 ];
+let ENTITIES = ALL_ENTITIES;
 const SEED = [
   { id: 1, name: "Alfa", amount: 10, active: true },
   { id: 2, name: "Beta", amount: 20, active: true },
@@ -334,8 +351,12 @@ component ${N}Form(onAdd: Fn) {
   }
 }
 
-rmSync(OUT, { recursive: true, force: true });
-react();
-svelte();
-artscript();
-console.log(`generated ${OUT}`);
+for (const [name, count] of [["admin", 10], ["adminxl", 25]] as const) {
+  OUT = join(import.meta.dirname, name);
+  ENTITIES = ALL_ENTITIES.slice(0, count);
+  rmSync(OUT, { recursive: true, force: true });
+  react();
+  svelte();
+  artscript();
+  console.log(`generated ${OUT} (${count} sections, ${count * 4 + 2} components)`);
+}

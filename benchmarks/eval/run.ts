@@ -321,7 +321,8 @@ async function dryRun() {
       const errs = await behave({ id: `${project}-base`, prompt: "" }, st, files);
       console.log(`${errs.length ? "✗" : "✓"} behavior ${project} (base project)/${st}${errs.length ? ": " + errs[0] : ""}`);
     }
-    const patchDir = join(HERE, "refs", project);
+    // adminxl shares the admin sections, so the admin reference patches apply to it too.
+    const patchDir = join(HERE, "refs", existsSync(join(HERE, "refs", project)) ? project : project.replace(/xl$/, ""));
     if (!existsSync(patchDir)) continue;
     const dir = join(HERE, "projects", project, "artscript");
     const sources = readdirSync(dir).map((f) => ({ file: f, src: readFileSync(join(dir, f), "utf8") }));
@@ -329,7 +330,7 @@ async function dryRun() {
       const id = f.replace(/\.patch$/, "");
       const r = applyPatch(sources, readFileSync(join(patchDir, f), "utf8"));
       const errs = r.diagnostics.length ? r.diagnostics.map(formatAI) : await behave({ id, prompt: "" }, "artscript", r.files);
-      console.log(`${errs.length ? "✗" : "✓"} reference patch ${id}/artscript${errs.length ? ": " + errs[0] : ""}`);
+      console.log(`${errs.length ? "✗" : "✓"} reference patch ${id} on ${project}/artscript${errs.length ? ": " + errs[0] : ""}`);
     }
   }
   // And a buggy app must fail, with a message that says what was expected.
