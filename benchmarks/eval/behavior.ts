@@ -1,7 +1,9 @@
 // Behavior checks: each task is used like a person would, through what's on screen (texts,
 // buttons, placeholders), so the same check applies to every stack. A failure explains what was
 // expected and what the screen showed; that message is fed back to the model.
-import { BehaviorError, exclusive, launch, type Page } from "./app.ts";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { BehaviorError, launch, type Page } from "./app.ts";
 import type { Task } from "./tasks.ts";
 import type { Files, Stack } from "./validate.ts";
 
@@ -135,20 +137,46 @@ const CHECKS: Record<string, Check> = {
   },
 };
 
-// Runs the task's behavior check; returns the failures (empty = it works).
-export function behave(task: Task, stack: Stack, files: Files): Promise<string[]> {
+// Runs the task's behavior check in this process (it installs happy-dom globals while it runs).
+async function runCheck(task: Task, stack: Stack, files: Files): Promise<string[]> {
   const check = CHECKS[task.id];
-  if (!check) return Promise.resolve([]);
-  return exclusive(async () => {
-    let app: Awaited<ReturnType<typeof launch>> | null = null;
-    try {
-      app = await launch(stack, files, !!task.fullstack);
-      await check(app.page);
-      return [];
-    } catch (e: any) {
-      return [`Prueba de comportamiento: ${e instanceof BehaviorError ? e.message : `error en la app: ${String(e?.message ?? e).slice(0, 300)}`}`];
-    } finally {
-      await app?.close();
-    }
+  if (!check) return [];
+  let app: Awaited<ReturnType<typeof launch>> | null = null;
+  try {
+    app = await launch(stack, files, !!task.fullstack);
+    await check(app.page);
+    return [];
+  } catch (e: any) {
+    return [`Prueba de comportamiento: ${e instanceof BehaviorError ? e.message : `error en la app: ${String(e?.message ?? e).slice(0, 300)}`}`];
+  } finally {
+    await app?.close();
+  }
+}
+
+// Runs the check in a separate Node process, so the simulated browser's globals never touch the
+// eval's own fetch/timers and every run starts clean. Returns the failures (empty = it works).
+export function behave(task: Task, stack: Stack, files: Files): Promise<string[]> {
+  if (!CHECKS[task.id]) return Promise.resolve([]);
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [fileURLToPath(import.meta.url), "--worker"], { stdio: ["pipe", "pipe", "pipe"] });
+    let out = "", err = "";
+    child.stdout.on("data", (d) => { out += d; });
+    child.stderr.on("data", (d) => { err += d; });
+    const timer = setTimeout(() => child.kill(), 60_000);
+    child.on("close", () => {
+      clearTimeout(timer);
+      try { resolve(JSON.parse(out.trim().split("\n").pop()!)); }
+      catch { resolve([`Prueba de comportamiento: la app colgó o terminó sin responder. ${err.slice(0, 200)}`]); }
+    });
+    child.stdin.end(JSON.stringify({ task, stack, files }));
   });
+}
+
+if (process.argv.includes("--worker")) {
+  let input = "";
+  for await (const chunk of process.stdin) input += chunk;
+  const { task, stack, files } = JSON.parse(input);
+  // Apps may log; only the last stdout line is the result.
+  console.log("\n" + JSON.stringify(await runCheck(task, stack, files)));
+  process.exit(0);
 }

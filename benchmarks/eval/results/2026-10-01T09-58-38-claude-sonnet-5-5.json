@@ -1,0 +1,115 @@
+{
+  "model": "claude-sonnet-5-5",
+  "effort": "medium",
+  "runs": 2,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 2,
+    "out": 10,
+    "cacheRead": 0.2,
+    "cacheWrite": 2.5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "todo",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 308,
+        "output": 1260,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.013216,
+      "codeTokens": 1249,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState, type FormEvent } from \"react\";\n\ninterface Task {\n  id: number;\n  title: string;\n  completed: boolean;\n}\n\ninterface TaskItemProps {\n  task: Task;\n  onToggle: (id: number) => void;\n  onDelete: (id: number) => void;\n}\n\nfunction TaskItem({ task, onToggle, onDelete }: TaskItemProps) {\n  return (\n    <li className=\"flex items-center gap-3 rounded-lg bg-white px-4 py-3 shadow-sm\">\n      <input\n        type=\"checkbox\"\n        checked={task.completed}\n        onChange={() => onToggle(task.id)}\n        className=\"h-5 w-5 cursor-pointer accent-indigo-600\"\n        aria-label={`Completar ${task.title}`}\n      />\n      <span\n        className={`flex-1 break-words ${\n          task.completed ? \"text-gray-400 line-through\" : \"text-gray-800\"\n        }`}\n      >\n        {task.title}\n      </span>\n      <button\n        type=\"button\"\n        onClick={() => onDelete(task.id)}\n        className=\"rounded px-2 text-lg font-bold text-gray-400 hover:text-red-600\"\n        aria-label={`Borrar ${task.title}`}\n      >\n        x\n      </button>\n    </li>\n  );\n}\n\nexport default function App() {\n  const [tasks, setTasks] = useState<Task[]>([]);\n  const [text, setText] = useState(\"\");\n  const [nextId, setNextId] = useState(1);\n\n  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {\n    e.preventDefault();\n    const title = text.trim();\n    if (!title) return;\n    setTasks((prev) => [...prev, { id: nextId, title, completed: false }]);\n    setNextId((n) => n + 1);\n    setText(\"\");\n  };\n\n  const toggleTask = (id: number) => {\n    setTasks((prev) =>\n      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))\n    );\n  };\n\n  const deleteTask = (id: number) => {\n    setTasks((prev) => prev.filter((t) => t.id !== id));\n  };\n\n  const pending = tasks.filter((t) => !t.completed).length;\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 px-4 py-10\">\n      <div className=\"mx-auto max-w-md\">\n        <h1 className=\"mb-6 text-center text-3xl font-bold text-gray-800\">\n          Lista de tareas\n        </h1>\n\n        <form onSubmit={handleSubmit} className=\"mb-4 flex gap-2\">\n          <input\n            type=\"text\"\n            value={text}\n            onChange={(e) => setText(e.target.value)}\n            placeholder=\"¿Qué hay que hacer?\"\n            className=\"flex-1 rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200\"\n          />\n          <button\n            type=\"submit\"\n            className=\"rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700\"\n          >\n            Agregar\n          </button>\n        </form>\n\n        <ul className=\"space-y-2\">\n          {tasks.map((task) => (\n            <TaskItem\n              key={task.id}\n              task={task}\n              onToggle={toggleTask}\n              onDelete={deleteTask}\n            />\n          ))}\n        </ul>\n\n        <p className=\"mt-4 text-center text-sm text-gray-500\">\n          {tasks.length === 0 ? \"No hay tareas\" : `${pending} pendientes`}\n        </p>\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "todo",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 308,
+        "output": 1263,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.013246,
+      "codeTokens": 1252,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useState, type FormEvent } from \"react\";\n\ninterface Todo {\n  id: number;\n  title: string;\n  completed: boolean;\n}\n\ninterface TodoItemProps {\n  todo: Todo;\n  onToggle: (id: number) => void;\n  onDelete: (id: number) => void;\n}\n\nfunction TodoItem({ todo, onToggle, onDelete }: TodoItemProps) {\n  return (\n    <li className=\"flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm\">\n      <input\n        type=\"checkbox\"\n        checked={todo.completed}\n        onChange={() => onToggle(todo.id)}\n        className=\"h-4 w-4 cursor-pointer accent-indigo-600\"\n        aria-label={`Completar ${todo.title}`}\n      />\n      <span\n        className={`flex-1 break-words ${\n          todo.completed ? \"text-gray-400 line-through\" : \"text-gray-800\"\n        }`}\n      >\n        {todo.title}\n      </span>\n      <button\n        type=\"button\"\n        onClick={() => onDelete(todo.id)}\n        className=\"rounded px-2 text-gray-400 hover:bg-red-50 hover:text-red-600\"\n        aria-label={`Borrar ${todo.title}`}\n      >\n        x\n      </button>\n    </li>\n  );\n}\n\nexport default function App() {\n  const [todos, setTodos] = useState<Todo[]>([]);\n  const [text, setText] = useState(\"\");\n  const [nextId, setNextId] = useState(1);\n\n  const addTodo = (e: FormEvent) => {\n    e.preventDefault();\n    const title = text.trim();\n    if (!title) return;\n    setTodos((prev) => [...prev, { id: nextId, title, completed: false }]);\n    setNextId((n) => n + 1);\n    setText(\"\");\n  };\n\n  const toggleTodo = (id: number) =>\n    setTodos((prev) =>\n      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))\n    );\n\n  const deleteTodo = (id: number) =>\n    setTodos((prev) => prev.filter((t) => t.id !== id));\n\n  const pending = todos.filter((t) => !t.completed).length;\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 px-4 py-10\">\n      <div className=\"mx-auto max-w-md\">\n        <h1 className=\"mb-6 text-center text-3xl font-bold text-gray-800\">\n          Tareas\n        </h1>\n\n        <form onSubmit={addTodo} className=\"mb-4 flex gap-2\">\n          <input\n            type=\"text\"\n            value={text}\n            onChange={(e) => setText(e.target.value)}\n            placeholder=\"¿Qué hay que hacer?\"\n            className=\"flex-1 rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200\"\n          />\n          <button\n            type=\"submit\"\n            className=\"rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700\"\n          >\n            Agregar\n          </button>\n        </form>\n\n        <ul className=\"space-y-2\">\n          {todos.map((todo) => (\n            <TodoItem\n              key={todo.id}\n              todo={todo}\n              onToggle={toggleTodo}\n              onDelete={deleteTodo}\n            />\n          ))}\n        </ul>\n\n        <p className=\"mt-4 text-center text-sm text-gray-500\">\n          {todos.length === 0 ? \"No hay tareas\" : `${pending} pendientes`}\n        </p>\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "search",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 260,
+        "output": 898,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.0095,
+      "codeTokens": 887,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useMemo, useState } from \"react\";\n\ninterface User {\n  id: number;\n  name: string;\n  email: string;\n}\n\nconst INITIAL_USERS: User[] = [\n  { id: 1, name: \"Lucía Fernández\", email: \"lucia.fernandez@example.com\" },\n  { id: 2, name: \"Martín Gómez\", email: \"martin.gomez@example.com\" },\n  { id: 3, name: \"Sofía Rodríguez\", email: \"sofia.rodriguez@example.com\" },\n  { id: 4, name: \"Mateo Pérez\", email: \"mateo.perez@example.com\" },\n];\n\nexport default function App() {\n  const [users] = useState<User[]>(INITIAL_USERS);\n  const [query, setQuery] = useState<string>(\"\");\n\n  const filteredUsers = useMemo(() => {\n    const normalized = query.trim().toLowerCase();\n    if (!normalized) return users;\n    return users.filter((user) =>\n      user.name.toLowerCase().includes(normalized)\n    );\n  }, [users, query]);\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 p-6\">\n      <div className=\"mx-auto max-w-2xl\">\n        <h1 className=\"mb-4 text-2xl font-bold text-gray-800\">Usuarios</h1>\n\n        <input\n          type=\"text\"\n          value={query}\n          onChange={(e) => setQuery(e.target.value)}\n          placeholder=\"Buscar por nombre...\"\n          className=\"w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-800 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200\"\n        />\n\n        <p className=\"mt-3 text-sm text-gray-600\">\n          {filteredUsers.length}{\" \"}\n          {filteredUsers.length === 1 ? \"resultado\" : \"resultados\"}\n        </p>\n\n        <div className=\"mt-4 grid gap-4 sm:grid-cols-2\">\n          {filteredUsers.map((user) => (\n            <div\n              key={user.id}\n              className=\"rounded-lg bg-white p-4 shadow transition hover:shadow-md\"\n            >\n              <h2 className=\"text-lg font-semibold text-gray-900\">\n                {user.name}\n              </h2>\n              <p className=\"text-sm text-gray-600\">{user.email}</p>\n            </div>\n          ))}\n        </div>\n\n        {filteredUsers.length === 0 && (\n          <p className=\"mt-6 text-center text-gray-500\">\n            No se encontraron usuarios.\n          </p>\n        )}\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "search",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 260,
+        "output": 891,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.00943,
+      "codeTokens": 880,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useMemo, useState } from \"react\";\n\ninterface User {\n  id: number;\n  name: string;\n  email: string;\n}\n\nconst INITIAL_USERS: User[] = [\n  { id: 1, name: \"Lucía Fernández\", email: \"lucia.fernandez@example.com\" },\n  { id: 2, name: \"Martín Gómez\", email: \"martin.gomez@example.com\" },\n  { id: 3, name: \"Sofía Rodríguez\", email: \"sofia.rodriguez@example.com\" },\n  { id: 4, name: \"Mateo Álvarez\", email: \"mateo.alvarez@example.com\" },\n];\n\nexport default function App() {\n  const [users] = useState<User[]>(INITIAL_USERS);\n  const [query, setQuery] = useState<string>(\"\");\n\n  const filteredUsers = useMemo(() => {\n    const term = query.trim().toLowerCase();\n    if (!term) return users;\n    return users.filter((user) => user.name.toLowerCase().includes(term));\n  }, [users, query]);\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 p-6\">\n      <div className=\"mx-auto max-w-2xl\">\n        <h1 className=\"mb-4 text-2xl font-bold text-gray-800\">Usuarios</h1>\n\n        <input\n          type=\"text\"\n          value={query}\n          onChange={(e) => setQuery(e.target.value)}\n          placeholder=\"Buscar por nombre...\"\n          className=\"w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-800 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200\"\n        />\n\n        <p className=\"mt-3 text-sm text-gray-600\">\n          {filteredUsers.length}{\" \"}\n          {filteredUsers.length === 1 ? \"resultado\" : \"resultados\"}\n        </p>\n\n        <ul className=\"mt-4 grid gap-4 sm:grid-cols-2\">\n          {filteredUsers.map((user) => (\n            <li\n              key={user.id}\n              className=\"rounded-xl bg-white p-4 shadow transition hover:shadow-md\"\n            >\n              <h2 className=\"text-lg font-semibold text-gray-900\">\n                {user.name}\n              </h2>\n              <p className=\"text-sm text-gray-600\">{user.email}</p>\n            </li>\n          ))}\n        </ul>\n\n        {filteredUsers.length === 0 && (\n          <p className=\"mt-6 text-center text-gray-500\">\n            No se encontraron usuarios.\n          </p>\n        )}\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    }
+  ]
+}

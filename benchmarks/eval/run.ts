@@ -18,6 +18,9 @@ import { behave } from "./behavior.ts";
 import { applyEdits, extractFiles, extractPatch, validate, type Files, type Stack } from "./validate.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+// Behavior checks swap in happy-dom's globals (including fetch) while an app runs; API calls to
+// Claude must keep using Node's own fetch or an in-flight request dies with the simulated window.
+const nodeFetch = globalThis.fetch;
 const REPO = join(HERE, "..", "..");
 const STACKS: Stack[] = ["artscript", "react", "svelte"];
 
@@ -295,7 +298,7 @@ async function main() {
     console.error("Falta ANTHROPIC_API_KEY (en el entorno o en .env en la raíz del repo). Probá primero: npm run eval -- --dry-run");
     process.exit(1);
   }
-  const client = new Anthropic();
+  const client = new Anthropic({ fetch: nodeFetch, timeout: 120_000 }); // a stuck request fails (and is retried) instead of stalling the run
   const tasks = TASKS.filter((t) => TASK_IDS.includes(t.id));
   const jobs = tasks.flatMap((t) => STACK_IDS.flatMap((s) => Array.from({ length: RUNS }, (_, r) => async () => {
     try {

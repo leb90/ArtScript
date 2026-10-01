@@ -128,7 +128,14 @@ export class Page {
 
   async settle(ms = 30) { await new Promise((r) => setTimeout(r, ms)); }
 
-  text(): string { return norm(document.body.textContent ?? ""); }
+  // Visible text with a space between text nodes, so "<h1>Directorio</h1><p>0 resultados</p>" reads
+  // "Directorio 0 resultados" (textContent would glue it into "Directorio0 resultados").
+  text(): string {
+    const parts: string[] = [];
+    const walker = document.createTreeWalker(document.body, 4 /* NodeFilter.SHOW_TEXT */);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) parts.push(n.textContent ?? "");
+    return norm(parts.join(" "));
+  }
 
   private buttons(): HTMLElement[] {
     return [...document.querySelectorAll<HTMLElement>("button, [role=button], input[type=submit], input[type=button]")];
@@ -169,7 +176,12 @@ export class Page {
 
   async press(which: string, key: string) {
     const el = this.input(which);
-    for (const type of ["keydown", "keypress", "keyup"]) el.dispatchEvent(new window.KeyboardEvent(type, { key, bubbles: true }));
+    const down = new window.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+    el.dispatchEvent(down);
+    for (const type of ["keypress", "keyup"]) el.dispatchEvent(new window.KeyboardEvent(type, { key, bubbles: true }));
+    // Like a real browser: Enter in a form field submits the form (implicit submission).
+    const form = el.closest("form");
+    if (key === "Enter" && form && !down.defaultPrevented) form.dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
     await this.settle();
   }
 
@@ -193,8 +205,8 @@ export class Page {
   }
 }
 
-// Builds and mounts an app; the caller must call close(). Behavior checks share global DOM state,
-// so they run one at a time (see `exclusive`).
+// Builds and mounts an app; the caller must call close(). It installs global DOM state, so each
+// check runs in its own process (see behave() in behavior.ts).
 export async function launch(stack: Stack, files: Files, fullstack: boolean): Promise<{ page: Page; close: () => Promise<void> }> {
   mkdirSync(WORK, { recursive: true });
   const dir = mkdtempSync(join(WORK, `app-${stack}-`));
@@ -214,11 +226,4 @@ export async function launch(stack: Stack, files: Files, fullstack: boolean): Pr
     await close();
     throw e;
   }
-}
-
-let queue: Promise<unknown> = Promise.resolve();
-export function exclusive<T>(fn: () => Promise<T>): Promise<T> {
-  const run = queue.then(fn, fn);
-  queue = run.catch(() => {});
-  return run;
 }

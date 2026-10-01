@@ -97,3 +97,16 @@ test("conditional flag toggles its class reactively", async () => {
   all(root, "button")[0].click();
   assert.equal(span.className, "a-bold");
 });
+
+test("enum prop keywords win over a state with the same name (type=email next to state email)", async () => {
+  const { root } = await mountApp(`page P {
+  state email = ""
+  state center = 1
+  input email type=email
+  row align=center {
+    text center
+  }
+}`);
+  assert.equal(all(root, "input")[0].type, "email");
+  assert.equal(all(root, "div")[0].style.alignItems, "center");
+});

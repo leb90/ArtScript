@@ -1,7 +1,7 @@
 // Generates an ES module that builds the DOM directly (no virtual DOM) using runtime.js.
 import type { ApiAccess, ComponentDecl, Element, Expr, Program, ServerFnDecl, Stmt, ViewNode } from "./ast.ts";
 import { printType } from "./printer.ts";
-import { ELEMENTS, SPACING_PROPS } from "./elements.ts";
+import { ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
 
 type Kind = "state" | "computed" | "prop" | "fn" | "let" | "loop" | "param";
 type Sym = { kind: Kind; sig?: string }; // sig: signal to notify on mutation (loops over a state)
@@ -187,7 +187,10 @@ class ComponentGen {
       if (!p.value) continue;
       const val = p.value;
       const lit = literal(val);
-      const word = val.kind === "Ident" && !scope.get(val.name) ? val.name : lit !== null ? String(lit) : null;
+      // Keyword values (`type=email`, `align=center`) win over a variable with the same name,
+      // as the checker assumes; other bare names are keywords only if nothing else declares them.
+      const keyword = val.kind === "Ident" && (ENUM_PROPS[p.name]?.includes(val.name) || !scope.get(val.name));
+      const word = keyword ? (val as Expr & { kind: "Ident" }).name : lit !== null ? String(lit) : null;
       if (isFlag(p.name)) {
         this.emit(`$.$class(${v}, "a-${p.name}", () => ${this.expr(val, scope)});`);
       } else if (SPACING_PROPS.has(p.name)) {

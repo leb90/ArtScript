@@ -3,7 +3,9 @@
 //
 //   npm run eval:report -- benchmarks/eval/results/<run>.json [<run2>.json ...]
 //
-// Rewrites the block between the eval-results markers in README.md.
+// Files of the same model are merged: a later file replaces the task/stack cells it contains
+// (used to re-run cells after fixing the harness). Rewrites the block between the eval-results
+// markers in README.md.
 import { readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -45,9 +47,24 @@ function stats(f: ResultFile, stack: string, task?: string) {
   };
 }
 
-function section(files: { path: string; data: ResultFile }[]): string {
+type Loaded = { path: string; data: ResultFile; paths: string[]; replaced: string[] };
+
+function merge(files: { path: string; data: ResultFile }[]): Loaded[] {
+  const byModel = new Map<string, Loaded>();
+  for (const { path, data } of files) {
+    const prev = byModel.get(data.model);
+    if (!prev) { byModel.set(data.model, { path, data: { ...data, results: [...data.results] }, paths: [path], replaced: [] }); continue; }
+    const cells = new Set(data.results.map((r) => `${r.task}/${r.stack}`));
+    prev.data.results = [...prev.data.results.filter((r) => !cells.has(`${r.task}/${r.stack}`)), ...data.results];
+    prev.paths.push(path);
+    prev.replaced.push(...cells);
+  }
+  return [...byModel.values()];
+}
+
+function section(loaded: Loaded[]): string {
   const out: string[] = [START, "", "## Cost eval results", ""];
-  for (const { path, data: f } of files) {
+  for (const { path, data: f, paths, replaced } of loaded) {
     const s = Object.fromEntries(STACKS.map((k) => [k, stats(f, k)]));
     const tasks = [...new Set(f.results.map((r) => r.task))];
     const date = basename(path).slice(0, 10);
@@ -70,14 +87,17 @@ function section(files: { path: string; data: ResultFile }[]): string {
       }).join(" | ")} |`);
     }
     const total = STACKS.reduce((a, k) => a + s[k].total, 0);
-    out.push("", "</details>", "", `Run ${date}: ${tasks.length} tasks × ${STACKS.length} stacks × ${f.runs} runs, total $${total.toFixed(2)}, prices as of ${f.pricesDate}. Raw data: [\`${relative(REPO, path)}\`](${relative(REPO, path)}).`, "");
+    const links = paths.map((p) => `[\`${relative(REPO, p)}\`](${relative(REPO, p)})`).join(", ");
+    const rerun = replaced.length ? ` Re-run after fixing bugs that run uncovered: ${replaced.join(", ")} (the model's first answers there were correct; the failures came from the eval harness and, for login/artscript, an ArtScript compiler bug).` : "";
+    out.push("", "</details>", "", `Run ${date}: ${tasks.length} tasks × ${STACKS.length} stacks × ${f.runs} runs, total $${total.toFixed(2)}, prices as of ${f.pricesDate}.${rerun} Raw data: ${links}.`, "");
   }
   out.push("### Methodology and limitations", "",
     "- Each task is the same functional request for every stack (6 create, 2 modify). Claude gets the task, returns files, and the harness validates them: ArtScript with its compiler, React with strict `tsc`, Svelte with its compiler. Errors are fed back, up to 3 attempts.",
     "- In the 2 modify tasks each stack may use its cheapest edit format: ArtScript an `art patch`, React and Svelte search/replace edit blocks (like a coding agent's Edit tool). Full files are also accepted. Runs before 2026-10-01 had no edit formats: every stack returned full files.",
     "- Cost is computed from the real `usage` the API returns: the ArtScript spec in the system prompt, retries and thinking tokens (billed as output) all count.",
     "- ArtScript's system prompt includes its ~1.2K-token spec, which is served from the prompt cache after the first request; the \"without prompt cache\" column prices those tokens at the full input rate.",
-    "- Validation checks that code compiles and typechecks, not runtime behavior. Svelte is validated without TypeScript type checking, which favors it.",
+    "- Since 2026-10-01 every app is also **run and used like a person would**: it's mounted in a simulated browser (happy-dom) and a stack-agnostic check clicks, types and reads the screen (e.g. adds and completes todos, reloads the page to check data persisted on the server). A failed check is fed back to Claude like a compiler error. Earlier runs only checked that code compiled and typechecked.",
+    "- Full-stack tasks: React and Svelte also write their own `server.ts` (Node `http`, no dependencies); ArtScript uses `api`. Svelte is validated without TypeScript type checking of `.svelte` files, which favors it.",
     "- Each run uses the ArtScript spec as of its date; older runs are not redone when the spec improves.",
     "- 3 runs per task is an early signal, not a definitive benchmark. Reproduce it with `npm run eval`.",
     "", END);
@@ -91,7 +111,7 @@ if (!paths.length) {
 }
 const files = paths.map((p) => ({ path: join(process.cwd(), p), data: JSON.parse(readFileSync(p, "utf8")) as ResultFile }));
 const readme = readFileSync(README, "utf8");
-const block = section(files);
+const block = section(merge(files));
 const next = readme.includes(START)
   ? readme.slice(0, readme.indexOf(START)) + block + readme.slice(readme.indexOf(END) + END.length)
   : readme.replace("\n## License", `\n${block}\n\n## License`);

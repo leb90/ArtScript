@@ -1,0 +1,171 @@
+{
+  "model": "claude-sonnet-5-5",
+  "effort": "medium",
+  "runs": 1,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 2,
+    "out": 10,
+    "cacheRead": 0.2,
+    "cacheWrite": 2.5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "fs-users",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 193,
+        "output": 392,
+        "cacheRead": 2949,
+        "cacheWrite": 0
+      },
+      "usd": 0.0048958000000000005,
+      "codeTokens": 383,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model User {\n  id: ID\n  name: String\n  email: Email\n}\n\napi users: User\n\npage Users \"/\" {\n  state name = \"\"\n  state email = \"\"\n  state error = \"\"\n  data list = api.users.list()\n\n  fn add() {\n    if !email.includes(\"@\") {\n      error = \"Email inválido\"\n      return\n    }\n    error = \"\"\n    try {\n      await api.users.create({ id: crypto.randomUUID(), name: name, email: email })\n      name = \"\"\n      email = \"\"\n    } catch (e) {\n      error = e.message\n    }\n  }\n\n  fn del(id) {\n    api.users.remove(id)\n  }\n\n  column gap=4 pad=4 {\n    title \"Usuarios\"\n    row gap=2 wrap {\n      input name placeholder=\"Nombre\"\n      input email placeholder=\"Email\" type=text -> add()\n      button \"Agregar\" primary -> add()\n    }\n    if error != \"\" {\n      text error bold\n    }\n    for u in list {\n      card pad=3 {\n        row gap=3 align=center {\n          text u.name bold\n          text u.email muted\n          button \"Borrar\" danger small -> del(u.id)\n        }\n      }\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "fs-users",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 445,
+        "output": 2338,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.02427,
+      "codeTokens": 2319,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useEffect, useState } from \"react\";\n\ntype User = {\n  id: string;\n  name: string;\n  email: string;\n};\n\nexport default function App() {\n  const [users, setUsers] = useState<User[]>([]);\n  const [name, setName] = useState(\"\");\n  const [email, setEmail] = useState(\"\");\n  const [error, setError] = useState(\"\");\n  const [loading, setLoading] = useState(true);\n\n  const loadUsers = async () => {\n    try {\n      const res = await fetch(\"/api/users\");\n      if (!res.ok) throw new Error();\n      const data: User[] = await res.json();\n      setUsers(data);\n    } catch {\n      setError(\"No se pudo conectar con el servidor\");\n    } finally {\n      setLoading(false);\n    }\n  };\n\n  useEffect(() => {\n    loadUsers();\n  }, []);\n\n  const handleAdd = async () => {\n    if (!email.includes(\"@\")) {\n      setError(\"Email inválido\");\n      return;\n    }\n    setError(\"\");\n    try {\n      const res = await fetch(\"/api/users\", {\n        method: \"POST\",\n        headers: { \"Content-Type\": \"application/json\" },\n        body: JSON.stringify({ name: name.trim(), email: email.trim() }),\n      });\n      if (!res.ok) {\n        const data = await res.json().catch(() => null);\n        setError(data?.error ?? \"Error al crear el usuario\");\n        return;\n      }\n      const created: User = await res.json();\n      setUsers((prev) => [...prev, created]);\n      setName(\"\");\n      setEmail(\"\");\n    } catch {\n      setError(\"No se pudo conectar con el servidor\");\n    }\n  };\n\n  const handleDelete = async (id: string) => {\n    try {\n      const res = await fetch(`/api/users/${encodeURIComponent(id)}`, {\n        method: \"DELETE\",\n      });\n      if (!res.ok && res.status !== 404) throw new Error();\n      setUsers((prev) => prev.filter((u) => u.id !== id));\n    } catch {\n      setError(\"No se pudo borrar el usuario\");\n    }\n  };\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 p-6\">\n      <div className=\"mx-auto max-w-xl rounded-lg bg-white p-6 shadow\">\n        <h1 className=\"mb-4 text-2xl font-bold text-gray-800\">Usuarios</h1>\n\n        <div className=\"flex flex-col gap-2 sm:flex-row\">\n          <input\n            className=\"flex-1 rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400\"\n            placeholder=\"Nombre\"\n            value={name}\n            onChange={(e) => setName(e.target.value)}\n          />\n          <input\n            className=\"flex-1 rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400\"\n            placeholder=\"Email\"\n            value={email}\n            onChange={(e) => setEmail(e.target.value)}\n          />\n          <button\n            className=\"rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700\"\n            onClick={handleAdd}\n          >\n            Agregar\n          </button>\n        </div>\n\n        {error && <p className=\"mt-2 text-sm text-red-600\">{error}</p>}\n\n        {loading ? (\n          <p className=\"mt-4 text-gray-500\">Cargando...</p>\n        ) : (\n          <ul className=\"mt-4 divide-y divide-gray-200\">\n            {users.map((u) => (\n              <li key={u.id} className=\"flex items-center justify-between py-2\">\n                <div>\n                  <p className=\"font-medium text-gray-800\">{u.name}</p>\n                  <p className=\"text-sm text-gray-500\">{u.email}</p>\n                </div>\n                <button\n                  className=\"rounded bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600\"\n                  onClick={() => handleDelete(u.id)}\n                >\n                  Borrar\n                </button>\n              </li>\n            ))}\n          </ul>\n        )}\n      </div>\n    </div>\n  );\n}\n",
+            "server.ts": "import { createServer, IncomingMessage, ServerResponse } from \"node:http\";\nimport { randomUUID } from \"node:crypto\";\n\ntype User = { id: string; name: string; email: string };\n\nconst users: User[] = [];\n\nfunction send(res: ServerResponse, status: number, body?: unknown) {\n  if (body === undefined) {\n    res.writeHead(status);\n    res.end();\n    return;\n  }\n  res.writeHead(status, { \"Content-Type\": \"application/json; charset=utf-8\" });\n  res.end(JSON.stringify(body));\n}\n\nfunction readBody(req: IncomingMessage): Promise<string> {\n  return new Promise((resolve, reject) => {\n    let data = \"\";\n    req.on(\"data\", (chunk) => {\n      data += chunk;\n      if (data.length > 1e6) {\n        reject(new Error(\"too large\"));\n        req.destroy();\n      }\n    });\n    req.on(\"end\", () => resolve(data));\n    req.on(\"error\", reject);\n  });\n}\n\nconst server = createServer(async (req, res) => {\n  try {\n    const url = new URL(req.url ?? \"/\", \"http://localhost\");\n    const path = url.pathname.replace(/\\/+$/, \"\") || \"/\";\n    const method = req.method ?? \"GET\";\n\n    if (path === \"/api/users\" && method === \"GET\") {\n      return send(res, 200, users);\n    }\n\n    if (path === \"/api/users\" && method === \"POST\") {\n      let parsed: any;\n      try {\n        parsed = JSON.parse(await readBody(req));\n      } catch {\n        return send(res, 400, { error: \"JSON inválido\" });\n      }\n      const name = typeof parsed?.name === \"string\" ? parsed.name.trim() : \"\";\n      const email = typeof parsed?.email === \"string\" ? parsed.email.trim() : \"\";\n      if (!email.includes(\"@\")) {\n        return send(res, 400, { error: \"Email inválido\" });\n      }\n      const user: User = { id: randomUUID(), name, email };\n      users.push(user);\n      return send(res, 201, user);\n    }\n\n    const match = path.match(/^\\/api\\/users\\/([^/]+)$/);\n    if (match && method === \"DELETE\") {\n      const id = decodeURIComponent(match[1]);\n      const idx = users.findIndex((u) => u.id === id);\n      if (idx === -1) return send(res, 404, { error: \"No encontrado\" });\n      users.splice(idx, 1);\n      return send(res, 204);\n    }\n\n    send(res, 404, { error: \"Ruta no encontrada\" });\n  } catch {\n    send(res, 500, { error: \"Error interno\" });\n  }\n});\n\nconst port = Number(process.env.PORT) || 3000;\nserver.listen(port, () => {\n  console.log(`Servidor escuchando en puerto ${port}`);\n});\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "fs-users",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 461,
+        "output": 2063,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.021552,
+      "codeTokens": 2032,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  import { onMount } from 'svelte';\n  import UserItem from './UserItem.svelte';\n\n  type User = { id: number; name: string; email: string };\n\n  let users = $state<User[]>([]);\n  let name = $state('');\n  let email = $state('');\n  let error = $state('');\n  let loading = $state(true);\n\n  async function load() {\n    try {\n      const res = await fetch('/api/users');\n      users = await res.json();\n    } catch {\n      error = 'Error al cargar usuarios';\n    } finally {\n      loading = false;\n    }\n  }\n\n  onMount(load);\n\n  async function add() {\n    if (!email.includes('@')) {\n      error = 'Email inválido';\n      return;\n    }\n    error = '';\n    try {\n      const res = await fetch('/api/users', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({ name, email })\n      });\n      if (!res.ok) {\n        error = res.status === 400 ? 'Email inválido' : 'Error al crear usuario';\n        return;\n      }\n      const user: User = await res.json();\n      users = [...users, user];\n      name = '';\n      email = '';\n    } catch {\n      error = 'Error al crear usuario';\n    }\n  }\n\n  async function remove(id: number) {\n    try {\n      const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });\n      if (res.ok || res.status === 404) {\n        users = users.filter((u) => u.id !== id);\n      }\n    } catch {\n      error = 'Error al borrar usuario';\n    }\n  }\n</script>\n\n<main class=\"mx-auto max-w-xl p-6\">\n  <h1 class=\"mb-4 text-2xl font-bold\">Usuarios</h1>\n\n  <form\n    class=\"mb-2 flex flex-wrap gap-2\"\n    onsubmit={(e) => {\n      e.preventDefault();\n      add();\n    }}\n  >\n    <input\n      class=\"flex-1 rounded border border-gray-300 px-3 py-2\"\n      placeholder=\"Nombre\"\n      bind:value={name}\n    />\n    <input\n      class=\"flex-1 rounded border border-gray-300 px-3 py-2\"\n      placeholder=\"Email\"\n      bind:value={email}\n    />\n    <button\n      type=\"submit\"\n      class=\"rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700\"\n    >\n      Agregar\n    </button>\n  </form>\n\n  {#if error}\n    <p class=\"mb-2 text-sm text-red-600\">{error}</p>\n  {/if}\n\n  {#if loading}\n    <p class=\"text-gray-500\">Cargando...</p>\n  {:else}\n    <ul class=\"mt-4 space-y-2\">\n      {#each users as user (user.id)}\n        <UserItem {user} onremove={() => remove(user.id)} />\n      {/each}\n    </ul>\n  {/if}\n</main>\n",
+            "UserItem.svelte": "<script lang=\"ts\">\n  type User = { id: number; name: string; email: string };\n\n  let { user, onremove }: { user: User; onremove: () => void } = $props();\n</script>\n\n<li class=\"flex items-center justify-between rounded border border-gray-200 px-3 py-2\">\n  <div>\n    <span class=\"font-semibold\">{user.name}</span>\n    <span class=\"ml-2 text-gray-600\">{user.email}</span>\n  </div>\n  <button\n    type=\"button\"\n    class=\"rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700\"\n    onclick={onremove}\n  >\n    Borrar\n  </button>\n</li>\n",
+            "server.ts": "import { createServer } from 'node:http';\nimport type { IncomingMessage, ServerResponse } from 'node:http';\n\ntype User = { id: number; name: string; email: string };\n\nlet users: User[] = [];\nlet nextId = 1;\n\nfunction send(res: ServerResponse, status: number, data?: unknown) {\n  if (data === undefined) {\n    res.writeHead(status);\n    res.end();\n    return;\n  }\n  res.writeHead(status, { 'Content-Type': 'application/json' });\n  res.end(JSON.stringify(data));\n}\n\nfunction readBody(req: IncomingMessage): Promise<any> {\n  return new Promise((resolve, reject) => {\n    let raw = '';\n    req.on('data', (chunk) => (raw += chunk));\n    req.on('end', () => {\n      try {\n        resolve(raw ? JSON.parse(raw) : {});\n      } catch (e) {\n        reject(e);\n      }\n    });\n    req.on('error', reject);\n  });\n}\n\nconst server = createServer(async (req, res) => {\n  const url = new URL(req.url ?? '/', 'http://localhost');\n  const path = url.pathname;\n  const method = req.method ?? 'GET';\n\n  if (path === '/api/users' && method === 'GET') {\n    return send(res, 200, users);\n  }\n\n  if (path === '/api/users' && method === 'POST') {\n    let body: any;\n    try {\n      body = await readBody(req);\n    } catch {\n      return send(res, 400, { error: 'JSON inválido' });\n    }\n    const name = typeof body.name === 'string' ? body.name.trim() : '';\n    const email = typeof body.email === 'string' ? body.email.trim() : '';\n    if (!email.includes('@')) {\n      return send(res, 400, { error: 'Email inválido' });\n    }\n    const user: User = { id: nextId++, name, email };\n    users.push(user);\n    return send(res, 201, user);\n  }\n\n  const match = path.match(/^\\/api\\/users\\/(\\d+)$/);\n  if (match && method === 'DELETE') {\n    const id = Number(match[1]);\n    const exists = users.some((u) => u.id === id);\n    if (!exists) return send(res, 404, { error: 'No encontrado' });\n    users = users.filter((u) => u.id !== id);\n    return send(res, 204);\n  }\n\n  send(res, 404, { error: 'No encontrado' });\n});\n\nserver.listen(Number(process.env.PORT) || 3000);\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "fs-shopping",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 214,
+        "output": 407,
+        "cacheRead": 2949,
+        "cacheWrite": 0
+      },
+      "usd": 0.0050878,
+      "codeTokens": 398,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model Item {\n  id: ID\n  name: String\n  bought: Bool\n}\n\napi items: Item\n\ncomponent ItemRow(item: Item) {\n  fn buy() {\n    api.items.update(item.id, { bought: true })\n  }\n  fn del() {\n    api.items.remove(item.id)\n  }\n\n  row gap=2 align=center {\n    text item.name\n    if item.bought {\n      text \"✓\" bold\n    }\n    button \"Comprado\" small disabled=item.bought -> buy()\n    button \"Borrar\" danger small -> del()\n  }\n}\n\npage Shopping \"/\" {\n  data items = api.items.list()\n  state draft = \"\"\n\n  computed pending = items.filter(i => !i.bought).length\n\n  fn add() {\n    if draft == \"\" { return }\n    api.items.create({ name: draft, bought: false })\n    draft = \"\"\n  }\n\n  column gap=4 pad=4 {\n    title \"Lista de compras\"\n    text `${pending} por comprar` bold\n    row gap=2 {\n      input draft placeholder=\"Producto\" -> add()\n      button \"Agregar\" primary -> add()\n    }\n    column gap=2 {\n      for item in items {\n        ItemRow item=item\n      }\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "fs-shopping",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 466,
+        "output": 2548,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.026412,
+      "codeTokens": 2529,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useEffect, useState, useCallback } from \"react\";\n\ntype Item = {\n  id: number;\n  name: string;\n  bought: boolean;\n};\n\nexport default function App() {\n  const [items, setItems] = useState<Item[]>([]);\n  const [name, setName] = useState(\"\");\n  const [loading, setLoading] = useState(true);\n  const [error, setError] = useState<string | null>(null);\n\n  const load = useCallback(async () => {\n    try {\n      const res = await fetch(\"/api/items\");\n      if (!res.ok) throw new Error();\n      const data: Item[] = await res.json();\n      setItems(data);\n      setError(null);\n    } catch {\n      setError(\"No se pudo conectar con el servidor\");\n    } finally {\n      setLoading(false);\n    }\n  }, []);\n\n  useEffect(() => {\n    load();\n  }, [load]);\n\n  const add = async () => {\n    const trimmed = name.trim();\n    if (!trimmed) return;\n    try {\n      const res = await fetch(\"/api/items\", {\n        method: \"POST\",\n        headers: { \"Content-Type\": \"application/json\" },\n        body: JSON.stringify({ name: trimmed }),\n      });\n      if (!res.ok) throw new Error();\n      const item: Item = await res.json();\n      setItems((prev) => [...prev, item]);\n      setName(\"\");\n      setError(null);\n    } catch {\n      setError(\"No se pudo agregar el ítem\");\n    }\n  };\n\n  const buy = async (id: number) => {\n    try {\n      const res = await fetch(`/api/items/${id}/bought`, { method: \"POST\" });\n      if (!res.ok) throw new Error();\n      const updated: Item = await res.json();\n      setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));\n      setError(null);\n    } catch {\n      setError(\"No se pudo marcar como comprado\");\n    }\n  };\n\n  const remove = async (id: number) => {\n    try {\n      const res = await fetch(`/api/items/${id}`, { method: \"DELETE\" });\n      if (!res.ok && res.status !== 404) throw new Error();\n      setItems((prev) => prev.filter((i) => i.id !== id));\n      setError(null);\n    } catch {\n      setError(\"No se pudo borrar el ítem\");\n    }\n  };\n\n  const pending = items.filter((i) => !i.bought).length;\n\n  return (\n    <div className=\"min-h-screen bg-gray-100 flex justify-center p-6\">\n      <div className=\"w-full max-w-md bg-white rounded-xl shadow p-6 h-fit\">\n        <h1 className=\"text-2xl font-bold mb-2\">Lista de compras</h1>\n        <p className=\"text-gray-600 mb-4\">{pending} por comprar</p>\n\n        <form\n          className=\"flex gap-2 mb-4\"\n          onSubmit={(e) => {\n            e.preventDefault();\n            add();\n          }}\n        >\n          <input\n            className=\"flex-1 border rounded px-3 py-2\"\n            placeholder=\"Producto\"\n            value={name}\n            onChange={(e) => setName(e.target.value)}\n          />\n          <button\n            type=\"submit\"\n            className=\"bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700\"\n          >\n            Agregar\n          </button>\n        </form>\n\n        {error && <p className=\"text-red-600 mb-3\">{error}</p>}\n        {loading && <p className=\"text-gray-500\">Cargando...</p>}\n\n        <ul className=\"space-y-2\">\n          {items.map((item) => (\n            <li\n              key={item.id}\n              className=\"flex items-center justify-between border rounded px-3 py-2\"\n            >\n              <span className={item.bought ? \"text-gray-400\" : \"\"}>\n                {item.name}\n                {item.bought && <span className=\"ml-2 text-green-600\">✓</span>}\n              </span>\n              <span className=\"flex gap-2\">\n                {!item.bought && (\n                  <button\n                    onClick={() => buy(item.id)}\n                    className=\"bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700\"\n                  >\n                    Comprado\n                  </button>\n                )}\n                <button\n                  onClick={() => remove(item.id)}\n                  className=\"bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700\"\n                >\n                  Borrar\n                </button>\n              </span>\n            </li>\n          ))}\n        </ul>\n      </div>\n    </div>\n  );\n}\n",
+            "server.ts": "import http from \"node:http\";\n\ntype Item = { id: number; name: string; bought: boolean };\n\nlet items: Item[] = [];\nlet nextId = 1;\n\nfunction send(res: http.ServerResponse, status: number, body?: unknown) {\n  if (body === undefined) {\n    res.writeHead(status);\n    res.end();\n    return;\n  }\n  res.writeHead(status, { \"Content-Type\": \"application/json\" });\n  res.end(JSON.stringify(body));\n}\n\nfunction readBody(req: http.IncomingMessage): Promise<any> {\n  return new Promise((resolve, reject) => {\n    let data = \"\";\n    req.on(\"data\", (chunk) => {\n      data += chunk;\n      if (data.length > 1e6) {\n        reject(new Error(\"too large\"));\n        req.destroy();\n      }\n    });\n    req.on(\"end\", () => {\n      if (!data) return resolve({});\n      try {\n        resolve(JSON.parse(data));\n      } catch (e) {\n        reject(e);\n      }\n    });\n    req.on(\"error\", reject);\n  });\n}\n\nconst server = http.createServer(async (req, res) => {\n  try {\n    const url = new URL(req.url || \"/\", \"http://localhost\");\n    const path = url.pathname.replace(/\\/+$/, \"\") || \"/\";\n    const method = req.method || \"GET\";\n\n    if (path === \"/api/items\" && method === \"GET\") {\n      return send(res, 200, items);\n    }\n\n    if (path === \"/api/items\" && method === \"POST\") {\n      let body: any;\n      try {\n        body = await readBody(req);\n      } catch {\n        return send(res, 400, { error: \"JSON inválido\" });\n      }\n      const name = typeof body?.name === \"string\" ? body.name.trim() : \"\";\n      if (!name) return send(res, 400, { error: \"Nombre requerido\" });\n      const item: Item = { id: nextId++, name, bought: false };\n      items.push(item);\n      return send(res, 201, item);\n    }\n\n    const boughtMatch = path.match(/^\\/api\\/items\\/(\\d+)\\/bought$/);\n    if (boughtMatch && method === \"POST\") {\n      const id = Number(boughtMatch[1]);\n      const item = items.find((i) => i.id === id);\n      if (!item) return send(res, 404, { error: \"No encontrado\" });\n      item.bought = true;\n      return send(res, 200, item);\n    }\n\n    const idMatch = path.match(/^\\/api\\/items\\/(\\d+)$/);\n    if (idMatch && method === \"DELETE\") {\n      const id = Number(idMatch[1]);\n      const exists = items.some((i) => i.id === id);\n      if (!exists) return send(res, 404, { error: \"No encontrado\" });\n      items = items.filter((i) => i.id !== id);\n      return send(res, 204);\n    }\n\n    send(res, 404, { error: \"Ruta no encontrada\" });\n  } catch {\n    send(res, 500, { error: \"Error interno\" });\n  }\n});\n\nconst port = Number(process.env.PORT) || 3000;\nserver.listen(port, () => {\n  console.log(`Servidor escuchando en puerto ${port}`);\n});\n"
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "fs-shopping",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 482,
+        "output": 2412,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.025084,
+      "codeTokens": 2383,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  import { onMount } from 'svelte';\n  import Item from './Item.svelte';\n\n  type ShoppingItem = { id: number; name: string; bought: boolean };\n\n  let items = $state<ShoppingItem[]>([]);\n  let name = $state('');\n  let error = $state('');\n\n  let pending = $derived(items.filter((i) => !i.bought).length);\n\n  async function load() {\n    try {\n      const res = await fetch('/api/items');\n      if (!res.ok) throw new Error();\n      items = await res.json();\n      error = '';\n    } catch {\n      error = 'No se pudo cargar la lista';\n    }\n  }\n\n  async function add(e: Event) {\n    e.preventDefault();\n    const value = name.trim();\n    if (!value) return;\n    try {\n      const res = await fetch('/api/items', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({ name: value })\n      });\n      if (!res.ok) throw new Error();\n      const created: ShoppingItem = await res.json();\n      items.push(created);\n      name = '';\n      error = '';\n    } catch {\n      error = 'No se pudo agregar el ítem';\n    }\n  }\n\n  async function buy(id: number) {\n    try {\n      const res = await fetch(`/api/items/${id}/bought`, { method: 'POST' });\n      if (!res.ok) throw new Error();\n      const updated: ShoppingItem = await res.json();\n      items = items.map((i) => (i.id === id ? updated : i));\n      error = '';\n    } catch {\n      error = 'No se pudo marcar como comprado';\n    }\n  }\n\n  async function remove(id: number) {\n    try {\n      const res = await fetch(`/api/items/${id}`, { method: 'DELETE' });\n      if (!res.ok) throw new Error();\n      items = items.filter((i) => i.id !== id);\n      error = '';\n    } catch {\n      error = 'No se pudo borrar el ítem';\n    }\n  }\n\n  onMount(load);\n</script>\n\n<main class=\"mx-auto max-w-md p-6\">\n  <h1 class=\"mb-2 text-2xl font-bold\">Lista de compras</h1>\n  <p class=\"mb-4 text-gray-600\">{pending} por comprar</p>\n\n  <form class=\"mb-4 flex gap-2\" onsubmit={add}>\n    <input\n      class=\"flex-1 rounded border border-gray-300 px-3 py-2\"\n      placeholder=\"Producto\"\n      bind:value={name}\n    />\n    <button type=\"submit\" class=\"rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700\">\n      Agregar\n    </button>\n  </form>\n\n  {#if error}\n    <p class=\"mb-2 text-red-600\">{error}</p>\n  {/if}\n\n  <ul class=\"space-y-2\">\n    {#each items as item (item.id)}\n      <Item {item} onbuy={() => buy(item.id)} onremove={() => remove(item.id)} />\n    {/each}\n  </ul>\n</main>\n",
+            "Item.svelte": "<script lang=\"ts\">\n  type ShoppingItem = { id: number; name: string; bought: boolean };\n\n  let {\n    item,\n    onbuy,\n    onremove\n  }: { item: ShoppingItem; onbuy: () => void; onremove: () => void } = $props();\n</script>\n\n<li class=\"flex items-center justify-between rounded border border-gray-200 px-3 py-2\">\n  <span class={item.bought ? 'text-gray-400 line-through' : ''}>\n    {item.name}\n    {#if item.bought}<span class=\"text-green-600 no-underline\">✓</span>{/if}\n  </span>\n  <span class=\"flex gap-2\">\n    <button\n      class=\"rounded bg-green-600 px-3 py-1 text-white hover:bg-green-700 disabled:opacity-50\"\n      onclick={onbuy}\n      disabled={item.bought}\n    >\n      Comprado\n    </button>\n    <button class=\"rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700\" onclick={onremove}>\n      Borrar\n    </button>\n  </span>\n</li>\n",
+            "server.ts": "import { createServer } from 'node:http';\nimport type { IncomingMessage, ServerResponse } from 'node:http';\n\ntype ShoppingItem = { id: number; name: string; bought: boolean };\n\nconst items: ShoppingItem[] = [];\nlet nextId = 1;\n\nfunction send(res: ServerResponse, status: number, data?: unknown) {\n  if (data === undefined) {\n    res.writeHead(status);\n    res.end();\n    return;\n  }\n  res.writeHead(status, { 'Content-Type': 'application/json' });\n  res.end(JSON.stringify(data));\n}\n\nfunction readBody(req: IncomingMessage): Promise<any> {\n  return new Promise((resolve, reject) => {\n    let raw = '';\n    req.on('data', (chunk) => (raw += chunk));\n    req.on('end', () => {\n      if (!raw) return resolve({});\n      try {\n        resolve(JSON.parse(raw));\n      } catch (e) {\n        reject(e);\n      }\n    });\n    req.on('error', reject);\n  });\n}\n\nconst server = createServer(async (req, res) => {\n  const url = new URL(req.url ?? '/', 'http://localhost');\n  const path = url.pathname.replace(/\\/+$/, '');\n  const method = req.method ?? 'GET';\n\n  try {\n    if (path === '/api/items' && method === 'GET') {\n      return send(res, 200, items);\n    }\n\n    if (path === '/api/items' && method === 'POST') {\n      const body = await readBody(req);\n      const name = typeof body.name === 'string' ? body.name.trim() : '';\n      if (!name) return send(res, 400, { error: 'Nombre requerido' });\n      const item: ShoppingItem = { id: nextId++, name, bought: false };\n      items.push(item);\n      return send(res, 201, item);\n    }\n\n    const boughtMatch = path.match(/^\\/api\\/items\\/(\\d+)\\/bought$/);\n    if (boughtMatch && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {\n      const item = items.find((i) => i.id === Number(boughtMatch[1]));\n      if (!item) return send(res, 404, { error: 'No encontrado' });\n      item.bought = true;\n      return send(res, 200, item);\n    }\n\n    const delMatch = path.match(/^\\/api\\/items\\/(\\d+)$/);\n    if (delMatch && method === 'DELETE') {\n      const idx = items.findIndex((i) => i.id === Number(delMatch[1]));\n      if (idx === -1) return send(res, 404, { error: 'No encontrado' });\n      items.splice(idx, 1);\n      return send(res, 204);\n    }\n\n    send(res, 404, { error: 'Ruta no encontrada' });\n  } catch {\n    send(res, 400, { error: 'Solicitud inválida' });\n  }\n});\n\nserver.listen(Number(process.env.PORT) || 3000);\n"
+          },
+          "errors": []
+        }
+      ]
+    }
+  ]
+}
