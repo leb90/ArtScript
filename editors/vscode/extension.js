@@ -84,6 +84,16 @@ function activate(context) {
         return r ? new vscode.Hover(new vscode.MarkdownString(r.contents.value)) : null;
       },
     }),
+    vscode.languages.registerRenameProvider("artscript", {
+      async provideRenameEdits(doc, pos, newName) {
+        const r = await request("textDocument/rename", { textDocument: { uri: doc.uri.toString() }, position: { line: pos.line, character: pos.character }, newName });
+        const edit = new vscode.WorkspaceEdit();
+        for (const [uri, edits] of Object.entries(r?.changes ?? {})) {
+          for (const e of edits) edit.replace(vscode.Uri.parse(uri), new vscode.Range(e.range.start.line, e.range.start.character, e.range.end.line, e.range.end.character), e.newText);
+        }
+        return edit;
+      },
+    }),
     { dispose: () => proc.kill() },
   );
 }

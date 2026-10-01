@@ -64,3 +64,32 @@ test("lsp: go to definition and hover", () => {
   assert.match((ls.handle({ id: 3, method: "textDocument/hover", params: { textDocument: { uri }, position: at("pending} left") } }) as any).result.contents.value, /computed pending: Number/);
   assert.match((ls.handle({ id: 4, method: "textDocument/hover", params: { textDocument: { uri }, position: at("TodoItem todo=") } }) as any).result.contents.value, /component TodoItem\(todo: Todo, remove: Fn\)/);
 });
+
+test("lsp: rename a member inside its component, and a component everywhere", () => {
+  const dir = mkdtempSync(join(tmpdir(), "art-lsp-"));
+  cpSync("examples/todo", dir, { recursive: true });
+  const ls = new LanguageServer(() => {});
+  const uri = pathToFileURL(join(dir, "app.art")).href;
+  const text = readFileSync(join(dir, "app.art"), "utf8");
+  ls.handle({ method: "textDocument/didOpen", params: { textDocument: { uri, text } } });
+  const apply = (edits: any[], src: string) => {
+    const lines = src.split("\n");
+    for (const e of [...edits].sort((a, b) => b.range.start.line - a.range.start.line || b.range.start.character - a.range.start.character)) {
+      const l = lines[e.range.start.line];
+      lines[e.range.start.line] = l.slice(0, e.range.start.character) + e.newText + l.slice(e.range.end.character);
+    }
+    return lines.join("\n");
+  };
+  const pos = (needle: string) => { const i = text.split("\n").findIndex((l) => l.includes(needle)); return { line: i, character: text.split("\n")[i].indexOf(needle) + needle.length - 1 }; };
+  // `draft` (a state of Todos): its declaration, the input binding and the uses in add().
+  const r1 = (ls.handle({ id: 1, method: "textDocument/rename", params: { textDocument: { uri }, position: pos("state draft"), newName: "newTask" } }) as any).result;
+  const out1 = apply(r1.changes[uri], text);
+  assert.doesNotMatch(out1, /\bdraft\b/);
+  assert.match(out1, /input newTask placeholder/);
+  assert.match(out1, /title: newTask, done: false/, "an object key with the same name stays a key");
+  // TodoItem: the declaration and its use in Todos.
+  const r2 = (ls.handle({ id: 2, method: "textDocument/rename", params: { textDocument: { uri }, position: pos("component TodoItem"), newName: "TaskRow" } }) as any).result;
+  const out2 = apply(r2.changes[uri], text);
+  assert.match(out2, /component TaskRow\(/);
+  assert.match(out2, /    TaskRow todo=todo/);
+});

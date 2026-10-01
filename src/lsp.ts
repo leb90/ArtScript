@@ -114,13 +114,43 @@ export class LanguageServer {
     return { name: tok.v, loc: at, hover: `${sym.kind} ${tok.v}: ${show(sym.ty)}` };
   }
 
+  // Every place `name` refers to the same thing: in all files for a declaration, inside the component
+  // for one of its members or props. Property accesses (`x.name`) and object keys (`name:`) are
+  // other things with the same text, so they're left alone.
+  rename(uri: string, line: number, character: number, newName: string): object | null {
+    const r = this.resolve(uri, line, character);
+    if (!r || !/^[A-Za-z_]\w*$/.test(newName)) return null;
+    const file = fileURLToPath(uri);
+    const changes: Record<string, object[]> = {};
+    const scan = (f: string, from = 1, to = Infinity) => {
+      const u = pathToFileURL(f).href;
+      const text = this.docs.get(u) ?? readFileSync(f, "utf8");
+      let toks;
+      try { toks = lex(text, f); } catch { return; }
+      const all = toks.flatMap((t) => (t.t === "tpl" ? (t.parts ?? []).flatMap((p) => { try { return lex(p.src, f, p.line, p.col); } catch { return []; } }) : [t]));
+      const edits = all.filter((t, i) => t.t === "id" && t.v === r.name && t.loc.line >= from && t.loc.line < to
+        && !(all[i - 1]?.v === "." || all[i - 1]?.v === "?.") && !(all[i + 1]?.v === ":" && ["{", ","].includes(all[i - 1]?.v ?? "")))
+        .map((t) => ({ range: { start: { line: t.loc.line - 1, character: t.loc.col - 1 }, end: { line: t.loc.line - 1, character: t.loc.col - 1 + t.v.length } }, newText: newName }));
+      if (edits.length) changes[u] = edits;
+    };
+    if (r.decl) for (const s of this.sources(file)) scan(s.file);
+    else {
+      // The component's lines: from its declaration to the next declaration of the file.
+      const { program } = parseProject(this.sources(file));
+      const starts = program.decls.filter((d) => resolve(d.loc.file) === resolve(file)).map((d) => d.loc.line).sort((a, b) => a - b);
+      const from = starts.filter((l) => l <= line + 1).at(-1) ?? 1;
+      scan(file, from, starts.find((l) => l > from) ?? Infinity);
+    }
+    return { changes };
+  }
+
   handle(msg: { id?: number | string; method?: string; params?: any }): object | null {
     const reply = (result: unknown) => ({ jsonrpc: "2.0", id: msg.id, result });
     const p = msg.params;
     switch (msg.method) {
       case "initialize":
         return reply({
-          capabilities: { textDocumentSync: 1, documentFormattingProvider: true, completionProvider: { triggerCharacters: [" "] }, definitionProvider: true, hoverProvider: true },
+          capabilities: { textDocumentSync: 1, documentFormattingProvider: true, completionProvider: { triggerCharacters: [" "] }, definitionProvider: true, hoverProvider: true, renameProvider: true },
           serverInfo: { name: "artscript" },
         });
       case "textDocument/didOpen": this.docs.set(p.textDocument.uri, p.textDocument.text); this.diagnose(p.textDocument.uri); return null;
@@ -139,6 +169,7 @@ export class LanguageServer {
         const r = this.resolve(p.textDocument.uri, p.position.line, p.position.character);
         return reply(r ? { contents: { kind: "markdown", value: "```artscript\n" + r.hover + "\n```" } } : null);
       }
+      case "textDocument/rename": return reply(this.rename(p.textDocument.uri, p.position.line, p.position.character, p.newName));
       case "shutdown": return reply(null);
       case "exit": process.exit(0);
       default: return msg.id !== undefined ? { jsonrpc: "2.0", id: msg.id, error: { code: -32601, message: `method not found: ${msg.method}` } } : null;
