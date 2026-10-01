@@ -139,6 +139,8 @@ claude mcp add artscript -- npx art mcp
 
 Docs site and playground (the compiler running in the browser): `npm run site` builds them into `site/`, ready for GitHub Pages or any static host.
 
+Official components as source you can change (like shadcn/ui): `art add DataTable Pagination ConfirmButton SearchBox Stat EmptyState`.
+
 Editors: `art lsp` is a language server (live errors with the compiler's fixes, formatting, completion) for any editor with LSP; [editors/vscode](editors/vscode) is a VS Code extension with highlighting that uses it.
 
 Other commands: `npm run art -- <command>` (for example `npm run art -- check examples/todo --ai`). Full list: `npm run art -- help`.

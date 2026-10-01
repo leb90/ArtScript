@@ -1,0 +1,11 @@
+// What to show when a list is empty: `EmptyState title="No orders yet" hint="They'll show up here."`.
+// Added with `art add EmptyState`.
+component EmptyState(title: String, hint: String = "") {
+  column gap=1 align=center pad=8 {
+    icon "package" size=32 muted
+    text title bold
+    if hint != "" {
+      text hint muted
+    }
+  }
+}

@@ -40,6 +40,8 @@ const HELP = `art ${PKG.version} — the ArtScript compiler
   art fmt [path] [--write]          canonical format (without --write it only prints)
   art patch [file|-] [--dir path] [--dry-run] [--ai]
                                     apply structured edits (reads stdin without a file)
+  art add <Component...>            add official components as source: DataTable, Pagination,
+                                    ConfirmButton, SearchBox, Stat, EmptyState
   art test [path]                   run the project's test "..." { } blocks (needs happy-dom)
   art lsp                           language server (stdio): live errors, formatting, completion
   art mcp [--dir path]               MCP server (stdio) with art_spec, art_check, art_context, art_patch
@@ -280,6 +282,24 @@ switch (cmd) {
     const loc = flags.has("--loc");
     const program = parse(readFileSync(pos[0], "utf8"), pos[0]);
     console.log(JSON.stringify(program, (k, v) => (k === "loc" && !loc ? undefined : v), 1));
+    break;
+  }
+
+  case "add": {
+    // Copies official components (templates/components) into the project, as source to change.
+    const dir = join(ROOT, "templates", "components");
+    const available = readdirSync(dir).map((f) => f.replace(".art", ""));
+    if (!pos.length) die(`usage: art add <Component...>. Available: ${available.join(", ")}`);
+    const project = (flag("--dir") as string) ?? ".";
+    const dest = isDir(join(project, "src")) ? join(project, "src") : project;
+    for (const want of pos) {
+      const name = available.find((n) => n.toLowerCase() === want.toLowerCase());
+      if (!name) die(`unknown component '${want}'. Available: ${available.join(", ")}`);
+      const to = join(dest, `${name}.art`);
+      if (existsSync(to)) die(`${to} already exists`);
+      cpSync(join(dir, `${name}.art`), to);
+      console.log(`added ${relative(process.cwd(), to)}`);
+    }
     break;
   }
 

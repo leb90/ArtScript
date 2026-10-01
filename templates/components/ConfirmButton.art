@@ -1,0 +1,17 @@
+// A button that asks before doing something: `ConfirmButton label="Delete" onConfirm=(() => remove(x.id))`.
+// Added with `art add ConfirmButton`.
+component ConfirmButton(label: String, onConfirm: Fn, question: String = "Are you sure?") {
+  state asking = false
+
+  button label danger small -> asking = true
+  modal asking gap=3 {
+    text question
+    row gap=2 justify=end {
+      button "Cancel" -> asking = false
+      button label danger -> {
+        asking = false
+        onConfirm()
+      }
+    }
+  }
+}

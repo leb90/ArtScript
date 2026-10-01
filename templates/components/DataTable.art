@@ -1,0 +1,40 @@
+// A table with search, sorting (click a header) and pages. `rows`: any list of objects;
+// `columns`: the fields to show. Added with `art add DataTable`; change it as you need.
+component DataTable(rows: Any[], columns: String[], pageSize: Number = 10) {
+  state query = ""
+  state sortBy = ""
+  state desc = false
+  state page = 0
+  computed found = query == "" ? rows : rows.filter(r => columns.some(c => String(r[c] ?? "").toLowerCase().includes(query.toLowerCase())))
+  computed sorted = sortBy == "" ? found : [...found].sort((a, b) => (a[sortBy] > b[sortBy] ? 1 : a[sortBy] < b[sortBy] ? -1 : 0) * (desc ? -1 : 1))
+  computed pages = Math.max(1, Math.ceil(sorted.length / pageSize))
+  computed shown = sorted.slice(page * pageSize, page * pageSize + pageSize)
+  fn sort(c) {
+    desc = sortBy == c ? !desc : false
+    sortBy = c
+  }
+
+  column gap=2 {
+    input query placeholder="Search" on:input=(page = 0)
+    table {
+      tr {
+        for c in columns {
+          th {
+            button `${c}${sortBy == c ? (desc ? " ↓" : " ↑") : ""}` small -> sort(c)
+          }
+        }
+      }
+      for r in shown {
+        tr {
+          for c in columns {
+            td `${r[c] ?? ""}`
+          }
+        }
+      }
+    }
+    if found.length == 0 {
+      text "No results" muted
+    }
+    Pagination page=page pages=pages
+  }
+}

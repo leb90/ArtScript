@@ -1,0 +1,9 @@
+// Previous / next page buttons. `page` (0-based) is bound to the parent's state:
+// `Pagination page=page pages=10`. Added with `art add Pagination`.
+component Pagination(page: Number, pages: Number) {
+  row gap=2 align=center {
+    button "Previous" small disabled=(page <= 0) -> page = page - 1
+    text `Page ${page + 1} of ${pages}` small muted
+    button "Next" small disabled=(page >= pages - 1) -> page = page + 1
+  }
+}

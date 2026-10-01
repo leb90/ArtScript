@@ -133,7 +133,8 @@ export function twoWayProps(program: Program): Map<string, Set<string>> {
   for (const c of comps) {
     const params = new Set(c.params.map((p) => p.name));
     walkNodes([c.members, c.view], (n) => {
-      const t = n.kind === "Assign" ? n.target : n.kind === "Update" ? n.arg : null;
+      // Assigned, or bound by an input-like element (`input query`).
+      const t = n.kind === "Assign" ? n.target : n.kind === "Update" ? n.arg : n.kind === "Element" && ELEMENTS[n.tag]?.content === "bind" ? n.content : null;
       if (t?.kind === "Ident" && params.has(t.name)) out.get(c.name)!.add(t.name);
       if (n.kind === "Element" && /^[A-Z]/.test(n.tag)) {
         for (const p of n.props) if (p.value?.kind === "Ident" && params.has(p.value.name)) passes.push([c.name, p.value.name, n.tag, p.name]);
@@ -813,7 +814,8 @@ class Checker {
     if (!root) return false;
     const sym = scope.get(root.name);
     if (!sym) return true; // already reported as UNDEFINED_NAME
-    return sym.kind === "state" || (e.kind !== "Ident" && (sym.kind === "loop" || sym.kind === "prop" || sym.kind === "data"));
+    // A prop can be bound too: it's two-way, so the parent passes a state (checked where it's used).
+    return sym.kind === "state" || sym.kind === "prop" || (e.kind !== "Ident" && (sym.kind === "loop" || sym.kind === "data"));
   }
 
   // Validates an assignment target and returns its type.

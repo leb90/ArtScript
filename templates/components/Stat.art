@@ -1,0 +1,11 @@
+// A key number with its label: `Stat label="Sales" value=total hint="this month"`.
+// Added with `art add Stat`.
+component Stat(label: String, value: Any, hint: String = "") {
+  card gap=1 {
+    text label small muted
+    text `${value}` large bold
+    if hint != "" {
+      text hint small muted
+    }
+  }
+}

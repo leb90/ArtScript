@@ -1,0 +1,11 @@
+// A search input bound to the parent's state, with a clear button:
+// `SearchBox query=query`. Added with `art add SearchBox`.
+component SearchBox(query: String, placeholder: String = "Search") {
+  row gap=2 {
+    icon "search" muted
+    input query placeholder=placeholder on:keydown=(event.key == "Escape" ? query = "" : null)
+    if query != "" {
+      button "Clear" small -> query = ""
+    }
+  }
+}
