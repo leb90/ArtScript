@@ -128,3 +128,25 @@ test("elements behave in the DOM", async () => {
     await GlobalRegistrator.unregister();
   }
 });
+
+test("notify: a toast that goes away, and the name can be the app's own", async () => {
+  assert.deepEqual(types('page P {\n  button "x" -> notify("Saved", "success")\n}'), []);
+  assert.deepEqual(types('page P {\n  fn notify(m) {\n    console.log(m)\n  }\n\n  button "x" -> notify("own")\n}'), []);
+  assert.deepEqual(types('page P {\n  button "x" -> notify(3)\n}'), ["TYPE_MISMATCH"]);
+  const r = compile([{ file: "app.art", src: 'page P {\n  button "save" -> notify("Saved", "success")\n}\n' }]);
+  const dir = mkdtempSync(join(tmpdir(), "art-notify-"));
+  writeFileSync(join(dir, "app.js"), r.js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    const app = await import(pathToFileURL(join(dir, "app.js")).href);
+    app.start(document.getElementById("app"));
+    document.querySelector("button")!.click();
+    const toast = document.querySelector(".a-toast.a-success")!;
+    assert.equal(toast.textContent, "Saved");
+    assert.equal(document.querySelector(".a-toasts")!.getAttribute("aria-live"), "polite");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});

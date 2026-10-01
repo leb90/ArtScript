@@ -447,6 +447,7 @@ class Checker {
     const scope = new Scope(null);
     this.withImports(scope);
     scope.vars.set("navigate", { kind: "global", ty: fn({ k: "void" }) });
+    scope.vars.set("notify", { kind: "global", ty: { k: "fn", ret: { k: "void" }, params: [STR, STR] } }); // notify("Saved", "success"?)
     // Pages get their route params (typed from the path) and the query string.
     if (c.page) {
       const keys = [...(c.path ?? "").matchAll(/:(\w+)/g)].map((m) => m[1]);
@@ -458,7 +459,8 @@ class Checker {
     this.inHook = false;
     this.slots = 0;
     const declare = (name: string, sym: Sym, loc: Loc) => {
-      if (scope.vars.has(name)) this.err("DUPLICATE_NAME", `'${name}' is already declared in ${c.name}`, loc, { expr: name });
+      // Globals (navigate, notify, api, auth...) can be shadowed by the component's own names.
+      if (scope.vars.has(name) && scope.vars.get(name)!.kind !== "global") this.err("DUPLICATE_NAME", `'${name}' is already declared in ${c.name}`, loc, { expr: name });
       scope.vars.set(name, sym);
     };
     for (const p of c.params) {

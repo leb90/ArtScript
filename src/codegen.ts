@@ -54,7 +54,7 @@ export function generate(program: Program): string {
 // The JS and, per JS line, the .art location it comes from (undefined for glue code).
 export function generateMapped(program: Program): { js: string; marks: (Loc | undefined)[] } {
   const marks: (Loc | undefined)[] = [];
-  const out: string[] = ['import * as $ from "./runtime.js";', ...importLines(program), "const navigate = $.navigate;", ""];
+  const out: string[] = ['import * as $ from "./runtime.js";', ...importLines(program), "const navigate = $.navigate, notify = $.notify;", ""];
   const apis = program.decls.filter((d) => d.kind === "Api");
   // Typed REST client: one entry per `api` declaration.
   if (apis.length) out.push(`const api = { ${apis.map((a) => `${a.name}: $.$api(${JSON.stringify(a.name)})`).join(", ")} };`, "");
