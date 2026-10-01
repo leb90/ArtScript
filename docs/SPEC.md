@@ -1,4 +1,4 @@
-# ArtScript v0.1 — Spec for AI
+# ArtScript — Spec for AI
 
 A web language that compiles to JavaScript. Files are `.art`. Expressions are JavaScript; only the structure is new.
 
@@ -25,9 +25,9 @@ page Users "/users" {
 - Field rules, enforced by the server: `name: String min=2 max=50` (length; for a Number, its value; for a list, its size), `code: String match="^[A-Z]{3}$"`, `email: Email unique`.
 - Defaults: `stock: Number = 0` (a literal); `create` may omit the field.
 - Files: `photo: File? max=2000000 accept="image/*"` (max in bytes). Pass the File from `file picked` straight to `create`/`update`: it's uploaded and stored as `{ url, name, type, size }` (`image post.photo.url`).
-- Changing a stored model needs no migration code: on the next start, rows get new fields' defaults, lose removed fields, and move renamed ones (`title: String was="name"`); the database is backed up first. A new required field needs a default (or `?`).
+- Changing a stored model needs no migration code; a new required field needs a default (or `?`); a renamed one: `title: String was="name"`.
 - `page Product "/products/:id"`: a component with a route; inside it `params.id` (String) and `query.tab` (from `?tab=`). `page NotFound "*"` catches unknown paths. Without a route: `/lowercase-name`.
-- `meta title="..." description="..." image="/og.png"` in a page sets its title, description and Open Graph tags. `art build --prerender` writes each route without params as HTML with its content (visible without JS, indexable).
+- `meta title="..." description="..." image="/og.png"` in a page sets its title, description and Open Graph tags.
 - `layout Main { ... slot ... }` wraps pages and stays mounted while they change (the only layout applies to every page; `page X "/x" layout Main` picks one). `link "x" to="/path"` and `navigate("/path")` change pages without reloading.
 
 ## Imports: `use`
@@ -38,8 +38,7 @@ use "canvas-confetti" as confetti       // default export
 use "./lib/money.ts" { toUSD }          // your own JS/TS module: the way out for anything not built in
 ```
 
-- Imported names work in every component and server fn; their values are typed `Any`.
-- A missing module or name is a compile error with a fix (`npm install ...`, the closest export).
+- Imported names work in every component and server fn, typed `Any`.
 
 ## Members (inside component/page, before the view)
 
@@ -57,7 +56,7 @@ fn add(x) {                      // function; body = JS statements
 - A component that assigns its prop (`items = items.filter(...)`) changes the parent's state: pass a state (`List items=items`).
 - No hooks, setters or manual dependencies.
 - Statements: expression, `let x = ...`, `if cond { } else { }`, `return`, `try { } catch (e) { }`.
-- Only for DOM libraries (charts, maps, editors), timers and subscriptions:
+- For DOM libraries (charts, maps), timers and subscriptions:
   ```
   ref box                          // the element marked `ref=box` (set before mount runs)
   mount {                          // once, when the view is in the page
@@ -78,16 +77,15 @@ api users: User                    // REST at /api/users: validated against the 
 - The model needs an `ID` field (if `create` omits it, the server assigns it).
 - Relations: in a stored model, `author: User` (or `tags: Tag[]`) stores the id; create/update take the row or its id (`author: me`, `author: id`), reads return the row (`post.author.name`), `where: { author: id }` filters. Deleting a referenced row fails (409) unless the field is `cascade` (`post: Post cascade` deletes the comments with their post).
 - Typed client in any component: `api.users.list(query?)`, `count(query?)`, `get(id)`, `create(obj)`, `update(id, changes)`, `remove(id)`.
-- Query: `list({ where: { active: true }, search: "pan", sort: "-price", limit: 20, offset: 40 })` (`sort`: field, `-` = descending; `search`: text fields contain it). `count({ where, search })`. Inside `data`, they re-run when the states they use change (e.g. `offset: page * 20`).
+- Query: `list({ where: { active: true }, search: "pan", sort: "-price", limit: 20, offset: 40 })` (`-` = descending; `search` matches text fields); `count({ where, search })`. Inside `data` they re-run when the states they use change (`offset: page * 20`).
 - `data users = api.users.list()` loads on mount and **reloads by itself** after any write. A list starts as `[]`, a count as `0`; `get` starts as `null` (`T?`).
 - `users.loading` is true until the first response; `users.error` is the last error's message or `null`; `users.reload()` fetches again.
 - `await` and `try { } catch (e) { }` work as in JS; `e.message` explains a validation error.
-- Access: `api notes: Note login` requires a session; `private` also scopes rows per user (the model needs `owner: ID`, filled in automatically); `admin`: anyone reads, only admins write (the accounts model needs `role: String`; the first account is "admin", later ones "user"; only admins change roles).
-- `auth users` (the model needs `email: Email` and `password: String`): `auth.signup(obj)`, `auth.login(email, password)`, `auth.logout()`, `auth.logoutAll()` (every device), `data me = auth.me()` (`T?`). Passwords are stored hashed and never returned. Sessions last 30 days; a new password ends the user's other sessions.
+- Access: `api notes: Note login` needs a session; `private` also scopes rows per user (the model needs `owner: ID`, filled in); `admin`: anyone reads, admins write (accounts need `role: String`; the first account is "admin", later ones "user").
+- `auth users` (the model needs `email: Email` and `password: String`): `auth.signup(obj)`, `auth.login(email, password)`, `auth.logout()`, `auth.logoutAll()` (every device), `data me = auth.me()` (`T?`). Passwords are hashed and never returned.
 - `server fn name(a, b) { ... }` runs on the server; call it as `server.name(a, b)` (also in `data`). Inside: `db.<api>` (no `await`, not scoped per user), `me` (logged-in user or `null`) and `fail("message", status?)`.
 - After any write, login or logout, every `data` reloads. `data msgs = api.msgs.list() live` also reloads when someone else writes (chats, dashboards).
 - `server job cleanup every "1h" { ... }` (`s m h d`) runs on the server on that interval, with `db` and `fail`.
-- Data is stored in SQLite (built into Node). `art dev` serves the api; `art build` emits `dist/server.js` (`node dist/server.js`).
 
 ## View
 
@@ -143,13 +141,12 @@ column gap=4 align=center {
 - Events besides `->`: `on:<event>=statement`, with `event` available: `input q on:keydown=(event.key == "Escape" ? q = "" : null)`, `card on:mouseenter=(hover = true)`.
 - `for p in products key p.id { }`: rows are matched by key (default: the item itself) and keep their DOM, focus and input state across updates.
 - Responsive: `grid cols=1 md:cols=3 lg:gap=6` (`sm` 640px, `md` 768, `lg` 1024, `xl` 1280; `cols`, `gap`, `pad`; numbers).
-- If a component receives a model as a prop and changes a field (`todo.done = true`), the owning state updates by itself.
 - Multi-statement action: `-> { a(); b = 1 }`.
 
 ## Expressions
 
 JavaScript: literals, `` `template ${x}` ``, `a.b`, `a?.b`, `a[i]`, `f(x)`, `x => x * 2`, `{ a, ...b }`, `[...xs]`, `? :`, `??`, `&&`, `||`.
-`==` and `!=` compile to `===` and `!==`. A line starting with `?`, `:`, `.`, `&&`, `||` or `??` continues the previous expression (multi-line ternaries and chains). JS globals are available: `Math JSON Date crypto fetch console localStorage`, etc.
+`==` and `!=` compile to `===` and `!==`. A line starting with `?`, `:`, `.`, `&&`, `||` or `??` continues the previous one. JS globals work (`Math JSON Date crypto fetch localStorage`...).
 
 ## Rules the compiler checks
 
@@ -175,16 +172,5 @@ set Todos/column gap=6 -align
 remove Todos/column/if/else/text
 ```
 
-- Operations: `replace`, `insert before`, `insert after`, `append` (children of a node, members/view of a component, or fields of a model), `remove`, `set` (props on the same line; `-name` removes one), `add [file.art]` (new declarations).
-- New component props without rewriting it: `set Row onRemove: Fn, compact: Bool = false`.
-- Paths: `Component/tag/tag[n]` (n = 0-based index among siblings with the same tag; also `if`, `for`, `if/else`), `Component.member`, `Model.field`. `art context Component` shows its source (paths follow the view structure).
-- Applied in order and atomic: if anything fails, nothing changes.
-
-## Tools
-
-```
-art check --ai        errors as JSON: {"code","type","loc","expr","expected","actual","fixes"}
-art context [Name...] compact context of components (or the project map)
-art fmt --write       canonical format
-art build | art dev   build | dev server with reload
-```
+- Operations: `replace`, `insert before|after`, `append` (children of a node, members/view of a component, fields of a model), `remove`, `set` (props on the same line, `-name` removes; `set Row onRemove: Fn` adds a component prop), `add` (new declarations).
+- Paths: `Component/tag/tag[n]` (n: 0-based among siblings with that tag; `if`, `for`, `else` are segments), `Component.member`, `Model.field`. Applied in order, all or nothing.
