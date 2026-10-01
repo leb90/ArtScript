@@ -17,6 +17,7 @@ import { printProgram } from "./printer.ts";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const RUNTIME = join(ROOT, "runtime", "runtime.js");
 const SERVER_RUNTIME = join(ROOT, "runtime", "server.js");
+const SSR_RUNTIME = join(ROOT, "runtime", "ssr.js");
 const PKG = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
 
 const HELP = `art ${PKG.version} — the ArtScript compiler
@@ -154,6 +155,21 @@ switch (cmd) {
     if ("diagnostics" in r) { report(r.diagnostics, false); process.exit(1); }
     mkdirSync(outDir, { recursive: true });
     for (const [f, s] of Object.entries(r.files)) writeFileSync(join(outDir, f), s);
+    // --prerender: an HTML file per static route with its content (visible without JS, indexable).
+    if (flags.has("--prerender")) {
+      const { prerender } = await import(pathToFileURL(SSR_RUNTIME).href);
+      const program = parseProject(sources(target)).program;
+      const paths = program.decls.flatMap((d) => (d.kind === "Component" && d.page && !/[:*]/.test(d.path ?? "") ? [d.path ?? "/" + d.name.toLowerCase()] : []));
+      // Routes that aren't prerendered (`/posts/:id`) are served this empty shell, not the home page.
+      writeFileSync(join(outDir, "_app.html"), r.files["index.html"]);
+      for (const path of paths) {
+        const page = await prerender(pathToFileURL(join(outDir, "app.js")).href, path);
+        const file = path === "/" ? join(outDir, "index.html") : join(outDir, path, "index.html");
+        mkdirSync(dirname(file), { recursive: true });
+        writeFileSync(file, htmlShell(page.title || "ArtScript", page.head, page.html));
+      }
+      console.log(`prerendered: ${paths.join(" ")}`);
+    }
     const pub = join(projectRoot(target), "public");
     if (isDir(pub)) cpSync(pub, outDir, { recursive: true });
     console.log(`build ok → ${relative(process.cwd(), outDir) || outDir}\n${sizes(r.files)}`);

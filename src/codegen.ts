@@ -154,8 +154,10 @@ export function serverEntry(schema: ServerSchema): string {
   return `import { serve } from "./server-runtime.js";\n\n${fns}\n\nserve(${JSON.stringify(rest)}, fns, new URL(".", import.meta.url), undefined, jobs);\n`;
 }
 
-export function htmlShell(title = "ArtScript"): string {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head><body><div id="app"></div><script type="module" src="/app.js"></script></body></html>\n`;
+// `head`/`body`: a prerendered page's extra <head> tags and the HTML inside #app.
+export function htmlShell(title = "ArtScript", head = "", body = ""): string {
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${head}</head><body><div id="app">${body}</div><script type="module" src="/app.js"></script></body></html>\n`;
 }
 
 class ComponentGen {
@@ -249,6 +251,9 @@ class ComponentGen {
         this.emit(`$.$for(${parent}, () => ${this.expr(node.list, scope)}, (${params}) => {`);
         this.nested(() => this.view(node.body, f, s));
         this.emit(`}${key});`);
+      } else if (node.tag === "meta") {
+        const props = node.props.filter((p) => p.value).map((p) => `${p.name}: () => ${this.expr(p.value!, scope)}`);
+        this.emit(`$.$meta({ ${props.join(", ")} });`);
       } else if (node.tag === "slot") {
         this.emit(`$p.$slot?.(${parent});`); // a layout's page, or a component's children
       } else if (/^[A-Z]/.test(node.tag)) {

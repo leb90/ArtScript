@@ -433,7 +433,7 @@ class Parser {
 
     const atEnd = () => this.tok.t === "nl" || this.tok.t === "eof" || this.is("}") || this.is("{") || this.is("->") || this.is(";");
     const propAhead = () => this.tok.t === "id" && this.is("=", this.peek());
-    const takesContent = !isComponent && !(spec && spec.content === null);
+    const takesContent = !isComponent && tag.v !== "meta" && !(spec && spec.content === null);
 
     if (takesContent && !atEnd() && !propAhead()) content = this.ternary();
     const readProps = () => {

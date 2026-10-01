@@ -489,6 +489,22 @@ export function $data(fn, initial) {
 // ---------- App ----------
 const CSS = `*{box-sizing:border-box}body{margin:0;font:16px/1.5 system-ui,sans-serif;color:#1a1a1a;background:#fafafa}#app{padding:24px;max-width:960px;margin:0 auto}.a-row{display:flex;align-items:center}.a-column{display:flex;flex-direction:column}.a-grid{display:grid}.a-wrap{flex-wrap:wrap}.a-card{display:flex;flex-direction:column;padding:16px;border:1px solid #e5e5e5;border-radius:12px;background:#fff}button{font:inherit;padding:6px 14px;border-radius:8px;border:1px solid #d4d4d4;background:#fff;color:inherit;cursor:pointer}button.a-primary{background:#2563eb;border-color:#2563eb;color:#fff}button.a-danger{color:#dc2626;border-color:#fca5a5}span.a-danger{color:#dc2626}span.a-primary{color:#2563eb}span.a-success{color:#16a34a}button.a-small{padding:2px 8px;font-size:.875em}input{font:inherit}input:not([type=checkbox]):not([type=radio]):not([type=file]){padding:6px 10px;border:1px solid #d4d4d4;border-radius:8px;background:inherit;color:inherit}.a-bold{font-weight:600}.a-muted{color:#737373}.a-small{font-size:.875em}.a-large{font-size:1.25em}h2{margin:0}a{color:#2563eb}textarea,select{font:inherit;padding:6px 10px;border:1px solid #d4d4d4;border-radius:8px;background:inherit;color:inherit}.a-field{display:flex;flex-direction:column;gap:4px}.a-check{display:flex;flex-direction:row;align-items:center;gap:8px}.a-radio{display:flex;flex-direction:column;gap:4px}.a-tabs{display:flex;gap:4px;border-bottom:1px solid #e5e5e5}.a-tabs button{border:0;border-radius:8px 8px 0 0;background:none}.a-tabs .a-active{box-shadow:inset 0 -2px #2563eb;font-weight:600}.a-modal{border:0;border-radius:12px;padding:20px;min-width:min(420px,90vw)}.a-modal::backdrop{background:#0006}.a-badge{display:inline-block;padding:0 8px;border-radius:999px;font-size:.75em;background:#e5e5e5}.a-badge.a-primary{background:#dbeafe;color:#1d4ed8}.a-badge.a-success{background:#dcfce7;color:#15803d}.a-badge.a-danger{background:#fee2e2;color:#b91c1c}.a-spinner{display:inline-block;width:1em;height:1em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:a-spin .7s linear infinite}@keyframes a-spin{to{transform:rotate(360deg)}}hr{border:0;border-top:1px solid #e5e5e5;margin:8px 0;width:100%}.a-list{margin:0;padding-left:20px}.a-table{border-collapse:collapse;width:100%}.a-table th,.a-table td{text-align:left;padding:8px;border-bottom:1px solid #e5e5e5}video,img{max-width:100%}@media(prefers-color-scheme:dark){body{background:#111;color:#eee}.a-card{background:#1a1a1a;border-color:#333}button{background:#222;border-color:#444}input:not([type=checkbox]):not([type=radio]):not([type=file]){border-color:#444}.a-muted{color:#999}textarea,select{border-color:#444}.a-modal{background:#1a1a1a;color:inherit}.a-badge{background:#333}.a-table th,.a-table td,hr,.a-tabs{border-color:#333}}`;
 
+// `meta title=... description=... image=...`: the page's title, description and Open Graph tags.
+function metaTag(attr, key) {
+  let m = document.querySelector(`meta[${attr}="${key}"]`);
+  if (!m) {
+    m = document.createElement("meta");
+    m.setAttribute(attr, key);
+    document.head.appendChild(m);
+  }
+  return m;
+}
+export function $meta(props) {
+  if (props.title) effect(() => { const t = str(props.title()); document.title = t; metaTag("property", "og:title").setAttribute("content", t); });
+  if (props.description) effect(() => { const d = str(props.description()); metaTag("name", "description").setAttribute("content", d); metaTag("property", "og:description").setAttribute("content", d); });
+  if (props.image) effect(() => metaTag("property", "og:image").setAttribute("content", str(props.image())));
+}
+
 // ---------- Router (History API) ----------
 // Routes: { path: "/products/:id" | "*", comp, layout? }. Internal <a href="/..."> clicks and
 // navigate() change the URL without reloading; a layout stays mounted while its pages change.
@@ -506,9 +522,14 @@ function compileRoute(path) {
 }
 
 export function start(routes, mount = document.getElementById("app")) {
-  const style = document.createElement("style");
-  style.textContent = CSS;
-  document.head.appendChild(style);
+  // A prerendered page already has the styles; its HTML is replaced by the live app.
+  if (!document.getElementById("art-css")) {
+    const style = document.createElement("style");
+    style.id = "art-css";
+    style.textContent = CSS;
+    document.head.appendChild(style);
+  }
+  mount.textContent = "";
   const table = routes.map((r) => ({ ...r, ...compileRoute(r.path) }));
   let layout, layoutDispose = null, slot = null, pageDispose = null;
 

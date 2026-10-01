@@ -17,6 +17,7 @@ layout Main {
 page Home "/" {
   state posts: Post[] = [{ id: "hello", title: "Hello, ArtScript", body: "Pages, layouts and clean URLs." }, { id: "routes", title: "Routes with params", body: "This page reads params.id." }]
 
+  meta title="Blog" description="Notes about ArtScript."
   column gap=2 {
     title "Blog"
     for p in posts {

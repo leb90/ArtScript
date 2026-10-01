@@ -38,7 +38,8 @@
     "lib",
     "runtime",
     "templates",
-    "docs/SPEC.md"
+    "docs/SPEC.md",
+    "docs/SPEC-EDIT.md"
   ],
   "engines": {
     "node": ">=24"

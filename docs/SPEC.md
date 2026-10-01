@@ -27,6 +27,7 @@ page Users "/users" {
 - Files: `photo: File? max=2000000 accept="image/*"` (max in bytes). Pass the File from `file picked` straight to `create`/`update`: it's uploaded and stored as `{ url, name, type, size }` (`image post.photo.url`).
 - Changing a stored model needs no migration code: on the next start, rows get new fields' defaults, lose removed fields, and move renamed ones (`title: String was="name"`); the database is backed up first. A new required field needs a default (or `?`).
 - `page Product "/products/:id"`: a component with a route; inside it `params.id` (String) and `query.tab` (from `?tab=`). `page NotFound "*"` catches unknown paths. Without a route: `/lowercase-name`.
+- `meta title="..." description="..." image="/og.png"` in a page sets its title, description and Open Graph tags. `art build --prerender` writes each route without params as HTML with its content (visible without JS, indexable).
 - `layout Main { ... slot ... }` wraps pages and stays mounted while they change (the only layout applies to every page; `page X "/x" layout Main` picks one). `link "x" to="/path"` and `navigate("/path")` change pages without reloading.
 
 ## Imports: `use`

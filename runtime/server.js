@@ -623,8 +623,10 @@ export function serve(schema, fns, rootUrl, port = Number(process.env.PORT ?? 30
     const path = decodeURIComponent(new URL(req.url ?? "/", "http://localhost").pathname);
     let file = resolve(root, "." + path);
     const blocked = (!file.startsWith(root + sep) && file !== root) || file.startsWith(dataDir + sep) || PRIVATE.has(basename(file));
-    // Unknown paths fall back to index.html (client-side routing).
-    if (blocked || !existsSync(file) || statSync(file).isDirectory()) file = join(root, "index.html");
+    // A prerendered route (`art build --prerender`) has its own index.html; other unknown paths
+    // fall back to the app's index.html (client-side routing).
+    if (!blocked && existsSync(file) && statSync(file).isDirectory() && existsSync(join(file, "index.html"))) file = join(file, "index.html");
+    if (blocked || !existsSync(file) || statSync(file).isDirectory()) file = existsSync(join(root, "_app.html")) ? join(root, "_app.html") : join(root, "index.html");
     res.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream", ...securityHeaders(req) }).end(readFileSync(file));
   });
   server.listen(port, () => console.log(`ArtScript server → http://localhost:${port}`));
