@@ -156,8 +156,8 @@ function section(loaded: Loaded[]): string {
     out.push(`Run ${date}: ${tasks.length} tasks × ${STACKS.length} stacks × ${f.runs} runs, total $${total.toFixed(2)}, prices as of ${f.pricesDate}.${rerun} Raw data: ${links}.`, "");
   }
   out.push("### Methodology and limitations", "",
-    "- Each task is the same functional request for every stack (6 create, 2 modify). Claude gets the task, returns files, and the harness validates them: ArtScript with its compiler, React with strict `tsc`, Svelte with its compiler. Errors are fed back, up to 3 attempts.",
-    "- In the 2 modify tasks each stack may use its cheapest edit format: ArtScript an `art patch`, React and Svelte search/replace edit blocks (like a coding agent's Edit tool). Full files are also accepted. Runs before 2026-10-01 had no edit formats: every stack returned full files.",
+    "- Each task is the same functional request for every stack: small apps created from scratch (some full-stack), small modifications, and modifications to larger generated projects (11, 42 and 102 components). Claude gets the task, returns files, and the harness validates them: ArtScript with its compiler, React and SolidJS with strict `tsc`, Svelte and Vue with their compilers. Errors are fed back, up to 3 attempts.",
+    "- In modification tasks each stack may use its cheapest edit format: ArtScript an `art patch`, React and Svelte search/replace edit blocks (like a coding agent's Edit tool). Full files are also accepted. Runs before 2026-10-01 had no edit formats: every stack returned full files.",
     "- Cost is computed from the real `usage` the API returns: the ArtScript spec in the system prompt, retries and thinking tokens (billed as output) all count.",
     "- ArtScript's system prompt includes its spec (1.2K–2.7K tokens depending on the run date), which is served from the prompt cache after the first request; the \"without prompt cache\" column prices those tokens at the full input rate.",
     "- Since 2026-10-01 every app is also **run and used like a person would**: it's mounted in a simulated browser (happy-dom) and a stack-agnostic check clicks, types and reads the screen (e.g. adds and completes todos, reloads the page to check data persisted on the server). A failed check is fed back to Claude like a compiler error. Earlier runs only checked that code compiled and typechecked.",
@@ -166,7 +166,7 @@ function section(loaded: Loaded[]): string {
     "- Each run uses the ArtScript spec as of its date; older runs are not redone when the spec improves. The runs above used the Spanish version of the spec; it has since been translated to English (about 6% fewer tokens).",
     "- Task prompts (and the feedback given to the model) are in Spanish; they are the fixed dataset these numbers were measured on.",
     "- App JS: each working app bundled with esbuild (minified, production mode) and compressed with brotli: the JavaScript a browser downloads. ArtScript's includes its runtime; React's includes React DOM; Svelte's includes its client runtime.",
-    "- 3 runs per task is an early signal, not a definitive benchmark. Reproduce it with `npm run eval`.",
+    "- 2–3 runs per task is an early signal, not a definitive benchmark. Reproduce it with `npm run eval`; `npm run eval -- --dry-run` checks the harness and every reference app offline, and `--replay <results.json>` re-checks stored answers with the current compiler.",
     "", END);
   return out.join("\n");
 }

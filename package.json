@@ -42,7 +42,8 @@
     "docs/SPEC-EDIT.md",
     "llms.txt",
     "SECURITY.md",
-    "THIRD_PARTY_NOTICES.md"
+    "THIRD_PARTY_NOTICES.md",
+    "CHANGELOG.md"
   ],
   "engines": {
     "node": ">=24"
