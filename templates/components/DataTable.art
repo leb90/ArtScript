@@ -20,7 +20,7 @@ component DataTable(rows: Any[], columns: String[], pageSize: Number = 10) {
       tr {
         for c in columns {
           th {
-            button `${c}${sortBy == c ? (desc ? " ↓" : " ↑") : ""}` small -> sort(c)
+            button `${c}${sortBy == c ? desc ? " ↓" : " ↑" : ""}` small -> sort(c)
           }
         }
       }

@@ -269,8 +269,6 @@ switch (cmd) {
       }
       if (!write) { process.stdout.write(out); continue; }
       if (out === s.src) continue;
-      // The AST doesn't keep comments yet: don't rewrite files that have them.
-      if (/\/\/|\/\*/.test(s.src)) { console.error(`skipped ${s.file}: it has comments (fmt doesn't preserve them yet)`); continue; }
       writeFileSync(s.file, out);
       console.log(`formatted ${s.file}`);
     }

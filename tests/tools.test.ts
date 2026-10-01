@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { analyze } from "../src/checker.ts";
 import { parseProject } from "../src/compile.ts";
@@ -14,7 +14,8 @@ const todo = () => {
 };
 
 test("fmt: examples are already canonical and fmt is idempotent", () => {
-  for (const f of ["examples/counter/app.art", "examples/todo/app.art", "templates/default/src/app.art", "examples/users/app.art", "examples/notes/app.art", "examples/catalog/app.art", "examples/blog/app.art"]) {
+  const components = readdirSync("templates/components").map((f) => `templates/components/${f}`);
+  for (const f of ["examples/counter/app.art", "examples/todo/app.art", "templates/default/src/app.art", "examples/users/app.art", "examples/notes/app.art", "examples/catalog/app.art", "examples/blog/app.art", "examples/crm/app.art", ...components]) {
     const src = readFileSync(f, "utf8");
     const once = printProgram(parse(src, f));
     assert.equal(once, src, `${f} is not canonical (run: art fmt ${f} --write)`);
