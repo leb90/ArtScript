@@ -1,0 +1,44 @@
+model Post {
+  id: String
+  title: String
+  body: String
+}
+
+layout Main {
+  column gap=4 pad=4 {
+    row gap=3 {
+      link "Home" to="/"
+      link "About" to="/about"
+    }
+    slot
+  }
+}
+
+page Home "/" {
+  state posts: Post[] = [{ id: "hello", title: "Hello, ArtScript", body: "Pages, layouts and clean URLs." }, { id: "routes", title: "Routes with params", body: "This page reads params.id." }]
+
+  meta title="Blog" description="Notes about ArtScript."
+  column gap=2 {
+    title "Blog"
+    for p in posts {
+      link p.title to=`/posts/${p.id}`
+    }
+  }
+}
+
+page PostPage "/posts/:id" {
+  column gap=2 {
+    title `Post: ${params.id}`
+    text "Rendered from the route, without reloading the page." muted
+    button "Back home" -> navigate("/")
+  }
+}
+
+page About "/about" {
+  text "A small blog to show routes." muted
+}
+
+page NotFound "*" {
+  title "Not found"
+  link "Go home" to="/"
+}

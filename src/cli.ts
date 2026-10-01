@@ -32,7 +32,7 @@ const PKG = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
 
 const HELP = `art ${PKG.version} — the ArtScript compiler
 
-  art init <name>                   create a new project
+  art init <name> [--template t]                   create a new project
   art dev [path] [--port 3000]      dev server with live reload
   art build [path] [--out dist]     build for production
   art check [path] [--ai]           typecheck; --ai = one JSON line per error
@@ -58,7 +58,7 @@ for (let i = 1; i < argv.length; i++) {
   const a = argv[i];
   if (a.startsWith("--")) {
     const next = argv[i + 1];
-    if (next !== undefined && !next.startsWith("--") && ["--out", "--port", "--dir", "--budget"].includes(a)) { flags.set(a, next); i++; }
+    if (next !== undefined && !next.startsWith("--") && ["--out", "--port", "--dir", "--budget", "--template"].includes(a)) { flags.set(a, next); i++; }
     else flags.set(a, true);
   } else pos.push(a);
 }
@@ -167,6 +167,14 @@ switch (cmd) {
     // npm doesn't publish files named .gitignore, so the template stores it as `gitignore`.
     renameSync(join(name, "gitignore"), join(name, ".gitignore"));
     cpSync(join(ROOT, "docs", "SPEC.md"), join(name, "ARTSCRIPT.md"));
+    cpSync(join(ROOT, "docs", "SPEC-EDIT.md"), join(name, "ARTSCRIPT-EDIT.md"));
+    // --template blog|notes|catalog|todo|users: start from a working app instead of the blank page.
+    const template = flag("--template") as string | undefined;
+    if (template) {
+      const starter = join(ROOT, "templates", "starters", `${template}.art`);
+      if (!existsSync(starter)) die(`unknown template '${template}'. Available: ${readdirSync(join(ROOT, "templates", "starters")).map((f) => f.replace(".art", "")).join(", ")}`);
+      cpSync(starter, join(name, "src", "app.art"));
+    }
     // Until it's published on npm, the project uses this local copy of ArtScript.
     const local = !ROOT.split(/[\\/]/).includes("node_modules");
     const pkgPath = join(name, "package.json");

@@ -1,0 +1,84 @@
+model User {
+  id: ID
+  email: Email
+  password: String
+  name: String
+  role: String
+}
+
+model Product {
+  id: ID
+  name: String
+  price: Number
+  active: Bool
+}
+
+api users: User login
+
+api products: Product admin
+
+auth users
+
+page Catalog "/" {
+  data me = auth.me()
+  state search = ""
+  state sort = "name"
+  state page = 0
+  data products = api.products.list({ search, sort, limit: 5, offset: page * 5 })
+  data total = api.products.count({ search })
+  computed pages = Math.max(1, Math.ceil(total / 5))
+  state email = ""
+  state password = ""
+  state name = ""
+  state price = 0
+  fn add() {
+    await api.products.create({ name, price, active: true })
+    name = ""
+    price = 0
+  }
+
+  column gap=4 {
+    row justify=between {
+      title "Catalog"
+      if me {
+        text `${me.name} (${me.role})` muted
+      }
+    }
+    row gap=2 {
+      input search placeholder="Search"
+      button sort == "name" ? "Sort: name" : "Sort: price" small -> sort = sort == "name" ? "-price" : "name"
+    }
+    text `${total} products` muted
+    for p in products {
+      row gap=2 justify=between {
+        text p.name muted=!p.active
+        text `$${p.price.toFixed(2)}` bold
+        if me?.role == "admin" {
+          button "Delete" danger small -> api.products.remove(p.id)
+        }
+      }
+    }
+    row gap=2 align=center {
+      button "Prev" small disabled=(page == 0) -> page--
+      text `Page ${page + 1} of ${pages}` muted
+      button "Next" small disabled=(page + 1 >= pages) -> page++
+    }
+    if me?.role == "admin" {
+      form gap=2 -> add() {
+        input name placeholder="Product"
+        input price type=number placeholder="Price"
+        button "Add product" primary
+      }
+    }
+    if me {
+      button "Log out" small -> auth.logout()
+    } else {
+      row gap=2 {
+        input email placeholder="Email" type=email
+        input password placeholder="Password" type=password
+        button "Log in" -> auth.login(email, password)
+        button "Sign up" -> auth.signup({ name: email, email, password })
+      }
+    }
+  }
+}
