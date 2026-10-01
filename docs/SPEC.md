@@ -1,8 +1,8 @@
-# ArtScript v0.1 — Spec para IA
+# ArtScript v0.1 — Spec for AI
 
-Lenguaje web que compila a JavaScript. Archivos `.art`. Expresiones = JavaScript. Solo la estructura es nueva.
+A web language that compiles to JavaScript. Files are `.art`. Expressions are JavaScript; only the structure is new.
 
-## Declaraciones (nivel superior)
+## Declarations (top level)
 
 ```
 model User {
@@ -13,61 +13,61 @@ model User {
 }
 
 component UserCard(user: User, onDelete: Fn, big: Bool = false) {
-  ...miembros y vista
+  ...members and view
 }
 
 page Users "/users" {
-  ...miembros y vista
+  ...members and view
 }
 ```
 
-- Tipos: `String Number Bool ID Email Date Fn Any`, nombres de `model`, `T[]` lista, `T?` opcional (puede ser null).
-- `page` = componente con ruta (hash routing: `#/users`). Sin ruta: `/nombre-en-minúsculas`. Ruta desconocida → primera página.
+- Types: `String Number Bool ID Email Date Fn Any`, `model` names, `T[]` list, `T?` optional (may be null).
+- `page` = component with a route (hash routing: `#/users`). Without a route: `/lowercase-name`. Unknown route → first page.
 
-## Miembros (dentro de component/page, antes de la vista)
+## Members (inside component/page, before the view)
 
 ```
-state count = 0                  // reactivo; tipo inferido
-state users: User[] = []         // tipo explícito
-computed total = count * 2       // derivado, solo lectura
-fn add(x) {                      // función; cuerpo = sentencias JS
+state count = 0                  // reactive; type inferred
+state users: User[] = []         // explicit type
+computed total = count * 2       // derived, read-only
+fn add(x) {                      // function; body = JS statements
   if x == "" { return }
   users.push({ id: crypto.randomUUID(), name: x, tags: [] })
 }
 ```
 
-- Asignar a un `state` actualiza la UI: `count++`, `name = "x"`, `users.push(u)`, `user.name = "x"`.
-- No hay hooks, setters ni dependencias manuales.
-- Sentencias: expresión, `let x = ...`, `if cond { } else { }`, `return`, `try { } catch (e) { }`.
+- Assigning to a `state` updates the UI: `count++`, `name = "x"`, `users.push(u)`, `user.name = "x"`.
+- No hooks, setters or manual dependencies.
+- Statements: expression, `let x = ...`, `if cond { } else { }`, `return`, `try { } catch (e) { }`.
 
-## Backend: `api` y `data`
+## Backend: `api` and `data`
 
 ```
-api users: User                    // REST en /api/users: validado con el model, datos guardados
+api users: User                    // REST at /api/users: validated against the model, data stored
 ```
 
-- El model necesita un campo `ID` (si falta en `create`, lo asigna el servidor).
-- Cliente tipado en cualquier componente: `api.users.list()`, `get(id)`, `create(obj)`, `update(id, cambios)`, `remove(id)`.
-- `data users = api.users.list()` carga al montar y **se recarga sola** después de cualquier `create`/`update`/`remove` de esa api. Una lista empieza como `[]`; `get` empieza en `null` (`T?`).
-- `await` y `try { } catch (e) { }` funcionan como en JS; `e.message` explica el error de validación.
-- Acceso: `api notes: Note login` exige sesión; `api notes: Note private` además separa por usuario (el model necesita `owner: ID`, que se completa solo).
-- `auth users` (el model necesita `email: Email` y `password: String`): `auth.signup(obj)`, `auth.login(email, password)`, `auth.logout()`, `data me = auth.me()` (`T?`). La contraseña se guarda hasheada y nunca se devuelve.
-- `server fn nombre(a, b) { ... }` corre en el servidor; se llama como `server.nombre(a, b)` (también en `data`). Adentro: `db.<api>` (sin `await`, sin filtro por usuario), `me` (usuario logueado o `null`) y `fail("mensaje", status?)`.
-- Después de cualquier escritura, login o logout, todos los `data` se recargan.
-- `art dev` sirve la api; `art build` genera `dist/server.js` (`node dist/server.js`).
+- The model needs an `ID` field (if `create` omits it, the server assigns it).
+- Typed client in any component: `api.users.list()`, `get(id)`, `create(obj)`, `update(id, changes)`, `remove(id)`.
+- `data users = api.users.list()` loads on mount and **reloads by itself** after any write. A list starts as `[]`; `get` starts as `null` (`T?`).
+- `await` and `try { } catch (e) { }` work as in JS; `e.message` explains a validation error.
+- Access: `api notes: Note login` requires a session; `api notes: Note private` also scopes rows per user (the model needs `owner: ID`, filled in automatically).
+- `auth users` (the model needs `email: Email` and `password: String`): `auth.signup(obj)`, `auth.login(email, password)`, `auth.logout()`, `data me = auth.me()` (`T?`). Passwords are stored hashed and never returned.
+- `server fn name(a, b) { ... }` runs on the server; call it as `server.name(a, b)` (also in `data`). Inside: `db.<api>` (no `await`, not scoped per user), `me` (logged-in user or `null`) and `fail("message", status?)`.
+- After any write, login or logout, every `data` reloads.
+- `art dev` serves the api; `art build` emits `dist/server.js` (`node dist/server.js`).
 
-## Vista
+## View
 
-Una línea por elemento: `tag contenido prop=valor flag -> acción { hijos }`
+One line per element: `tag content prop=value flag -> action { children }`
 
 ```
 column gap=4 align=center {
-  title "Usuarios"
+  title "Users"
   text `Total: ${total}` muted
-  input draft placeholder="Nombre" -> add(draft)
-  button "Agregar" primary -> add(draft)
+  input draft placeholder="Name" -> add(draft)
+  button "Add" primary -> add(draft)
   if users.length == 0 {
-    text "Vacío"
+    text "Empty"
   } else {
     for u, i in users {
       UserCard user=u onDelete=(id => users = users.filter(x => x.id != id))
@@ -76,49 +76,49 @@ column gap=4 align=center {
 }
 ```
 
-| Elemento | Contenido | `->` se dispara en | Props | Flags |
+| Element | Content | `->` fires on | Props | Flags |
 |---|---|---|---|---|
-| `text` | texto | — | | bold muted small large |
-| `title` | texto | — | | muted small large |
-| `button` | texto | click | disabled | primary danger small |
-| `input` | **state a enlazar** (bidireccional) | Enter | placeholder type disabled | |
+| `text` | text | — | | bold muted small large |
+| `title` | text | — | | muted small large |
+| `button` | text | click | disabled | primary danger small |
+| `input` | **state to bind** (two-way) | Enter | placeholder type disabled | |
 | `image` | src | — | alt width height | |
-| `link` | texto | — | to href | muted |
+| `link` | text | — | to href | muted |
 | `row` `column` `card` | — | — | gap pad align justify | row: wrap |
 | `grid` | — | — | gap pad align justify cols | |
 | `form` | — | submit | gap pad align justify | |
 
-- Todos aceptan `class style id`.
-- Flag condicional: `text t.title muted=t.done` aplica el flag mientras el valor sea `true`.
-- `gap=4` y `pad=4`: 1 unidad = 4px. `align=start|center|end|stretch`. `justify=start|center|end|between|around`. `cols=3`.
-- `type=text|number|email|password|checkbox|date`. Con `type=checkbox`, `input` enlaza un Bool.
-- Valores de prop: literal, nombre, `a.b`, llamada o `( expresión )` entre paréntesis.
-- Componente: `Nombre prop=valor`. Nombre en mayúscula.
-- Si un componente recibe un modelo como prop y modifica un campo (`todo.done = true`), el state dueño se actualiza solo.
-- Acción de varias sentencias: `-> { a(); b = 1 }`.
+- All take `class style id`.
+- Conditional flag: `text t.title muted=t.done` applies the flag while the value is `true`.
+- `gap=4` and `pad=4`: 1 unit = 4px. `align=start|center|end|stretch`. `justify=start|center|end|between|around`. `cols=3`.
+- `type=text|number|email|password|checkbox|date`. With `type=checkbox`, `input` binds a Bool.
+- Prop values: literal, name, `a.b`, call, or `( expression )` in parentheses.
+- Component: `Name prop=value`. Capitalized name.
+- If a component receives a model as a prop and changes a field (`todo.done = true`), the owning state updates by itself.
+- Multi-statement action: `-> { a(); b = 1 }`.
 
-## Expresiones
+## Expressions
 
-JavaScript: literales, `` `template ${x}` ``, `a.b`, `a?.b`, `a[i]`, `f(x)`, `x => x * 2`, `{ a, ...b }`, `[...xs]`, `? :`, `??`, `&&`, `||`.
-`==` y `!=` compilan a `===` y `!==`. Una línea que empieza con `?`, `:`, `.`, `&&`, `||` o `??` continúa la expresión anterior (ternarios y cadenas en varias líneas). Globales JS disponibles: `Math JSON Date crypto fetch console localStorage`, etc.
+JavaScript: literals, `` `template ${x}` ``, `a.b`, `a?.b`, `a[i]`, `f(x)`, `x => x * 2`, `{ a, ...b }`, `[...xs]`, `? :`, `??`, `&&`, `||`.
+`==` and `!=` compile to `===` and `!==`. A line starting with `?`, `:`, `.`, `&&`, `||` or `??` continues the previous expression (multi-line ternaries and chains). JS globals are available: `Math JSON Date crypto fetch console localStorage`, etc.
 
-## Reglas que el compilador verifica
+## Rules the compiler checks
 
-- `lista[i]` es `T?`: usar `lista[i]?.campo` o `?? valor`.
-- Dentro de `if x { }`, `if x != null`, `x && ...`, `x ? ... : ...` o después de `if !x { return }`, `x` ya no es null.
-- Objetos pasados a un `model` deben tener todos sus campos no opcionales y ningún campo extra.
-- No se puede asignar a `computed` ni a props directamente.
-- Nombres, elementos, props y flags desconocidos → error con sugerencia.
+- `list[i]` is `T?`: use `list[i]?.field` or `?? value`.
+- Inside `if x { }`, `if x != null`, `x && ...`, `x ? ... : ...` or after `if !x { return }`, `x` is no longer null.
+- Objects passed as a `model` need every non-optional field and no extra fields.
+- `computed` values and props can't be assigned directly.
+- Unknown names, elements, props and flags → error with a suggestion.
 
-## Modificar código existente: `art patch`
+## Changing existing code: `art patch`
 
-Para cambiar código que ya existe, respondé con un bloque ```` ```patch ```` en vez de reescribir archivos:
+To change code that already exists, answer with a ```` ```patch ```` block instead of rewriting files:
 
 ```patch
 replace Todos/column/title
-  title "Mis tareas"
+  title "My tasks"
 insert after Todos/column/row
-  text "Escribí y presioná Enter" muted
+  text "Type and press Enter" muted
 append Todos
   fn clearDone() {
     todos = todos.filter(t => !t.done)
@@ -127,15 +127,15 @@ set Todos/column gap=6 -align
 remove Todos/column/if/else/text
 ```
 
-- Operaciones: `replace`, `insert before`, `insert after`, `append` (hijos de un nodo, o miembros/vista de un componente, o campos de un model), `remove`, `set` (props en la misma línea; `-nombre` quita), `add [archivo.art]` (declaraciones nuevas).
-- Rutas: `Componente/tag/tag[n]` (n = índice desde 0 entre hermanos con el mismo tag; también `if`, `for`, `if/else`), `Componente.miembro`, `Modelo.campo`. `art context Componente` lista las rutas.
-- Se aplica en orden y es atómico: si algo falla, no cambia nada.
+- Operations: `replace`, `insert before`, `insert after`, `append` (children of a node, members/view of a component, or fields of a model), `remove`, `set` (props on the same line; `-name` removes one), `add [file.art]` (new declarations).
+- Paths: `Component/tag/tag[n]` (n = 0-based index among siblings with the same tag; also `if`, `for`, `if/else`), `Component.member`, `Model.field`. `art context Component` lists the paths.
+- Applied in order and atomic: if anything fails, nothing changes.
 
-## Herramientas
+## Tools
 
 ```
-art check --ai        errores como JSON: {"code","type","loc","expr","expected","actual","fixes"}
-art context [Nombre]  contexto compacto de un componente (o mapa del proyecto)
-art fmt --write       formato canónico
-art build | art dev   compilar | servidor con recarga
+art check --ai        errors as JSON: {"code","type","loc","expr","expected","actual","fixes"}
+art context [Name]    compact context of a component (or the project map)
+art fmt --write       canonical format
+art build | art dev   build | dev server with reload
 ```

@@ -8,21 +8,21 @@ import { printExpr } from "../src/printer.ts";
 
 const noLoc = (x: unknown) => JSON.parse(JSON.stringify(x, (k, v) => (k === "loc" ? undefined : v)));
 
-test("lexer: tokens básicos, operadores largos y saltos de línea", () => {
+test("lexer: basic tokens, long operators and newlines", () => {
   const t = lex("count++ -> a === b\nx", "t").map((x) => x.v);
   assert.deepEqual(t, ["count", "++", "->", "a", "===", "b", "\n", "x", ""]);
 });
 
-test("lexer: saltos de línea dentro de ( ) y [ ] no terminan sentencia", () => {
+test("lexer: newlines inside ( ) and [ ] don't end a statement", () => {
   const t = lex("f(a,\n b)\n[1,\n2]", "t").filter((x) => x.t === "nl");
   assert.equal(t.length, 1);
 });
 
-test("lexer: string sin cerrar da error estructurado", () => {
+test("lexer: an unterminated string gives a structured error", () => {
   assert.throws(() => lex('text "hola', "t"), (e: CompileError) => e.diagnostic.type === "UNTERMINATED_STRING" && e.diagnostic.loc.col === 6);
 });
 
-test("expresiones: precedencia y asociatividad", () => {
+test("expressions: precedence and associativity", () => {
   assert.equal(printExpr(parseExpression("a + b * c")), "a + b * c");
   assert.equal(printExpr(parseExpression("(a + b) * c")), "(a + b) * c");
   assert.equal(printExpr(parseExpression("a - (b - c)")), "a - (b - c)");
@@ -30,11 +30,11 @@ test("expresiones: precedencia y asociatividad", () => {
   assert.equal(printExpr(parseExpression("a ?? b || c")), "a ?? b || c");
 });
 
-test("expresiones: === y !== se normalizan a la forma canónica", () => {
+test("expressions: === and !== are normalized to the canonical form", () => {
   assert.equal(printExpr(parseExpression("a === b && c !== d")), "a == b && c != d");
 });
 
-test("expresiones: arrows, objetos, spread, optional chaining, templates", () => {
+test("expressions: arrows, objects, spread, optional chaining, templates", () => {
   for (const src of [
     "xs.filter(t => !t.done).length",
     "(a, b) => a + b",
@@ -46,7 +46,7 @@ test("expresiones: arrows, objetos, spread, optional chaining, templates", () =>
   ]) assert.equal(printExpr(parseExpression(src)), src);
 });
 
-test("parser: página con state, computed y vista", () => {
+test("parser: page with state, computed and view", () => {
   const p = parse(`page Counter "/" {
   state count = 0
   computed double = count * 2
@@ -69,7 +69,7 @@ test("parser: página con state, computed y vista", () => {
   assert.deepEqual(txt.props, [{ name: "bold", value: null, loc: txt.props[0].loc }]);
 });
 
-test("parser: component con params, if/else, for con índice, fn", () => {
+test("parser: component with params, if/else, for with index, fn", () => {
   const p = parse(`component List(items: Item[], title: String = "x") {
   fn clear() {
     items = []
@@ -87,7 +87,7 @@ test("parser: component con params, if/else, for con índice, fn", () => {
   assert.equal(f.body[0].else.length, 1);
 });
 
-test("parser: model con tipos lista y opcionales", () => {
+test("parser: model with list and optional types", () => {
   const p = parse("model User {\n  id: ID\n  tags: String[]\n  bio: String?\n}", "t");
   const m = p.decls[0] as any;
   assert.deepEqual(m.fields.map((f: any) => [f.name, f.type.name, f.type.list, f.type.optional]), [
@@ -95,10 +95,10 @@ test("parser: model con tipos lista y opcionales", () => {
   ]);
 });
 
-test("parser: error con ubicación, esperado y actual", () => {
+test("parser: error with location, expected and actual", () => {
   assert.throws(() => parse("page A {\n  state = 1\n}", "app.art"), (e: CompileError) => {
     const d = e.diagnostic;
-    return d.type === "UNEXPECTED_TOKEN" && d.loc.line === 2 && d.expected === "un nombre" && d.actual === "'='";
+    return d.type === "UNEXPECTED_TOKEN" && d.loc.line === 2 && d.expected === "a name" && d.actual === "'='";
   });
 });
 

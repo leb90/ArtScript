@@ -90,7 +90,7 @@ export function lex(src: string, file: string, startLine = 1, startCol = 1): Tok
         s += src[i];
         adv();
       }
-      if (src[i] !== c) throw new CompileError(diag("UNTERMINATED_STRING", "string sin cerrar", start, { fixes: [`agregar ${c} al final`] }));
+      if (src[i] !== c) throw new CompileError(diag("UNTERMINATED_STRING", "unterminated string", start, { fixes: [`add ${c} at the end`] }));
       adv();
       out.push({ t: "str", v: s, loc: start });
       continue;
@@ -122,7 +122,7 @@ export function lex(src: string, file: string, startLine = 1, startCol = 1): Tok
         s += src[i];
         adv();
       }
-      if (src[i] !== "`") throw new CompileError(diag("UNTERMINATED_STRING", "template sin cerrar", start, { fixes: ["agregar ` al final"] }));
+      if (src[i] !== "`") throw new CompileError(diag("UNTERMINATED_STRING", "unterminated template", start, { fixes: ["add ` at the end"] }));
       adv();
       quasis.push(s);
       out.push({ t: "tpl", v: "`", loc: start, quasis, parts });
@@ -130,7 +130,7 @@ export function lex(src: string, file: string, startLine = 1, startCol = 1): Tok
     }
 
     const op = OPS.find((o) => src.startsWith(o, i));
-    if (!op) throw new CompileError(diag("UNEXPECTED_CHAR", `carácter inesperado '${c}'`, start));
+    if (!op) throw new CompileError(diag("UNEXPECTED_CHAR", `unexpected character '${c}'`, start));
     if (op === "(" || op === "[" || op === "{") depth.push(op);
     if (op === ")" || op === "]" || op === "}") depth.pop();
     out.push({ t: "op", v: op, loc: start });

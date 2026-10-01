@@ -129,7 +129,7 @@ function fit(lines: string[], budget: number): string {
   const out: string[] = [];
   for (const l of lines) {
     if (estimateTokens([...out, l].join("\n")) > budget) {
-      out.push(`… (${lines.length - out.length} líneas omitidas por --budget)`);
+      out.push(`… (${lines.length - out.length} lines left out by --budget)`);
       break;
     }
     out.push(l);

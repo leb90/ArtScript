@@ -34,7 +34,7 @@ insert after Todos/column/row
   text "abajo"
 remove Todos/column/if`);
   assert.match(out, /title "Mis tareas"\n    text "arriba"\n    row gap=2 \{[\s\S]*?\n    \}\n    text "abajo"/);
-  assert.doesNotMatch(out, /No hay tareas/);
+  assert.doesNotMatch(out, /No tasks/);
 });
 
 test("append: element children, else branch, component members and model fields", () => {
@@ -49,7 +49,7 @@ append Todos
 append Todo
   note: String?`);
   assert.match(out, /button "Limpiar" -> draft = ""\n    \}/);
-  assert.match(out, /text `\$\{pending\} pendientes` muted\n      text "fin"/);
+  assert.match(out, /text `\$\{pending\} left` muted\n      text "fin"/);
   assert.match(out, /fn clearDone\(\) \{\n    todos = todos.filter\(t => !t.done\)\n  \}/);
   assert.match(out, /done: Bool\n  note: String\?\n\}/);
 });
@@ -72,7 +72,7 @@ replace Todo.title
 test("set: adds, overwrites and removes props and flags", () => {
   const out = ok("set Todos/column/row gap=6 align=center\nset Todos/column/row/button danger -primary");
   assert.match(out, /row gap=6 align=center \{/);
-  assert.match(out, /button "Agregar" danger -> add\(\)/);
+  assert.match(out, /button "Add" danger -> add\(\)/);
 });
 
 test("add: new declarations, into a new file", () => {

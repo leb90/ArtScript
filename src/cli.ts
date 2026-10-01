@@ -19,21 +19,21 @@ const RUNTIME = join(ROOT, "runtime", "runtime.js");
 const SERVER_RUNTIME = join(ROOT, "runtime", "server.js");
 const PKG = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
 
-const HELP = `art ${PKG.version} — compilador de ArtScript
+const HELP = `art ${PKG.version} — the ArtScript compiler
 
-  art init <nombre>                 crea un proyecto nuevo
-  art dev [ruta] [--port 3000]      servidor de desarrollo con recarga automática
-  art build [ruta] [--out dist]     compila para producción
-  art check [ruta] [--ai]           verifica tipos; --ai = JSON por línea
-  art fmt [ruta] [--write]          formato canónico (sin --write solo muestra)
-  art patch [archivo|-] [--dir ruta] [--dry-run] [--ai]
-                                    aplica cambios estructurados (lee stdin sin archivo)
-  art context [Nombre] [--dir ruta] [--budget N]
-                                    contexto compacto para IA (sin nombre: mapa del proyecto)
-  art ast <archivo>                 AST en JSON
-  art bench                         benchmarks (solo dentro del repo de ArtScript)
+  art init <name>                   create a new project
+  art dev [path] [--port 3000]      dev server with live reload
+  art build [path] [--out dist]     build for production
+  art check [path] [--ai]           typecheck; --ai = one JSON line per error
+  art fmt [path] [--write]          canonical format (without --write it only prints)
+  art patch [file|-] [--dir path] [--dry-run] [--ai]
+                                    apply structured edits (reads stdin without a file)
+  art context [Name] [--dir path] [--budget N]
+                                    compact context for AI (without a name: project map)
+  art ast <file>                    AST as JSON
+  art bench                         benchmarks (only inside the ArtScript repo)
 
-  [ruta] por defecto: ./src si existe, si no el directorio actual.
+  [path] defaults to ./src if it exists, otherwise the current directory.
 `;
 
 // ---------- arguments ----------
@@ -73,9 +73,9 @@ function projectRoot(target: string): string {
 }
 
 function sources(target: string): Source[] {
-  if (!existsSync(target)) die(`no existe: ${target}`);
+  if (!existsSync(target)) die(`not found: ${target}`);
   const files = isDir(target) ? findArt(target) : [target];
-  if (!files.length) die(`no hay archivos .art en ${target}`);
+  if (!files.length) die(`no .art files in ${target}`);
   return files.map((f) => {
     const rel = relative(process.cwd(), f);
     return { file: rel && !rel.startsWith("..") ? rel : f, src: readFileSync(f, "utf8") };
@@ -100,7 +100,7 @@ function sizes(files: Record<string, string>): string {
   });
   const total = rows.reduce<[number, number, number]>((a, r) => [a[0] + r[1], a[1] + r[2], a[2] + r[3]], [0, 0, 0]);
   const line = (n: string, r: number, g: number, br: number) => `  ${n.padEnd(12)} ${kb(r).padStart(10)} ${kb(g).padStart(10)} ${kb(br).padStart(10)}`;
-  const header = `  ${"archivo".padEnd(12)} ${"raw".padStart(10)} ${"gzip".padStart(10)} ${"brotli".padStart(10)}`;
+  const header = `  ${"file".padEnd(12)} ${"raw".padStart(10)} ${"gzip".padStart(10)} ${"brotli".padStart(10)}`;
   return [header, ...rows.map((r) => line(...r)), line("total", ...total)].join("\n");
 }
 
@@ -116,8 +116,8 @@ function buildFiles(target: string): { files: Record<string, string>; server: Se
 switch (cmd) {
   case "init": {
     const name = pos[0];
-    if (!name) die("uso: art init <nombre>");
-    if (existsSync(name) && readdirSync(name).length) die(`'${name}' ya existe y no está vacío`);
+    if (!name) die("usage: art init <name>");
+    if (existsSync(name) && readdirSync(name).length) die(`'${name}' already exists and isn't empty`);
     const tpl = join(ROOT, "templates", "default");
     cpSync(tpl, name, { recursive: true });
     // npm doesn't publish files named .gitignore, so the template stores it as `gitignore`.
@@ -130,7 +130,7 @@ switch (cmd) {
       .replace("__NAME__", basename(resolve(name)).toLowerCase().replace(/[^a-z0-9-]/g, "-"))
       .replace("__ARTSCRIPT__", local ? `file:${ROOT}` : `^${PKG.version}`);
     writeFileSync(pkgPath, pkg);
-    console.log(`proyecto creado en ${name}/\n\n  cd ${name}\n  npm install\n  npm run dev\n`);
+    console.log(`project created in ${name}/\n\n  cd ${name}\n  npm install\n  npm run dev\n`);
     break;
   }
 
@@ -147,7 +147,7 @@ switch (cmd) {
     if (r.server) {
       writeFileSync(join(outDir, "server.js"), serverEntry(r.server));
       writeFileSync(join(outDir, "server-runtime.js"), readFileSync(SERVER_RUNTIME, "utf8"));
-      console.log(`\n  con api: node ${join(relative(process.cwd(), outDir) || outDir, "server.js")}  (datos en ./data, o ART_DATA_DIR)`);
+      console.log(`\n  with api: node ${join(relative(process.cwd(), outDir) || outDir, "server.js")}  (data in ./data, or ART_DATA_DIR)`);
     }
     break;
   }
@@ -158,7 +158,7 @@ switch (cmd) {
     const { program, diagnostics } = parseProject(src);
     const diags = diagnostics.length ? diagnostics : analyze(program).diagnostics;
     report(diags, ai);
-    if (!diags.length) console.log(ai ? '{"ok":true}' : `ok: ${src.length} archivo(s), ${program.decls.length} declaraciones`);
+    if (!diags.length) console.log(ai ? '{"ok":true}' : `ok: ${src.length} file(s), ${program.decls.length} declarations`);
     process.exit(diags.length ? 1 : 0);
   }
 
@@ -178,15 +178,15 @@ switch (cmd) {
       if (!write) { process.stdout.write(out); continue; }
       if (out === s.src) continue;
       // The AST doesn't keep comments yet: don't rewrite files that have them.
-      if (/\/\/|\/\*/.test(s.src)) { console.error(`omitido ${s.file}: tiene comentarios (fmt aún no los preserva)`); continue; }
+      if (/\/\/|\/\*/.test(s.src)) { console.error(`skipped ${s.file}: it has comments (fmt doesn't preserve them yet)`); continue; }
       writeFileSync(s.file, out);
-      console.log(`formateado ${s.file}`);
+      console.log(`formatted ${s.file}`);
     }
     process.exit(failed ? 1 : 0);
   }
 
   case "ast": {
-    if (!pos[0]) die("uso: art ast <archivo.art>");
+    if (!pos[0]) die("usage: art ast <file.art>");
     const loc = flags.has("--loc");
     const program = parse(readFileSync(pos[0], "utf8"), pos[0]);
     console.log(JSON.stringify(program, (k, v) => (k === "loc" && !loc ? undefined : v), 1));
@@ -206,7 +206,7 @@ switch (cmd) {
     // New files from `add file.art` go next to the project's other sources.
     const base = isDir(target) ? target : dirname(target);
     for (const f of r.changed) writeFileSync(existsSync(f) || f.includes("/") ? f : join(base, f), r.files[f]);
-    console.log(ai ? JSON.stringify({ ok: true, changed: r.changed }) : r.changed.length ? `ok: ${r.changed.join(", ")} actualizado(s)` : "ok: sin cambios");
+    console.log(ai ? JSON.stringify({ ok: true, changed: r.changed }) : r.changed.length ? `ok: updated ${r.changed.join(", ")}` : "ok: no changes");
     break;
   }
 
@@ -218,7 +218,7 @@ switch (cmd) {
     if (!pos[0]) console.log(projectMap(program, a, budget));
     else {
       const out = declContext(program, a, pos[0], budget);
-      if (out === null) die(`no existe '${pos[0]}'. Disponibles: ${program.decls.map((d) => d.name).join(", ")}`);
+      if (out === null) die(`'${pos[0]}' doesn't exist. Available: ${program.decls.map((d) => d.name).join(", ")}`);
       console.log(out);
     }
     break;
@@ -290,7 +290,7 @@ switch (cmd) {
       if (e.code === "EADDRINUSE" && port < Number(flag("--port") ?? 3000) + 20) server.listen(++port);
       else die(e.message);
     });
-    server.on("listening", () => console.log(`\n  ArtScript dev → http://localhost:${port}\n  editá ${target}/ y se recarga solo · Ctrl+C para salir\n`));
+    server.on("listening", () => console.log(`\n  ArtScript dev → http://localhost:${port}\n  edit ${target}/ and it reloads · Ctrl+C to quit\n`));
     server.listen(port);
 
     const watchDir = isDir(target) ? target : dirname(target);
@@ -300,7 +300,7 @@ switch (cmd) {
       clearTimeout(timer);
       timer = setTimeout(async () => {
         const ok = await rebuild();
-        if (ok) console.log(`recompilado (${String(changed)})`);
+        if (ok) console.log(`rebuilt (${String(changed)})`);
         const msg = ok ? "reload" : JSON.stringify(lastError);
         for (const c of clients) c.write(`data: ${msg}\n\n`);
       }, 50);
@@ -310,7 +310,7 @@ switch (cmd) {
 
   case "bench": {
     const script = join(ROOT, "benchmarks", "measure.ts");
-    if (!existsSync(script)) die("art bench solo está disponible dentro del repo de ArtScript");
+    if (!existsSync(script)) die("art bench is only available inside the ArtScript repo");
     const { runBench } = await import(pathToFileURL(script).href);
     await runBench();
     break;

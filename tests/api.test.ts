@@ -119,22 +119,22 @@ test("e2e: data loads, create/update/remove re-fetch, errors are shown", async (
   const { base } = await startApi();
   await fetch(`${base}/api/users`, json("POST", { name: "Ana", email: "ana@x.co", admin: false }));
   const { root } = await mountApp(readFileSync("examples/users/app.art", "utf8"), (rt) => rt.setApiBase(base));
-  const summary = () => all(root, "span").find((s) => /usuarios/.test(s.textContent))?.textContent;
-  await until(() => summary() === "1 usuarios, 0 admins");
+  const summary = () => all(root, "span").find((s) => /users/.test(s.textContent))?.textContent;
+  await until(() => summary() === "1 users, 0 admins");
 
   const [name, email] = all(root, "input");
   const form = all(root, "form")[0];
   name.typeText("Bo");
   email.typeText("bo@x.co");
   form.submit();
-  await until(() => summary() === "2 usuarios, 0 admins");
+  await until(() => summary() === "2 users, 0 admins");
   assert.equal(name.value, "");
 
-  all(root, "button").find((b) => b.textContent === "Hacer admin")!.click();
-  await until(() => summary() === "2 usuarios, 1 admins");
+  all(root, "button").find((b) => b.textContent === "Make admin")!.click();
+  await until(() => summary() === "2 users, 1 admins");
 
   all(root, "button").filter((b) => b.textContent === "x")[0].click();
-  await until(() => summary() === "1 usuarios, 1 admins" || summary() === "1 usuarios, 0 admins");
+  await until(() => summary() === "1 users, 1 admins" || summary() === "1 users, 0 admins");
 
   name.typeText("Cy");
   email.typeText("no-es-email");

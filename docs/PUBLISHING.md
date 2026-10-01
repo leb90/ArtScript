@@ -1,35 +1,35 @@
-# Publicar en npm (cuando el MVP esté estable)
+# Publishing to npm (once the MVP is stable)
 
-**Todavía no se publica.** `package.json` tiene `"private": true`, que bloquea `npm publish` por accidente.
+**Not published yet.** `package.json` has `"private": true`, which blocks an accidental `npm publish`.
 
-## Qué ya está listo
+## What's ready
 
-- Nombres libres en npm (verificado 2026-09-30): `artscript` y `create-artscript`.
-- `npm run build` compila `src/*.ts` → `lib/*.js` + tipos `.d.ts`. Node no ejecuta TypeScript dentro de `node_modules`, así que el paquete publica JS.
-- `bin: art → lib/cli.js`, `files` (lib, runtime, templates, docs/SPEC.md), `exports`, `engines: node >=24`, licencia MIT, repo y metadatos.
-- `prepack` compila automáticamente; `prepublishOnly` corre tests + typecheck.
-- Sin scripts de instalación (`postinstall`/`prepare`): npm no muestra advertencias de seguridad al instalar.
-- Probado: `npm pack` → instalar el `.tgz` en un directorio vacío → `art init` → `npm install` → `check`, `build` y `dev` funcionan.
+- Free names on npm (checked 2026-09-30): `artscript` and `create-artscript`.
+- `npm run build` compiles `src/*.ts` → `lib/*.js` + `.d.ts` types. Node doesn't run TypeScript inside `node_modules`, so the package ships JS.
+- `bin: art → lib/cli.js`, `files` (lib, runtime, templates, docs/SPEC.md), `exports`, `engines: node >=24`, MIT license, repository and metadata.
+- `prepack` builds automatically; `prepublishOnly` runs tests + typecheck.
+- No install scripts (`postinstall`/`prepare`): npm shows no security warnings on install.
+- Tested: `npm pack` → install the `.tgz` in an empty folder → `art init` → `npm install` → `check`, `build` and `dev` work.
 
-## Checklist antes de publicar
+## Checklist before publishing
 
-1. [ ] MVP estable: `api`/backend, `art patch`, `for` con key, `fmt` que preserve comentarios.
-2. [ ] Eval de costo con agentes (`npm run eval`) con resultado favorable.
-3. [ ] Decidir versión inicial (`0.1.0` señala "experimental"; semver 0.x permite cambios que rompen).
-4. [x] README en inglés.
-5. [ ] Crear el paquete `create-artscript` para que funcione `npm create artscript@latest mi-app` (hoy existe `npx art init mi-app`).
-6. [ ] Quitar `"private": true` de `package.json`.
-7. [ ] `npm login` (cuenta npm del autor, con 2FA).
-8. [ ] `npm publish --access public` (usar `--dry-run` primero).
-9. [ ] Tag en git: `git tag v0.1.0 && git push --tags`.
+1. [ ] Stable MVP: real database, `for` with keys, `fmt` that keeps comments.
+2. [x] Agent cost eval (`npm run eval`) with a favorable result.
+3. [ ] Pick the first version (`0.1.0` signals "experimental"; semver 0.x allows breaking changes).
+4. [x] README in English.
+5. [ ] Create the `create-artscript` package so `npm create artscript@latest my-app` works (today: `npx art init my-app`).
+6. [ ] Remove `"private": true` from `package.json`.
+7. [ ] `npm login` (the author's npm account, with 2FA).
+8. [ ] `npm publish --access public` (try `--dry-run` first).
+9. [ ] Git tag: `git tag v0.1.0 && git push --tags`.
 
-## Probar el paquete localmente sin publicar
+## Trying the package locally without publishing
 
 ```sh
-npm pack                                   # genera artscript-0.1.0.tgz
-cd /tmp && mkdir prueba && cd prueba
-npm init -y && npm i /ruta/a/artscript-0.1.0.tgz
-npx art init mi-app
+npm pack                                   # creates artscript-0.1.0.tgz
+cd /tmp && mkdir try && cd try
+npm init -y && npm i /path/to/artscript-0.1.0.tgz
+npx art init my-app
 ```
 
-`art init` ejecutado desde el repo (no instalado) crea el proyecto apuntando a la copia local (`file:`); instalado desde npm apunta a `^<versión>`.
+`art init` run from the repo (not installed) points the new project at the local copy (`file:`); installed from npm it points at `^<version>`.

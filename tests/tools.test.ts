@@ -13,29 +13,29 @@ const todo = () => {
   return { program, a: analyze(program) };
 };
 
-test("fmt: los ejemplos ya están en formato canónico y es idempotente", () => {
+test("fmt: examples are already canonical and fmt is idempotent", () => {
   for (const f of ["examples/counter/app.art", "examples/todo/app.art", "templates/default/src/app.art", "examples/users/app.art", "examples/notes/app.art"]) {
     const src = readFileSync(f, "utf8");
     const once = printProgram(parse(src, f));
-    assert.equal(once, src, `${f} no está en formato canónico (correr: art fmt ${f} --write)`);
+    assert.equal(once, src, `${f} is not canonical (run: art fmt ${f} --write)`);
     assert.equal(printProgram(parse(once, f)), once);
   }
 });
 
-test("fmt: formas alternativas convergen a una sola", () => {
+test("fmt: alternative forms converge to one", () => {
   const a = printProgram(parse('page P {\n  state x = 1\n  if x === 1 { text "a" }\n}', "t"));
   const b = printProgram(parse('page P {\n\n  state x = 1\n  if (x == 1) {\n    text "a"\n  }\n}', "t"));
   assert.equal(a, b);
 });
 
-test("context: mapa del proyecto con tipos inferidos", () => {
+test("context: project map with inferred types", () => {
   const { program, a } = todo();
   const map = projectMap(program, a);
   assert.match(map, /^model Todo \{ id: ID, title: String, done: Bool \}$/m);
   assert.match(map, /page Todos "\/" state\[todos: Todo\[\], draft: String\] computed\[pending: Number\] fn\[add\(\)\] uses\[TodoItem\]/);
 });
 
-test("context: detalle de componente con dependencias, uso y eventos", () => {
+test("context: component detail with dependencies, usage and events", () => {
   const { program, a } = todo();
   const out = declContext(program, a, "Todos/TodoItem")!;
   assert.match(out, /^props: todo: Todo, remove: Fn$/m);
@@ -45,7 +45,7 @@ test("context: detalle de componente con dependencias, uso y eventos", () => {
   assert.match(out, /^source:$/m);
 });
 
-test("context: --budget recorta a outline y luego a líneas", () => {
+test("context: --budget trims to paths, then to lines", () => {
   const { program, a } = todo();
   const full = declContext(program, a, "Todos")!;
   const small = declContext(program, a, "Todos", 120)!;
@@ -53,7 +53,7 @@ test("context: --budget recorta a outline y luego a líneas", () => {
   assert.doesNotMatch(small, /^source:$/m);
 });
 
-test("errores --ai: una línea JSON sin campos vacíos", () => {
+test("errors --ai: one JSON line without empty fields", () => {
   const line = formatAI({ code: "E1001", type: "UNDEFINED_NAME", msg: "x", loc: { file: "a.art", line: 3, col: 8 }, expr: "cont", fixes: ["count"] });
   assert.equal(line, '{"code":"E1001","type":"UNDEFINED_NAME","loc":"a.art:3:8","expr":"cont","fixes":["count"]}');
 });

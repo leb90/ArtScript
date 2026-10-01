@@ -58,20 +58,20 @@ class Parser {
 
   fail(expected: string): never {
     const t = this.tok;
-    const actual = t.t === "eof" ? "fin de archivo" : t.t === "nl" ? "salto de línea" : `'${t.v}'`;
-    throw new CompileError(diag("UNEXPECTED_TOKEN", `se esperaba ${expected}, llegó ${actual}`, t.loc, { expected, actual }));
+    const actual = t.t === "eof" ? "end of file" : t.t === "nl" ? "a line break" : `'${t.v}'`;
+    throw new CompileError(diag("UNEXPECTED_TOKEN", `expected ${expected}, got ${actual}`, t.loc, { expected, actual }));
   }
   expect(v: string): Token {
     if (!this.is(v)) this.fail(`'${v}'`);
     return this.next();
   }
-  ident(what = "un nombre"): Token {
+  ident(what = "a name"): Token {
     if (this.tok.t !== "id") this.fail(what);
     return this.next();
   }
   expectEnd() {
     this.skipNl();
-    if (this.tok.t !== "eof") this.fail("fin de expresión");
+    if (this.tok.t !== "eof") this.fail("end of expression");
   }
 
   // ---------- declarations ----------
@@ -83,11 +83,11 @@ class Parser {
       else if (this.is("api")) decls.push(this.api());
       else if (this.is("auth")) {
         const loc = this.next().loc;
-        const api = this.ident("la api de usuarios").v;
+        const api = this.ident("the users api").v;
         decls.push({ kind: "Auth", name: "auth", api, loc });
       } else if (this.is("server")) decls.push(this.serverFn());
       else if (this.is("component") || this.is("page")) decls.push(this.component());
-      else this.fail("'model', 'api', 'auth', 'server fn', 'component' o 'page'");
+      else this.fail("'model', 'api', 'auth', 'server fn', 'component' or 'page'");
       this.skipNl();
     }
     return { kind: "Program", decls };
@@ -95,12 +95,12 @@ class Parser {
 
   model(): ModelDecl {
     const loc = this.next().loc;
-    const name = this.ident("nombre del modelo").v;
+    const name = this.ident("a model name").v;
     this.expect("{");
     const fields = [];
     this.skipSep();
     while (!this.is("}")) {
-      const f = this.ident("nombre de campo");
+      const f = this.ident("a field name");
       this.expect(":");
       fields.push({ name: f.v, type: this.type(), loc: f.loc });
       this.skipSep();
@@ -111,9 +111,9 @@ class Parser {
 
   api(): ApiDecl {
     const loc = this.next().loc;
-    const name = this.ident("nombre de la api").v;
+    const name = this.ident("an api name").v;
     this.expect(":");
-    const model = this.ident("el model de la api");
+    const model = this.ident("the api's model");
     let access: ApiAccess = "public";
     if (this.is("login") || this.is("private")) access = this.next().v as ApiAccess;
     return { kind: "Api", name, model: model.v, access, modelLoc: model.loc, loc };
@@ -122,11 +122,11 @@ class Parser {
   serverFn(): ServerFnDecl {
     const loc = this.next().loc;
     this.expect("fn");
-    const name = this.ident("nombre de la función").v;
+    const name = this.ident("a function name").v;
     this.expect("(");
     const params: string[] = [];
     while (!this.is(")")) {
-      params.push(this.ident("nombre de parámetro").v);
+      params.push(this.ident("a parameter name").v);
       if (!this.eat(",")) break;
     }
     this.expect(")");
@@ -134,7 +134,7 @@ class Parser {
   }
 
   type(): TypeRef {
-    const t = this.ident("un tipo");
+    const t = this.ident("a type");
     let list = false;
     if (this.is("[") && this.is("]", this.peek())) { this.i += 2; list = true; }
     const optional = this.eat("?");
@@ -144,13 +144,13 @@ class Parser {
   component(): ComponentDecl {
     const kw = this.next();
     const page = kw.v === "page";
-    const name = this.ident(page ? "nombre de la página" : "nombre del componente").v;
+    const name = this.ident(page ? "a page name" : "a component name").v;
     let path: string | null = null;
     const params: Param[] = [];
     if (page && this.tok.t === "str") path = this.next().v;
     if (!page && this.eat("(")) {
       while (!this.is(")")) {
-        const p = this.ident("nombre de prop");
+        const p = this.ident("a prop name");
         this.expect(":");
         const type = this.type();
         const def = this.eat("=") ? this.expr() : null;
@@ -188,7 +188,7 @@ class Parser {
     this.expect("(");
     const params: string[] = [];
     while (!this.is(")")) {
-      params.push(this.ident("nombre de parámetro").v);
+      params.push(this.ident("a parameter name").v);
       if (!this.eat(",")) break;
     }
     this.expect(")");
@@ -225,8 +225,8 @@ class Parser {
     }
     if (this.is("for")) {
       this.next();
-      const item = this.ident("variable del for").v;
-      const index = this.eat(",") ? this.ident("variable índice").v : null;
+      const item = this.ident("a loop variable").v;
+      const index = this.eat(",") ? this.ident("an index variable").v : null;
       this.expect("in");
       const list = this.expr();
       return { kind: "ForView", item, index, list, body: this.viewBlock(), loc: t.loc };
@@ -247,7 +247,7 @@ class Parser {
   }
 
   element(): Element {
-    const tag = this.ident("un elemento de UI, 'if' o 'for'");
+    const tag = this.ident("a UI element, 'if' or 'for'");
     const spec = ELEMENTS[tag.v];
     const isComponent = /^[A-Z]/.test(tag.v);
     let content: Expr | null = null;
@@ -260,7 +260,7 @@ class Parser {
     if (takesContent && !atEnd() && !propAhead()) content = this.ternary();
     const readProps = () => {
       while (!atEnd()) {
-        const p = this.ident("una prop (nombre=valor) o flag");
+        const p = this.ident("a prop (name=value) or flag");
         if (this.eat("=")) props.push({ name: p.v, value: this.unary(), loc: p.loc });
         else props.push({ name: p.v, value: null, loc: p.loc });
       }
@@ -316,7 +316,7 @@ class Parser {
       this.next();
       // `catch (e)`, `catch e` and a bare `catch` are all accepted.
       let param: string | null = null;
-      if (this.eat("(")) { param = this.ident("nombre del error").v; this.expect(")"); }
+      if (this.eat("(")) { param = this.ident("an error name").v; this.expect(")"); }
       else if (this.tok.t === "id") param = this.next().v;
       return { kind: "Try", body, param, handler: this.block(), loc: t.loc };
     }
@@ -356,7 +356,7 @@ class Parser {
     const params: string[] = [];
     if (this.eat("(")) {
       while (!this.is(")")) {
-        params.push(this.ident("parámetro").v);
+        params.push(this.ident("a parameter").v);
         if (!this.eat(",")) break;
       }
       this.expect(")");
@@ -412,11 +412,11 @@ class Parser {
     for (;;) {
       const t = this.tok;
       if (this.eat(".")) {
-        e = { kind: "Member", object: e, prop: this.ident("nombre de propiedad").v, optional: false, loc: e.loc };
+        e = { kind: "Member", object: e, prop: this.ident("a property name").v, optional: false, loc: e.loc };
       } else if (this.eat("?.")) {
         if (this.eat("(")) e = { kind: "Call", callee: e, args: this.args(), optional: true, loc: e.loc };
         else if (this.eat("[")) { e = { kind: "Index", object: e, index: this.expr(), optional: true, loc: e.loc }; this.expect("]"); }
-        else e = { kind: "Member", object: e, prop: this.ident("nombre de propiedad").v, optional: true, loc: e.loc };
+        else e = { kind: "Member", object: e, prop: this.ident("a property name").v, optional: true, loc: e.loc };
       } else if (this.eat("[")) {
         e = { kind: "Index", object: e, index: this.expr(), optional: false, loc: e.loc };
         this.expect("]");
@@ -488,7 +488,7 @@ class Parser {
         if (this.eat("...")) props.push({ spread: this.expr() });
         else {
           const k = this.tok;
-          if (k.t !== "id" && k.t !== "str") this.fail("nombre de propiedad");
+          if (k.t !== "id" && k.t !== "str") this.fail("a property name");
           this.next();
           if (this.eat(":")) { this.skipNl(); props.push({ key: k.v, value: this.expr() }); }
           else props.push({ key: k.v, value: { kind: "Ident", name: k.v, loc: k.loc } });
@@ -501,6 +501,6 @@ class Parser {
       this.expect("}");
       return { kind: "Object", props, loc };
     }
-    this.fail("una expresión");
+    this.fail("an expression");
   }
 }

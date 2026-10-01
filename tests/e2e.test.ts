@@ -4,31 +4,31 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { all, mountApp } from "./helpers.ts";
 
-test("counter: clicks actualizan texto, computed e if", async () => {
+test("counter: clicks update text, computed and if", async () => {
   const { root } = await mountApp(readFileSync("examples/counter/app.art", "utf8"));
   const [minus, plus] = all(root, "button");
   const spans = () => all(root, "span").map((s) => s.textContent);
-  assert.deepEqual(spans(), ["0", "El doble es 0"]);
+  assert.deepEqual(spans(), ["0", "Double is 0"]);
   plus.click();
   plus.click();
   minus.click();
-  assert.deepEqual(spans(), ["1", "El doble es 2"]);
+  assert.deepEqual(spans(), ["1", "Double is 2"]);
   for (let i = 0; i < 5; i++) plus.click();
-  assert.deepEqual(spans(), ["6", "El doble es 12", "¡Más de 5!"]);
+  assert.deepEqual(spans(), ["6", "Double is 12", "More than 5!"]);
   minus.click();
-  assert.deepEqual(spans(), ["5", "El doble es 10"]);
+  assert.deepEqual(spans(), ["5", "Double is 10"]);
 });
 
-test("todo: input, enter, lista, checkbox en componente hijo y borrar", async () => {
+test("todo: input, Enter, list, checkbox in a child component and delete", async () => {
   const { root } = await mountApp(readFileSync("examples/todo/app.art", "utf8"));
   const input = all(root, "input")[0];
   const addBtn = all(root, "button")[0];
   const footer = () => all(root, "span").at(-1)!.textContent;
 
-  assert.equal(footer(), "No hay tareas");
+  assert.equal(footer(), "No tasks");
   input.typeText("Comprar pan");
   input.pressEnter();
-  assert.equal(input.value, "", "draft se limpia y el input refleja el state");
+  assert.equal(input.value, "", "draft is cleared and the input reflects the state");
   input.typeText("Estudiar");
   addBtn.click();
   input.typeText("   ");
@@ -36,19 +36,19 @@ test("todo: input, enter, lista, checkbox en componente hijo y borrar", async ()
 
   const items = () => all(root, "span").slice(0, -1).map((s) => s.textContent);
   assert.deepEqual(items(), ["Comprar pan", "Estudiar"]);
-  assert.equal(footer(), "2 pendientes");
+  assert.equal(footer(), "2 left");
 
   // checkbox inside TodoItem mutates todo.done → notifies the parent state
   all(root, "input").filter((i) => i.type === "checkbox")[0].toggle();
-  assert.equal(footer(), "1 pendientes");
+  assert.equal(footer(), "1 left");
 
   // delete via a callback passed as a prop
   all(root, "button").filter((b) => b.textContent === "x")[0].click();
   assert.deepEqual(items(), ["Estudiar"]);
-  assert.equal(footer(), "1 pendientes");
+  assert.equal(footer(), "1 left");
 });
 
-test("if/else y for desmontan effects de ramas removidas", async () => {
+test("if/else and for dispose effects of removed branches", async () => {
   const { root, dispose } = await mountApp(`page P {
   state show = true
   state n = 0
@@ -72,7 +72,7 @@ test("if/else y for desmontan effects de ramas removidas", async () => {
   dispose();
 });
 
-test("props de layout y flags se traducen a estilos y clases", async () => {
+test("layout props and flags become styles and classes", async () => {
   const { root } = await mountApp(`page P {
   grid cols=3 gap=2 pad=4 {
     button "a" primary

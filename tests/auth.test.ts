@@ -144,27 +144,27 @@ test("e2e: sign up, add and toggle notes, stats update, log out", async () => {
   try {
     const { root } = await mountApp(NOTES, (rt) => rt.setApiBase(base));
     const text = () => all(root, "span").map((s) => s.textContent).concat(all(root, "h2").map((h) => h.textContent));
-    await until(() => text().includes("Notas"));
+    await until(() => text().includes("Notes"));
 
     const [name, email, password] = all(root, "input");
     name.typeText("Ana");
     email.typeText("ana@x.co");
     password.typeText("secreto123");
-    all(root, "button").find((b) => b.textContent === "Crear cuenta")!.click();
-    await until(() => text().includes("Notas de Ana"));
-    await until(() => text().includes("0 de 0 hechas"));
+    all(root, "button").find((b) => b.textContent === "Sign up")!.click();
+    await until(() => text().includes("Ana's notes"));
+    await until(() => text().includes("0 of 0 done"));
 
     const note = all(root, "input")[0];
     note.typeText("comprar pan");
     all(root, "form")[0].submit();
-    await until(() => text().includes("comprar pan") && text().includes("0 de 1 hechas"));
+    await until(() => text().includes("comprar pan") && text().includes("0 of 1 done"));
 
     all(root, "button").find((b) => b.textContent === "○")!.click();
-    await until(() => text().includes("1 de 1 hechas"));
+    await until(() => text().includes("1 of 1 done"));
     assert.ok(all(root, "span").find((s) => s.textContent === "comprar pan")!.className.includes("a-muted"));
 
-    all(root, "button").find((b) => b.textContent === "Salir")!.click();
-    await until(() => text().includes("Notas") && !text().includes("Notas de Ana"));
+    all(root, "button").find((b) => b.textContent === "Log out")!.click();
+    await until(() => text().includes("Notes") && !text().includes("Ana's notes"));
   } finally {
     globalThis.fetch = realFetch;
   }

@@ -119,7 +119,7 @@ export function all(n: FNode, tag?: string): FElement[] {
 export async function mountApp(src: string, setup?: (rt: any) => void) {
   installDom();
   const r = compile([{ file: "test.art", src }]);
-  if (!r.js) throw new Error("errores de compilación: " + JSON.stringify(r.diagnostics));
+  if (!r.js) throw new Error("compile errors: " + JSON.stringify(r.diagnostics));
   const dir = mkdtempSync(join(tmpdir(), "art-"));
   writeFileSync(join(dir, "app.js"), r.js);
   copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));

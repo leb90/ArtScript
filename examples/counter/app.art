@@ -3,15 +3,15 @@ page Counter "/" {
   computed double = count * 2
 
   column gap=4 align=center {
-    title "Contador"
+    title "Counter"
     row gap=2 {
       button "-" -> count--
       text count bold
       button "+" primary -> count++
     }
-    text `El doble es ${double}` muted
+    text `Double is ${double}` muted
     if count > 5 {
-      text "¡Más de 5!"
+      text "More than 5!"
     }
   }
 }

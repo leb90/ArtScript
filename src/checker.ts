@@ -136,7 +136,7 @@ class Checker {
   run(): Diagnostic[] {
     const seen = new Set<string>();
     for (const d of this.program.decls) {
-      if (seen.has(d.name)) this.err("DUPLICATE_NAME", `'${d.name}' ya está declarado`, d.loc, { expr: d.name });
+      if (seen.has(d.name)) this.err("DUPLICATE_NAME", `'${d.name}' is already declared`, d.loc, { expr: d.name });
       seen.add(d.name);
       if (d.kind === "Model") this.models.set(d.name, {});
     }
@@ -145,7 +145,7 @@ class Checker {
       this.at = d.name;
       const fields = this.models.get(d.name)!;
       for (const f of d.fields) {
-        if (f.name in fields) this.err("DUPLICATE_NAME", `campo '${f.name}' repetido`, f.loc, { expr: f.name });
+        if (f.name in fields) this.err("DUPLICATE_NAME", `duplicate field '${f.name}'`, f.loc, { expr: f.name });
         fields[f.name] = this.resolve(f.type);
       }
       this.idFields.set(d.name, new Set(d.fields.filter((f) => f.type.name === "ID" && !f.type.list).map((f) => f.name)));
@@ -154,19 +154,19 @@ class Checker {
       if (d.kind !== "Api") continue;
       this.at = d.name;
       if (!this.models.has(d.model)) {
-        this.err("UNKNOWN_TYPE", `la api '${d.name}' usa un model que no existe: '${d.model}'`, d.modelLoc, { expr: d.model, fixes: suggest(d.model, this.models.keys()) });
+        this.err("UNKNOWN_TYPE", `api '${d.name}' uses a model that doesn't exist: '${d.model}'`, d.modelLoc, { expr: d.model, fixes: suggest(d.model, this.models.keys()) });
       } else if (!this.idFields.get(d.model)?.size) {
-        this.err("MISSING_FIELD", `la api '${d.name}' necesita que ${d.model} tenga un campo de tipo ID`, d.modelLoc, { expr: d.model, expected: "id: ID", fixes: [`agregar \`id: ID\` a model ${d.model}`] });
+        this.err("MISSING_FIELD", `api '${d.name}' needs ${d.model} to have an ID field`, d.modelLoc, { expr: d.model, expected: "id: ID", fixes: [`add \`id: ID\` to model ${d.model}`] });
       }
       this.apis.set(d.name, d.model);
       if (d.access === "private") {
         this.privateApis.add(d.name);
         if (this.models.has(d.model) && !this.idFields.get(d.model)?.has("owner")) {
-          this.err("MISSING_FIELD", `la api private '${d.name}' necesita que ${d.model} tenga \`owner: ID\``, d.modelLoc, { expr: d.model, expected: "owner: ID", fixes: [`agregar \`owner: ID\` a model ${d.model}`] });
+          this.err("MISSING_FIELD", `private api '${d.name}' needs ${d.model} to have \`owner: ID\``, d.modelLoc, { expr: d.model, expected: "owner: ID", fixes: [`add \`owner: ID\` to model ${d.model}`] });
         }
       }
       if (d.access !== "public" && !this.program.decls.some((x) => x.kind === "Auth")) {
-        this.err("AUTH_REQUIRED", `'${d.access}' necesita usuarios: falta \`auth <api>\``, d.loc, { expr: printDecl(d), fixes: ["auth users"] });
+        this.err("AUTH_REQUIRED", `'${d.access}' needs accounts: \`auth <api>\` is missing`, d.loc, { expr: printDecl(d), fixes: ["auth users"] });
       }
     }
     for (const d of this.program.decls) {
@@ -174,13 +174,13 @@ class Checker {
       this.at = "auth";
       const model = this.apis.get(d.api);
       if (!model) {
-        this.err("UNKNOWN_TYPE", `\`auth\` necesita una api de usuarios: no existe '${d.api}'`, d.loc, { expr: d.api, fixes: suggest(d.api, this.apis.keys()) });
+        this.err("UNKNOWN_TYPE", `\`auth\` needs a users api: '${d.api}' doesn't exist`, d.loc, { expr: d.api, fixes: suggest(d.api, this.apis.keys()) });
         continue;
       }
       const decl = this.program.decls.find((x): x is ModelDecl => x.kind === "Model" && x.name === model);
       const typeOf = (f: string) => decl?.fields.find((x) => x.name === f)?.type.name;
       if (typeOf("email") !== "Email" || typeOf("password") !== "String") {
-        this.err("MISSING_FIELD", `\`auth\` necesita que ${model} tenga \`email: Email\` y \`password: String\``, d.loc, { expr: model, expected: "email: Email, password: String" });
+        this.err("MISSING_FIELD", `\`auth\` needs ${model} to have \`email: Email\` and \`password: String\``, d.loc, { expr: model, expected: "email: Email, password: String" });
       }
       this.authModel = model;
     }
@@ -199,7 +199,7 @@ class Checker {
   resolve(t: TypeRef): Ty {
     let ty: Ty = BUILTIN_TYPES[t.name] ?? (this.models.has(t.name) ? { k: "model", name: t.name } : ANY);
     if (!BUILTIN_TYPES[t.name] && !this.models.has(t.name)) {
-      this.err("UNKNOWN_TYPE", `tipo desconocido '${t.name}'`, t.loc, {
+      this.err("UNKNOWN_TYPE", `unknown type '${t.name}'`, t.loc, {
         expr: t.name, fixes: suggest(t.name, [...Object.keys(BUILTIN_TYPES), ...this.models.keys()]),
       });
     }
@@ -231,7 +231,7 @@ class Checker {
     this.at = c.name;
     const scope = new Scope(null);
     const declare = (name: string, sym: Sym, loc: Loc) => {
-      if (scope.vars.has(name)) this.err("DUPLICATE_NAME", `'${name}' ya está declarado en ${c.name}`, loc, { expr: name });
+      if (scope.vars.has(name)) this.err("DUPLICATE_NAME", `'${name}' is already declared in ${c.name}`, loc, { expr: name });
       scope.vars.set(name, sym);
     };
     for (const p of c.params) {
@@ -267,7 +267,7 @@ class Checker {
         // Lists start as [] and objects as null until the request resolves.
         const t = this.infer(m.expr, scope);
         if (t.k === "async") sym.ty = t.of.k === "list" ? t.of : opt(t.of);
-        else if (t.k !== "any") this.err("TYPE_MISMATCH", "`data` necesita una llamada a una api", m.expr.loc, { expr: printExpr(m.expr), expected: "api.<nombre>.list() | get(id)", actual: show(t) });
+        else if (t.k !== "any") this.err("TYPE_MISMATCH", "`data` needs an api call", m.expr.loc, { expr: printExpr(m.expr), expected: "api.<name>.list() | get(id)", actual: show(t) });
       } else {
         const fs = new Scope(scope);
         for (const p of m.params) fs.vars.set(p, { kind: "param", ty: ANY });
@@ -287,14 +287,14 @@ class Checker {
       } else if (n.kind === "ForView") {
         let lt = this.infer(n.list, scope);
         if (lt.k === "opt") {
-          this.err("POSSIBLY_EMPTY", "la lista puede ser null", n.list.loc, {
+          this.err("POSSIBLY_EMPTY", "the list may be null", n.list.loc, {
             expr: printExpr(n.list), expected: show(lt.of), actual: show(lt), fixes: [`${printExpr(n.list)} ?? []`],
           });
           lt = lt.of;
         }
         let elem: Ty = ANY;
         if (lt.k === "list") elem = lt.of;
-        else if (lt.k !== "any") this.err("NOT_A_LIST", "`for` necesita una lista", n.list.loc, { expr: printExpr(n.list), expected: "T[]", actual: show(lt) });
+        else if (lt.k !== "any") this.err("NOT_A_LIST", "`for` needs a list", n.list.loc, { expr: printExpr(n.list), expected: "T[]", actual: show(lt) });
         const s = new Scope(scope);
         s.vars.set(n.item, { kind: "loop", ty: elem });
         if (n.index) s.vars.set(n.index, { kind: "loop", ty: NUM });
@@ -307,7 +307,7 @@ class Checker {
     if (/^[A-Z]/.test(el.tag)) return this.componentUse(el, scope);
     const spec = ELEMENTS[el.tag];
     if (!spec) {
-      this.err("UNKNOWN_ELEMENT", `elemento desconocido '${el.tag}'`, el.loc, {
+      this.err("UNKNOWN_ELEMENT", `unknown element '${el.tag}'`, el.loc, {
         expr: el.tag, fixes: suggest(el.tag, [...Object.keys(ELEMENTS), ...this.comps.keys()]),
       });
       return;
@@ -315,8 +315,8 @@ class Checker {
     if (el.content) {
       if (spec.content === "bind") {
         if (!this.bindable(el.content, scope)) {
-          this.err("NOT_BINDABLE", "`input` enlaza su valor a un state", el.content.loc, {
-            expr: printExpr(el.content), fixes: ["declarar `state x = \"\"` y usar `input x`"],
+          this.err("NOT_BINDABLE", "`input` binds its value to a state", el.content.loc, {
+            expr: printExpr(el.content), fixes: ["declare `state x = \"\"` and use `input x`"],
           });
         }
       }
@@ -325,8 +325,8 @@ class Checker {
     for (const p of el.props) {
       if (p.value === null) {
         if (!spec.flags.includes(p.name)) {
-          this.err("UNKNOWN_PROP", `'${el.tag}' no acepta el flag '${p.name}'`, p.loc, {
-            expr: p.name, expected: spec.flags.join("|") || "ningún flag", fixes: suggest(p.name, spec.flags),
+          this.err("UNKNOWN_PROP", `'${el.tag}' doesn't take the flag '${p.name}'`, p.loc, {
+            expr: p.name, expected: spec.flags.join("|") || "no flags", fixes: suggest(p.name, spec.flags),
           });
         }
         continue;
@@ -337,7 +337,7 @@ class Checker {
         continue;
       }
       if (!spec.props.includes(p.name)) {
-        this.err("UNKNOWN_PROP", `'${el.tag}' no acepta la prop '${p.name}'`, p.loc, {
+        this.err("UNKNOWN_PROP", `'${el.tag}' doesn't take the prop '${p.name}'`, p.loc, {
           expr: p.name, expected: spec.props.join("|"), fixes: suggest(p.name, [...spec.props, ...spec.flags]),
         });
         continue;
@@ -346,7 +346,7 @@ class Checker {
       if (values) {
         const v = p.value.kind === "Ident" ? p.value.name : p.value.kind === "Str" ? p.value.value : null;
         if (v !== null && !values.includes(v) && !(p.value.kind === "Ident" && scope.get(v))) {
-          this.err("TYPE_MISMATCH", `valor inválido para '${p.name}'`, p.value.loc, { expr: v, expected: values.join("|"), fixes: suggest(v, values) });
+          this.err("TYPE_MISMATCH", `invalid value for '${p.name}'`, p.value.loc, { expr: v, expected: values.join("|"), fixes: suggest(v, values) });
           continue;
         }
         if (v !== null && values.includes(v)) continue;
@@ -354,11 +354,11 @@ class Checker {
       this.infer(p.value, scope);
     }
     if (el.action) {
-      if (!spec.action) this.err("NO_ACTION", `'${el.tag}' no acepta acción '->'`, el.loc, { expr: el.tag, fixes: ["usar `button \"...\" -> accion`"] });
+      if (!spec.action) this.err("NO_ACTION", `'${el.tag}' doesn't take an '->' action`, el.loc, { expr: el.tag, fixes: ["use `button \"...\" -> action`"] });
       this.stmts(el.action, new Scope(scope));
     }
     if (el.children.length) {
-      if (!spec.children) this.err("NO_CHILDREN", `'${el.tag}' no acepta hijos`, el.loc, { expr: el.tag, fixes: ["envolverlo en `row`, `column` o `card`"] });
+      if (!spec.children) this.err("NO_CHILDREN", `'${el.tag}' doesn't take children`, el.loc, { expr: el.tag, fixes: ["wrap it in `row`, `column` or `card`"] });
       this.view(el.children, scope);
     }
   }
@@ -366,15 +366,15 @@ class Checker {
   componentUse(el: Element, scope: Scope) {
     const comp = this.comps.get(el.tag);
     if (!comp) {
-      this.err("UNKNOWN_ELEMENT", `componente desconocido '${el.tag}'`, el.loc, { expr: el.tag, fixes: suggest(el.tag, this.comps.keys()) });
+      this.err("UNKNOWN_ELEMENT", `unknown component '${el.tag}'`, el.loc, { expr: el.tag, fixes: suggest(el.tag, this.comps.keys()) });
       return;
     }
     const given = new Set<string>();
     for (const p of el.props) {
       const param = comp.params.find((x) => x.name === p.name);
       if (!param || p.value === null) {
-        this.err("UNKNOWN_PROP", `'${el.tag}' no tiene la prop '${p.name}'`, p.loc, {
-          expr: p.name, expected: comp.params.map((x) => x.name).join("|") || "sin props", fixes: suggest(p.name, comp.params.map((x) => x.name)),
+        this.err("UNKNOWN_PROP", `'${el.tag}' has no prop '${p.name}'`, p.loc, {
+          expr: p.name, expected: comp.params.map((x) => x.name).join("|") || "no props", fixes: suggest(p.name, comp.params.map((x) => x.name)),
         });
         continue;
       }
@@ -383,11 +383,11 @@ class Checker {
     }
     for (const p of comp.params) {
       if (p.required && !given.has(p.name)) {
-        this.err("MISSING_PROP", `falta la prop '${p.name}' de ${el.tag}`, el.loc, { expr: el.tag, expected: `${p.name}: ${show(p.ty)}`, fixes: [`${el.tag} ${p.name}=...`] });
+        this.err("MISSING_PROP", `missing prop '${p.name}' of ${el.tag}`, el.loc, { expr: el.tag, expected: `${p.name}: ${show(p.ty)}`, fixes: [`${el.tag} ${p.name}=...`] });
       }
     }
-    if (el.action) this.err("NO_ACTION", `un componente no acepta '->'`, el.loc, { expr: el.tag });
-    if (el.children.length) this.err("NO_CHILDREN", `'${el.tag}' no acepta hijos`, el.loc, { expr: el.tag });
+    if (el.action) this.err("NO_ACTION", `a component doesn't take '->'`, el.loc, { expr: el.tag });
+    if (el.children.length) this.err("NO_CHILDREN", `'${el.tag}' doesn't take children`, el.loc, { expr: el.tag });
   }
 
   // ---------- statements ----------
@@ -478,7 +478,7 @@ class Checker {
   target(t: Expr, scope: Scope): Ty {
     const root = this.rootIdent(t);
     if (!root) {
-      this.err("ASSIGN_READONLY", "no se puede asignar a esta expresión", t.loc, { expr: printExpr(t) });
+      this.err("ASSIGN_READONLY", "can't assign to this expression", t.loc, { expr: printExpr(t) });
       return ANY;
     }
     const sym = scope.get(root.name);
@@ -487,8 +487,8 @@ class Checker {
     const direct = t.kind === "Ident";
     const ok = sym.kind === "state" || sym.kind === "data" || sym.kind === "let" || (sym.kind === "global" && !direct) || (!direct && (sym.kind === "loop" || sym.kind === "param" || sym.kind === "prop"));
     if (!ok) {
-      const fixes = sym.kind === "computed" ? [`cambiar \`computed ${root.name}\` por \`state ${root.name}\``] : sym.kind === "prop" ? ["pasar un callback como prop o usar un state local"] : [];
-      this.err("ASSIGN_READONLY", `'${root.name}' es ${sym.kind} y no se puede modificar`, t.loc, { expr: printExpr(t), actual: sym.kind, expected: "state|let", fixes });
+      const fixes = sym.kind === "computed" ? [`change \`computed ${root.name}\` to \`state ${root.name}\``] : sym.kind === "prop" ? ["pass a callback prop or use a local state"] : [];
+      this.err("ASSIGN_READONLY", `'${root.name}' is a ${sym.kind} and can't be changed`, t.loc, { expr: printExpr(t), actual: sym.kind, expected: "state|let", fixes });
     }
     return ty;
   }
@@ -503,12 +503,12 @@ class Checker {
     }
     if (this.assignable(actual, expected)) return;
     if (actual.k === "opt" && this.assignable(actual.of, expected)) {
-      this.err("POSSIBLY_EMPTY", "el valor puede ser null", e.loc, {
-        expr: printExpr(e), expected: show(expected), actual: show(actual), fixes: [`${printExpr(e)} ?? <valor por defecto>`],
+      this.err("POSSIBLY_EMPTY", "the value may be null", e.loc, {
+        expr: printExpr(e), expected: show(expected), actual: show(actual), fixes: [`${printExpr(e)} ?? <default value>`],
       });
       return;
     }
-    this.err("TYPE_MISMATCH", `se esperaba ${show(expected)}`, e.loc, { expr: printExpr(e), expected: show(expected), actual: show(actual) });
+    this.err("TYPE_MISMATCH", `expected ${show(expected)}`, e.loc, { expr: printExpr(e), expected: show(expected), actual: show(actual) });
   }
 
   // `skip`: fields that may be omitted (ids on create). `partial`: no field is required (update).
@@ -520,13 +520,13 @@ class Checker {
       if ("spread" in p) return; // completeness can't be verified with a spread
       given.add(p.key);
       if (!(p.key in fields)) {
-        this.err("UNKNOWN_FIELD", `${model} no tiene el campo '${p.key}'`, p.value.loc, { expr: p.key, expected: Object.keys(fields).join("|"), fixes: suggest(p.key, Object.keys(fields)) });
+        this.err("UNKNOWN_FIELD", `${model} has no field '${p.key}'`, p.value.loc, { expr: p.key, expected: Object.keys(fields).join("|"), fixes: suggest(p.key, Object.keys(fields)) });
       } else this.expectTy(p.value, this.types.get(p.value) ?? ANY, fields[p.key]);
     }
     if (opts.partial) return;
     const missing = Object.entries(fields).filter(([k, t]) => !given.has(k) && t.k !== "opt" && !opts.skip?.has(k));
     if (missing.length) {
-      this.err("MISSING_FIELD", `faltan campos de ${model}: ${missing.map((m) => m[0]).join(", ")}`, e.loc, {
+      this.err("MISSING_FIELD", `missing fields of ${model}: ${missing.map((m) => m[0]).join(", ")}`, e.loc, {
         expr: printExpr(e), expected: missing.map(([k, t]) => `${k}: ${show(t)}`).join(", "),
       });
     }
@@ -561,7 +561,7 @@ class Checker {
         const sym = scope.get(e.name);
         if (sym) return scope.getNarrowed(e.name) ?? sym.ty;
         if (GLOBALS.has(e.name)) return ANY;
-        this.err("UNDEFINED_NAME", `'${e.name}' no está definido`, e.loc, { expr: e.name, fixes: suggest(e.name, scope.names()) });
+        this.err("UNDEFINED_NAME", `'${e.name}' is not defined`, e.loc, { expr: e.name, fixes: suggest(e.name, scope.names()) });
         return ANY;
       }
       case "Member": {
@@ -572,7 +572,7 @@ class Checker {
         let wrapOpt = false;
         if (t.k === "opt") {
           if (!e.optional) {
-            this.err("POSSIBLY_EMPTY", "el valor puede ser null", e.loc, {
+            this.err("POSSIBLY_EMPTY", "the value may be null", e.loc, {
               expr: printExpr(e), expected: show(t.of), actual: show(t), fixes: [printExpr({ ...e, optional: true })],
             });
           }
@@ -588,7 +588,7 @@ class Checker {
         this.infer(e.index, scope);
         const base = t.k === "opt" ? t.of : t;
         if (t.k === "opt" && !e.optional) {
-          this.err("POSSIBLY_EMPTY", "el valor puede ser null", e.loc, { expr: printExpr(e), actual: show(t), fixes: [printExpr({ ...e, optional: true })] });
+          this.err("POSSIBLY_EMPTY", "the value may be null", e.loc, { expr: printExpr(e), actual: show(t), fixes: [printExpr({ ...e, optional: true })] });
         }
         if (base.k === "list") return opt(base.of);
         if (base.k === "str") return STR;
@@ -617,12 +617,12 @@ class Checker {
         if (e.op === "!") return BOOL;
         if (e.op === "typeof") return STR;
         if (e.op === "await") return t.k === "async" ? t.of : t;
-        if (t.k !== "num" && t.k !== "any") this.err("TYPE_MISMATCH", `'${e.op}' necesita un número`, e.loc, { expr: printExpr(e), expected: "Number", actual: show(t) });
+        if (t.k !== "num" && t.k !== "any") this.err("TYPE_MISMATCH", `'${e.op}' needs a number`, e.loc, { expr: printExpr(e), expected: "Number", actual: show(t) });
         return NUM;
       }
       case "Update": {
         const t = this.target(e.arg, scope);
-        if (t.k !== "num" && t.k !== "any") this.err("TYPE_MISMATCH", `'${e.op}' necesita un número`, e.loc, { expr: printExpr(e), expected: "Number", actual: show(t) });
+        if (t.k !== "num" && t.k !== "any") this.err("TYPE_MISMATCH", `'${e.op}' needs a number`, e.loc, { expr: printExpr(e), expected: "Number", actual: show(t) });
         return NUM;
       }
       case "Binary": return this.binary(e, scope);
@@ -638,7 +638,7 @@ class Checker {
         const vt = this.infer(e.value, scope);
         if (e.op === "=") this.expectTy(e.value, vt, tt);
         else if (e.op !== "??=" && !(tt.k === "num" || tt.k === "any" || (e.op === "+=" && tt.k === "str"))) {
-          this.err("TYPE_MISMATCH", `'${e.op}' necesita un número`, e.loc, { expr: printExpr(e), expected: "Number", actual: show(tt) });
+          this.err("TYPE_MISMATCH", `'${e.op}' needs a number`, e.loc, { expr: printExpr(e), expected: "Number", actual: show(tt) });
         }
         return tt;
       }
@@ -692,7 +692,7 @@ class Checker {
       find: "get", findById: "get", getById: "get", one: "get", read: "get",
     };
     const fixes = synonyms[prop] ? [synonyms[prop]] : suggest(prop, Object.keys(methods));
-    this.err("UNKNOWN_FIELD", `${t.sync ? "db" : "api"}.${t.name} no tiene el método '${prop}'`, e.loc, { expr: printExpr(e), expected: Object.keys(methods).join("|"), fixes });
+    this.err("UNKNOWN_FIELD", `${t.sync ? "db" : "api"}.${t.name} has no method '${prop}'`, e.loc, { expr: printExpr(e), expected: Object.keys(methods).join("|"), fixes });
     return ANY;
   }
 
@@ -700,8 +700,8 @@ class Checker {
     const expectCount = { list: 0, get: 1, create: 1, update: 2, remove: 1 }[method];
     if (expectCount === undefined) return;
     if (args.length !== expectCount) {
-      const sig = { list: "list()", get: "get(id)", create: "create(obj)", update: "update(id, cambios)", remove: "remove(id)" }[method]!;
-      this.err("TYPE_MISMATCH", `${t.sync ? "db" : "api"}.${t.name}.${sig} recibe ${expectCount} argumento(s)`, loc, { expected: sig, actual: `${args.length} argumento(s)` });
+      const sig = { list: "list()", get: "get(id)", create: "create(obj)", update: "update(id, changes)", remove: "remove(id)" }[method]!;
+      this.err("TYPE_MISMATCH", `${t.sync ? "db" : "api"}.${t.name}.${sig} takes ${expectCount} argument(s)`, loc, { expected: sig, actual: `${args.length} argument(s)` });
       return;
     }
     const obj = method === "create" ? args[0] : method === "update" ? args[1] : null;
@@ -728,7 +728,7 @@ class Checker {
     };
     if (prop in methods) return methods[prop];
     const synonyms: Record<string, string> = { register: "signup", signUp: "signup", signin: "login", signIn: "login", logIn: "login", signout: "logout", signOut: "logout", logOut: "logout", user: "me", current: "me", currentUser: "me", getUser: "me" };
-    this.err("UNKNOWN_FIELD", `auth no tiene el método '${prop}'`, e.loc, { expr: printExpr(e), expected: Object.keys(methods).join("|"), fixes: synonyms[prop] ? [synonyms[prop]] : suggest(prop, Object.keys(methods)) });
+    this.err("UNKNOWN_FIELD", `auth has no method '${prop}'`, e.loc, { expr: printExpr(e), expected: Object.keys(methods).join("|"), fixes: synonyms[prop] ? [synonyms[prop]] : suggest(prop, Object.keys(methods)) });
     return ANY;
   }
 
@@ -736,7 +736,7 @@ class Checker {
     const sig: Record<string, [number, string]> = { signup: [1, "signup(obj)"], login: [2, "login(email, password)"], logout: [0, "logout()"], me: [0, "me()"] };
     if (!sig[method]) return;
     if (args.length !== sig[method][0]) {
-      this.err("TYPE_MISMATCH", `auth.${sig[method][1]} recibe ${sig[method][0]} argumento(s)`, loc, { expected: sig[method][1], actual: `${args.length} argumento(s)` });
+      this.err("TYPE_MISMATCH", `auth.${sig[method][1]} takes ${sig[method][0]} argument(s)`, loc, { expected: sig[method][1], actual: `${args.length} argument(s)` });
       return;
     }
     if (method === "signup") {
@@ -749,7 +749,7 @@ class Checker {
     if (t.k === "model") {
       const fields = this.models.get(t.name)!;
       if (prop in fields) return fields[prop];
-      this.err("UNKNOWN_FIELD", `${t.name} no tiene el campo '${prop}'`, e.loc, { expr: printExpr(e), expected: Object.keys(fields).join("|"), fixes: suggest(prop, Object.keys(fields)) });
+      this.err("UNKNOWN_FIELD", `${t.name} has no field '${prop}'`, e.loc, { expr: printExpr(e), expected: Object.keys(fields).join("|"), fixes: suggest(prop, Object.keys(fields)) });
       return ANY;
     }
     if (t.k === "api") return this.apiMethod(t, prop, e);
@@ -773,7 +773,7 @@ class Checker {
         return ANY;
       case "-": case "*": case "/": case "%": case "**":
         for (const [side, t] of [[e.left, l], [e.right, r]] as const) {
-          if (t.k !== "num" && t.k !== "any") this.err("TYPE_MISMATCH", `'${e.op}' necesita números`, side.loc, { expr: printExpr(side), expected: "Number", actual: show(t) });
+          if (t.k !== "num" && t.k !== "any") this.err("TYPE_MISMATCH", `'${e.op}' needs numbers`, side.loc, { expr: printExpr(side), expected: "Number", actual: show(t) });
         }
         return NUM;
       case "==": case "!=": case "<": case ">": case "<=": case ">=": return BOOL;

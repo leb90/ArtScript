@@ -49,7 +49,7 @@ export function parsePatch(text: string): Op[] {
       if (!cur.lines.length && !raw.trim()) { cur.bodyLine = i + 2; return; }
       if (!raw.trim().startsWith("#") || cur.lines.length) cur.lines.push(raw);
     } else if (raw.trim() && !raw.trim().startsWith("#")) {
-      throw new CompileError(diag("PATCH_SYNTAX", `se esperaba una operación, llegó '${raw.trim()}'`, { file: PATCH_FILE, line: i + 1, col: 1 }, {
+      throw new CompileError(diag("PATCH_SYNTAX", `expected an operation, got '${raw.trim()}'`, { file: PATCH_FILE, line: i + 1, col: 1 }, {
         expected: "replace|insert before|insert after|append|remove|set|add",
       }));
     }
@@ -83,28 +83,28 @@ function resolve(p: Program, path: string, loc: Loc): Target {
     throw new CompileError(diag(type, msg, loc, { expr: path, fixes }));
   };
   const m = /^([A-Za-z_][\w]*)(?:\.([A-Za-z_]\w*))?(?:\/(.*))?$/.exec(path);
-  if (!m) fail("TARGET_NOT_FOUND", `ruta inválida '${path}'`, ["Componente", "Componente.miembro", "Componente/tag/tag[1]"]);
+  if (!m) fail("TARGET_NOT_FOUND", `invalid path '${path}'`, ["Component", "Component.member", "Component/tag/tag[1]"]);
   const [, name, member, rest] = m!;
   const di = p.decls.findIndex((d) => d.name === name);
-  if (di < 0) fail("TARGET_NOT_FOUND", `no existe '${name}'`, suggest(name, p.decls.map((d) => d.name)));
+  if (di < 0) fail("TARGET_NOT_FOUND", `'${name}' doesn't exist`, suggest(name, p.decls.map((d) => d.name)));
   const decl = p.decls[di];
 
   if ((decl.kind === "Api" || decl.kind === "Auth" || decl.kind === "ServerFn") && (member || rest !== undefined)) {
-    fail("TARGET_NOT_FOUND", `${name} solo se puede reemplazar o borrar entero`, [name]);
+    fail("TARGET_NOT_FOUND", `${name} can only be replaced or removed as a whole`, [name]);
   }
   if (member) {
     if (decl.kind === "Model") {
       const i = decl.fields.findIndex((f) => f.name === member);
-      if (i < 0) fail("TARGET_NOT_FOUND", `${name} no tiene el campo '${member}'`, suggest(member, decl.fields.map((f) => `${name}.${f.name}`)));
+      if (i < 0) fail("TARGET_NOT_FOUND", `${name} has no field '${member}'`, suggest(member, decl.fields.map((f) => `${name}.${f.name}`)));
       return { kind: "field", model: decl, i };
     }
     const comp = decl as ComponentDecl;
     const i = comp.members.findIndex((x) => x.name === member);
-    if (i < 0) fail("TARGET_NOT_FOUND", `${name} no tiene el miembro '${member}'`, comp.members.map((x) => `${name}.${x.name}`));
+    if (i < 0) fail("TARGET_NOT_FOUND", `${name} has no member '${member}'`, comp.members.map((x) => `${name}.${x.name}`));
     return { kind: "member", comp, i };
   }
   if (rest === undefined) return { kind: "decl", i: di, decl };
-  if (decl.kind !== "Component") fail("TARGET_NOT_FOUND", `${name} es un model y no tiene vista`, [`${name}.campo`]);
+  if (decl.kind !== "Component") fail("TARGET_NOT_FOUND", `${name} is a model and has no view`, [`${name}.field`]);
   const comp = decl as ComponentDecl;
 
   let list = comp.view;
@@ -113,7 +113,7 @@ function resolve(p: Program, path: string, loc: Loc): Target {
   let walked = name;
   for (const seg of rest!.split("/").filter(Boolean)) {
     if (seg === "else") {
-      if (!cur || cur.kind !== "IfView") fail("TARGET_NOT_FOUND", "`else` solo puede seguir a un `if`", []);
+      if (!cur || cur.kind !== "IfView") fail("TARGET_NOT_FOUND", "`else` can only follow an `if`", []);
       const ifNode: ViewNode & { kind: "IfView" } = cur as ViewNode & { kind: "IfView" };
       ifNode.else ??= [];
       list = ifNode.else;
@@ -123,19 +123,19 @@ function resolve(p: Program, path: string, loc: Loc): Target {
     }
     if (cur) list = childrenOf(cur);
     const sm = /^([A-Za-z_]\w*)(?:\[(\d+)\])?$/.exec(seg);
-    if (!sm) fail("TARGET_NOT_FOUND", `segmento inválido '${seg}'`, segLabels(list).map((l) => `${walked}/${l}`));
+    if (!sm) fail("TARGET_NOT_FOUND", `invalid segment '${seg}'`, segLabels(list).map((l) => `${walked}/${l}`));
     const matches = list.map((n, i) => ({ n, i })).filter((x) => tagOf(x.n) === sm![1]);
     if (!matches.length) {
       const labels = segLabels(list);
       const close = suggest(sm![1], labels);
-      fail("TARGET_NOT_FOUND", `no hay '${sm![1]}' dentro de ${walked}`, (close.length ? close : labels).map((l) => `${walked}/${l}`));
+      fail("TARGET_NOT_FOUND", `no '${sm![1]}' inside ${walked}`, (close.length ? close : labels).map((l) => `${walked}/${l}`));
     }
     let pick = matches[0];
     if (sm![2] !== undefined) {
       pick = matches[Number(sm![2])];
-      if (!pick) fail("TARGET_NOT_FOUND", `${sm![1]}[${sm![2]}] no existe: hay ${matches.length}`, matches.map((_, k) => `${walked}/${sm![1]}[${k}]`));
+      if (!pick) fail("TARGET_NOT_FOUND", `${sm![1]}[${sm![2]}] doesn't exist: there are ${matches.length}`, matches.map((_, k) => `${walked}/${sm![1]}[${k}]`));
     } else if (matches.length > 1) {
-      fail("AMBIGUOUS_TARGET", `hay ${matches.length} '${sm![1]}' dentro de ${walked}`, matches.map((_, k) => `${walked}/${sm![1]}[${k}]`));
+      fail("AMBIGUOUS_TARGET", `there are ${matches.length} '${sm![1]}' inside ${walked}`, matches.map((_, k) => `${walked}/${sm![1]}[${k}]`));
     }
     cur = pick.n;
     curList = list;
@@ -176,7 +176,7 @@ function applyOp(p: Program, op: Op, firstFile: string) {
   const bodyErr = (msg: string, expected: string): never => {
     throw new CompileError(diag("PATCH_BODY", msg, loc, { expr: op.op + " " + op.target, expected }));
   };
-  const needBody = () => { if (!op.body.trim()) bodyErr(`'${op.op}' necesita contenido en las líneas siguientes`, "código ArtScript indentado debajo de la operación"); };
+  const needBody = () => { if (!op.body.trim()) bodyErr(`'${op.op}' needs a body on the following lines`, "ArtScript code indented under the operation"); };
 
   if (op.op === "add") {
     needBody();
@@ -192,14 +192,14 @@ function applyOp(p: Program, op: Op, firstFile: string) {
     else if (t.kind === "member") t.comp.members.splice(t.i, 1);
     else if (t.kind === "field") t.model.fields.splice(t.i, 1);
     else if (t.node) t.list.splice(t.i, 1);
-    else bodyErr("no se puede borrar una rama `else` con remove; reemplazá el `if`", "una ruta a un nodo");
+    else bodyErr("remove can't delete an `else` branch; replace the `if`", "a path to a node");
     return;
   }
 
   if (op.op === "set") {
     const el = t.kind === "view" && t.node?.kind === "Element" ? t.node : null;
-    if (!el) return bodyErr("`set` solo cambia props de un elemento de la vista", "set Componente/tag prop=valor flag -prop");
-    if (!op.args) bodyErr("`set` necesita props en la misma línea", "set Componente/tag gap=6 primary -align");
+    if (!el) return bodyErr("`set` only changes props of a view element", "set Component/tag prop=value flag -prop");
+    if (!op.args) bodyErr("`set` needs props on the same line", "set Component/tag gap=6 primary -align");
     return setProps(el, op.args, loc);
   }
 
@@ -211,7 +211,7 @@ function applyOp(p: Program, op: Op, firstFile: string) {
     if (op.op === "replace") p.decls.splice(t.i, 1, ...decls());
     else if (op.op === "insert before" || op.op === "insert after") p.decls.splice(at, 0, ...decls());
     else if (t.decl.kind === "Model") t.decl.fields.push(...parseFields(op.body, PATCH_FILE, bodyLine));
-    else if (t.decl.kind !== "Component") bodyErr(`\`append\` no aplica a ${t.decl.name}`, "replace " + t.decl.name);
+    else if (t.decl.kind !== "Component") bodyErr(`\`append\` doesn't apply to ${t.decl.name}`, "replace " + t.decl.name);
     else {
       const body = parseComponentBody(op.body, PATCH_FILE, bodyLine);
       t.decl.members.push(...body.members);
@@ -222,15 +222,15 @@ function applyOp(p: Program, op: Op, firstFile: string) {
 
   if (t.kind === "member") {
     const body = parseComponentBody(op.body, PATCH_FILE, bodyLine);
-    if (body.view.length) bodyErr("se esperaban miembros (state, computed, fn), llegó vista", "state | computed | fn");
-    if (op.op === "append") bodyErr("`append` no aplica a un miembro; usá `insert after`", "insert after Componente.miembro");
+    if (body.view.length) bodyErr("expected members (state, computed, fn), got view", "state | computed | fn");
+    if (op.op === "append") bodyErr("`append` doesn't apply to a member; use `insert after`", "insert after Component.member");
     const at = op.op === "insert after" ? t.i + 1 : t.i;
     t.comp.members.splice(at, op.op === "replace" ? 1 : 0, ...body.members);
     return;
   }
 
   if (t.kind === "field") {
-    if (op.op === "append") bodyErr("`append` no aplica a un campo; usá `insert after`", "insert after Modelo.campo");
+    if (op.op === "append") bodyErr("`append` doesn't apply to a field; use `insert after`", "insert after Model.field");
     const fields = parseFields(op.body, PATCH_FILE, bodyLine);
     const at = op.op === "insert after" ? t.i + 1 : t.i;
     t.model.fields.splice(at, op.op === "replace" ? 1 : 0, ...fields);
@@ -238,12 +238,12 @@ function applyOp(p: Program, op: Op, firstFile: string) {
   }
 
   const body = parseComponentBody(op.body, PATCH_FILE, bodyLine);
-  if (body.members.length) bodyErr("se esperaban elementos de vista; los miembros van con `append Componente`", "elementos de vista");
+  if (body.members.length) bodyErr("expected view elements; members go with `append Component`", "view elements");
   if (op.op === "append") {
     (t.node ? childrenOf(t.node) : t.list).push(...body.view);
     return;
   }
-  if (!t.node) bodyErr(`'${op.op}' necesita una ruta a un nodo, no a una rama else`, "Componente/tag");
+  if (!t.node) bodyErr(`'${op.op}' needs a path to a node, not to an else branch`, "Component/tag");
   const at = op.op === "insert after" ? t.i + 1 : t.i;
   t.list.splice(at, op.op === "replace" ? 1 : 0, ...body.view);
 }
@@ -288,7 +288,7 @@ export function applyPatch(sources: Source[], patchText: string): PatchResult {
     files[file] = out;
     if (out === before) continue;
     if (before !== null && /\/\/|\/\*/.test(before)) {
-      return { files: {}, changed: [], diagnostics: [diag("PATCH_COMMENTS", `${file} tiene comentarios; el patch los perdería`, { file, line: 1, col: 1 }, { fixes: ["quitar los comentarios del archivo o editarlo a mano"] })] };
+      return { files: {}, changed: [], diagnostics: [diag("PATCH_COMMENTS", `${file} has comments; the patch would lose them`, { file, line: 1, col: 1 }, { fixes: ["remove the comments or edit the file by hand"] })] };
     }
     changed.push(file);
   }

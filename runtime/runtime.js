@@ -57,7 +57,7 @@ function flush() {
   flushing = true;
   try {
     for (let guard = 0; queue.size; guard++) {
-      if (guard > 1e4) throw new Error("ArtScript: ciclo reactivo infinito");
+      if (guard > 1e4) throw new Error("ArtScript: infinite reactive loop");
       const list = [...queue];
       queue.clear();
       for (const e of list) e.run();

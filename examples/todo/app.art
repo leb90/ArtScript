@@ -25,18 +25,18 @@ page Todos "/" {
   }
 
   column gap=4 {
-    title "Tareas"
+    title "Tasks"
     row gap=2 {
-      input draft placeholder="¿Qué hay que hacer?" -> add()
-      button "Agregar" primary -> add()
+      input draft placeholder="What needs doing?" -> add()
+      button "Add" primary -> add()
     }
     for todo in todos {
       TodoItem todo=todo remove=(id => todos = todos.filter(t => t.id != id))
     }
     if todos.length == 0 {
-      text "No hay tareas" muted
+      text "No tasks" muted
     } else {
-      text `${pending} pendientes` muted
+      text `${pending} left` muted
     }
   }
 }

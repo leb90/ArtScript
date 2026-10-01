@@ -18,7 +18,7 @@ async function tokenizer(): Promise<Counter> {
     const enc = mod.getEncoding("o200k_base");
     return { name: "o200k_base (js-tiktoken)", count: (s) => enc.encode(s).length, exact: true };
   } catch {
-    return { name: "ESTIMACIÓN chars/4 (instalar js-tiktoken para medir)", count: (s) => Math.ceil(s.length / 4), exact: false };
+    return { name: "ESTIMATE chars/4 (install js-tiktoken to measure)", count: (s) => Math.ceil(s.length / 4), exact: false };
   }
 }
 
@@ -38,7 +38,7 @@ export async function runBench() {
   }
 
   console.log(`tokenizer: ${tok.name}\n`);
-  console.log(`${"tarea".padEnd(10)} ${"stack".padEnd(10)} ${"bytes".padStart(7)} ${"líneas".padStart(7)} ${"tokens".padStart(7)} ${"vs react".padStart(9)}`);
+  console.log(`${"task".padEnd(10)} ${"stack".padEnd(10)} ${"bytes".padStart(7)} ${"lines".padStart(7)} ${"tokens".padStart(7)} ${"vs react".padStart(9)}`);
   for (const [task, r] of Object.entries(results)) {
     for (const stack of STACKS) {
       const x = r[stack];
@@ -46,7 +46,7 @@ export async function runBench() {
       console.log(`${task.padEnd(10)} ${stack.padEnd(10)} ${String(x.bytes).padStart(7)} ${String(x.lines).padStart(7)} ${String(x.tokens).padStart(7)} ${vs.padStart(9)}`);
     }
   }
-  console.log("\nSolo tamaño de fuente. Falta: spec en contexto, iteraciones de agente y costo USD (ver npm run eval).");
+  console.log("\nSource size only. Not included: spec in context, agent iterations, USD cost (see npm run eval).");
 
   const out = join(HERE, "results");
   mkdirSync(out, { recursive: true });

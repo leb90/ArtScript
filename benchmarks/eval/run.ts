@@ -137,7 +137,7 @@ async function runOne(client: Anthropic, task: Task, stack: Stack, run: number):
   const history: { files: Files; errors: string[]; edit?: string }[] = [];
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    if (spent >= MAX_USD) { errors = [`presupuesto agotado (--max-usd ${MAX_USD})`]; return done(false, attempt - 1); }
+    if (spent >= MAX_USD) { errors = [`budget exhausted (--max-usd ${MAX_USD})`]; return done(false, attempt - 1); }
     const res = await client.messages.create({
       model: MODEL,
       max_tokens: 16000,
@@ -217,14 +217,14 @@ function summarize(results: RunResult[]): string {
     };
   });
   const react = stats.find((x) => x.s === "react");
-  rows.push(`Modelo: ${MODEL} · effort: ${MODEL.startsWith("claude-haiku") ? "n/a" : EFFORT} · corridas por tarea: ${RUNS} · intentos máx.: ${MAX_ATTEMPTS} · precios: ${PRICES_DATE}`, "");
-  rows.push("| Stack | Resueltas | Intentos prom. | Tokens entrada/corrida | Tokens salida/corrida | Tokens código final | USD total | **USD por tarea resuelta** | vs React |");
+  rows.push(`Modelo: ${MODEL} · effort: ${MODEL.startsWith("claude-haiku") ? "n/a" : EFFORT} · runs per task: ${RUNS} · max attempts: ${MAX_ATTEMPTS} · prices: ${PRICES_DATE}`, "");
+  rows.push("| Stack | Solved | Avg attempts | Input tokens/run | Output tokens/run | Final code tokens | USD total | **USD per solved task** | vs React |");
   rows.push("|---|---|---|---|---|---|---|---|---|");
   for (const x of stats) {
     const vs = react && x.s !== "react" && isFinite(x.perSolved) && isFinite(react.perSolved) ? `${Math.round((x.perSolved / react.perSolved - 1) * 100)}%` : "—";
     rows.push(`| ${x.s} | ${x.ok}/${x.n} | ${x.attempts.toFixed(2)} | ${Math.round(x.input)} | ${Math.round(x.output)} | ${Math.round(x.code)} | $${x.cost.toFixed(4)} | **$${isFinite(x.perSolved) ? x.perSolved.toFixed(4) : "∞"}** | ${vs} |`);
   }
-  rows.push("", "Por tarea (USD por tarea resuelta):", "", `| Tarea | ${STACK_IDS.join(" | ")} |`, `|---|${STACK_IDS.map(() => "---").join("|")}|`);
+  rows.push("", "Per task (USD per solved task):", "", `| Task | ${STACK_IDS.join(" | ")} |`, `|---|${STACK_IDS.map(() => "---").join("|")}|`);
   for (const t of TASK_IDS) {
     const cells = STACK_IDS.map((s) => {
       const rs = results.filter((r) => r.task === t && r.stack === s);
@@ -238,12 +238,12 @@ function summarize(results: RunResult[]): string {
 }
 
 async function dryRun() {
-  console.log("dry-run: valida el harness sin llamar a la API\n");
+  console.log("dry-run: validates the harness without calling the API\n");
   for (const task of ["counter", "todo"]) {
     for (const stack of STACK_IDS) {
       const files = baseFiles({ id: task, prompt: "", base: task }, stack);
       const errs = await validate(stack, files);
-      console.log(`${errs.length ? "✗" : "✓"} referencia ${task}/${stack}${errs.length ? ": " + errs.join(" | ") : ""}`);
+      console.log(`${errs.length ? "✗" : "✓"} reference ${task}/${stack}${errs.length ? ": " + errs.join(" | ") : ""}`);
     }
   }
   const broken: Record<Stack, Files> = {
@@ -253,7 +253,7 @@ async function dryRun() {
   };
   for (const stack of STACK_IDS) {
     const errs = await validate(stack, broken[stack]);
-    console.log(`${errs.length ? "✓" : "✗"} detecta error en ${stack}: ${errs[0] ?? "NO DETECTÓ"}`);
+    console.log(`${errs.length ? "✓" : "✗"} catches an error in ${stack}: ${errs[0] ?? "NOT CAUGHT"}`);
   }
   const todoMod = TASKS.find((t) => t.id === "todo-mod")!;
   const answers: Record<Stack, string> = {
@@ -264,10 +264,10 @@ async function dryRun() {
   for (const stack of STACK_IDS) {
     const r = applyEditAnswer(todoMod, stack, answers[stack]);
     const errs = !r ? ["no se detectó la edición"] : "errors" in r ? r.errors : await validate(stack, r.files);
-    console.log(`${errs.length ? "✗" : "✓"} edición aplicada y válida en ${stack}${errs.length ? ": " + errs[0] : ""}`);
+    console.log(`${errs.length ? "✗" : "✓"} edit applied and valid in ${stack}${errs.length ? ": " + errs[0] : ""}`);
   }
   const bad = applyEditAnswer(todoMod, "react", "```edit Todos.tsx\n<<<<<<< SEARCH\nno existe\n=======\nx\n>>>>>>> REPLACE\n```");
-  console.log(`${bad && "errors" in bad ? "✓" : "✗"} detecta SEARCH inexistente`);
+  console.log(`${bad && "errors" in bad ? "✓" : "✗"} catches a missing SEARCH text`);
   // Behavior checks against reference solutions: proves the harness itself works for every stack.
   const refs: [string, string, Stack][] = [];
   for (const t of ["counter", "todo"]) for (const st of STACK_IDS) refs.push([t, join(REPO, "benchmarks", "tasks", t, st), st]);
@@ -277,17 +277,17 @@ async function dryRun() {
     const task = TASKS.find((x) => x.id === t)!;
     const files = Object.fromEntries(readdirSync(dir).map((f) => [f, readFileSync(join(dir, f), "utf8")]));
     const errs = await behave(task, st, files);
-    console.log(`${errs.length ? "✗" : "✓"} comportamiento ${t}/${st}${errs.length ? ": " + errs[0] : ""}`);
+    console.log(`${errs.length ? "✗" : "✓"} behavior ${t}/${st}${errs.length ? ": " + errs[0] : ""}`);
   }
   // And a buggy app must fail, with a message that says what was expected.
   const buggy = { "app.art": readFileSync(join(REPO, "examples", "counter", "app.art"), "utf8").replace("count * 2", "count * 3") };
   const caught = await behave(TASKS.find((x) => x.id === "counter")!, "artscript", buggy);
-  console.log(`${caught.length ? "✓" : "✗"} detecta una app con un bug: ${caught[0]?.slice(0, 110) ?? "NO DETECTÓ"}`);
+  console.log(`${caught.length ? "✓" : "✗"} catches a buggy app: ${caught[0]?.slice(0, 110) ?? "NOT CAUGHT"}`);
   const text = "```app.art\npage A {\n}\n```\nnada\n```App.tsx\nx\n```";
-  console.log(`✓ extracción de archivos: ${Object.keys(extractFiles(text)).join(", ")}`);
+  console.log(`✓ file extraction: ${Object.keys(extractFiles(text)).join(", ")}`);
   const calls = TASK_IDS.length * STACK_IDS.length * RUNS;
-  console.log(`\nplan: ${TASK_IDS.length} tareas × ${STACK_IDS.length} stacks × ${RUNS} corridas = ${calls} corridas (≥ ${calls} llamadas a la API)`);
-  console.log(`modelo ${MODEL}, tope de gasto --max-usd ${MAX_USD}`);
+  console.log(`\nplan: ${TASK_IDS.length} tasks × ${STACK_IDS.length} stacks × ${RUNS} runs = ${calls} runs (≥ ${calls} API calls)`);
+  console.log(`model ${MODEL}, spending cap --max-usd ${MAX_USD}`);
 }
 
 async function main() {
@@ -295,7 +295,7 @@ async function main() {
   if (DRY) return dryRun();
   if (existsSync(join(REPO, ".env"))) process.loadEnvFile(join(REPO, ".env"));
   if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
-    console.error("Falta ANTHROPIC_API_KEY (en el entorno o en .env en la raíz del repo). Probá primero: npm run eval -- --dry-run");
+    console.error("Missing ANTHROPIC_API_KEY (in the environment or in .env at the repo root). Try first: npm run eval -- --dry-run");
     process.exit(1);
   }
   const client = new Anthropic({ fetch: nodeFetch, timeout: 120_000 }); // a stuck request fails (and is retried) instead of stalling the run
@@ -303,7 +303,7 @@ async function main() {
   const jobs = tasks.flatMap((t) => STACK_IDS.flatMap((s) => Array.from({ length: RUNS }, (_, r) => async () => {
     try {
       const res = await runOne(client, t, s, r + 1);
-      console.log(`${res.ok ? "✓" : "✗"} ${t.id}/${s}#${r + 1}  intentos ${res.attempts}  $${res.usd.toFixed(4)}  (acumulado $${spent.toFixed(2)})${res.ok ? "" : "  " + res.errors[0]}`);
+      console.log(`${res.ok ? "✓" : "✗"} ${t.id}/${s}#${r + 1}  attempts ${res.attempts}  $${res.usd.toFixed(4)}  (total $${spent.toFixed(2)})${res.ok ? "" : "  " + res.errors[0]}`);
       return res;
     } catch (e) {
       const msg = e instanceof Anthropic.APIError ? `API ${e.status}: ${e.message}` : String(e);
@@ -311,7 +311,7 @@ async function main() {
       return { task: t.id, stack: s, run: r + 1, ok: false, attempts: 0, usage: zero(), usd: 0, codeTokens: null, errors: [msg], history: [] } as RunResult;
     }
   })));
-  console.log(`${jobs.length} corridas, modelo ${MODEL}, tope $${MAX_USD}\n`);
+  console.log(`${jobs.length} runs, model ${MODEL}, cap $${MAX_USD}\n`);
   const results = await pool(jobs, CONCURRENCY);
 
   const summary = summarize(results);
@@ -320,8 +320,8 @@ async function main() {
   mkdirSync(outDir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   writeFileSync(join(outDir, `${stamp}-${MODEL}.json`), JSON.stringify({ model: MODEL, effort: EFFORT, runs: RUNS, maxAttempts: MAX_ATTEMPTS, prices: PRICES[MODEL], pricesDate: PRICES_DATE, results }, null, 2) + "\n");
-  writeFileSync(join(outDir, `${stamp}-${MODEL}.md`), `# Eval de costo ${stamp}\n\n${summary}\n`);
-  console.log(`\nresultados → benchmarks/eval/results/${stamp}-${MODEL}.{json,md}`);
+  writeFileSync(join(outDir, `${stamp}-${MODEL}.md`), `# Cost eval ${stamp}\n\n${summary}\n`);
+  console.log(`\nresults → benchmarks/eval/results/${stamp}-${MODEL}.{json,md}`);
 }
 
 await main();

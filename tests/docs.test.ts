@@ -7,7 +7,7 @@ import { applyPatch } from "../src/patch.ts";
 
 const blocks = [...readFileSync("docs/SPEC.md", "utf8").matchAll(/```\n([\s\S]*?)```/g)].map((m) => m[1]);
 
-test("docs/SPEC.md: miembros + vista de ejemplo compilan sin errores", () => {
+test("docs/SPEC.md: the member and view examples compile without errors", () => {
   const find = (start: string) => blocks.find((b) => b.startsWith(start))!;
   const [decls, members, apiDecl, view] = [find("model User"), find("state count"), find("api users"), find("column gap=4")];
   const model = decls.slice(0, decls.indexOf("component")) + apiDecl;

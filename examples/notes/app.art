@@ -20,7 +20,7 @@ auth users
 
 server fn stats() {
   if !me {
-    fail("Iniciá sesión", 401)
+    fail("Log in first", 401)
   }
   let mine = db.notes.list().filter(n => n.owner == me.id)
   return { total: mine.length, done: mine.filter(n => n.done).length }
@@ -55,13 +55,13 @@ page Notes "/" {
   column gap=4 {
     if me {
       row justify=between {
-        title `Notas de ${me.name}`
-        button "Salir" -> auth.logout()
+        title `${me.name}'s notes`
+        button "Log out" -> auth.logout()
       }
       form gap=2 -> add() {
-        input text placeholder="Nueva nota"
+        input text placeholder="New note"
       }
-      text `${stats?.done ?? 0} de ${stats?.total ?? 0} hechas` muted
+      text `${stats?.done ?? 0} of ${stats?.total ?? 0} done` muted
       for n in notes {
         row gap=2 {
           button n.done ? "✓" : "○" small -> api.notes.update(n.id, { done: !n.done })
@@ -70,13 +70,13 @@ page Notes "/" {
         }
       }
     } else {
-      title "Notas"
-      input name placeholder="Nombre"
+      title "Notes"
+      input name placeholder="Name"
       input email placeholder="Email" type=email
-      input password placeholder="Contraseña" type=password
+      input password placeholder="Password" type=password
       row gap=2 {
-        button "Entrar" primary -> enter(false)
-        button "Crear cuenta" -> enter(true)
+        button "Log in" primary -> enter(false)
+        button "Sign up" -> enter(true)
       }
       if error != "" {
         text error bold

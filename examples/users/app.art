@@ -25,16 +25,16 @@ page Users "/" {
   }
 
   column gap=4 {
-    title "Usuarios"
+    title "Users"
     form gap=2 -> add() {
-      input name placeholder="Nombre"
+      input name placeholder="Name"
       input email placeholder="Email" type=email
-      button "Agregar" primary
+      button "Add" primary
     }
     if error != "" {
       text error bold
     }
-    text `${users.length} usuarios, ${admins} admins` muted
+    text `${users.length} users, ${admins} admins` muted
     for u in users {
       card {
         row gap=2 justify=between {
@@ -43,7 +43,7 @@ page Users "/" {
             text u.email muted small
           }
           row gap=2 {
-            button u.admin ? "Quitar admin" : "Hacer admin" small -> api.users.update(u.id, { admin: !u.admin })
+            button u.admin ? "Remove admin" : "Make admin" small -> api.users.update(u.id, { admin: !u.admin })
             button "x" danger small -> api.users.remove(u.id)
           }
         }

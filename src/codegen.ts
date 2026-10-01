@@ -88,7 +88,7 @@ export function serverEntry(schema: ServerSchema): string {
 }
 
 export function htmlShell(title = "ArtScript"): string {
-  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head><body><div id="app"></div><script type="module">import{start}from"./app.js";start()</script></body></html>\n`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head><body><div id="app"></div><script type="module">import{start}from"./app.js";start()</script></body></html>\n`;
 }
 
 class ComponentGen {
