@@ -75,19 +75,16 @@ api users: User                    // REST at /api/users: validated against the 
 ```
 
 - The model needs an `ID` field (if `create` omits it, the server assigns it).
-- Relations: in a stored model, `author: User` (or `tags: Tag[]`) stores the id; create/update take the row or its id (`author: me`, `author: id`), reads return the row (`post.author.name`), `where: { author: id }` filters. Deleting a referenced row fails (409) unless the field is `cascade` (`post: Post cascade` deletes the comments with their post).
+- Relations: `author: User` (or `tags: Tag[]`) in a stored model stores the id; writes take the row or its id, reads return the row (`post.author.name`), `where: { author: id }` filters. Deleting a referenced row fails unless the field is `cascade` (`post: Post cascade`).
 - Typed client in any component: `api.users.list(query?)`, `count(query?)`, `get(id)`, `create(obj)`, `update(id, changes)`, `remove(id)`.
 - Query: `list({ where: { active: true }, search: "pan", sort: "-price", limit: 20, offset: 40 })` (`-` = descending; `search` matches text fields); `count({ where, search })`. Inside `data` they re-run when the states they use change (`offset: page * 20`).
-- `data users = api.users.list()` loads on mount and **reloads by itself** after any write. A list starts as `[]`, a count as `0`; `get` starts as `null` (`T?`).
-- `users.loading` is true until the first response; `users.error` is the last error's message or `null`; `users.reload()` fetches again.
+- `data users = api.users.list()` loads on mount and **reloads by itself** after any write, login or logout. A list starts as `[]`, a count as `0`, `get` as `null` (`T?`). `users.loading` (until the first response), `users.error` (message or `null`), `users.reload()`. `... live` also reloads when someone else writes.
 - `await` and `try { } catch (e) { }` work as in JS; `e.message` explains a validation error.
 - Access: `api notes: Note login` needs a session; `private` also scopes rows per user (the model needs `owner: ID`, filled in); `admin`: anyone reads, admins write (accounts need `role: String`; the first account is "admin", later ones "user").
-- `auth users` (the model needs `email: Email` and `password: String`): `auth.signup(obj)`, `auth.login(email, password)`, `auth.logout()`, `auth.logoutAll()` (every device), `data me = auth.me()` (`T?`). Passwords are hashed and never returned.
-- `auth users with google, github`: `auth.loginWith("google")` signs in through the provider (accounts found or created by email).
-- Forgotten password: `auth.requestReset(email)` emails a link to `/reset-password?token=...`; that page calls `auth.resetPassword(query.token, password)`. With `verified: Bool` in the accounts model, signing up emails a link to `/verify-email?token=...` that calls `auth.verifyEmail(query.token)`.
+- `auth users` (the model needs `email: Email` and `password: String`): `auth.signup(obj)`, `auth.login(email, password)`, `auth.logout()`, `auth.logoutAll()`, `data me = auth.me()` (`T?`). `auth users with google, github`: `auth.loginWith("google")`.
+- `auth.requestReset(email)` emails a link to `/reset-password?token=...`, a page that calls `auth.resetPassword(query.token, password)`. With `verified: Bool` in the model, sign-up emails `/verify-email?token=...` (`auth.verifyEmail(query.token)`).
 - `server fn name(a, b) { ... }` runs on the server; call it as `server.name(a, b)` (also in `data`). Inside: `db.<api>` (no `await`, not scoped per user), `me` (logged-in user or `null`), `fail("message", status?)` and `await email(to, subject, text)`.
-- After any write, login or logout, every `data` reloads. `data msgs = api.msgs.list() live` also reloads when someone else writes (chats, dashboards).
-- `server job cleanup every "1h" { ... }` (`s m h d`) runs on the server on that interval, with `db` and `fail`.
+- `server job cleanup every "1h" { ... }` (`s m h d`): on the server, with `db`, `fail`, `email`.
 
 ## View
 
@@ -133,23 +130,22 @@ column gap=4 align=center {
 | `list` > `item` | item: text | item: click | | item: muted |
 | `table` > `tr` > `th` `td` | th/td: text | tr: click | | td: muted |
 
-- All take `class style id`. Any `.css` file in the project is bundled and loaded after the built-in styles; the theme is CSS variables: `:root { --a-primary: #e11d48; --a-radius: 4px; --a-font: Inter, sans-serif }` (also `--a-bg --a-fg --a-surface --a-border --a-muted --a-danger --a-success`).
-- Conditional flag: `text t.title muted=t.done` applies the flag while the value is `true`.
+- All take `class style id`. `.css` files in the project are bundled; theme: `:root { --a-primary: #e11d48; --a-radius: 4px; --a-font: Inter }` (also `--a-bg --a-fg --a-surface --a-border --a-muted --a-danger --a-success`).
+- Conditional flag: `text t.title muted=t.done`.
 - `gap=4` and `pad=4`: 1 unit = 4px. `align=start|center|end|stretch`. `justify=start|center|end|between|around`. `cols=3`.
 - `type=text|number|email|password|checkbox|date`. With `type=checkbox`, `input` binds a Bool.
-- `options=["S", "M"]` or a list of objects (`value`/`id` and `label`/`name`); the state gets the option's value with its type. `label="Email"` adds a visible label. `modal open { ... }` shows while `open` is true; Esc or the backdrop set it to false.
+- `options=["S", "M"]` or objects (`value`/`id`, `label`/`name`); the state gets the option's value. `label="Email"` adds a visible label. `modal open { ... }` shows while `open` is true (Esc or the backdrop set it to false).
 - `item`, `th`, `td` take text and/or `{ children }`.
 - Prop values: literal, name, `a.b`, call, or `( expression )` in parentheses.
-- Component: `Name prop=value`. Capitalized name. Children: `Card title="x" { ... }` render where the component puts `slot`; with `slot header` in the component, `Card { header { ... } ... }` fills it.
-- Typed callbacks: `component Picker(onPick: Fn(User))`: calls are checked and `onPick=(u => ...)` gets `u: User`.
-- Events besides `->`: `on:<event>=statement`, with `event` available: `input q on:keydown=(event.key == "Escape" ? q = "" : null)`, `card on:mouseenter=(hover = true)`.
-- `for p in products key p.id { }`: rows are matched by key (default: the item itself) and keep their DOM, focus and input state across updates.
-- Responsive: `grid cols=1 md:cols=3 lg:gap=6` (`sm` 640px, `md` 768, `lg` 1024, `xl` 1280; `cols`, `gap`, `pad`; numbers).
+- Component: `Name prop=value`. Children `Card { ... }` go where it puts `slot`; `slot header` is filled by `Card { header { ... } }`. `onPick: Fn(User)` types a callback (`onPick=(u => ...)` gets `u: User`).
+- Other events: `on:<event>=statement` with `event`: `card on:mouseenter=(hover = true)`, `input q on:keydown=(event.key == "Escape" ? q = "" : null)`.
+- `for p in products key p.id { }`: rows matched by key keep their DOM and focus.
+- Responsive: `grid cols=1 md:cols=3 lg:gap=6` (`sm md lg xl` = 640/768/1024/1280px; `cols gap pad`).
 - Multi-statement action: `-> { a(); b = 1 }`.
 
 ## Tests
 
-`test "adds a task" { fill "Task" "Milk"  click "Add"  see "1 left" }` (one step per line), run by `art test` in a simulated browser with a fresh database. Steps: `open "/path"`, `see "text"`, `notSee "text"`, `click "Label" [n]`, `link "Label" [n]`, `fill "Placeholder" "value"`, `press "Placeholder" "Enter"`, `select 0 "Option"`, `check 0`.
+`test "adds a task" {` then one step per line, `}`; `art test` runs them in a simulated browser. Steps: `open "/path"`, `see "x"`, `notSee "x"`, `click "Label" [n]`, `link "Label"`, `fill "Placeholder" "value"`, `press "Placeholder" "Enter"`, `select 0 "Option"`, `check 0`.
 
 ## Expressions
 
@@ -163,22 +159,6 @@ JavaScript: literals, `` `template ${x}` ``, `a.b`, `a?.b`, `a[i]`, `f(x)`, `x =
 - Objects passed as a `model` need every non-optional field and no extra fields.
 - Unknown names, elements, props and flags → error with a suggestion.
 
-## Changing existing code: `art patch`
+## Changing existing code
 
-To change code that already exists, answer with a ```` ```patch ```` block instead of rewriting files:
-
-```patch
-replace Todos/column/title
-  title "My tasks"
-insert after Todos/column/row
-  text "Type and press Enter" muted
-append Todos
-  fn clearDone() {
-    todos = todos.filter(t => !t.done)
-  }
-set Todos/column gap=6 -align
-remove Todos/column/if/else/text
-```
-
-- Operations: `replace`, `insert before|after`, `append` (children of a node, members/view of a component, fields of a model), `remove`, `set` (props on the same line, `-name` removes; `set Row onRemove: Fn` adds a component prop), `add` (new declarations).
-- Paths: `Component/tag/tag[n]` (n: 0-based among siblings with that tag; `if`, `for`, `else` are segments), `Component.member`, `Model.field`. Applied in order, all or nothing.
+Answer with a ```` ```patch ```` block instead of rewriting files: `replace Todos/column/title` with the new code indented below it; also `insert before|after <path>`, `append <path>`, `remove <path>`, `set Todos/column gap=6`, `add` (paths: `Component/tag/tag[n]`, `Component.member`, `Model.field`). The full format is in SPEC-EDIT.md.

@@ -6,7 +6,7 @@ Use the spec before writing code; use the edit spec when changing existing code.
 
 ## Docs
 
-- [Spec](docs/SPEC.md): the whole language in ~3K tokens (declarations, members, backend, view, rules, `art patch`).
+- [Spec](docs/SPEC.md): the whole language in ~3K tokens (declarations, members, backend, view, tests, rules).
 - [Edit spec](docs/SPEC-EDIT.md): ~800 tokens, enough to change existing code (the code shows the syntax).
 - [README](README.md): usage, commands and the measured cost against React, Svelte, Vue and SolidJS.
 - [Security](SECURITY.md): what apps get by default.
