@@ -166,7 +166,8 @@ class Parser {
       }
       if (this.is("server")) return this.serverFn();
       if (this.is("component") || this.is("page") || this.is("layout")) return this.component();
-      return this.fail("'use', 'model', 'api', 'auth', 'server fn', 'component' or 'page'");
+      if (this.is("test") && this.peek().t === "str") return this.test();
+      return this.fail("'use', 'model', 'api', 'auth', 'server fn', 'component', 'page' or 'test'");
     }
   }
 
@@ -230,6 +231,30 @@ class Parser {
     }
     if (!def && !names.length) this.fail("`as name` or `{ names }` after the module");
     return { kind: "Use", name: `use ${source}`, source, default: def, names, loc };
+  }
+
+  // Steps are written like commands (`see "Total: 3"`, `click "Add" 1`): a name and literal
+  // arguments; `see("x")` works too.
+  test(): Decl {
+    const loc = this.next().loc;
+    const description = this.next().v;
+    this.expect("{");
+    const body: Stmt[] = [];
+    this.skipSep();
+    while (!this.is("}")) {
+      if (this.tok.t === "eof") this.fail("'}'");
+      const step = this.ident("a test step (open, see, notSee, click, link, fill, press, select, check)");
+      const args: Expr[] = [];
+      if (this.eat("(")) {
+        while (!this.is(")")) { args.push(this.unary()); if (!this.eat(",")) break; }
+        this.expect(")");
+      } else while (this.tok.t === "str" || this.tok.t === "num") args.push(this.unary());
+      const callee: Expr = { kind: "Ident", name: step.v, loc: step.loc };
+      body.push({ kind: "ExprStmt", expr: { kind: "Call", callee, args, optional: false, loc: step.loc }, loc: step.loc });
+      this.skipSep();
+    }
+    this.expect("}");
+    return { kind: "Test", name: `test ${JSON.stringify(description)}`, description, body, loc };
   }
 
   serverFn(): ServerFnDecl {

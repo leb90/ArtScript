@@ -40,3 +40,11 @@ page Todos "/" {
     }
   }
 }
+
+test "adds and counts tasks" {
+  see "No tasks"
+  fill "What needs doing?" "Milk"
+  click "Add"
+  see "1 left"
+  notSee "No tasks"
+}

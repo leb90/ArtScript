@@ -116,6 +116,10 @@ export function printDecl(d: Decl): string {
   if (d.kind === "Use") return `use ${JSON.stringify(d.source)}${d.default ? ` as ${d.default}` : ""}${d.names.length ? ` { ${d.names.join(", ")} }` : ""}`;
   if (d.kind === "Api") return `api ${d.name}: ${d.model}${d.access === "public" ? "" : " " + d.access}`;
   if (d.kind === "Auth") return `auth ${d.api}`;
+  if (d.kind === "Test") {
+    const step = (s: Stmt) => s.kind === "ExprStmt" && s.expr.kind === "Call" ? `${printExpr(s.expr.callee)} ${s.expr.args.map(printExpr).join(" ")}`.trimEnd() : printStmt(s);
+    return `test ${JSON.stringify(d.description)} {\n${d.body.map((s) => `${IND}${step(s)}`).join("\n")}\n}`;
+  }
   if (d.kind === "ServerFn" && d.every) return `server job ${d.name} every ${JSON.stringify(d.every)} {\n${printStmts(d.body, 1).join("\n")}\n}`;
   if (d.kind === "ServerFn") return `server fn ${d.name}(${printParams(d)}) {\n${printStmts(d.body, 1).join("\n")}\n}`;
   if (d.kind === "Model") {

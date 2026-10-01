@@ -182,3 +182,16 @@ page Companies "/companies" {
     }
   }
 }
+
+test "signs up and adds a company" {
+  see "Sign in"
+  fill "Name (to sign up)" "Ana"
+  fill "Email" "ana@x.co"
+  fill "Password" "12345678"
+  click "Sign up"
+  see "No contacts yet"
+  link "Companies"
+  fill "Company" "Acme"
+  click "Add company"
+  see "Acme"
+}

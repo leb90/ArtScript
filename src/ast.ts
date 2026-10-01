@@ -13,7 +13,11 @@ export type Program = { kind: "Program"; decls: Decl[]; comments?: string[] };
 // right before the `}` that closes its block). Any declaration, field, member, view node or statement.
 export type Commented = { comments?: string[]; after?: string[] };
 
-export type Decl = ModelDecl | ComponentDecl | ApiDecl | AuthDecl | ServerFnDecl | UseDecl;
+export type Decl = ModelDecl | ComponentDecl | ApiDecl | AuthDecl | ServerFnDecl | UseDecl | TestDecl;
+
+// `test "adds a task" { fill "Task" "Milk"  click "Add"  see "1 left" }`: run by `art test` in a
+// simulated browser. `name` is `test "<description>"`; steps are calls like `see("x")`.
+export type TestDecl = { kind: "Test"; name: string; description: string; body: Stmt[]; loc: Loc };
 
 // `use "date-fns" { format }`, `use "canvas-confetti" as confetti`, `use "./lib/money.ts" { toUSD }`:
 // imports from npm packages or local JS/TS modules, visible in every component and server fn.

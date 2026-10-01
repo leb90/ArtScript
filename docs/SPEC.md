@@ -145,6 +145,10 @@ column gap=4 align=center {
 - Responsive: `grid cols=1 md:cols=3 lg:gap=6` (`sm` 640px, `md` 768, `lg` 1024, `xl` 1280; `cols`, `gap`, `pad`; numbers).
 - Multi-statement action: `-> { a(); b = 1 }`.
 
+## Tests
+
+`test "adds a task" { fill "Task" "Milk"  click "Add"  see "1 left" }` (one step per line), run by `art test` in a simulated browser with a fresh database. Steps: `open "/path"`, `see "text"`, `notSee "text"`, `click "Label" [n]`, `link "Label" [n]`, `fill "Placeholder" "value"`, `press "Placeholder" "Enter"`, `select 0 "Option"`, `check 0`.
+
 ## Expressions
 
 JavaScript: literals, `` `template ${x}` ``, `a.b`, `a?.b`, `a[i]`, `f(x)`, `x => x * 2`, `{ a, ...b }`, `[...xs]`, `? :`, `??`, `&&`, `||`.

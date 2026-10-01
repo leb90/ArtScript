@@ -8,4 +8,5 @@ If your tool supports MCP, `npx art mcp` gives you `art_spec`, `art_check`, `art
 - To understand a part without reading everything: `npx art context` (project map) or `npx art context <Component>`.
 - To change existing code, prefer a small `art patch` (see the spec) over rewriting files: `npx art patch <file.patch>`.
 - Canonical format: `npx art fmt --write`.
+- Behavior: write `test "..." { ... }` blocks (see the spec) and run `npx art test`.
 - Expressions are JavaScript; only the structure (`page`, `component`, `model`, `api`, `state`, `computed`, `data`, `fn`, the view) is ArtScript's own.

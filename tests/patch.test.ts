@@ -34,7 +34,7 @@ insert after Todos/column/row
   text "abajo"
 remove Todos/column/if`);
   assert.match(out, /title "Mis tareas"\n    text "arriba"\n    row gap=2 \{[\s\S]*?\n    \}\n    text "abajo"/);
-  assert.doesNotMatch(out, /No tasks/);
+  assert.doesNotMatch(out, /text "No tasks"/);
 });
 
 test("append: element children, else branch, component members and model fields", () => {

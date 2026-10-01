@@ -1,5 +1,5 @@
 // Type checker: small type system, null safety and errors with fixes.
-import type { ComponentDecl, Element, Expr, Field, Loc, ModelDecl, Program, ServerFnDecl, Stmt, TypeRef, UseDecl, ViewNode } from "./ast.ts";
+import type { ComponentDecl, Element, Expr, Field, Loc, ModelDecl, Program, ServerFnDecl, Stmt, TestDecl, TypeRef, UseDecl, ViewNode } from "./ast.ts";
 import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, RESPONSIVE_PROPS } from "./elements.ts";
 import { CATALOG, diag, suggest, type Diagnostic } from "./errors.ts";
 import { inspectModule, isLocal, packageName } from "./modules.ts";
@@ -276,6 +276,7 @@ class Checker {
     this.routes();
     this.twoWay = twoWayProps(this.program);
     for (const d of this.program.decls) if (d.kind === "Component") this.component(d);
+    for (const d of this.program.decls) if (d.kind === "Test") this.test(d);
     return this.diags;
   }
 
@@ -411,6 +412,26 @@ class Checker {
     this.returns = null;
     if (d.every) return; // a job isn't callable from the client
     this.serverFns.set(d.name, !rs.length ? { k: "void" } : rs.every((t) => show(t) === show(rs[0])) ? rs[0] : ANY);
+  }
+
+  // ---------- tests ----------
+  // Each step is a known command with literal arguments of the right type (see STEPS).
+  test(d: TestDecl) {
+    this.at = d.name;
+    const STEPS: Record<string, string> = { open: "s?", see: "s", notSee: "s", click: "sn?", link: "sn?", fill: "ss", press: "ss", select: "ns", check: "n" };
+    const usage: Record<string, string> = { open: 'open "/path"', see: 'see "text"', notSee: 'notSee "text"', click: 'click "Label" [n]', link: 'link "Label" [n]', fill: 'fill "Placeholder" "value"', press: 'press "Placeholder" "Enter"', select: 'select 0 "Option"', check: "check 0" };
+    for (const s of d.body) {
+      if (s.kind !== "ExprStmt" || s.expr.kind !== "Call" || s.expr.callee.kind !== "Ident") continue;
+      const name = s.expr.callee.name, sig = STEPS[name], args = s.expr.args;
+      if (!sig) {
+        this.err("UNDEFINED_NAME", `unknown test step '${name}'`, s.loc, { expr: name, expected: Object.keys(STEPS).join("|"), fixes: suggest(name, Object.keys(STEPS)) });
+        continue;
+      }
+      const kinds = sig.replace("?", "");
+      const required = sig.endsWith("?") ? kinds.length - 1 : kinds.length;
+      const ok = args.length >= required && args.length <= kinds.length && args.every((a, i) => (kinds[i] === "s" ? a.kind === "Str" : a.kind === "Num"));
+      if (!ok) this.err("TYPE_MISMATCH", `'${name}' takes ${usage[name]}`, s.loc, { expr: name, expected: usage[name], actual: `${args.length} argument(s)`, fixes: [usage[name]] });
+    }
   }
 
   // ---------- components ----------
