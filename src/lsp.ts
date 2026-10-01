@@ -4,12 +4,14 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { analyze } from "./checker.ts";
+import type { Decl, Loc } from "./ast.ts";
+import { analyze, show } from "./checker.ts";
+import { lex } from "./lexer.ts";
+import { printDecl, printProgram } from "./printer.ts";
 import { parseProject, type Source } from "./compile.ts";
 import { ELEMENTS } from "./elements.ts";
 import type { Diagnostic } from "./errors.ts";
 import { parse } from "./parser.ts";
-import { printProgram } from "./printer.ts";
 
 const KEYWORDS = ["model", "api", "auth", "use", "server fn", "server job", "component", "page", "layout", "state", "computed", "data", "fn", "ref", "mount", "effect", "cleanup", "if", "else", "for", "slot", "meta", "live"];
 
@@ -86,13 +88,39 @@ export class LanguageServer {
     ];
   }
 
+  // The identifier under the cursor and what it names: a declaration of the project, or a member or
+  // prop of the component around it.
+  resolve(uri: string, line: number, character: number): { name: string; decl?: Decl; loc: Loc; hover: string } | null {
+    const text = this.docs.get(uri) ?? "";
+    let toks;
+    try { toks = lex(text, "x"); } catch { return null; }
+    // Identifiers inside template parts (`${total}`) count too.
+    const all = toks.flatMap((t) => (t.t === "tpl" ? (t.parts ?? []).flatMap((p) => { try { return lex(p.src, "x", p.line, p.col); } catch { return []; } }) : [t]));
+    const tok = all.find((t) => t.t === "id" && t.loc.line === line + 1 && t.loc.col - 1 <= character && character <= t.loc.col - 1 + t.v.length);
+    if (!tok) return null;
+    const file = fileURLToPath(uri);
+    const { program } = parseProject(this.sources(file));
+    const a = analyze(program);
+    const decl = program.decls.find((d) => d.name === tok.v);
+    if (decl) return { name: tok.v, decl, loc: decl.loc, hover: printDecl(decl).split("\n")[0].replace(/ \{$/, "") };
+    // The component this line is in: the last one of this file that starts before it.
+    const comp = program.decls.filter((d) => d.kind === "Component" && resolve(d.loc.file) === resolve(file) && d.loc.line <= line + 1).at(-1);
+    if (!comp || comp.kind !== "Component") return null;
+    const sym = a.symbols.get(comp.name)?.get(tok.v);
+    const member = comp.members.find((m) => m.name === tok.v);
+    const param = comp.params.find((p) => p.name === tok.v);
+    const at = member?.loc ?? param?.loc;
+    if (!at || !sym) return null;
+    return { name: tok.v, loc: at, hover: `${sym.kind} ${tok.v}: ${show(sym.ty)}` };
+  }
+
   handle(msg: { id?: number | string; method?: string; params?: any }): object | null {
     const reply = (result: unknown) => ({ jsonrpc: "2.0", id: msg.id, result });
     const p = msg.params;
     switch (msg.method) {
       case "initialize":
         return reply({
-          capabilities: { textDocumentSync: 1, documentFormattingProvider: true, completionProvider: { triggerCharacters: [" "] } },
+          capabilities: { textDocumentSync: 1, documentFormattingProvider: true, completionProvider: { triggerCharacters: [" "] }, definitionProvider: true, hoverProvider: true },
           serverInfo: { name: "artscript" },
         });
       case "textDocument/didOpen": this.docs.set(p.textDocument.uri, p.textDocument.text); this.diagnose(p.textDocument.uri); return null;
@@ -101,6 +129,16 @@ export class LanguageServer {
       case "textDocument/didClose": this.docs.delete(p.textDocument.uri); return null;
       case "textDocument/formatting": return reply(this.format(p.textDocument.uri));
       case "textDocument/completion": return reply(this.complete(p.textDocument.uri, p.position.line, p.position.character));
+      case "textDocument/definition": {
+        const r = this.resolve(p.textDocument.uri, p.position.line, p.position.character);
+        if (!r) return reply(null);
+        const pos = { line: r.loc.line - 1, character: r.loc.col - 1 };
+        return reply({ uri: pathToFileURL(resolve(r.loc.file)).href, range: { start: pos, end: pos } });
+      }
+      case "textDocument/hover": {
+        const r = this.resolve(p.textDocument.uri, p.position.line, p.position.character);
+        return reply(r ? { contents: { kind: "markdown", value: "```artscript\n" + r.hover + "\n```" } } : null);
+      }
       case "shutdown": return reply(null);
       case "exit": process.exit(0);
       default: return msg.id !== undefined ? { jsonrpc: "2.0", id: msg.id, error: { code: -32601, message: `method not found: ${msg.method}` } } : null;

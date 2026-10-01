@@ -1,6 +1,6 @@
 // `art lsp`: diagnostics with the unsaved text, formatting and completion.
 import assert from "node:assert/strict";
-import { cpSync, mkdtempSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -36,4 +36,31 @@ test("lsp: live diagnostics, formatting and completion", () => {
   const doc = 'component Card {\n  text "x"\n}\n\npage P "/" {\n  \n  button "x" \n}\n';
   assert.ok(at(doc, 5, 2).includes("select") && at(doc, 5, 2).includes("Card"));
   assert.ok(at(doc, 6, 13).includes("primary") && at(doc, 6, 13).includes("disabled"));
+});
+
+test("lsp: go to definition and hover", () => {
+  const dir = mkdtempSync(join(tmpdir(), "art-lsp-"));
+  cpSync("examples/todo", dir, { recursive: true });
+  const ls = new LanguageServer(() => {});
+  const uri = pathToFileURL(join(dir, "app.art")).href;
+  const text = readFileSync(join(dir, "app.art"), "utf8");
+  ls.handle({ method: "textDocument/didOpen", params: { textDocument: { uri, text } } });
+  const lines = text.split("\n");
+  const at = (needle: string, nth = 0) => {
+    let n = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const c = lines[i].indexOf(needle);
+      if (c >= 0 && n++ === nth) return { line: i, character: c + 1 };
+    }
+    throw new Error(needle);
+  };
+  // `TodoItem todo=todo ...` in the view → the component's declaration.
+  const def = (ls.handle({ id: 1, method: "textDocument/definition", params: { textDocument: { uri }, position: at("TodoItem todo=") } }) as any).result;
+  assert.equal(def.range.start.line, at("component TodoItem").line);
+  // `add()` in an action → `fn add`, with its type on hover.
+  const use = at("-> add()");
+  const pos = { line: use.line, character: use.character + 3 };
+  assert.equal((ls.handle({ id: 2, method: "textDocument/definition", params: { textDocument: { uri }, position: pos } }) as any).result.range.start.line, at("fn add").line);
+  assert.match((ls.handle({ id: 3, method: "textDocument/hover", params: { textDocument: { uri }, position: at("pending} left") } }) as any).result.contents.value, /computed pending: Number/);
+  assert.match((ls.handle({ id: 4, method: "textDocument/hover", params: { textDocument: { uri }, position: at("TodoItem todo=") } }) as any).result.contents.value, /component TodoItem\(todo: Todo, remove: Fn\)/);
 });

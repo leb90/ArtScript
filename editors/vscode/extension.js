@@ -72,6 +72,18 @@ function activate(context) {
         return (items ?? []).map((c) => Object.assign(new vscode.CompletionItem(c.label, c.kind - 1), { detail: c.detail, insertText: c.insertText }));
       },
     }, " "),
+    vscode.languages.registerDefinitionProvider("artscript", {
+      async provideDefinition(doc, pos) {
+        const r = await request("textDocument/definition", { textDocument: { uri: doc.uri.toString() }, position: { line: pos.line, character: pos.character } });
+        return r ? new vscode.Location(vscode.Uri.parse(r.uri), new vscode.Position(r.range.start.line, r.range.start.character)) : null;
+      },
+    }),
+    vscode.languages.registerHoverProvider("artscript", {
+      async provideHover(doc, pos) {
+        const r = await request("textDocument/hover", { textDocument: { uri: doc.uri.toString() }, position: { line: pos.line, character: pos.character } });
+        return r ? new vscode.Hover(new vscode.MarkdownString(r.contents.value)) : null;
+      },
+    }),
     { dispose: () => proc.kill() },
   );
 }
