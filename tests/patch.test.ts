@@ -106,9 +106,23 @@ test("atomic: a type error in the result changes nothing and points at the patch
 
 test("bad bodies and files with comments are rejected", () => {
   assert.equal(fails("append Todos.draft\n  state x = 1")[0].type, "PATCH_BODY");
-  assert.equal(fails("append Todos/column\n  state x = 1")[0].type, "PATCH_BODY");
+  assert.match(ok("append Todos/column\n  state x = 1"), /state x = 1/, "members appended to a view node join the component");
   assert.equal(fails("set Todos.draft gap=1")[0].type, "PATCH_BODY");
   assert.equal(fails("hola")[0].type, "PATCH_SYNTAX");
   const commented = [{ file: "app.art", src: "// nota\npage P {\n  text \"a\"\n}\n" }];
   assert.equal(fails('append P\n  text "b"', commented)[0].type, "PATCH_COMMENTS");
+});
+
+test("members inserted next to a view node or an unknown member just join the component (from the eval)", () => {
+  const dir = "benchmarks/eval/projects/shop/artscript";
+  const shop = ["shop.art", "components.art"].map((f) => ({ file: f, src: readFileSync(`${dir}/${f}`, "utf8") }));
+  // Exactly what Claude wrote for shop-discount and shop-sort.
+  const discount = applyPatch(shop, 'insert before Summary/row\n  computed discounted = total > 50\ninsert before Summary/row\n  computed finalTotal = total * 0.9\ninsert after Summary/row\n  if discounted {\n    text "Descuento 10%" muted\n  }');
+  assert.deepEqual(discount.diagnostics, []);
+  assert.match(discount.files["components.art"], /computed discounted = total > 50\n  computed finalTotal = total \* 0.9/);
+  const sort = applyPatch(shop, 'replace Catalog.shown\n  computed shown = (sorted ? [...products].sort((a, b) => a.price - b.price) : products).filter(p => p.name.includes(query))\ninsert before Catalog.computed\n  state sorted = false');
+  assert.deepEqual(sort.diagnostics, []);
+  assert.match(sort.files["components.art"], /state sorted = false/);
+  // Replacing a view node with members is still an error: the intent isn't clear.
+  assert.equal(applyPatch(shop, "replace Summary/row\n  state x = 1").diagnostics[0].type, "PATCH_BODY");
 });

@@ -185,7 +185,20 @@ function applyOp(p: Program, op: Op, firstFile: string) {
     return;
   }
 
-  const t = resolve(p, op.target, loc);
+  let t: Target;
+  try {
+    t = resolve(p, op.target, loc);
+  } catch (e) {
+    // `insert before Catalog.computed` with members: the position of members doesn't change their
+    // meaning, so an unknown member target of an insert just adds them to the component.
+    const m = /^(\w+)\.\w+$/.exec(op.target);
+    const comp = m && p.decls.find((d): d is ComponentDecl => d.kind === "Component" && d.name === m[1]);
+    if (!(e instanceof CompileError) || !comp || !op.op.startsWith("insert") || !op.body.trim()) throw e;
+    const body = parseComponentBody(op.body, PATCH_FILE, bodyLine);
+    if (body.view.length || !body.members.length) throw e;
+    comp.members.push(...body.members);
+    return;
+  }
 
   if (op.op === "remove") {
     if (t.kind === "decl") p.decls.splice(t.i, 1);
@@ -238,7 +251,12 @@ function applyOp(p: Program, op: Op, firstFile: string) {
   }
 
   const body = parseComponentBody(op.body, PATCH_FILE, bodyLine);
-  if (body.members.length) bodyErr("expected view elements; members go with `append Component`", "view elements");
+  // Members have no place in the view: inserted next to a view node, they just join the component.
+  if (body.members.length) {
+    if (op.op === "replace") bodyErr("a view node can't be replaced by members; use `append Component` for members", "view elements");
+    t.comp.members.push(...body.members);
+    if (!body.view.length) return;
+  }
   if (op.op === "append") {
     (t.node ? childrenOf(t.node) : t.list).push(...body.view);
     return;

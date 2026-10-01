@@ -18,7 +18,7 @@ page Counter "/" {
 
 Status: **v0.1, MVP foundation**.
 
-**Early result:** Claude built the same 10 apps (8 frontend, 2 full-stack) in ArtScript, React + TypeScript and Svelte; each app was run and used in a simulated browser to check it works. With Claude Sonnet 5.5 every app worked in all three stacks, and ArtScript cost **57% less per working app than React + TypeScript and 50% less than Svelte** (67% less than React on the full-stack tasks), counting the spec, retries and thinking tokens. An earlier, compile-only run with Claude Opus 5.5 gave 44% less. See [Cost eval results](#cost-eval-results).
+**Early result:** Claude built the same 10 apps (8 frontend, 2 full-stack) in ArtScript, React + TypeScript and Svelte; each app was run and used in a simulated browser to check it works. With Claude Sonnet 5.5 every app worked in all three stacks, and ArtScript cost **57% less per working app than React + TypeScript and 50% less than Svelte** (67% less than React on the full-stack tasks), counting the spec, retries and thinking tokens. Modifying a larger existing project the gap is smaller: 12% less than React, both with the whole project in the prompt and with focused context (first run; the retries it uncovered are already fixed but not re-measured). An earlier, compile-only run with Claude Opus 5.5 gave 44% less. See [Cost eval results](#cost-eval-results).
 
 ## Usage
 
@@ -232,7 +232,19 @@ xychart-beta
 
 </details>
 
-Run 2026-10-01: 10 tasks × 3 stacks × 2 runs, total $0.61, prices as of 2026-09-25. Re-run after fixing bugs that run uncovered: todo/react, search/react, login/artscript (the model's first answers there were correct; the failures came from the eval harness and, for login/artscript, an ArtScript compiler bug). Raw data: [`benchmarks/eval/results/2026-10-01T08-29-33-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T08-29-33-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T09-58-38-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T09-58-38-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T09-58-42-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T09-58-42-claude-sonnet-5-5.json).
+#### Larger project: 4 modifications to an 11-component shop
+
+Whole project in the prompt ("full") vs. what a good agent would read ("focus": ArtScript gets `art context` of the relevant parts, React/Svelte the file list plus the relevant files). Each change is applied to the whole project and the app is used in the simulated browser.
+
+| Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus |
+|---|---|---|---|---|
+| **ArtScript** | $0.0148 (8/8) | $0.0092 (8/8) | 4290 | 5803 |
+| React + TS | $0.0168 (8/8) | $0.0104 (8/8) | 3330 | 1073 |
+| Svelte 5 | $0.0155 (8/8) | $0.0096 (8/8) | 3260 | 1075 |
+
+Input tokens include ArtScript's ~1.9K-token spec in the system prompt (mostly billed at the cache rate) and every retry.
+
+Run 2026-10-01: 10 tasks × 3 stacks × 2 runs, total $0.61, prices as of 2026-09-25. Re-run after fixing bugs that run uncovered: todo/react, search/react, login/artscript (the model's first answers there were correct; the failures came from the eval harness and, for login/artscript, an ArtScript compiler bug). Raw data: [`benchmarks/eval/results/2026-10-01T08-29-33-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T08-29-33-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T09-58-38-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T09-58-38-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T09-58-42-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T09-58-42-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-01T13-09-26-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-01T13-09-26-claude-sonnet-5-5.json).
 
 ### Methodology and limitations
 

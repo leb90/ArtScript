@@ -55,16 +55,41 @@ function merge(files: { path: string; data: ResultFile }[]): Loaded[] {
     const prev = byModel.get(data.model);
     if (!prev) { byModel.set(data.model, { path, data: { ...data, results: [...data.results] }, paths: [path], replaced: [] }); continue; }
     const cells = new Set(data.results.map((r) => `${r.task}/${r.stack}`));
+    const existed = new Set(prev.data.results.map((r) => `${r.task}/${r.stack}`));
     prev.data.results = [...prev.data.results.filter((r) => !cells.has(`${r.task}/${r.stack}`)), ...data.results];
     prev.paths.push(path);
-    prev.replaced.push(...cells);
+    prev.replaced.push(...[...cells].filter((c) => existed.has(c)));
   }
   return [...byModel.values()];
 }
 
+// Modifications on the larger project, per context mode.
+function projectTable(rs: Run[]): string[] {
+  const tasks = [...new Set(rs.map((r) => r.task.split("@")[0]))];
+  const cell = (stack: string, mode: string) => {
+    const x = rs.filter((r) => r.stack === stack && r.task.endsWith("@" + mode));
+    const ok = x.filter((r) => r.ok);
+    const cost = x.reduce((a, r) => a + r.usd, 0);
+    const input = avg(x.map((r) => r.usage.input + r.usage.cacheRead + r.usage.cacheWrite));
+    return { text: ok.length ? `${usd(cost / ok.length)} (${ok.length}/${x.length})` : `✗ (0/${x.length})`, perSolved: ok.length ? cost / ok.length : Infinity, input };
+  };
+  const out = [`#### Larger project: ${tasks.length} modifications to an 11-component shop`, "",
+    "Whole project in the prompt (\"full\") vs. what a good agent would read (\"focus\": ArtScript gets `art context` of the relevant parts, React/Svelte the file list plus the relevant files). Each change is applied to the whole project and the app is used in the simulated browser.", "",
+    "| Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus |", "|---|---|---|---|---|"];
+  for (const k of STACKS) {
+    const full = cell(k, "full"), focus = cell(k, "focus");
+    out.push(`| ${NAMES[k]} | ${full.text} | ${focus.text} | ${Math.round(full.input)} | ${Math.round(focus.input)} |`);
+  }
+  out.push("", "Input tokens include ArtScript's ~1.9K-token spec in the system prompt (mostly billed at the cache rate) and every retry.");
+  return out;
+}
+
 function section(loaded: Loaded[]): string {
   const out: string[] = [START, "", "## Cost eval results", ""];
-  for (const { path, data: f, paths, replaced } of loaded) {
+  for (const { path, data: all, paths, replaced } of loaded) {
+    // Larger-project tasks ("<task>@full" / "<task>@focus") get their own table below.
+    const f = { ...all, results: all.results.filter((r) => !r.task.includes("@")) };
+    const project = all.results.filter((r) => r.task.includes("@"));
     const s = Object.fromEntries(STACKS.map((k) => [k, stats(f, k)]));
     const tasks = [...new Set(f.results.map((r) => r.task))];
     const date = basename(path).slice(0, 10);
@@ -89,7 +114,9 @@ function section(loaded: Loaded[]): string {
     const total = STACKS.reduce((a, k) => a + s[k].total, 0);
     const links = paths.map((p) => `[\`${relative(REPO, p)}\`](${relative(REPO, p)})`).join(", ");
     const rerun = replaced.length ? ` Re-run after fixing bugs that run uncovered: ${replaced.join(", ")} (the model's first answers there were correct; the failures came from the eval harness and, for login/artscript, an ArtScript compiler bug).` : "";
-    out.push("", "</details>", "", `Run ${date}: ${tasks.length} tasks × ${STACKS.length} stacks × ${f.runs} runs, total $${total.toFixed(2)}, prices as of ${f.pricesDate}.${rerun} Raw data: ${links}.`, "");
+    out.push("", "</details>", "");
+    if (project.length) out.push(...projectTable(project), "");
+    out.push(`Run ${date}: ${tasks.length} tasks × ${STACKS.length} stacks × ${f.runs} runs, total $${total.toFixed(2)}, prices as of ${f.pricesDate}.${rerun} Raw data: ${links}.`, "");
   }
   out.push("### Methodology and limitations", "",
     "- Each task is the same functional request for every stack (6 create, 2 modify). Claude gets the task, returns files, and the harness validates them: ArtScript with its compiler, React with strict `tsc`, Svelte with its compiler. Errors are fed back, up to 3 attempts.",
