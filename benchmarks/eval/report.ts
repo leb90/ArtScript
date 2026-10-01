@@ -20,7 +20,7 @@ type Usage = { input: number; output: number; cacheRead: number; cacheWrite: num
 type Run = { task: string; stack: string; ok: boolean; attempts: number; usage: Usage; usd: number; codeTokens: number | null; size?: { raw: number; brotli: number } };
 // Runs that never reached the model (API errors such as an exhausted credit balance) are not
 // results: they're left out of every number and counted separately.
-const notRun = (r: Run & { errors?: string[] }) => r.attempts === 0 && /^API \d+/.test(r.errors?.[0] ?? "");
+const notRun = (r: Run & { errors?: string[] }) => r.attempts === 0 && /^(API \d+|budget exhausted)/.test(r.errors?.[0] ?? "");
 
 type ResultFile = { model: string; effort: string; runs: number; prices: { in: number; out: number; cacheRead: number; cacheWrite: number }; pricesDate: string; results: Run[] };
 
@@ -179,7 +179,7 @@ if (!paths.length) {
 const files = paths.map((p) => {
   const data = JSON.parse(readFileSync(p, "utf8")) as ResultFile;
   const skipped = data.results.filter(notRun).length;
-  if (skipped) console.log(`${basename(p)}: ${skipped} run(s) never reached the model (API errors), left out`);
+  if (skipped) console.log(`${basename(p)}: ${skipped} run(s) never reached the model (API errors or the --max-usd cap), left out`);
   return { path: join(process.cwd(), p), data: { ...data, results: data.results.filter((r) => !notRun(r)) } };
 });
 const readme = readFileSync(README, "utf8");
