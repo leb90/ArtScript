@@ -1,0 +1,23 @@
+{
+  "name": "artscript",
+  "displayName": "ArtScript",
+  "description": "ArtScript language support: highlighting, live errors, formatting and completion (art lsp).",
+  "version": "0.1.0",
+  "publisher": "artscript",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/leb90/ArtScript" },
+  "engines": { "vscode": "^1.90.0" },
+  "categories": ["Programming Languages", "Formatters", "Linters"],
+  "main": "./extension.js",
+  "activationEvents": ["onLanguage:artscript"],
+  "contributes": {
+    "languages": [{ "id": "artscript", "aliases": ["ArtScript"], "extensions": [".art"], "configuration": "./language-configuration.json" }],
+    "grammars": [{ "language": "artscript", "scopeName": "source.artscript", "path": "./syntaxes/artscript.tmLanguage.json" }],
+    "configuration": {
+      "title": "ArtScript",
+      "properties": {
+        "artscript.command": { "type": "string", "default": "", "description": "Command that starts the language server (default: the project's node_modules/.bin/art, else `art` on the PATH), followed by `lsp`." }
+      }
+    }
+  }
+}
