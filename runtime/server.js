@@ -389,6 +389,25 @@ export async function sendEmail(dataDir, { to, subject, text }) {
 
 const sha256 = (s) => createHash("sha256").update(s).digest("hex");
 
+// OAuth providers (`auth users with google, github`). Credentials: ART_<P>_ID and ART_<P>_SECRET;
+// ART_<P>_AUTHORIZE / _TOKEN / _USER replace the endpoints (a self-hosted provider, or tests).
+const PROVIDERS = {
+  google: {
+    authorize: "https://accounts.google.com/o/oauth2/v2/auth", token: "https://oauth2.googleapis.com/token",
+    user: "https://openidconnect.googleapis.com/v1/userinfo", scope: "openid email profile",
+    profile: (u) => (u.email && u.email_verified !== false ? { email: u.email, name: u.name ?? "" } : null),
+  },
+  github: {
+    authorize: "https://github.com/login/oauth/authorize", token: "https://github.com/login/oauth/access_token",
+    user: "https://api.github.com/user", scope: "read:user user:email",
+    profile: (u) => (u.email ? { email: u.email, name: u.name ?? u.login ?? "" } : null),
+  },
+};
+const providerConf = (name) => {
+  const P = name.toUpperCase(), env = process.env, base = PROVIDERS[name];
+  return { ...base, id: env[`ART_${P}_ID`], secret: env[`ART_${P}_SECRET`], authorize: env[`ART_${P}_AUTHORIZE`] ?? base.authorize, token: env[`ART_${P}_TOKEN`] ?? base.token, user: env[`ART_${P}_USER`] ?? base.user };
+};
+
 // `accept="image/*,.pdf"`: MIME types (with `type/*`) or extensions, like <input accept>.
 function accepts(accept, { name, type }) {
   return accept.split(",").map((a) => a.trim().toLowerCase()).some((a) =>
@@ -550,6 +569,54 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
       const body = req.method === "POST" || req.method === "PATCH" || req.method === "PUT" ? await readJson(req) : undefined;
 
       // ---------- auth ----------
+      // ---------- OAuth: /api/_auth/oauth/<provider> → the provider → .../callback → "/" signed in ----------
+      const o = /^\/api\/_auth\/oauth\/(\w+)(\/callback)?$/.exec(url.pathname);
+      if (o && req.method === "GET") {
+        if (!users || !(schema.oauth ?? []).includes(o[1])) throw new HttpError(404, "NOT_FOUND", `sign-in with ${o[1]} is not enabled`);
+        const p = providerConf(o[1]);
+        if (!p.id || !p.secret) throw new HttpError(500, "OAUTH_CONFIG", `set ART_${o[1].toUpperCase()}_ID and ART_${o[1].toUpperCase()}_SECRET`);
+        const origin = `${req.headers["x-forwarded-proto"] ?? "http"}://${req.headers.host}`;
+        const redirect = `${origin}/api/_auth/oauth/${o[1]}/callback`;
+        const stateCookie = "art_oauth";
+        if (!o[2]) {
+          const state = randomBytes(16).toString("hex");
+          const to = new URL(p.authorize);
+          for (const [k, v] of Object.entries({ client_id: p.id, redirect_uri: redirect, response_type: "code", scope: p.scope, state })) to.searchParams.set(k, v);
+          res.writeHead(302, { location: to.href, "set-cookie": `${stateCookie}=${state}; HttpOnly; SameSite=Lax; Path=/api/_auth/oauth; Max-Age=600` }).end();
+          return true;
+        }
+        // The state must match the cookie set when the flow started (CSRF).
+        const sent = Object.fromEntries((req.headers.cookie ?? "").split(";").map((c) => c.trim().split("=")))[stateCookie];
+        if (!sent || sent !== url.searchParams.get("state")) throw new HttpError(400, "OAUTH_STATE", "the sign-in link expired; try again");
+        const tok = await (await fetch(p.token, {
+          method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
+          body: new URLSearchParams({ client_id: p.id, client_secret: p.secret, code: url.searchParams.get("code") ?? "", redirect_uri: redirect, grant_type: "authorization_code" }),
+        })).json();
+        if (!tok.access_token) throw new HttpError(400, "OAUTH_FAILED", "the provider didn't sign you in");
+        const auth = { authorization: `Bearer ${tok.access_token}`, accept: "application/json", "user-agent": "artscript" };
+        const info = await (await fetch(p.user, { headers: auth })).json();
+        // GitHub may hide the email in the profile: ask for the primary, verified one.
+        if (o[1] === "github" && !info.email) {
+          const emails = await (await fetch(new URL("/user/emails", p.user).href, { headers: auth })).json();
+          info.email = Array.isArray(emails) ? emails.find((e) => e.primary && e.verified)?.email : undefined;
+        }
+        const prof = p.profile(info);
+        if (!prof) throw new HttpError(400, "OAUTH_FAILED", "the provider didn't share a verified email");
+        let user = users.byEmail(prof.email);
+        if (!user) {
+          const m = schema.models[users.model];
+          user = users.create({
+            email: prof.email, password: randomBytes(24).toString("hex"),
+            ...("name" in m && /^String/.test(m.name) ? { name: prof.name || prof.email.split("@")[0] } : {}),
+            ...(hasRoles ? { role: users.hasAdmin() ? "user" : "admin" } : {}),
+            ...(verifies ? { verified: true } : {}),
+          }, ALL);
+        } else if (verifies && !user.verified) users.update(user[users.key], { verified: true }, ALL);
+        const session = startSession(user);
+        res.writeHead(302, { location: "/", "set-cookie": [session["set-cookie"], `${stateCookie}=; Path=/api/_auth/oauth; Max-Age=0`] }).end();
+        return true;
+      }
+
       const a = /^\/api\/_auth\/(signup|login|logout|logout-all|me|reset-request|reset|verify)$/.exec(url.pathname);
       if (a) {
         if (!users) throw new HttpError(404, "NOT_FOUND", "auth is not enabled");

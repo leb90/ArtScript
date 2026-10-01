@@ -40,7 +40,8 @@ export type ApiAccess = "public" | "login" | "private" | "admin";
 export type ApiDecl = { kind: "Api"; name: string; model: string; access: ApiAccess; modelLoc: Loc; loc: Loc };
 
 // `auth users`: email + password accounts on that api (signup, login, logout, me).
-export type AuthDecl = { kind: "Auth"; name: string; api: string; loc: Loc };
+// `auth users with google, github`: also sign-in through those providers (OAuth).
+export type AuthDecl = { kind: "Auth"; name: string; api: string; providers?: string[]; loc: Loc };
 
 // `server fn name(params) { ... }`: runs on the server with `db`, `me` and `fail`; called as `server.name()`.
 // `every`: a scheduled job (`server job cleanup every "1h" { ... }`): runs on the server on that

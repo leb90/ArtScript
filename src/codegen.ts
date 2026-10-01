@@ -118,6 +118,8 @@ export type ServerSchema = {
   defaults: Record<string, Record<string, unknown>>;
   apis: Record<string, { model: string; access: ApiAccess }>;
   auth: string | null;
+  // Sign-in providers of `auth ... with`.
+  oauth?: string[];
   fns: string;
 };
 
@@ -125,6 +127,7 @@ export function serverSchema(program: Program): ServerSchema | null {
   const apis: ServerSchema["apis"] = {};
   const models: ServerSchema["models"] = {};
   let auth: string | null = null;
+  let oauth: string[] | undefined;
   const rules: ServerSchema["rules"] = {};
   const defaults: ServerSchema["defaults"] = {};
   for (const d of program.decls) {
@@ -136,7 +139,7 @@ export function serverSchema(program: Program): ServerSchema | null {
       const withDefault = d.fields.filter((f) => f.default);
       if (withDefault.length) defaults[d.name] = Object.fromEntries(withDefault.map((f) => [f.name, jsonValue(f.default!)]));
     }
-    if (d.kind === "Auth") auth = d.api;
+    if (d.kind === "Auth") { auth = d.api; if (d.providers) oauth = d.providers; }
   }
   const fns = program.decls.filter((d) => d.kind === "ServerFn");
   if (!Object.keys(apis).length && !fns.length) return null;
@@ -149,7 +152,7 @@ export function serverSchema(program: Program): ServerSchema | null {
       if (api) (refs[d.name] ??= {})[f.name] = { api, list: f.type.list };
     }
   }
-  return { models, rules, refs, defaults, apis, auth, fns: serverFnsModule(program, fns) };
+  return { models, rules, refs, defaults, apis, auth, ...(oauth ? { oauth } : {}), fns: serverFnsModule(program, fns) };
 }
 
 // Each server fn becomes `async name({ db, me, fail }, ...params)`.

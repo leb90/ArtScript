@@ -105,6 +105,8 @@ export type CompInfo = Map<string, { params: { name: string; ty: Ty; required: b
 // DOM events accepted by `on:<event>` (typos get the closest one).
 const EVENTS = ["click", "dblclick", "input", "change", "submit", "keydown", "keyup", "focus", "blur", "mouseenter", "mouseleave", "mousedown", "mouseup", "mousemove", "pointerdown", "pointerup", "pointermove", "touchstart", "touchend", "wheel", "scroll", "contextmenu", "dragstart", "dragover", "dragleave", "drop", "paste", "copy", "load", "error", "ended", "play", "pause", "timeupdate", "toggle", "close"];
 
+const OAUTH = ["google", "github"];
+
 const DATA_STATE: Record<string, Ty> = { loading: BOOL, error: { k: "opt", of: STR }, reload: fn({ k: "void" }) };
 
 export function isJsonLiteral(e: Expr): boolean {
@@ -188,6 +190,7 @@ class Checker {
   twoWay = new Map<string, Set<string>>();
   arrowHint: Ty | null = null; // the callback type an arrow is being passed as
   layoutNow = false;
+  oauth: string[] = []; // providers of `auth ... with`
   slots = 0;
   importFrom = new Map<string, string>(); // imported name → module
   idFields = new Map<string, Set<string>>(); // model → fields declared as ID (assigned by the server on create)
@@ -244,6 +247,10 @@ class Checker {
     for (const d of this.program.decls) {
       if (d.kind !== "Auth") continue;
       this.at = "auth";
+      for (const p of d.providers ?? []) {
+        if (!OAUTH.includes(p)) this.err("UNKNOWN_TYPE", `unknown sign-in provider '${p}'`, d.loc, { expr: p, expected: OAUTH.join("|"), fixes: suggest(p, OAUTH) });
+      }
+      this.oauth = d.providers ?? [];
       const model = this.apis.get(d.api);
       if (!model) {
         this.err("UNKNOWN_TYPE", `\`auth\` needs a users api: '${d.api}' doesn't exist`, d.loc, { expr: d.api, fixes: suggest(d.api, this.apis.keys()) });
@@ -1114,6 +1121,7 @@ class Checker {
       requestReset: fn({ k: "async", of: { k: "void" } }),
       resetPassword: fn({ k: "async", of: { k: "void" } }),
       verifyEmail: fn({ k: "async", of: { k: "void" } }),
+      loginWith: fn({ k: "void" }),
     };
     if (prop in methods) return methods[prop];
     const synonyms: Record<string, string> = { forgotPassword: "requestReset", sendReset: "requestReset", resetRequest: "requestReset", reset: "resetPassword", setPassword: "resetPassword", verify: "verifyEmail", confirmEmail: "verifyEmail", register: "signup", signUp: "signup", signin: "login", signIn: "login", logIn: "login", signout: "logout", signOut: "logout", logOut: "logout", user: "me", current: "me", currentUser: "me", getUser: "me" };
@@ -1122,11 +1130,15 @@ class Checker {
   }
 
   authArgs(t: Ty & { k: "auth" }, method: string, args: Expr[], tys: Ty[], loc: Loc) {
-    const sig: Record<string, [number, string]> = { signup: [1, "signup(obj)"], login: [2, "login(email, password)"], logout: [0, "logout()"], logoutAll: [0, "logoutAll()"], me: [0, "me()"], requestReset: [1, "requestReset(email)"], resetPassword: [2, "resetPassword(token, password)"], verifyEmail: [1, "verifyEmail(token)"] };
+    const sig: Record<string, [number, string]> = { signup: [1, "signup(obj)"], login: [2, "login(email, password)"], logout: [0, "logout()"], logoutAll: [0, "logoutAll()"], me: [0, "me()"], requestReset: [1, "requestReset(email)"], resetPassword: [2, "resetPassword(token, password)"], verifyEmail: [1, "verifyEmail(token)"], loginWith: [1, 'loginWith("google")'] };
     if (!sig[method]) return;
     if (args.length !== sig[method][0]) {
       this.err("TYPE_MISMATCH", `auth.${sig[method][1]} takes ${sig[method][0]} argument(s)`, loc, { expected: sig[method][1], actual: `${args.length} argument(s)` });
       return;
+    }
+    // loginWith("google"): a provider declared in `auth ... with`.
+    if (method === "loginWith" && args[0].kind === "Str" && !this.oauth.includes(args[0].value)) {
+      this.err("TYPE_MISMATCH", `'${args[0].value}' isn't a sign-in provider of this app`, args[0].loc, { expr: args[0].value, expected: this.oauth.join("|") || "add `with google` (or github) to `auth`", fixes: this.oauth.length ? suggest(args[0].value, this.oauth) : ["auth users with google"] });
     }
     if (method === "signup") {
       // The server assigns ids and the role.

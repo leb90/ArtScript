@@ -83,6 +83,7 @@ api users: User                    // REST at /api/users: validated against the 
 - `await` and `try { } catch (e) { }` work as in JS; `e.message` explains a validation error.
 - Access: `api notes: Note login` needs a session; `private` also scopes rows per user (the model needs `owner: ID`, filled in); `admin`: anyone reads, admins write (accounts need `role: String`; the first account is "admin", later ones "user").
 - `auth users` (the model needs `email: Email` and `password: String`): `auth.signup(obj)`, `auth.login(email, password)`, `auth.logout()`, `auth.logoutAll()` (every device), `data me = auth.me()` (`T?`). Passwords are hashed and never returned.
+- `auth users with google, github`: `auth.loginWith("google")` signs in through the provider (accounts found or created by email).
 - Forgotten password: `auth.requestReset(email)` emails a link to `/reset-password?token=...`; that page calls `auth.resetPassword(query.token, password)`. With `verified: Bool` in the accounts model, signing up emails a link to `/verify-email?token=...` that calls `auth.verifyEmail(query.token)`.
 - `server fn name(a, b) { ... }` runs on the server; call it as `server.name(a, b)` (also in `data`). Inside: `db.<api>` (no `await`, not scoped per user), `me` (logged-in user or `null`), `fail("message", status?)` and `await email(to, subject, text)`.
 - After any write, login or logout, every `data` reloads. `data msgs = api.msgs.list() live` also reloads when someone else writes (chats, dashboards).

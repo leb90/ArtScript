@@ -419,6 +419,8 @@ export function $auth() {
     requestReset: (email) => request("POST", "_auth/reset-request", { email }),
     resetPassword: (token, password) => request("POST", "_auth/reset", { token, password }).then(bump),
     verifyEmail: (token) => request("POST", "_auth/verify", { token }).then(bump),
+    // Leaves the page for the provider, which sends the user back signed in.
+    loginWith: (provider) => { location.href = `${apiBase}/api/_auth/oauth/${provider}`; },
     me: () => { dataVersion.v; return request("GET", "_auth/me"); },
   };
 }

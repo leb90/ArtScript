@@ -162,7 +162,9 @@ class Parser {
       if (this.is("auth")) {
         const loc = this.next().loc;
         const api = this.ident("the users api").v;
-        return { kind: "Auth", name: "auth", api, loc };
+        const providers: string[] = [];
+        if (this.eat("with")) do providers.push(this.ident("a sign-in provider (google, github)").v); while (this.eat(","));
+        return { kind: "Auth", name: "auth", api, ...(providers.length ? { providers } : {}), loc };
       }
       if (this.is("server")) return this.serverFn();
       if (this.is("component") || this.is("page") || this.is("layout")) return this.component();
