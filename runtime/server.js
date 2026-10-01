@@ -108,11 +108,28 @@ function makeTable(schema, db, dataDir, name, { model, access }) {
     renameSync(legacy, legacy + ".imported");
   }
   const parse = (r) => (r ? JSON.parse(r.data) : null);
+  // Relations (`author: User`): stored as the referenced row's id, returned as that row (one level).
+  const refs = schema.refs?.[model] ?? {};
+  let tables = {};
+  // Validation sees a relation as its id.
+  const vschema = Object.keys(refs).length
+    ? { ...schema, models: { ...schema.models, [model]: Object.fromEntries(Object.entries(fields).map(([f, t]) => [f, refs[f] ? t.replace(/^\w+/, "ID") : t])) } }
+    : schema;
+  const peek = (id) => parse(db.prepare(`SELECT data FROM ${T} WHERE id = ?`).get(String(id)));
   // Auth passwords never leave the server.
-  const out = (row) => {
-    if (!isAuth || !row) return row ?? null;
-    const { password, ...rest } = row;
-    return rest;
+  const out = (row, deep = true) => {
+    if (!row) return row ?? null;
+    let r = row;
+    if (isAuth) { const { password, ...rest } = r; r = rest; }
+    if (deep) {
+      for (const [f, { api, list }] of Object.entries(refs)) {
+        const t = tables[api];
+        if (!t || r[f] === null || r[f] === undefined) continue;
+        const one = (id) => t.out(t.peek(id), false);
+        r = { ...r, [f]: list ? r[f].map(one).filter(Boolean) : one(r[f]) };
+      }
+    }
+    return r;
   };
   const scope = (me) => (access === "private" && me !== ALL ? { sql: "owner = ?", args: [me ? String(me[userKey]) : "\0none"] } : null);
 
@@ -155,8 +172,22 @@ function makeTable(schema, db, dataDir, name, { model, access }) {
     return parse(r);
   };
   const byEmail = (email) => parse(db.prepare(`SELECT data FROM ${T} WHERE json_extract(data, '$.email') = ?`).get(email));
-  const check = (row) => {
-    const e = validate(schema, model, row);
+  const check = (row, me) => {
+    // A relation takes the referenced row or its id, and the row must exist (and be visible).
+    for (const [f, { api, list }] of Object.entries(refs)) {
+      const t = tables[api];
+      const v = row[f];
+      if (!t || v === null || v === undefined) continue;
+      const idOf = (x) => (x && typeof x === "object" ? x[t.key] : x);
+      row[f] = list && Array.isArray(v) ? v.map(idOf) : list ? v : idOf(v);
+      for (const id of list ? (Array.isArray(row[f]) ? row[f] : []) : [row[f]]) {
+        if (typeof id !== "string") continue; // reported by validate below
+        try { t.find(id, me ?? ALL); } catch {
+          throw new HttpError(400, "VALIDATION", `invalid ${f}: ${api}/${id} does not exist`, { field: f, expected: `an id of ${api}`, actual: JSON.stringify(id) });
+        }
+      }
+    }
+    const e = validate(vschema, model, row);
     if (e) throw new HttpError(400, "VALIDATION", `invalid ${e.field}: expected ${e.expected}, got ${e.actual}`, e);
     // Field rules: min/max (length of text or lists, value of numbers), match, unique.
     for (const [f, r] of Object.entries(schema.rules?.[model] ?? {})) {
@@ -199,7 +230,7 @@ function makeTable(schema, db, dataDir, name, { model, access }) {
       const row = { ...body };
       if (key && (row[key] === undefined || row[key] === null)) row[key] = randomUUID();
       if (access === "private" && me && me !== ALL) row.owner = String(me[userKey]);
-      check(row);
+      check(row, me);
       if (db.prepare(`SELECT 1 FROM ${T} WHERE id = ?`).get(String(row[key]))) throw new HttpError(409, "CONFLICT", `${key} '${row[key]}' already exists`);
       db.prepare(`INSERT INTO ${T} VALUES (?, ?, ?)`).run(String(row[key]), row.owner ?? null, JSON.stringify(row));
       return out(row);
@@ -210,15 +241,41 @@ function makeTable(schema, db, dataDir, name, { model, access }) {
       const fixed = { ...(key ? { [key]: prev[key] } : {}), ...(access === "private" ? { owner: prev.owner } : {}) };
       const row = { ...(replace ? {} : prev), ...changes, ...fixed };
       if (isAuth && changes.password === undefined) row.password = prev.password;
-      check(row);
+      check(row, me);
       db.prepare(`UPDATE ${T} SET data = ? WHERE id = ?`).run(JSON.stringify(row), String(prev[key]));
       return out(row);
     },
+    // Rows that reference this one block the delete (409), unless their field is `cascade`:
+    // then they are deleted too. All or nothing.
     remove(id, me) {
       const prev = find(id, me);
-      db.prepare(`DELETE FROM ${T} WHERE id = ?`).run(String(prev[key]));
+      db.exec("SAVEPOINT art_remove");
+      try {
+        for (const t of Object.values(tables)) {
+          for (const [f, r] of Object.entries(t.refs)) {
+            if (r.api !== name) continue;
+            const users = t.referencing(f, r.list, prev[key]);
+            if (!users.length) continue;
+            if (!schema.rules?.[t.model]?.[f]?.cascade) {
+              throw new HttpError(409, "CONFLICT", `${name}/${prev[key]} is used by ${users.length} row(s) of ${t.name} (${f}); remove them first or mark ${t.model}.${f} \`cascade\``, { field: f, api: t.name });
+            }
+            for (const other of users) t.remove(other, ALL);
+          }
+        }
+        db.prepare(`DELETE FROM ${T} WHERE id = ?`).run(String(prev[key]));
+        db.exec("RELEASE art_remove");
+      } catch (e) {
+        db.exec("ROLLBACK TO art_remove");
+        db.exec("RELEASE art_remove");
+        throw e;
+      }
       return null;
     },
+    refs, peek,
+    link: (all) => { tables = all; },
+    referencing: (f, list, id) => db.prepare(list
+      ? `SELECT id FROM ${T} WHERE EXISTS (SELECT 1 FROM json_each(data, '$.${f}') WHERE value = ?)`
+      : `SELECT id FROM ${T} WHERE json_extract(data, '$.${f}') = ?`).all(String(id)).map((r) => r.id),
   };
 }
 
@@ -241,6 +298,7 @@ const cookieOf = (req) => Object.fromEntries((req.headers.cookie ?? "").split(";
 export function createApi(schema, dataDir, fns = {}) {
   const sql = openDb(dataDir);
   const tables = Object.fromEntries(Object.entries(schema.apis).map(([n, a]) => [n, makeTable(schema, sql, dataDir, n, a)]));
+  for (const t of Object.values(tables)) t.link(tables);
   const users = schema.auth ? tables[schema.auth] : null;
   const hasRoles = !!users && "role" in (schema.models[users.model] ?? {});
   const isAdmin = (me) => hasRoles && me?.role === "admin";

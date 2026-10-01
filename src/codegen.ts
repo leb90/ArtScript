@@ -75,6 +75,8 @@ export type ServerSchema = {
   models: Record<string, Record<string, string>>;
   // Field rules per model (`min`, `max`, `match`, `unique`), only for fields that have some.
   rules: Record<string, Record<string, FieldRules>>;
+  // Relations: per model, the fields that reference another stored model (by the api storing it).
+  refs: Record<string, Record<string, { api: string; list: boolean }>>;
   apis: Record<string, { model: string; access: ApiAccess }>;
   auth: string | null;
   fns: string;
@@ -96,7 +98,16 @@ export function serverSchema(program: Program): ServerSchema | null {
   }
   const fns = program.decls.filter((d) => d.kind === "ServerFn");
   if (!Object.keys(apis).length && !fns.length) return null;
-  return { models, rules, apis, auth, fns: serverFnsModule(program, fns) };
+  const apiOf = (m: string) => program.decls.find((d) => d.kind === "Api" && d.model === m)?.name;
+  const refs: ServerSchema["refs"] = {};
+  for (const d of program.decls) {
+    if (d.kind !== "Model" || !apiOf(d.name)) continue;
+    for (const f of d.fields) {
+      const api = apiOf(f.type.name);
+      if (api) (refs[d.name] ??= {})[f.name] = { api, list: f.type.list };
+    }
+  }
+  return { models, rules, refs, apis, auth, fns: serverFnsModule(program, fns) };
 }
 
 // Each server fn becomes `async name({ db, me, fail }, ...params)`.

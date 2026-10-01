@@ -72,6 +72,7 @@ api users: User                    // REST at /api/users: validated against the 
 ```
 
 - The model needs an `ID` field (if `create` omits it, the server assigns it).
+- Relations: in a stored model, `author: User` (or `tags: Tag[]`) stores the id; create/update take the row or its id (`author: me`, `author: id`), reads return the row (`post.author.name`), `where: { author: id }` filters. Deleting a referenced row fails (409) unless the field is `cascade` (`post: Post cascade` deletes the comments with their post).
 - Typed client in any component: `api.users.list(query?)`, `count(query?)`, `get(id)`, `create(obj)`, `update(id, changes)`, `remove(id)`.
 - Query: `list({ where: { active: true }, search: "pan", sort: "-price", limit: 20, offset: 40 })` (`sort`: field, `-` = descending; `search`: text fields contain it). `count({ where, search })`. Inside `data`, they re-run when the states they use change (e.g. `offset: page * 20`).
 - `data users = api.users.list()` loads on mount and **reloads by itself** after any write. A list starts as `[]`, a count as `0`; `get` starts as `null` (`T?`).

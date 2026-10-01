@@ -110,9 +110,9 @@ class Parser {
       const type = this.type();
       const rules: Record<string, number | string | boolean> = {};
       while (this.tok.t === "id") {
-        if (!["min", "max", "match", "unique"].includes(this.tok.v)) this.fail("min=, max=, match=\"regex\" or unique");
+        if (!["min", "max", "match", "unique", "cascade"].includes(this.tok.v)) this.fail("min=, max=, match=\"regex\", unique or cascade");
         const r = this.next().v;
-        if (r === "unique") { rules.unique = true; continue; }
+        if (r === "unique" || r === "cascade") { rules[r] = true; continue; }
         this.expect("=");
         const neg = this.eat("-");
         if ((this.tok.t as string) !== (r === "match" ? "str" : "num")) this.fail(r === "match" ? "a string" : "a number");

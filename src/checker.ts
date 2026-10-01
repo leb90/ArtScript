@@ -197,7 +197,7 @@ class Checker {
       for (const f of d.fields) {
         if (f.name in fields) this.err("DUPLICATE_NAME", `duplicate field '${f.name}'`, f.loc, { expr: f.name });
         fields[f.name] = this.resolve(f.type);
-        this.rules(f);
+        this.rules(f, d.name);
       }
       this.idFields.set(d.name, new Set(d.fields.filter((f) => f.type.name === "ID" && !f.type.list).map((f) => f.name)));
     }
@@ -267,7 +267,7 @@ class Checker {
   }
 
   // min/max: String, Email, Number or a list; match: String or Email; unique: a single value.
-  rules(f: Field) {
+  rules(f: Field, model: string) {
     const r = f.rules;
     if (!r) return;
     const t = f.type;
@@ -280,6 +280,16 @@ class Checker {
       try { new RegExp(r.match); } catch (e) { this.err("TYPE_MISMATCH", `invalid regular expression: ${(e as Error).message}`, f.loc, { expr: r.match, expected: "a JavaScript regular expression" }); }
     }
     if (r.unique && (t.list || this.models.has(t.name))) bad("unique", "a single String, Email, Number or ID");
+    if (r.cascade && !this.refTarget(model, f.name)) bad("cascade", "a field whose type is a model stored by an api, in a model stored by an api");
+  }
+
+  // Relations: in a model stored by an api, a field whose type is another stored model keeps its
+  // id. Writes take the object or its id; reads return the referenced row.
+  refTarget(model: string, field: string): string | null {
+    const stored = (m: string) => this.program.decls.some((d) => d.kind === "Api" && d.model === m);
+    const decl = this.program.decls.find((d): d is ModelDecl => d.kind === "Model" && d.name === model);
+    const f = decl?.fields.find((x) => x.name === field);
+    return f && stored(model) && stored(f.type.name) ? f.type.name : null;
   }
 
   resolve(t: TypeRef): Ty {
@@ -770,7 +780,13 @@ class Checker {
       given.add(p.key);
       if (!(p.key in fields)) {
         this.err("UNKNOWN_FIELD", `${model} has no field '${p.key}'`, p.value.loc, { expr: p.key, expected: Object.keys(fields).join("|"), fixes: suggest(p.key, Object.keys(fields)) });
-      } else this.expectTy(p.value, this.types.get(p.value) ?? ANY, fields[p.key]);
+      } else {
+        const ty = this.types.get(p.value) ?? ANY;
+        // A relation also takes the id (`author: me.id`), or a list of ids.
+        const ref = this.refTarget(model, p.key);
+        const ids = ref && (fields[p.key].k === "list" ? ty.k === "list" && ty.of.k === "str" : ty.k === "str");
+        if (!ids) this.expectTy(p.value, ty, fields[p.key]);
+      }
     }
     if (opts.partial) return;
     const missing = Object.entries(fields).filter(([k, t]) => !given.has(k) && t.k !== "opt" && !opts.skip?.has(k));

@@ -17,7 +17,8 @@ export type UseDecl = { kind: "Use"; name: string; source: string; default: stri
 export type ModelDecl = { kind: "Model"; name: string; fields: Field[]; loc: Loc };
 // Rules checked by the server on create/update: `name: String min=2 max=50`, `email: Email unique`,
 // `code: String match="^[A-Z]{3}$"`. min/max: length of a String or list, value of a Number.
-export type FieldRules = { min?: number; max?: number; match?: string; unique?: boolean };
+// `author: User cascade`: deleting the user deletes the rows that reference it (see relations).
+export type FieldRules = { min?: number; max?: number; match?: string; unique?: boolean; cascade?: boolean };
 export type Field = { name: string; type: TypeRef; rules?: FieldRules; loc: Loc };
 
 // `api users: User [login|private]`: REST resource for a model (list, get, create, update, remove),

@@ -97,7 +97,7 @@ export function printProgram(p: Program): string {
 
 export function printRules(r: Field["rules"]): string {
   if (!r) return "";
-  return (r.min !== undefined ? ` min=${r.min}` : "") + (r.max !== undefined ? ` max=${r.max}` : "") + (r.match !== undefined ? ` match=${JSON.stringify(r.match)}` : "") + (r.unique ? " unique" : "");
+  return (r.min !== undefined ? ` min=${r.min}` : "") + (r.max !== undefined ? ` max=${r.max}` : "") + (r.match !== undefined ? ` match=${JSON.stringify(r.match)}` : "") + (r.unique ? " unique" : "") + (r.cascade ? " cascade" : "");
 }
 
 export function printParams(f: { params: string[]; defaults?: (Expr | null)[] }): string {
