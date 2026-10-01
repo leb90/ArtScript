@@ -186,3 +186,35 @@ test("ui: events, refs, hooks with cleanup, children, keyed rows keep their DOM"
     await GlobalRegistrator.unregister();
   }
 });
+
+test("typed callbacks: Fn(User) checks calls and types the arrow passed to it", () => {
+  const M = "model User {\n  id: ID\n  name: String\n}\n\n";
+  const C = "component Picker(onPick: Fn(User)) {\n  button \"x\" -> onPick({ id: \"1\", name: \"a\" })\n}\n\n";
+  assert.equal(printProgram(parse(M + C, "t")), (M + C).trimEnd() + "\n");
+  assert.deepEqual(types(M + C + 'page P {\n  state picked = ""\n  Picker onPick=(u => picked = u.name)\n}'), []);
+  assert.deepEqual(types(M + C + 'page P {\n  state picked = ""\n  Picker onPick=(u => picked = u.nmae)\n}'), ["UNKNOWN_FIELD"]);
+  assert.deepEqual(types(M + "component Picker(onPick: Fn(User)) {\n  button \"x\" -> onPick(3)\n}\n"), ["TYPE_MISMATCH"]);
+});
+
+test("named slots: header { } fills `slot header`, the rest the unnamed slot", async () => {
+  const src = 'component Panel {\n  card {\n    row {\n      slot header\n    }\n    slot\n  }\n}\n\npage Home {\n  Panel {\n    header {\n      title "Top"\n    }\n    text "Body"\n  }\n}\n';
+  assert.deepEqual(types(src), []);
+  assert.deepEqual(types('component Panel {\n  slot header\n}\n\npage Home {\n  Panel {\n    text "x"\n  }\n}\n'), ["NO_CHILDREN"]);
+  assert.deepEqual(types("layout Main {\n  slot\n  slot side\n}\n"), ["LAYOUT_SLOT"]);
+  const r = compile([{ file: "app.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  const dir = mkdtempSync(join(tmpdir(), "art-slots-"));
+  writeFileSync(join(dir, "app.js"), r.js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/home" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    const app = await import(pathToFileURL(join(dir, "app.js")).href);
+    app.start(document.getElementById("app"));
+    const card = document.querySelector(".a-card")!;
+    assert.equal(card.querySelector(".a-row")!.textContent, "Top");
+    assert.equal(card.textContent, "TopBody");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});

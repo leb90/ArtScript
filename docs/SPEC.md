@@ -138,7 +138,8 @@ column gap=4 align=center {
 - `options=["S", "M"]` or a list of objects (`value`/`id` and `label`/`name`); the state gets the option's value with its type. `label="Email"` adds a visible label. `modal open { ... }` shows while `open` is true; Esc or the backdrop set it to false.
 - `item`, `th`, `td` take text and/or `{ children }`.
 - Prop values: literal, name, `a.b`, call, or `( expression )` in parentheses.
-- Component: `Name prop=value`. Capitalized name. Children: `Card title="x" { ... }` render where the component puts `slot`.
+- Component: `Name prop=value`. Capitalized name. Children: `Card title="x" { ... }` render where the component puts `slot`; with `slot header` in the component, `Card { header { ... } ... }` fills it.
+- Typed callbacks: `component Picker(onPick: Fn(User))`: calls are checked and `onPick=(u => ...)` gets `u: User`.
 - Events besides `->`: `on:<event>=statement`, with `event` available: `input q on:keydown=(event.key == "Escape" ? q = "" : null)`, `card on:mouseenter=(hover = true)`.
 - `for p in products key p.id { }`: rows are matched by key (default: the item itself) and keep their DOM, focus and input state across updates.
 - Responsive: `grid cols=1 md:cols=3 lg:gap=6` (`sm` 640px, `md` 768, `lg` 1024, `xl` 1280; `cols`, `gap`, `pad`; numbers).

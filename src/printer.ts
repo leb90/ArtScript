@@ -22,7 +22,7 @@ function wrap(e: Expr, min: number): string {
 }
 
 export function printType(t: TypeRef): string {
-  return t.name + (t.list ? "[]" : "") + (t.optional ? "?" : "");
+  return t.name + (t.params ? `(${t.params.map(printType).join(", ")})` : "") + (t.list ? "[]" : "") + (t.optional ? "?" : "");
 }
 
 export function printExpr(e: Expr): string {

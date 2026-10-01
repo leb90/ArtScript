@@ -2,7 +2,8 @@
 
 export type Loc = { file: string; line: number; col: number };
 
-export type TypeRef = { name: string; list: boolean; optional: boolean; loc: Loc };
+// `params`: the parameter types of a typed callback, `Fn(User, Number)`.
+export type TypeRef = { name: string; list: boolean; optional: boolean; params?: TypeRef[]; loc: Loc };
 
 // ---------- Top-level declarations ----------
 

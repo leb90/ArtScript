@@ -11,7 +11,7 @@ export type Ty =
   | { k: "opt"; of: Ty }
   | { k: "model"; name: string }
   | { k: "obj"; fields: Record<string, Ty>; strict?: boolean } // strict: unknown fields are errors (e.g. route params)
-  | { k: "fn"; ret: Ty }
+  | { k: "fn"; ret: Ty; params?: Ty[] }
   | { k: "async"; of: Ty } // result of an api call; `await` or `data` unwraps it
   | { k: "api"; name: string; model: string; sync?: boolean } // `api.users` (client, async) or `db.users` (server, sync)
   | { k: "auth"; model: string }; // `auth`
@@ -45,7 +45,7 @@ export function show(t: Ty): string {
     case "opt": return show(t.of) + "?";
     case "model": return t.name;
     case "obj": return "{ " + Object.entries(t.fields).map(([k, v]) => `${k}: ${show(v)}`).join(", ") + " }";
-    case "fn": return "Fn";
+    case "fn": return t.params ? `Fn(${t.params.map(show).join(", ")})` : "Fn";
     case "async": return `Async<${show(t.of)}>`;
     case "api": return `${t.sync ? "Db" : "Api"}<${t.model}>`;
     case "auth": return `Auth<${t.model}>`;
@@ -100,7 +100,7 @@ class Scope {
 }
 
 export type ModelInfo = Map<string, Record<string, Ty>>;
-export type CompInfo = Map<string, { params: { name: string; ty: Ty; required: boolean }[]; slot: boolean }>;
+export type CompInfo = Map<string, { params: { name: string; ty: Ty; required: boolean }[]; slots: Set<string> }>;
 
 // DOM events accepted by `on:<event>` (typos get the closest one).
 const EVENTS = ["click", "dblclick", "input", "change", "submit", "keydown", "keyup", "focus", "blur", "mouseenter", "mouseleave", "mousedown", "mouseup", "mousemove", "pointerdown", "pointerup", "pointermove", "touchstart", "touchend", "wheel", "scroll", "contextmenu", "dragstart", "dragover", "dragleave", "drop", "paste", "copy", "load", "error", "ended", "play", "pause", "timeupdate", "toggle", "close"];
@@ -146,8 +146,15 @@ export function twoWayProps(program: Program): Map<string, Set<string>> {
   return out;
 }
 
-function hasSlot(nodes: ViewNode[]): boolean {
-  return nodes.some((n) => n.kind === "IfView" ? hasSlot(n.then) || hasSlot(n.else ?? []) : n.kind === "ForView" ? hasSlot(n.body) : n.tag === "slot" || hasSlot(n.children));
+// The slots a component's view declares: "" for `slot`, the name for `slot header`.
+export function slotNames(nodes: ViewNode[], out = new Set<string>()): Set<string> {
+  for (const n of nodes) {
+    if (n.kind === "IfView") { slotNames(n.then, out); slotNames(n.else ?? [], out); }
+    else if (n.kind === "ForView") slotNames(n.body, out);
+    else if (n.tag === "slot") out.add(n.content?.kind === "Ident" ? n.content.name : "");
+    else slotNames(n.children, out);
+  }
+  return out;
 }
 
 export type Analysis = { diagnostics: Diagnostic[]; models: ModelInfo; comps: CompInfo; symbols: Map<string, Map<string, Sym>> };
@@ -179,6 +186,8 @@ class Checker {
   inLayout = false;
   inHook = false;
   twoWay = new Map<string, Set<string>>();
+  arrowHint: Ty | null = null; // the callback type an arrow is being passed as
+  layoutNow = false;
   slots = 0;
   importFrom = new Map<string, string>(); // imported name → module
   idFields = new Map<string, Set<string>>(); // model → fields declared as ID (assigned by the server on create)
@@ -261,7 +270,7 @@ class Checker {
       this.at = d.name;
       this.comps.set(d.name, {
         params: d.params.map((p) => ({ name: p.name, ty: this.resolve(p.type), required: !p.default && !p.type.optional })),
-        slot: hasSlot(d.view),
+        slots: slotNames(d.view),
       });
     }
     this.routes();
@@ -314,6 +323,7 @@ class Checker {
         expr: t.name, fixes: suggest(t.name, [...Object.keys(BUILTIN_TYPES), ...this.models.keys()]),
       });
     }
+    if (t.params) ty = { k: "fn", ret: ANY, params: t.params.map((p) => this.resolve(p)) };
     if (t.list) ty = list(ty);
     if (t.optional) ty = opt(ty);
     return ty;
@@ -416,6 +426,7 @@ class Checker {
       scope.vars.set("query", { kind: "global", ty: { k: "obj", fields: {} } });
     }
     this.inLayout = !c.page;
+    this.layoutNow = !!c.layout;
     this.inHook = false;
     this.slots = 0;
     const declare = (name: string, sym: Sym, loc: Loc) => {
@@ -517,8 +528,11 @@ class Checker {
       return;
     }
     if (el.tag === "slot") {
+      const named = el.content !== null;
+      if (named && el.content!.kind !== "Ident") this.err("UNEXPECTED_TOKEN", "a slot's name is a plain name: `slot header`", el.loc, { expr: "slot", fixes: ["slot header"] });
       if (!this.inLayout) this.err("LAYOUT_SLOT", "`slot` only goes inside a `layout` or a `component`", el.loc, { expr: "slot", fixes: ["layout Main {\n  slot\n}"] });
-      else this.slots++;
+      else if (named && this.layoutNow) this.err("LAYOUT_SLOT", "a layout has one unnamed `slot` (where pages render)", el.loc, { expr: "slot", fixes: ["slot"] });
+      else if (!named) this.slots++;
       return;
     }
     const spec = ELEMENTS[el.tag];
@@ -630,6 +644,7 @@ class Checker {
         continue;
       }
       given.add(p.name);
+      if (p.value.kind === "Arrow") this.arrowHint = param.ty.k === "opt" ? param.ty.of : param.ty;
       this.expectTy(p.value, this.infer(p.value, scope), param.ty);
       if (this.twoWay.get(el.tag)?.has(p.name) && !this.writable(p.value, scope)) {
         this.err("NOT_BINDABLE", `${el.tag} assigns its prop '${p.name}', so it needs a state (or a field of one) here`, p.value.loc, {
@@ -643,9 +658,17 @@ class Checker {
       }
     }
     if (el.action) this.err("NO_ACTION", `a component doesn't take '->'`, el.loc, { expr: el.tag });
-    if (el.children.length) {
-      if (!comp.slot) this.err("NO_CHILDREN", `'${el.tag}' doesn't take children`, el.loc, { expr: el.tag, fixes: [`add \`slot\` to component ${el.tag} where the children go`] });
-      this.view(el.children, scope);
+    // Children named like one of its slots (`header { ... }` for `slot header`) fill that slot;
+    // the rest go to the unnamed `slot`.
+    const named = el.children.filter((n): n is Element => n.kind === "Element" && n.tag !== "" && comp.slots.has(n.tag));
+    for (const n of named) this.view(n.children, scope);
+    const rest = el.children.filter((n) => !named.includes(n as Element));
+    if (rest.length) {
+      if (!comp.slots.has("")) {
+        const others = [...comp.slots].filter(Boolean);
+        this.err("NO_CHILDREN", `'${el.tag}' doesn't take children${others.length ? ` (its slots: ${others.join(", ")})` : ""}`, el.loc, { expr: el.tag, fixes: others.length ? others.map((s) => `${s} { ... }`) : [`add \`slot\` to component ${el.tag} where the children go`] });
+      }
+      this.view(rest, scope);
     }
   }
 
@@ -908,6 +931,8 @@ class Checker {
           if (owner?.k === "auth") this.authArgs(owner, e.callee.prop, e.args, argTys, e.loc);
         }
         const base = t.k === "opt" ? t.of : t;
+        // A typed callback (`onSave: Fn(User)`): its arguments are checked.
+        if (base.k === "fn" && base.params) e.args.forEach((a, i) => { if (base.params![i]) this.expectTy(a, argTys[i], base.params![i]); });
         if (base.k === "fn") return e.optional || t.k === "opt" ? opt(base.ret) : base.ret;
         return ANY;
       }
@@ -956,7 +981,10 @@ class Checker {
       }
       case "Arrow": {
         const s = new Scope(scope);
-        for (const p of e.params) s.vars.set(p, { kind: "param", ty: ANY });
+        // Passed where a typed callback goes (`onSave=(u => ...)` for `Fn(User)`): its params are typed.
+        const hint = this.arrowHint;
+        this.arrowHint = null;
+        e.params.forEach((p, i) => s.vars.set(p, { kind: "param", ty: hint?.k === "fn" ? hint.params?.[i] ?? ANY : ANY }));
         if (Array.isArray(e.body)) {
           // Returns inside a callback belong to the callback, not to the enclosing server fn.
           const outer = this.returns;

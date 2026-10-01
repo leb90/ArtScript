@@ -3,10 +3,12 @@ import type { ApiAccess, ComponentDecl, FieldRules, Element, Expr, Program, Serv
 import { specifier } from "./modules.ts";
 import { printDecl, printType } from "./printer.ts";
 import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
-import { twoWayProps } from "./checker.ts";
+import { slotNames, twoWayProps } from "./checker.ts";
 
 // Props each component assigns (bound two-way), for the program being generated.
 let twoWay = new Map<string, Set<string>>();
+// The slots each component declares ("" = unnamed).
+let slotsOf = new Map<string, Set<string>>();
 
 type Kind = "state" | "data" | "computed" | "prop" | "fn" | "let" | "loop" | "param";
 type Sym = { kind: Kind; sig?: string }; // sig: signal to notify on mutation (loops over a state)
@@ -54,6 +56,7 @@ export function generate(program: Program): string {
   if (program.decls.some((d) => d.kind === "ServerFn")) out.push("const server = $.$server();", "");
   const pages: string[] = [];
   twoWay = twoWayProps(program);
+  slotsOf = new Map(program.decls.flatMap((d) => (d.kind === "Component" ? [[d.name, slotNames(d.view)] as const] : [])));
   for (const d of program.decls) {
     if (d.kind !== "Component") continue;
     out.push(new ComponentGen(d).gen(), "");
@@ -256,7 +259,9 @@ class ComponentGen {
         const props = node.props.filter((p) => p.value).map((p) => `${p.name}: () => ${this.expr(p.value!, scope)}`);
         this.emit(`$.$meta({ ${props.join(", ")} });`);
       } else if (node.tag === "slot") {
-        this.emit(`$p.$slot?.(${parent});`); // a layout's page, or a component's children
+        // A layout's page or a component's children; `slot header` takes its `header { }` children.
+        const name = node.content?.kind === "Ident" ? `$slot_${node.content.name}` : "$slot";
+        this.emit(`$p.${name}?.(${parent});`);
       } else if (/^[A-Z]/.test(node.tag)) {
         // If the prop comes from a state, pass its signal so the child can notify mutations.
         const props = node.props.filter((p) => p.value).map((p) => {
@@ -272,10 +277,23 @@ class ComponentGen {
           return `${p.name}: ${sig ? `$.$ref(${get}, ${sig})` : get}`;
         });
         if (node.children.length) {
-          const f = this.v("f");
-          this.emit(`${node.tag}({ ${[...props, `$slot: (${f}) => {`].join(", ")}`);
-          this.nested(() => this.view(node.children, f, scope));
-          this.emit(`} }, ${parent});`);
+          // Children named like a slot of the component (`header { }`) fill it; the rest, `slot`.
+          const slots = slotsOf.get(node.tag) ?? new Set<string>();
+          const fills = new Map<string, ViewNode[]>();
+          for (const n of node.children) {
+            const key = n.kind === "Element" && slots.has(n.tag) ? `$slot_${n.tag}` : "$slot";
+            fills.set(key, [...(fills.get(key) ?? []), ...(key === "$slot" ? [n] : (n as Element).children)]);
+          }
+          this.emit(`${node.tag}({ ${props.join(", ")}${props.length ? ", " : ""}`);
+          this.nested(() => {
+            for (const [key, nodes] of fills) {
+              const f = this.v("f");
+              this.emit(`${key}: (${f}) => {`);
+              this.nested(() => this.view(nodes, f, scope));
+              this.emit("},");
+            }
+          });
+          this.emit(`}, ${parent});`);
         } else this.emit(`${node.tag}({ ${props.join(", ")} }, ${parent});`);
       } else this.element(node, parent, scope);
     }

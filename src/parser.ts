@@ -293,10 +293,21 @@ class Parser {
     }
     const t = this.ident("a type");
     if (t.v === "Function" || t.v === "void") t.v = t.v === "void" ? "Any" : "Fn";
+    // `Fn(User, Number)`: a callback with typed parameters.
+    let params: TypeRef[] | undefined;
+    if (t.v === "Fn" && this.is("(")) {
+      this.next();
+      params = [];
+      while (!this.is(")")) {
+        params.push(this.type());
+        if (!this.eat(",")) break;
+      }
+      this.expect(")");
+    }
     let list = false;
     if (this.is("[") && this.is("]", this.peek())) { this.i += 2; list = true; }
     const optional = this.eat("?");
-    return { name: t.v, list, optional, loc: t.loc };
+    return { name: t.v, list, optional, ...(params ? { params } : {}), loc: t.loc };
   }
 
   component(): ComponentDecl {
