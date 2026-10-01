@@ -89,15 +89,17 @@ function resolve(p: Program, path: string, loc: Loc): Target {
   if (di < 0) fail("TARGET_NOT_FOUND", `no existe '${name}'`, suggest(name, p.decls.map((d) => d.name)));
   const decl = p.decls[di];
 
+  if (decl.kind === "Api" && (member || rest !== undefined)) fail("TARGET_NOT_FOUND", `${name} es una api: solo se puede reemplazar o borrar entera`, [name]);
   if (member) {
     if (decl.kind === "Model") {
       const i = decl.fields.findIndex((f) => f.name === member);
       if (i < 0) fail("TARGET_NOT_FOUND", `${name} no tiene el campo '${member}'`, suggest(member, decl.fields.map((f) => `${name}.${f.name}`)));
       return { kind: "field", model: decl, i };
     }
-    const i = decl.members.findIndex((x) => x.name === member);
-    if (i < 0) fail("TARGET_NOT_FOUND", `${name} no tiene el miembro '${member}'`, decl.members.map((x) => `${name}.${x.name}`));
-    return { kind: "member", comp: decl, i };
+    const comp = decl as ComponentDecl;
+    const i = comp.members.findIndex((x) => x.name === member);
+    if (i < 0) fail("TARGET_NOT_FOUND", `${name} no tiene el miembro '${member}'`, comp.members.map((x) => `${name}.${x.name}`));
+    return { kind: "member", comp, i };
   }
   if (rest === undefined) return { kind: "decl", i: di, decl };
   if (decl.kind !== "Component") fail("TARGET_NOT_FOUND", `${name} es un model y no tiene vista`, [`${name}.campo`]);
@@ -207,6 +209,7 @@ function applyOp(p: Program, op: Op, firstFile: string) {
     if (op.op === "replace") p.decls.splice(t.i, 1, ...decls());
     else if (op.op === "insert before" || op.op === "insert after") p.decls.splice(at, 0, ...decls());
     else if (t.decl.kind === "Model") t.decl.fields.push(...parseFields(op.body, PATCH_FILE, bodyLine));
+    else if (t.decl.kind === "Api") bodyErr("`append` no aplica a una api", "replace " + t.decl.name);
     else {
       const body = parseComponentBody(op.body, PATCH_FILE, bodyLine);
       t.decl.members.push(...body.members);

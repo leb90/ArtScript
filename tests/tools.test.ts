@@ -14,7 +14,7 @@ const todo = () => {
 };
 
 test("fmt: los ejemplos ya están en formato canónico y es idempotente", () => {
-  for (const f of ["examples/counter/app.art", "examples/todo/app.art", "templates/default/src/app.art"]) {
+  for (const f of ["examples/counter/app.art", "examples/todo/app.art", "templates/default/src/app.art", "examples/users/app.art"]) {
     const src = readFileSync(f, "utf8");
     const once = printProgram(parse(src, f));
     assert.equal(once, src, `${f} no está en formato canónico (correr: art fmt ${f} --write)`);

@@ -1,5 +1,5 @@
 import type {
-  ComponentDecl, Decl, Element, Expr, Field, FnDecl, Loc, Member, ModelDecl, ObjProp, Param, Program, Prop, Stmt, TypeRef, ViewNode,
+  ApiDecl, ComponentDecl, Decl, Element, Expr, Field, FnDecl, Loc, Member, ModelDecl, ObjProp, Param, Program, Prop, Stmt, TypeRef, ViewNode,
 } from "./ast.ts";
 import { ELEMENTS } from "./elements.ts";
 import { CompileError, diag } from "./errors.ts";
@@ -80,8 +80,9 @@ class Parser {
     this.skipNl();
     while (this.tok.t !== "eof") {
       if (this.is("model")) decls.push(this.model());
+      else if (this.is("api")) decls.push(this.api());
       else if (this.is("component") || this.is("page")) decls.push(this.component());
-      else this.fail("'model', 'component' o 'page'");
+      else this.fail("'model', 'api', 'component' o 'page'");
       this.skipNl();
     }
     return { kind: "Program", decls };
@@ -101,6 +102,14 @@ class Parser {
     }
     this.expect("}");
     return { kind: "Model", name, fields, loc };
+  }
+
+  api(): ApiDecl {
+    const loc = this.next().loc;
+    const name = this.ident("nombre de la api").v;
+    this.expect(":");
+    const model = this.ident("el model de la api");
+    return { kind: "Api", name, model: model.v, modelLoc: model.loc, loc };
   }
 
   type(): TypeRef {
@@ -135,7 +144,7 @@ class Parser {
     this.skipSep();
     while (!this.is("}")) {
       if (this.tok.t === "eof") this.fail("'}'");
-      if (this.is("state") || this.is("computed") || this.is("fn")) members.push(this.member());
+      if (this.is("state") || this.is("computed") || this.is("fn") || this.is("data")) members.push(this.member());
       else view.push(this.viewNode());
       this.skipSep();
     }
@@ -151,9 +160,9 @@ class Parser {
       this.expect("=");
       return { kind: "State", name, type, init: this.expr(), loc: kw.loc };
     }
-    if (kw.v === "computed") {
+    if (kw.v === "computed" || kw.v === "data") {
       this.expect("=");
-      return { kind: "Computed", name, expr: this.expr(), loc: kw.loc };
+      return { kind: kw.v === "data" ? "Data" : "Computed", name, expr: this.expr(), loc: kw.loc };
     }
     this.expect("(");
     const params: string[] = [];
@@ -206,9 +215,13 @@ class Parser {
 
   // `}` followed (possibly after newlines) by `else`.
   elseAhead(): boolean {
+    return this.keywordAhead("else");
+  }
+
+  keywordAhead(kw: string): boolean {
     let j = this.i;
     while (this.toks[j].t === "nl") j++;
-    if (this.is("else", this.toks[j])) { this.i = j; return true; }
+    if (this.is(kw, this.toks[j])) { this.i = j; return true; }
     return false;
   }
 
@@ -274,6 +287,17 @@ class Parser {
         els = this.is("if") ? [this.stmt()] : this.block();
       }
       return { kind: "If", cond, then, else: els, loc: t.loc };
+    }
+    if (this.is("try")) {
+      this.next();
+      const body = this.block();
+      if (!this.keywordAhead("catch")) this.fail("'catch'");
+      this.next();
+      // `catch (e)`, `catch e` and a bare `catch` are all accepted.
+      let param: string | null = null;
+      if (this.eat("(")) { param = this.ident("nombre del error").v; this.expect(")"); }
+      else if (this.tok.t === "id") param = this.next().v;
+      return { kind: "Try", body, param, handler: this.block(), loc: t.loc };
     }
     if (this.is("return")) {
       this.next();
@@ -351,9 +375,9 @@ class Parser {
       this.next();
       return { kind: "Unary", op: t.v, arg: this.unary(), loc: t.loc };
     }
-    if (this.is("typeof")) {
+    if (this.is("typeof") || this.is("await")) {
       this.next();
-      return { kind: "Unary", op: "typeof", arg: this.unary(), loc: t.loc };
+      return { kind: "Unary", op: t.v, arg: this.unary(), loc: t.loc };
     }
     if (t.t === "op" && (t.v === "++" || t.v === "--")) {
       this.next();

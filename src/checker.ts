@@ -10,7 +10,9 @@ export type Ty =
   | { k: "opt"; of: Ty }
   | { k: "model"; name: string }
   | { k: "obj"; fields: Record<string, Ty> }
-  | { k: "fn"; ret: Ty };
+  | { k: "fn"; ret: Ty }
+  | { k: "async"; of: Ty } // result of an api call; `await` or `data` unwraps it
+  | { k: "api"; name: string; model: string }; // `api.users`
 
 const NUM: Ty = { k: "num" }, STR: Ty = { k: "str" }, BOOL: Ty = { k: "bool" }, NULL: Ty = { k: "null" }, ANY: Ty = { k: "any" };
 const fn = (ret: Ty): Ty => ({ k: "fn", ret });
@@ -40,6 +42,8 @@ export function show(t: Ty): string {
     case "model": return t.name;
     case "obj": return "{ " + Object.entries(t.fields).map(([k, v]) => `${k}: ${show(v)}`).join(", ") + " }";
     case "fn": return "Fn";
+    case "async": return `Async<${show(t.of)}>`;
+    case "api": return `Api<${t.model}>`;
   }
 }
 
@@ -68,7 +72,7 @@ function strMethod(name: string): Ty | null {
   return null;
 }
 
-export type SymKind = "state" | "computed" | "prop" | "fn" | "let" | "loop" | "param" | "global";
+export type SymKind = "state" | "computed" | "data" | "prop" | "fn" | "let" | "loop" | "param" | "global";
 export type Sym = { kind: SymKind; ty: Ty };
 
 class Scope {
@@ -113,6 +117,8 @@ class Checker {
   at = "";
   types = new WeakMap<Expr, Ty>(); // inferred type of every expression
   symbols = new Map<string, Map<string, Sym>>(); // component-level symbols, for `art context`
+  apis = new Map<string, string>(); // api name → model name
+  idFields = new Map<string, Set<string>>(); // model → fields declared as ID (assigned by the server on create)
   constructor(program: Program) {
     this.program = program;
   }
@@ -136,6 +142,17 @@ class Checker {
         if (f.name in fields) this.err("DUPLICATE_NAME", `campo '${f.name}' repetido`, f.loc, { expr: f.name });
         fields[f.name] = this.resolve(f.type);
       }
+      this.idFields.set(d.name, new Set(d.fields.filter((f) => f.type.name === "ID" && !f.type.list).map((f) => f.name)));
+    }
+    for (const d of this.program.decls) {
+      if (d.kind !== "Api") continue;
+      this.at = d.name;
+      if (!this.models.has(d.model)) {
+        this.err("UNKNOWN_TYPE", `la api '${d.name}' usa un model que no existe: '${d.model}'`, d.modelLoc, { expr: d.model, fixes: suggest(d.model, this.models.keys()) });
+      } else if (!this.idFields.get(d.model)?.size) {
+        this.err("MISSING_FIELD", `la api '${d.name}' necesita que ${d.model} tenga un campo de tipo ID`, d.modelLoc, { expr: d.model, expected: "id: ID", fixes: [`agregar \`id: ID\` a model ${d.model}`] });
+      }
+      this.apis.set(d.name, d.model);
     }
     for (const d of this.program.decls) {
       if (d.kind !== "Component") continue;
@@ -172,8 +189,15 @@ class Checker {
       declare(p.name, { kind: "prop", ty: this.resolve(p.type) }, p.loc);
       if (p.default) this.expectTy(p.default, this.infer(p.default, scope), scope.get(p.name)!.ty);
     }
+    // `api.<name>` is available in every component when the program declares apis.
+    if (this.apis.size) {
+      const fields: Record<string, Ty> = {};
+      for (const [name, model] of this.apis) fields[name] = { k: "api", name, model };
+      scope.vars.set("api", { kind: "global", ty: { k: "obj", fields } });
+    }
     // Declare everything first (allows forward references), then infer types in order.
-    for (const m of c.members) declare(m.name, { kind: m.kind === "State" ? "state" : m.kind === "Computed" ? "computed" : "fn", ty: m.kind === "Fn" ? fn(ANY) : ANY }, m.loc);
+    const kindOf = { State: "state", Computed: "computed", Data: "data", Fn: "fn" } as const;
+    for (const m of c.members) declare(m.name, { kind: kindOf[m.kind], ty: m.kind === "Fn" ? fn(ANY) : ANY }, m.loc);
     for (const m of c.members) {
       const sym = scope.vars.get(m.name)!;
       if (m.kind === "State") {
@@ -184,6 +208,11 @@ class Checker {
         } else sym.ty = init.k === "null" ? ANY : init;
       } else if (m.kind === "Computed") {
         sym.ty = this.infer(m.expr, scope);
+      } else if (m.kind === "Data") {
+        // Lists start as [] and objects as null until the request resolves.
+        const t = this.infer(m.expr, scope);
+        if (t.k === "async") sym.ty = t.of.k === "list" ? t.of : opt(t.of);
+        else if (t.k !== "any") this.err("TYPE_MISMATCH", "`data` necesita una llamada a una api", m.expr.loc, { expr: printExpr(m.expr), expected: "api.<nombre>.list() | get(id)", actual: show(t) });
       } else {
         const fs = new Scope(scope);
         for (const p of m.params) fs.vars.set(p, { kind: "param", ty: ANY });
@@ -312,7 +341,13 @@ class Checker {
       if (s.kind === "ExprStmt") this.infer(s.expr, scope);
       else if (s.kind === "Let") scope.vars.set(s.name, { kind: "let", ty: this.infer(s.init, scope) });
       else if (s.kind === "Return") { if (s.value) this.infer(s.value, scope); }
-      else {
+      else if (s.kind === "Try") {
+        this.stmts(s.body, new Scope(scope));
+        const h = new Scope(scope);
+        // The caught error: `e.message` always exists; api errors also carry `status` and `details`.
+        if (s.param) h.vars.set(s.param, { kind: "let", ty: { k: "obj", fields: { message: STR, status: NUM, details: ANY } } });
+        this.stmts(s.handler, h);
+      } else {
         this.infer(s.cond, scope);
         this.stmts(s.then, this.narrow(s.cond, true, scope));
         if (s.else) this.stmts(s.else, this.narrow(s.cond, false, scope));
@@ -376,7 +411,7 @@ class Checker {
     if (!root) return false;
     const sym = scope.get(root.name);
     if (!sym) return true; // already reported as UNDEFINED_NAME
-    return sym.kind === "state" || (e.kind !== "Ident" && (sym.kind === "loop" || sym.kind === "prop"));
+    return sym.kind === "state" || (e.kind !== "Ident" && (sym.kind === "loop" || sym.kind === "prop" || sym.kind === "data"));
   }
 
   // Validates an assignment target and returns its type.
@@ -390,7 +425,7 @@ class Checker {
     const ty = this.infer(t, scope);
     if (!sym) return ty;
     const direct = t.kind === "Ident";
-    const ok = sym.kind === "state" || sym.kind === "let" || sym.kind === "global" || (!direct && (sym.kind === "loop" || sym.kind === "param" || sym.kind === "prop"));
+    const ok = sym.kind === "state" || sym.kind === "data" || sym.kind === "let" || (sym.kind === "global" && !direct) || (!direct && (sym.kind === "loop" || sym.kind === "param" || sym.kind === "prop"));
     if (!ok) {
       const fixes = sym.kind === "computed" ? [`cambiar \`computed ${root.name}\` por \`state ${root.name}\``] : sym.kind === "prop" ? ["pasar un callback como prop o usar un state local"] : [];
       this.err("ASSIGN_READONLY", `'${root.name}' es ${sym.kind} y no se puede modificar`, t.loc, { expr: printExpr(t), actual: sym.kind, expected: "state|let", fixes });
@@ -416,8 +451,10 @@ class Checker {
     this.err("TYPE_MISMATCH", `se esperaba ${show(expected)}`, e.loc, { expr: printExpr(e), expected: show(expected), actual: show(actual) });
   }
 
-  modelLiteral(e: Expr & { kind: "Object" }, model: string) {
-    const fields = this.models.get(model)!;
+  // `skip`: fields that may be omitted (ids on create). `partial`: no field is required (update).
+  modelLiteral(e: Expr & { kind: "Object" }, model: string, opts: { skip?: Set<string>; partial?: boolean } = {}) {
+    const fields = this.models.get(model);
+    if (!fields) return;
     const given = new Set<string>();
     for (const p of e.props) {
       if ("spread" in p) return; // completeness can't be verified with a spread
@@ -426,7 +463,8 @@ class Checker {
         this.err("UNKNOWN_FIELD", `${model} no tiene el campo '${p.key}'`, p.value.loc, { expr: p.key, expected: Object.keys(fields).join("|"), fixes: suggest(p.key, Object.keys(fields)) });
       } else this.expectTy(p.value, this.types.get(p.value) ?? ANY, fields[p.key]);
     }
-    const missing = Object.entries(fields).filter(([k, t]) => !given.has(k) && t.k !== "opt");
+    if (opts.partial) return;
+    const missing = Object.entries(fields).filter(([k, t]) => !given.has(k) && t.k !== "opt" && !opts.skip?.has(k));
     if (missing.length) {
       this.err("MISSING_FIELD", `faltan campos de ${model}: ${missing.map((m) => m[0]).join(", ")}`, e.loc, {
         expr: printExpr(e), expected: missing.map(([k, t]) => `${k}: ${show(t)}`).join(", "),
@@ -504,6 +542,11 @@ class Checker {
           const lt = this.types.get(e.callee.object) ?? ANY;
           if (lt.k === "list") e.args.forEach((a, i) => this.expectTy(a, argTys[i], lt.of));
         }
+        // api.<name>.create / update: validate the object against the api's model.
+        if (e.callee.kind === "Member") {
+          const owner = this.types.get(e.callee.object);
+          if (owner?.k === "api") this.apiArgs(owner, e.callee.prop, e.args, argTys, e.loc);
+        }
         const base = t.k === "opt" ? t.of : t;
         if (base.k === "fn") return e.optional || t.k === "opt" ? opt(base.ret) : base.ret;
         return ANY;
@@ -512,6 +555,7 @@ class Checker {
         const t = this.infer(e.arg, scope);
         if (e.op === "!") return BOOL;
         if (e.op === "typeof") return STR;
+        if (e.op === "await") return t.k === "async" ? t.of : t;
         if (t.k !== "num" && t.k !== "any") this.err("TYPE_MISMATCH", `'${e.op}' necesita un número`, e.loc, { expr: printExpr(e), expected: "Number", actual: show(t) });
         return NUM;
       }
@@ -560,6 +604,43 @@ class Checker {
     }
   }
 
+  // Methods of `api.<name>`: the typed client generated for `api <name>: <Model>`.
+  apiMethod(t: Ty & { k: "api" }, prop: string, e: Expr): Ty {
+    const model: Ty = { k: "model", name: t.model };
+    const methods: Record<string, Ty> = {
+      list: fn({ k: "async", of: list(model) }),
+      get: fn({ k: "async", of: opt(model) }),
+      create: fn({ k: "async", of: model }),
+      update: fn({ k: "async", of: model }),
+      remove: fn({ k: "async", of: { k: "void" } }),
+    };
+    if (prop in methods) return methods[prop];
+    // Names LLMs often reach for (REST verbs, ORM habits) map to the canonical method.
+    const synonyms: Record<string, string> = {
+      delete: "remove", destroy: "remove", del: "remove", all: "list", getAll: "list", findAll: "list", fetch: "list", index: "list",
+      add: "create", insert: "create", post: "create", save: "create", edit: "update", patch: "update", put: "update", set: "update",
+      find: "get", findById: "get", getById: "get", one: "get", read: "get",
+    };
+    const fixes = synonyms[prop] ? [synonyms[prop]] : suggest(prop, Object.keys(methods));
+    this.err("UNKNOWN_FIELD", `api.${t.name} no tiene el método '${prop}'`, e.loc, { expr: printExpr(e), expected: Object.keys(methods).join("|"), fixes });
+    return ANY;
+  }
+
+  apiArgs(t: Ty & { k: "api" }, method: string, args: Expr[], tys: Ty[], loc: Loc) {
+    const expectCount = { list: 0, get: 1, create: 1, update: 2, remove: 1 }[method];
+    if (expectCount === undefined) return;
+    if (args.length !== expectCount) {
+      const sig = { list: "list()", get: "get(id)", create: "create(obj)", update: "update(id, cambios)", remove: "remove(id)" }[method]!;
+      this.err("TYPE_MISMATCH", `api.${t.name}.${sig} recibe ${expectCount} argumento(s)`, loc, { expected: sig, actual: `${args.length} argumento(s)` });
+      return;
+    }
+    const obj = method === "create" ? args[0] : method === "update" ? args[1] : null;
+    const objTy = method === "create" ? tys[0] : tys[1];
+    if (!obj) return;
+    if (obj.kind === "Object") this.modelLiteral(obj, t.model, method === "create" ? { skip: this.idFields.get(t.model) } : { partial: true });
+    else this.expectTy(obj, objTy, { k: "model", name: t.model });
+  }
+
   memberTy(t: Ty, prop: string, e: Expr): Ty {
     if (t.k === "model") {
       const fields = this.models.get(t.name)!;
@@ -567,6 +648,7 @@ class Checker {
       this.err("UNKNOWN_FIELD", `${t.name} no tiene el campo '${prop}'`, e.loc, { expr: printExpr(e), expected: Object.keys(fields).join("|"), fixes: suggest(prop, Object.keys(fields)) });
       return ANY;
     }
+    if (t.k === "api") return this.apiMethod(t, prop, e);
     if (t.k === "obj") return t.fields[prop] ?? ANY;
     if (t.k === "list") return listMethod(prop, t.of, t) ?? ANY;
     if (t.k === "str") return strMethod(prop) ?? ANY;

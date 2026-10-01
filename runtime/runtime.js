@@ -176,6 +176,49 @@ export function $for(parent, list, render) {
   });
 }
 
+// ---------- API client ----------
+let apiBase = "";
+export function setApiBase(url) { apiBase = url; }
+
+// Typed REST client for `api <name>: <Model>`. Reads track a version signal, so `data` that read
+// this api re-fetch after any write (create/update/remove) to it.
+export function $api(name) {
+  const version = new Signal(0);
+  const call = async (method, path, body) => {
+    const init = body === undefined ? { method } : { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
+    const res = await fetch(`${apiBase}/api/${name}${path}`, init);
+    const data = res.status === 204 ? null : await res.json();
+    if (res.ok) return data;
+    if (res.status === 404 && method === "GET") return null;
+    throw Object.assign(new Error(data?.message ?? res.statusText), { status: res.status, details: data });
+  };
+  const read = (path) => { version.v; return call("GET", path); };
+  const write = (p) => p.then((v) => { version.v = version._v + 1; return v; });
+  const at = (id) => "/" + encodeURIComponent(id);
+  return {
+    list: () => read(""),
+    get: (id) => read(at(id)),
+    create: (obj) => write(call("POST", "", obj)),
+    update: (id, changes) => write(call("PATCH", at(id), changes)),
+    remove: (id) => write(call("DELETE", at(id))),
+  };
+}
+
+// `data x = expr`: runs `expr` tracking its dependencies and stores the result when it resolves.
+// Re-runs when a dependency changes; responses that arrive out of order are ignored.
+export function $data(fn, initial) {
+  const s = new Signal(initial);
+  let seq = 0;
+  effect(() => {
+    const id = ++seq;
+    Promise.resolve(fn()).then(
+      (v) => { if (id === seq) s.v = v ?? initial; },
+      (e) => { if (id === seq) console.error(e); },
+    );
+  });
+  return s;
+}
+
 // ---------- App ----------
 const CSS = `*{box-sizing:border-box}body{margin:0;font:16px/1.5 system-ui,sans-serif;color:#1a1a1a;background:#fafafa}#app{padding:24px;max-width:960px;margin:0 auto}.a-row{display:flex;align-items:center}.a-column{display:flex;flex-direction:column}.a-grid{display:grid}.a-wrap{flex-wrap:wrap}.a-card{display:flex;flex-direction:column;padding:16px;border:1px solid #e5e5e5;border-radius:12px;background:#fff}button{font:inherit;padding:6px 14px;border-radius:8px;border:1px solid #d4d4d4;background:#fff;color:inherit;cursor:pointer}button.a-primary{background:#2563eb;border-color:#2563eb;color:#fff}button.a-danger{color:#dc2626;border-color:#fca5a5}button.a-small{padding:2px 8px;font-size:.875em}input{font:inherit}input:not([type=checkbox]){padding:6px 10px;border:1px solid #d4d4d4;border-radius:8px;background:inherit;color:inherit}.a-bold{font-weight:600}.a-muted{color:#737373}.a-small{font-size:.875em}.a-large{font-size:1.25em}h2{margin:0}a{color:#2563eb}@media(prefers-color-scheme:dark){body{background:#111;color:#eee}.a-card{background:#1a1a1a;border-color:#333}button{background:#222;border-color:#444}input:not([type=checkbox]){border-color:#444}.a-muted{color:#999}}`;
 

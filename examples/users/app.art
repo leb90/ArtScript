@@ -1,0 +1,53 @@
+model User {
+  id: ID
+  name: String
+  email: Email
+  admin: Bool
+}
+
+api users: User
+
+page Users "/" {
+  data users = api.users.list()
+  state name = ""
+  state email = ""
+  state error = ""
+  computed admins = users.filter(u => u.admin).length
+  fn add() {
+    try {
+      await api.users.create({ name, email, admin: false })
+      name = ""
+      email = ""
+      error = ""
+    } catch (e) {
+      error = e.message
+    }
+  }
+
+  column gap=4 {
+    title "Usuarios"
+    form gap=2 -> add() {
+      input name placeholder="Nombre"
+      input email placeholder="Email" type=email
+      button "Agregar" primary
+    }
+    if error != "" {
+      text error bold
+    }
+    text `${users.length} usuarios, ${admins} admins` muted
+    for u in users {
+      card {
+        row gap=2 justify=between {
+          column {
+            text u.name bold
+            text u.email muted small
+          }
+          row gap=2 {
+            button u.admin ? "Quitar admin" : "Hacer admin" small -> api.users.update(u.id, { admin: !u.admin })
+            button "x" danger small -> api.users.remove(u.id)
+          }
+        }
+      }
+    }
+  }
+}

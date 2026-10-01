@@ -38,7 +38,19 @@ fn add(x) {                      // función; cuerpo = sentencias JS
 
 - Asignar a un `state` actualiza la UI: `count++`, `name = "x"`, `users.push(u)`, `user.name = "x"`.
 - No hay hooks, setters ni dependencias manuales.
-- Sentencias: expresión, `let x = ...`, `if cond { } else { }`, `return`.
+- Sentencias: expresión, `let x = ...`, `if cond { } else { }`, `return`, `try { } catch (e) { }`.
+
+## Backend: `api` y `data`
+
+```
+api users: User                    // REST en /api/users: validado con el model, datos guardados
+```
+
+- El model necesita un campo `ID` (si falta en `create`, lo asigna el servidor).
+- Cliente tipado en cualquier componente: `api.users.list()`, `get(id)`, `create(obj)`, `update(id, cambios)`, `remove(id)`.
+- `data users = api.users.list()` carga al montar y **se recarga sola** después de cualquier `create`/`update`/`remove` de esa api. Una lista empieza como `[]`; `get` empieza en `null` (`T?`).
+- `await` y `try { } catch (e) { }` funcionan como en JS; `e.message` explica el error de validación.
+- `art dev` sirve la api; `art build` genera `dist/server.js` (`node dist/server.js`).
 
 ## Vista
 

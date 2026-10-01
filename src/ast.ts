@@ -8,10 +8,13 @@ export type TypeRef = { name: string; list: boolean; optional: boolean; loc: Loc
 
 export type Program = { kind: "Program"; decls: Decl[] };
 
-export type Decl = ModelDecl | ComponentDecl;
+export type Decl = ModelDecl | ComponentDecl | ApiDecl;
 
 export type ModelDecl = { kind: "Model"; name: string; fields: Field[]; loc: Loc };
 export type Field = { name: string; type: TypeRef; loc: Loc };
+
+// `api users: User`: REST resource for a model (list, get, create, update, remove), persisted on the server.
+export type ApiDecl = { kind: "Api"; name: string; model: string; modelLoc: Loc; loc: Loc };
 
 // `page` and `component` share a shape; a page has a route and no params.
 export type ComponentDecl = {
@@ -27,10 +30,12 @@ export type ComponentDecl = {
 
 export type Param = { name: string; type: TypeRef; default: Expr | null; loc: Loc };
 
-export type Member = StateDecl | ComputedDecl | FnDecl;
+export type Member = StateDecl | ComputedDecl | FnDecl | DataDecl;
 export type StateDecl = { kind: "State"; name: string; type: TypeRef | null; init: Expr; loc: Loc };
 export type ComputedDecl = { kind: "Computed"; name: string; expr: Expr; loc: Loc };
 export type FnDecl = { kind: "Fn"; name: string; params: string[]; body: Stmt[]; loc: Loc };
+// `data users = api.users.list()`: async value, loaded on mount and reloaded when its api changes.
+export type DataDecl = { kind: "Data"; name: string; expr: Expr; loc: Loc };
 
 // ---------- View ----------
 
@@ -57,7 +62,8 @@ export type Stmt =
   | { kind: "ExprStmt"; expr: Expr; loc: Loc }
   | { kind: "Let"; name: string; init: Expr; loc: Loc }
   | { kind: "If"; cond: Expr; then: Stmt[]; else: Stmt[] | null; loc: Loc }
-  | { kind: "Return"; value: Expr | null; loc: Loc };
+  | { kind: "Return"; value: Expr | null; loc: Loc }
+  | { kind: "Try"; body: Stmt[]; param: string | null; handler: Stmt[]; loc: Loc };
 
 // ---------- Expressions (a JavaScript subset) ----------
 

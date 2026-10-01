@@ -83,6 +83,11 @@ export function declContext(p: Program, a: Analysis, target: string, budget = In
   if (!d) return null;
   const usedBy = p.decls.filter((x): x is ComponentDecl => x.kind === "Component" && uses(x).includes(name)).map((x) => x.name);
 
+  if (d.kind === "Api") {
+    const refs = p.decls.filter((x): x is ComponentDecl => x.kind === "Component" && printDecl(x).includes(`api.${name}.`)).map((x) => x.name);
+    return fit([`api ${name}: ${d.model} → /api/${name} (list, get, create, update, remove) @${fmtLoc(d.loc)}`, modelLine(d.model, p), `used_by: ${refs.join(", ") || "-"}`], budget);
+  }
+
   if (d.kind === "Model") {
     const refs = p.decls.filter((x): x is ComponentDecl => x.kind === "Component" && modelDeps(x, a).includes(name)).map((x) => x.name);
     return fit([`${modelLine(name, p)} @${fmtLoc(d.loc)}`, `used_by: ${refs.join(", ") || "-"}`], budget);
@@ -90,7 +95,7 @@ export function declContext(p: Program, a: Analysis, target: string, budget = In
 
   const lines = [`${signature(d)} @${fmtLoc(d.loc)}`];
   if (!d.page) lines.push(`props: ${symList(d, a, "prop")}`);
-  lines.push(`state: ${symList(d, a, "state")}`, `computed: ${symList(d, a, "computed")}`, `fn: ${symList(d, a, "fn")}`);
+  lines.push(`state: ${symList(d, a, "state")}`, `data: ${symList(d, a, "data")}`, `computed: ${symList(d, a, "computed")}`, `fn: ${symList(d, a, "fn")}`);
   lines.push(`uses: ${uses(d).join(", ") || "-"}`, `used_by: ${usedBy.join(", ") || "-"}`);
   for (const m of modelDeps(d, a)) lines.push(modelLine(m, p));
 

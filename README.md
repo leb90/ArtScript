@@ -28,6 +28,7 @@ Requires Node 24+.
 npm install
 npm run dev            # todo example at http://localhost:3000 (reloads on save)
 npm run dev:counter    # counter example
+npm run art -- dev examples/users   # full-stack CRUD example (api + data)
 npm test               # tests
 npm run typecheck      # compiler types
 npm run bench          # tokens and bytes vs React/Svelte
@@ -39,6 +40,32 @@ Create a new project (it comes with `npm run dev`, `npm run build` and `npm run 
 node src/cli.ts init my-app
 cd my-app && npm install && npm run dev
 ```
+
+A full-stack CRUD needs one line of backend. `api users: User` serves `/api/users` (list, get, create, update, remove), validated against the model and stored as JSON; `data` loads it and reloads by itself after every write:
+
+```
+model User {
+  id: ID
+  name: String
+  email: Email
+}
+
+api users: User
+
+page Users {
+  data users = api.users.list()
+  state name = ""
+
+  input name
+  button "Add" -> api.users.create({ name, email: "a@b.co" })
+  for u in users {
+    text u.name
+    button "x" -> api.users.remove(u.id)
+  }
+}
+```
+
+The client is typed end to end: `create` is checked against the model at compile time. `art dev` serves the api; `art build` also emits `dist/server.js` (`node dist/server.js`, no dependencies).
 
 To change existing code, an AI can send a small `art patch` instead of rewriting files; the whole patch is typechecked and applied atomically:
 
@@ -72,8 +99,9 @@ src/
   errors.ts     error catalog and human / AI output formats
   compile.ts    full pipeline
   cli.ts        the `art` command
-runtime/runtime.js   signals + DOM helpers (~2.3 KB brotli)
-examples/            counter, todo
+runtime/runtime.js   signals + DOM helpers + api client (~2.9 KB brotli)
+runtime/server.js    api server: REST from models, validation, JSON storage
+examples/            counter, todo, users (full-stack CRUD)
 benchmarks/          equivalent tasks in ArtScript / React / Svelte + measurement
 docs/SPEC.md         compact spec to give an AI (~1.1K tokens)
 templates/default/   starter project created by `art init`

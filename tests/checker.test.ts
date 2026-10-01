@@ -10,7 +10,7 @@ const types = (src: string) => errs(src).map((d) => d.type);
 const USER = "model User {\n  id: ID\n  name: String\n  email: Email\n}\n";
 
 test("los ejemplos no tienen errores", () => {
-  for (const f of ["examples/counter/app.art", "examples/todo/app.art", "templates/default/src/app.art"]) {
+  for (const f of ["examples/counter/app.art", "examples/todo/app.art", "templates/default/src/app.art", "examples/users/app.art"]) {
     assert.deepEqual(errs(readFileSync(f, "utf8")), [], f);
   }
 });

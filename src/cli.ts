@@ -7,7 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { brotliCompressSync, gzipSync } from "node:zlib";
 import { analyze } from "./checker.ts";
 import { compile, parseProject, type Source } from "./compile.ts";
-import { htmlShell } from "./codegen.ts";
+import { htmlShell, serverEntry, type ServerSchema } from "./codegen.ts";
 import { declContext, projectMap } from "./context.ts";
 import { formatAI, formatHuman, type Diagnostic } from "./errors.ts";
 import { parse } from "./parser.ts";
@@ -16,6 +16,7 @@ import { printProgram } from "./printer.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const RUNTIME = join(ROOT, "runtime", "runtime.js");
+const SERVER_RUNTIME = join(ROOT, "runtime", "server.js");
 const PKG = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
 
 const HELP = `art ${PKG.version} — compilador de ArtScript
@@ -104,10 +105,11 @@ function sizes(files: Record<string, string>): string {
 }
 
 // Compiles in memory: { "index.html", "app.js", "runtime.js" } or the diagnostics.
-function buildFiles(target: string): { files: Record<string, string> } | { diagnostics: Diagnostic[] } {
+// With apis, `server` is the schema for the server runtime.
+function buildFiles(target: string): { files: Record<string, string>; server: ServerSchema | null } | { diagnostics: Diagnostic[] } {
   const r = compile(sources(target));
   if (!r.js) return { diagnostics: r.diagnostics };
-  return { files: { "index.html": htmlShell(), "app.js": r.js, "runtime.js": readFileSync(RUNTIME, "utf8") } };
+  return { files: { "index.html": htmlShell(), "app.js": r.js, "runtime.js": readFileSync(RUNTIME, "utf8") }, server: r.server };
 }
 
 // ---------- commands ----------
@@ -142,6 +144,11 @@ switch (cmd) {
     const pub = join(projectRoot(target), "public");
     if (isDir(pub)) cpSync(pub, outDir, { recursive: true });
     console.log(`build ok → ${relative(process.cwd(), outDir) || outDir}\n${sizes(r.files)}`);
+    if (r.server) {
+      writeFileSync(join(outDir, "server.js"), serverEntry(r.server));
+      writeFileSync(join(outDir, "server-runtime.js"), readFileSync(SERVER_RUNTIME, "utf8"));
+      console.log(`\n  con api: node ${join(relative(process.cwd(), outDir) || outDir, "server.js")}  (datos en ./data, o ART_DATA_DIR)`);
+    }
     break;
   }
 
@@ -225,6 +232,11 @@ switch (cmd) {
     const client = `<script>(()=>{const s=new EventSource("/__art");s.onmessage=e=>{if(e.data==="reload")return location.reload();let o=document.getElementById("__art_err");if(!o){o=document.createElement("pre");o.id="__art_err";o.style.cssText="position:fixed;inset:0;margin:0;padding:24px;background:#1a0000ee;color:#ffb4b4;font:14px/1.5 monospace;white-space:pre-wrap;z-index:99999";document.body.appendChild(o)}o.textContent=JSON.parse(e.data)}})()</script>`;
     let files: Record<string, string> = {};
     let lastError: string | null = null;
+    // Apis run in this same process; dev data lives in <project>/.art/data.
+    const { createApi } = await import(pathToFileURL(SERVER_RUNTIME).href);
+    const dataDir = join(projectRoot(target), ".art", "data");
+    let api: ((req: unknown, res: unknown) => Promise<boolean>) | null = null;
+    let apiSchema = "";
     const rebuild = (): boolean => {
       const r = buildFiles(target);
       if ("diagnostics" in r) {
@@ -234,12 +246,18 @@ switch (cmd) {
       }
       files = r.files;
       lastError = null;
+      const schema = JSON.stringify(r.server);
+      if (schema !== apiSchema) {
+        apiSchema = schema;
+        api = r.server ? createApi(r.server, dataDir) : null;
+      }
       return true;
     };
     rebuild();
 
     const types: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".ico": "image/x-icon" };
-    const server = createServer((req, res) => {
+    const server = createServer(async (req, res) => {
+      if (api && (await api(req, res))) return;
       const url = decodeURIComponent((req.url ?? "/").split("?")[0]);
       if (url === "/__art") {
         res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache" });

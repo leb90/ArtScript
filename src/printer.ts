@@ -37,7 +37,7 @@ export function printExpr(e: Expr): string {
     case "Member": return wrap(e.object, 10) + (e.optional ? "?." : ".") + e.prop;
     case "Index": return wrap(e.object, 10) + (e.optional ? "?.[" : "[") + printExpr(e.index) + "]";
     case "Call": return wrap(e.callee, 10) + (e.optional ? "?.(" : "(") + e.args.map(printExpr).join(", ") + ")";
-    case "Unary": return (e.op === "typeof" ? "typeof " : e.op) + wrap(e.arg, 9);
+    case "Unary": return (e.op === "typeof" || e.op === "await" ? e.op + " " : e.op) + wrap(e.arg, 9);
     case "Update": return e.prefix ? e.op + wrap(e.arg, 10) : wrap(e.arg, 10) + e.op;
     case "Binary": {
       const p = PREC[e.op];
@@ -73,6 +73,7 @@ export function printStmt(s: Stmt): string {
     case "ExprStmt": return printExpr(s.expr);
     case "Let": return `let ${s.name} = ${printExpr(s.init)}`;
     case "Return": return s.value ? `return ${printExpr(s.value)}` : "return";
+    case "Try": return `try ${printBlockInline(s.body)} catch${s.param ? ` (${s.param})` : ""} ${printBlockInline(s.handler)}`;
     case "If": {
       let out = `if ${printExpr(s.cond)} ${printBlockInline(s.then)}`;
       if (s.else) out += ` else ${s.else.length === 1 && s.else[0].kind === "If" ? printStmt(s.else[0]) : printBlockInline(s.else)}`;
@@ -94,6 +95,7 @@ export function printProgram(p: Program): string {
 }
 
 export function printDecl(d: Decl): string {
+  if (d.kind === "Api") return `api ${d.name}: ${d.model}`;
   if (d.kind === "Model") {
     return `model ${d.name} {\n${d.fields.map((f) => `${IND}${f.name}: ${printType(f.type)}`).join("\n")}\n}`;
   }
@@ -104,6 +106,7 @@ export function printDecl(d: Decl): string {
   for (const m of d.members) {
     if (m.kind === "State") out.push(`${IND}state ${m.name}${m.type ? `: ${printType(m.type)}` : ""} = ${printExpr(m.init)}`);
     else if (m.kind === "Computed") out.push(`${IND}computed ${m.name} = ${printExpr(m.expr)}`);
+    else if (m.kind === "Data") out.push(`${IND}data ${m.name} = ${printExpr(m.expr)}`);
     else out.push(`${IND}fn ${m.name}(${m.params.join(", ")}) {`, ...printStmts(m.body, 2), `${IND}}`);
   }
   if (d.members.length && d.view.length) out.push("");
@@ -119,6 +122,8 @@ export function printStmts(stmts: Stmt[], depth: number): string[] {
       out.push(`${pad}if ${printExpr(s.cond)} {`, ...printStmts(s.then, depth + 1));
       if (s.else) out.push(`${pad}} else {`, ...printStmts(s.else, depth + 1));
       out.push(`${pad}}`);
+    } else if (s.kind === "Try") {
+      out.push(`${pad}try {`, ...printStmts(s.body, depth + 1), `${pad}} catch${s.param ? ` (${s.param})` : ""} {`, ...printStmts(s.handler, depth + 1), `${pad}}`);
     } else out.push(pad + printStmt(s));
   }
   return out;

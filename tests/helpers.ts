@@ -90,6 +90,7 @@ export class FElement extends FNode {
   typeText(v: string) { this.value = v; this.dispatch("input"); }
   toggle() { this.checked = !this.checked; this.dispatch("change"); }
   pressEnter() { this.dispatch("keydown", { key: "Enter" }); }
+  submit() { this.dispatch("submit"); }
 }
 
 export function installDom() {
@@ -114,7 +115,8 @@ export function all(n: FNode, tag?: string): FElement[] {
 }
 
 // Compiles, writes app.js + runtime.js to a temp dir and mounts the first page.
-export async function mountApp(src: string) {
+// `setup` runs against the runtime module before mounting (e.g. to point the api client at a test server).
+export async function mountApp(src: string, setup?: (rt: any) => void) {
   installDom();
   const r = compile([{ file: "test.art", src }]);
   if (!r.js) throw new Error("errores de compilación: " + JSON.stringify(r.diagnostics));
@@ -123,7 +125,8 @@ export async function mountApp(src: string) {
   copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
   const app = await import(pathToFileURL(join(dir, "app.js")).href);
   const rt = await import(pathToFileURL(join(dir, "runtime.js")).href);
+  setup?.(rt);
   const root = new FElement("div");
   const dispose = rt.root(() => app.routes[0].comp({}, root));
-  return { root, dispose, js: r.js };
+  return { root, dispose, js: r.js, rt };
 }

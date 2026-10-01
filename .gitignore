@@ -4,6 +4,7 @@ lib/
 *.tgz
 .env
 benchmarks/eval/.work/
+.art/
 
 # Local-only docs (never committed)
 /CLAUDE.md

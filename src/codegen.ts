@@ -1,5 +1,6 @@
 // Generates an ES module that builds the DOM directly (no virtual DOM) using runtime.js.
 import type { ComponentDecl, Element, Expr, Program, Stmt, ViewNode } from "./ast.ts";
+import { printType } from "./printer.ts";
 import { ELEMENTS, SPACING_PROPS } from "./elements.ts";
 
 type Kind = "state" | "computed" | "prop" | "fn" | "let" | "loop" | "param";
@@ -26,6 +27,9 @@ const JS_OPS: Record<string, string> = { "==": "===", "!=": "!==" };
 
 export function generate(program: Program): string {
   const out: string[] = ['import * as $ from "./runtime.js";', ""];
+  const apis = program.decls.filter((d) => d.kind === "Api");
+  // Typed REST client: one entry per `api` declaration.
+  if (apis.length) out.push(`const api = { ${apis.map((a) => `${a.name}: $.$api(${JSON.stringify(a.name)})`).join(", ")} };`, "");
   const pages: string[] = [];
   for (const d of program.decls) {
     if (d.kind !== "Component") continue;
@@ -35,6 +39,23 @@ export function generate(program: Program): string {
   out.push(`export const routes = [${pages.join(", ")}];`);
   out.push("export const start = (el) => $.start(routes, el);", "");
   return out.join("\n");
+}
+
+// Schema the server runtime needs: field types per model and the model of each api.
+export type ServerSchema = { models: Record<string, Record<string, string>>; apis: Record<string, string> };
+
+export function serverSchema(program: Program): ServerSchema | null {
+  const apis: Record<string, string> = {};
+  const models: Record<string, Record<string, string>> = {};
+  for (const d of program.decls) {
+    if (d.kind === "Api") apis[d.name] = d.model;
+    if (d.kind === "Model") models[d.name] = Object.fromEntries(d.fields.map((f) => [f.name, printType(f.type)]));
+  }
+  return Object.keys(apis).length ? { models, apis } : null;
+}
+
+export function serverEntry(schema: ServerSchema): string {
+  return `import { serve } from "./server-runtime.js";\n\nserve(${JSON.stringify(schema)}, new URL(".", import.meta.url));\n`;
 }
 
 export function htmlShell(title = "ArtScript"): string {
@@ -57,7 +78,8 @@ class ComponentGen {
     const c = this.c;
     const scope = new Scope(null);
     for (const p of c.params) scope.vars.set(p.name, { kind: "prop" });
-    for (const m of c.members) scope.vars.set(m.name, { kind: m.kind === "State" ? "state" : m.kind === "Computed" ? "computed" : "fn" });
+    // `data` compiles to a signal, so it reads and mutates like a state.
+    for (const m of c.members) scope.vars.set(m.name, { kind: m.kind === "Computed" ? "computed" : m.kind === "Fn" ? "fn" : "state" });
     for (const p of c.params) {
       const def = p.default ? `(() => ${this.expr(p.default, scope)})` : "(() => undefined)";
       this.emit(`const ${p.name} = $p.${p.name} ?? ${def};`);
@@ -65,10 +87,14 @@ class ComponentGen {
     for (const m of c.members) {
       if (m.kind === "State") this.emit(`const ${m.name} = $.signal(${this.expr(m.init, scope)});`);
       else if (m.kind === "Computed") this.emit(`const ${m.name} = $.computed(() => ${this.expr(m.expr, scope)});`);
-      else {
+      else if (m.kind === "Data") {
+        // Lists start as [] so views can iterate right away; anything else starts as null.
+        const isList = m.expr.kind === "Call" && m.expr.callee.kind === "Member" && m.expr.callee.prop === "list";
+        this.emit(`const ${m.name} = $.$data(() => ${this.expr(m.expr, scope)}, ${isList ? "[]" : "null"});`);
+      } else {
         const fs = scope.child();
         for (const p of m.params) fs.vars.set(p, { kind: "param" });
-        this.emit(`function ${m.name}(${m.params.join(", ")}) {`);
+        this.emit(`${hasAwait(m.body) ? "async " : ""}function ${m.name}(${m.params.join(", ")}) {`);
         this.ind++;
         this.stmts(m.body, fs);
         this.ind--;
@@ -171,7 +197,7 @@ class ComponentGen {
     }
 
     if (el.action && spec.action) {
-      this.emit(`$.$on(${v}, "${spec.action}", () => {`);
+      this.emit(`$.$on(${v}, "${spec.action}", ${hasAwait(el.action) ? "async " : ""}() => {`);
       this.nested(() => this.stmts(el.action!, scope.child()));
       this.emit("});");
     }
@@ -192,7 +218,15 @@ class ComponentGen {
         this.emit(`let ${s.name} = ${this.expr(s.init, scope)};`);
         scope.vars.set(s.name, { kind: "let" });
       } else if (s.kind === "Return") this.emit(s.value ? `return ${this.expr(s.value, scope)};` : "return;");
-      else {
+      else if (s.kind === "Try") {
+        this.emit("try {");
+        this.nested(() => this.stmts(s.body, scope.child()));
+        const h = scope.child();
+        if (s.param) h.vars.set(s.param, { kind: "let" });
+        this.emit(s.param ? `} catch (${s.param}) {` : "} catch {");
+        this.nested(() => this.stmts(s.handler, h));
+        this.emit("}");
+      } else {
         this.emit(`if (${this.expr(s.cond, scope)}) {`);
         this.nested(() => this.stmts(s.then, scope.child()));
         if (s.else) {
@@ -241,7 +275,7 @@ class ComponentGen {
         }
         return call;
       }
-      case "Unary": return e.op === "typeof" ? `(typeof ${x(e.arg)})` : `${e.op}(${x(e.arg)})`;
+      case "Unary": return e.op === "typeof" || e.op === "await" ? `(${e.op} ${x(e.arg)})` : `${e.op}(${x(e.arg)})`;
       case "Update": return this.mutation(e.arg, e.prefix ? `${e.op}${x(e.arg)}` : `${x(e.arg)}${e.op}`, scope);
       case "Binary": return `(${x(e.left)} ${JS_OPS[e.op] ?? e.op} ${x(e.right)})`;
       case "Cond": return `(${x(e.test)} ? ${x(e.then)} : ${x(e.else)})`;
@@ -251,15 +285,16 @@ class ComponentGen {
       case "Arrow": {
         const s = scope.child();
         for (const p of e.params) s.vars.set(p, { kind: "param" });
+        const asyncKw = (Array.isArray(e.body) ? hasAwait(e.body) : exprHasAwait(e.body)) ? "async " : "";
         if (!Array.isArray(e.body)) {
           const b = this.expr(e.body, s);
-          return `((${e.params.join(", ")}) => ${e.body.kind === "Object" ? `(${b})` : b})`;
+          return `(${asyncKw}(${e.params.join(", ")}) => ${e.body.kind === "Object" ? `(${b})` : b})`;
         }
         const sub = new ComponentGen(this.c);
         sub.n = this.n;
         sub.ind = 0;
         sub.stmts(e.body, s);
-        return `((${e.params.join(", ")}) => { ${sub.lines.join(" ")} })`;
+        return `(${asyncKw}(${e.params.join(", ")}) => { ${sub.lines.join(" ")} })`;
       }
       case "Spread": return `...${x(e.arg)}`;
     }
@@ -276,6 +311,35 @@ class ComponentGen {
     const sig = this.signalOf(target, scope);
     return sig ? `$.$m(${sig}, ${code})` : code;
   }
+}
+
+// Whether code uses `await` directly (not inside a nested arrow, which gets its own async).
+function exprHasAwait(e: Expr): boolean {
+  switch (e.kind) {
+    case "Unary": return e.op === "await" || exprHasAwait(e.arg);
+    case "Arrow": return false;
+    case "Template": return e.exprs.some(exprHasAwait);
+    case "Member": return exprHasAwait(e.object);
+    case "Index": return exprHasAwait(e.object) || exprHasAwait(e.index);
+    case "Call": return exprHasAwait(e.callee) || e.args.some(exprHasAwait);
+    case "Update": case "Spread": return exprHasAwait(e.arg);
+    case "Binary": return exprHasAwait(e.left) || exprHasAwait(e.right);
+    case "Cond": return exprHasAwait(e.test) || exprHasAwait(e.then) || exprHasAwait(e.else);
+    case "Assign": return exprHasAwait(e.target) || exprHasAwait(e.value);
+    case "Array": return e.items.some(exprHasAwait);
+    case "Object": return e.props.some((p) => exprHasAwait("spread" in p ? p.spread : p.value));
+    default: return false;
+  }
+}
+
+function hasAwait(stmts: Stmt[]): boolean {
+  return stmts.some((s) => {
+    if (s.kind === "ExprStmt") return exprHasAwait(s.expr);
+    if (s.kind === "Let") return exprHasAwait(s.init);
+    if (s.kind === "Return") return s.value !== null && exprHasAwait(s.value);
+    if (s.kind === "Try") return hasAwait(s.body) || hasAwait(s.handler);
+    return exprHasAwait(s.cond) || hasAwait(s.then) || (s.else !== null && hasAwait(s.else));
+  });
 }
 
 function literal(e: Expr): string | number | boolean | null {

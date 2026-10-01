@@ -8,8 +8,9 @@ import { applyPatch } from "../src/patch.ts";
 const blocks = [...readFileSync("docs/SPEC.md", "utf8").matchAll(/```\n([\s\S]*?)```/g)].map((m) => m[1]);
 
 test("docs/SPEC.md: miembros + vista de ejemplo compilan sin errores", () => {
-  const [decls, members, view] = blocks;
-  const model = decls.slice(0, decls.indexOf("component"));
+  const find = (start: string) => blocks.find((b) => b.startsWith(start))!;
+  const [decls, members, apiDecl, view] = [find("model User"), find("state count"), find("api users"), find("column gap=4")];
+  const model = decls.slice(0, decls.indexOf("component")) + apiDecl;
   const src = `${model}
 component UserCard(user: User, onDelete: Fn, big: Bool = false) {
   text user.name
