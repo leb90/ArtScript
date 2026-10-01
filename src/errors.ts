@@ -41,6 +41,8 @@ export const CATALOG: Record<string, { code: string; desc: string }> = {
   NO_ACTION: { code: "E2004", desc: "This element doesn't take an `->` action." },
   NO_CONTENT: { code: "E2005", desc: "This element doesn't take content." },
   NOT_BINDABLE: { code: "E2006", desc: "`input` needs a `state` (or a field of one) to bind to." },
+  LAYOUT_SLOT: { code: "E2008", desc: "A layout needs exactly one `slot`, and `slot` only goes in layouts." },
+  BAD_ROUTE: { code: "E2009", desc: "Invalid or repeated page route." },
   NO_CHILDREN: { code: "E2007", desc: "This element doesn't take `{ }` children." },
   // art patch
   PATCH_SYNTAX: { code: "E3001", desc: "Invalid patch line: an operation was expected." },

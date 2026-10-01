@@ -87,7 +87,7 @@ class Parser {
         const api = this.ident("the users api").v;
         decls.push({ kind: "Auth", name: "auth", api, loc });
       } else if (this.is("server")) decls.push(this.serverFn());
-      else if (this.is("component") || this.is("page")) decls.push(this.component());
+      else if (this.is("component") || this.is("page") || this.is("layout")) decls.push(this.component());
       else this.fail("'use', 'model', 'api', 'auth', 'server fn', 'component' or 'page'");
       this.skipNl();
     }
@@ -165,10 +165,13 @@ class Parser {
   component(): ComponentDecl {
     const kw = this.next();
     const page = kw.v === "page";
-    const name = this.ident(page ? "a page name" : "a component name").v;
+    const layout = kw.v === "layout";
+    const name = this.ident(page ? "a page name" : layout ? "a layout name" : "a component name").v;
     let path: string | null = null;
+    let layoutName: string | null = null;
     const params: Param[] = [];
     if (page && this.tok.t === "str") path = this.next().v;
+    if (page && this.eat("layout")) layoutName = this.ident("a layout name").v;
     if (!page && this.eat("(")) {
       while (!this.is(")")) {
         const p = this.ident("a prop name");
@@ -191,7 +194,7 @@ class Parser {
       this.skipSep();
     }
     this.expect("}");
-    return { kind: "Component", page, name, path, params, members, view, loc: kw.loc };
+    return { kind: "Component", page, ...(layout ? { layout: true } : {}), name, path, ...(layoutName ? { layoutName } : {}), params, members, view, loc: kw.loc };
   }
 
   member(): Member {

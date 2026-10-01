@@ -252,18 +252,69 @@ export function $data(fn, initial) {
 // ---------- App ----------
 const CSS = `*{box-sizing:border-box}body{margin:0;font:16px/1.5 system-ui,sans-serif;color:#1a1a1a;background:#fafafa}#app{padding:24px;max-width:960px;margin:0 auto}.a-row{display:flex;align-items:center}.a-column{display:flex;flex-direction:column}.a-grid{display:grid}.a-wrap{flex-wrap:wrap}.a-card{display:flex;flex-direction:column;padding:16px;border:1px solid #e5e5e5;border-radius:12px;background:#fff}button{font:inherit;padding:6px 14px;border-radius:8px;border:1px solid #d4d4d4;background:#fff;color:inherit;cursor:pointer}button.a-primary{background:#2563eb;border-color:#2563eb;color:#fff}button.a-danger{color:#dc2626;border-color:#fca5a5}span.a-danger{color:#dc2626}button.a-small{padding:2px 8px;font-size:.875em}input{font:inherit}input:not([type=checkbox]){padding:6px 10px;border:1px solid #d4d4d4;border-radius:8px;background:inherit;color:inherit}.a-bold{font-weight:600}.a-muted{color:#737373}.a-small{font-size:.875em}.a-large{font-size:1.25em}h2{margin:0}a{color:#2563eb}@media(prefers-color-scheme:dark){body{background:#111;color:#eee}.a-card{background:#1a1a1a;border-color:#333}button{background:#222;border-color:#444}input:not([type=checkbox]){border-color:#444}.a-muted{color:#999}}`;
 
+// ---------- Router (History API) ----------
+// Routes: { path: "/products/:id" | "*", comp, layout? }. Internal <a href="/..."> clicks and
+// navigate() change the URL without reloading; a layout stays mounted while its pages change.
+let render = () => {};
+export function navigate(to) {
+  history.pushState(null, "", to);
+  render();
+}
+
+function compileRoute(path) {
+  if (path === "*") return { re: null, keys: [] };
+  const keys = [];
+  const pattern = path.replace(/\/+$/, "").replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/:(\w+)/g, (_, k) => (keys.push(k), "([^/]+)"));
+  return { re: new RegExp(`^${pattern}/?$`), keys };
+}
+
 export function start(routes, mount = document.getElementById("app")) {
   const style = document.createElement("style");
   style.textContent = CSS;
   document.head.appendChild(style);
-  let dispose = null;
-  const render = () => {
-    const path = (location.hash.slice(1) || "/").split("?")[0];
-    const r = routes.find((x) => x.path === path) ?? routes[0];
-    if (dispose) dispose();
-    mount.textContent = "";
-    dispose = root(() => r.comp({}, mount));
+  const table = routes.map((r) => ({ ...r, ...compileRoute(r.path) }));
+  let layout, layoutDispose = null, slot = null, pageDispose = null;
+
+  render = () => {
+    const path = location.pathname || "/";
+    const query = Object.fromEntries(new URLSearchParams(location.search));
+    let route = null, params = {};
+    for (const r of table) {
+      const m = r.re && r.re.exec(path);
+      if (!m) continue;
+      route = r;
+      r.keys.forEach((k, i) => { params[k] = decodeURIComponent(m[i + 1]); });
+      break;
+    }
+    route ??= table.find((r) => r.path === "*") ?? table[0];
+    const props = { params: () => params, query: () => query };
+    pageDispose?.();
+    pageDispose = null;
+    if (route.layout !== layout || !route.layout) {
+      layoutDispose?.();
+      layoutDispose = null;
+      slot = null;
+      mount.textContent = "";
+      layout = route.layout;
+      if (layout) layoutDispose = root(() => layout({ $slot: (parent) => { slot = region(parent); } }, mount));
+    }
+    if (slot) {
+      slot.clear();
+      slot.mount((frag) => slot.disposers.push(root(() => route.comp(props, frag))));
+    } else {
+      pageDispose = root(() => route.comp(props, mount));
+    }
+    window.scrollTo?.(0, 0);
   };
-  window.addEventListener("hashchange", render);
+
+  window.addEventListener("popstate", render);
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest?.("a[href]");
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || a.target || a.hasAttribute("download")) return;
+    const url = new URL(a.href, location.href);
+    if (url.origin !== location.origin) return;
+    e.preventDefault();
+    navigate(url.pathname + url.search);
+  });
   render();
 }

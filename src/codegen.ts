@@ -42,7 +42,7 @@ function importLines(program: Program, onlyFor?: string): string[] {
 }
 
 export function generate(program: Program): string {
-  const out: string[] = ['import * as $ from "./runtime.js";', ...importLines(program), ""];
+  const out: string[] = ['import * as $ from "./runtime.js";', ...importLines(program), "const navigate = $.navigate;", ""];
   const apis = program.decls.filter((d) => d.kind === "Api");
   // Typed REST client: one entry per `api` declaration.
   if (apis.length) out.push(`const api = { ${apis.map((a) => `${a.name}: $.$api(${JSON.stringify(a.name)})`).join(", ")} };`, "");
@@ -52,7 +52,12 @@ export function generate(program: Program): string {
   for (const d of program.decls) {
     if (d.kind !== "Component") continue;
     out.push(new ComponentGen(d).gen(), "");
-    if (d.page) pages.push(`{ path: ${JSON.stringify(d.path ?? "/" + d.name.toLowerCase())}, comp: ${d.name} }`);
+    if (d.page) {
+      // Without an explicit layout, a page uses the only layout there is (if exactly one).
+      const layouts = program.decls.filter((x) => x.kind === "Component" && x.layout);
+      const layout = d.layoutName ?? (layouts.length === 1 ? layouts[0].name : null);
+      pages.push(`{ path: ${JSON.stringify(d.path ?? "/" + d.name.toLowerCase())}, comp: ${d.name}${layout ? `, layout: ${layout}` : ""} }`);
+    }
   }
   out.push(`export const routes = [${pages.join(", ")}];`);
   out.push("export const start = (el) => $.start(routes, el);", "");
@@ -105,7 +110,7 @@ export function serverEntry(schema: ServerSchema): string {
 }
 
 export function htmlShell(title = "ArtScript"): string {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head><body><div id="app"></div><script type="module">import{start}from"./app.js";start()</script></body></html>\n`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head><body><div id="app"></div><script type="module">import{start}from"/app.js";start()</script></body></html>\n`;
 }
 
 class ComponentGen {
@@ -124,6 +129,13 @@ class ComponentGen {
     const c = this.c;
     const scope = new Scope(null);
     for (const p of c.params) scope.vars.set(p.name, { kind: "prop" });
+    // Pages read their route params and query string as props from the router.
+    if (c.page) {
+      for (const name of ["params", "query"]) {
+        scope.vars.set(name, { kind: "prop" });
+        this.emit(`const ${name} = $p.${name} ?? (() => ({}));`);
+      }
+    }
     // `data` compiles to a signal, so it reads and mutates like a state.
     for (const m of c.members) scope.vars.set(m.name, { kind: m.kind === "Computed" ? "computed" : m.kind === "Fn" ? "fn" : "state" });
     for (const p of c.params) {
@@ -172,6 +184,8 @@ class ComponentGen {
         this.emit(`$.$for(${parent}, () => ${this.expr(node.list, scope)}, (${params}) => {`);
         this.nested(() => this.view(node.body, f, s));
         this.emit("});");
+      } else if (node.tag === "slot") {
+        this.emit(`$p.$slot(${parent});`); // the router renders the current page here
       } else if (/^[A-Z]/.test(node.tag)) {
         // If the prop comes from a state, pass its signal so the child can notify mutations.
         const props = node.props.filter((p) => p.value).map((p) => {
@@ -223,7 +237,7 @@ class ComponentGen {
       } else if (p.name === "type") {
         if (word !== null) this.emit(`${v}.type = ${JSON.stringify(word)};`);
       } else if (p.name === "to") {
-        this.attr(v, "href", val, scope, (s) => `"#" + ${s}`);
+        this.attr(v, "href", val, scope); // internal links navigate without reloading (see the router)
       } else if (p.name === "class") {
         this.attr(v, "className", val, scope, (s) => (spec.cls ? `${JSON.stringify(classes + " ")} + ${s}` : s));
       } else this.attr(v, p.name, val, scope);

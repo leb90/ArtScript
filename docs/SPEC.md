@@ -22,7 +22,8 @@ page Users "/users" {
 ```
 
 - Types: `String Number Bool ID Email Date Fn Any`, `model` names, `T[]` list, `T?` optional (may be null).
-- `page` = component with a route (hash routing: `#/users`). Without a route: `/lowercase-name`. Unknown route → first page.
+- `page Product "/products/:id"`: a component with a route; inside it `params.id` (String) and `query.tab` (from `?tab=`). `page NotFound "*"` catches unknown paths. Without a route: `/lowercase-name`.
+- `layout Main { ... slot ... }` wraps pages and stays mounted while they change (the only layout applies to every page; `page X "/x" layout Main` picks one). `link "x" to="/path"` and `navigate("/path")` change pages without reloading.
 
 ## Imports: `use`
 

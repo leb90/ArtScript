@@ -33,8 +33,12 @@ export type ServerFnDecl = { kind: "ServerFn"; name: string; params: string[]; b
 export type ComponentDecl = {
   kind: "Component";
   page: boolean;
+  // `layout Main { ... slot ... }`: wraps pages; `slot` is where the current page renders.
+  layout?: boolean;
   name: string;
+  // Pages: the route ("/products/:id", "*" for not found) and, optionally, the layout to use.
   path: string | null;
+  layoutName?: string | null;
   params: Param[];
   members: Member[];
   view: ViewNode[];

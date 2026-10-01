@@ -10,7 +10,7 @@ export type Ty =
   | { k: "list"; of: Ty }
   | { k: "opt"; of: Ty }
   | { k: "model"; name: string }
-  | { k: "obj"; fields: Record<string, Ty> }
+  | { k: "obj"; fields: Record<string, Ty>; strict?: boolean } // strict: unknown fields are errors (e.g. route params)
   | { k: "fn"; ret: Ty }
   | { k: "async"; of: Ty } // result of an api call; `await` or `data` unwraps it
   | { k: "api"; name: string; model: string; sync?: boolean } // `api.users` (client, async) or `db.users` (server, sync)
@@ -126,6 +126,8 @@ class Checker {
   serverFns = new Map<string, Ty>(); // server fn name → return type
   returns: Ty[] | null = null; // return types collected while checking a server fn
   imports = new Map<string, Ty>(); // names brought in by `use`, visible everywhere
+  inLayout = false;
+  slots = 0;
   importFrom = new Map<string, string>(); // imported name → module
   idFields = new Map<string, Set<string>>(); // model → fields declared as ID (assigned by the server on create)
   constructor(program: Program) {
@@ -204,6 +206,7 @@ class Checker {
         params: d.params.map((p) => ({ name: p.name, ty: this.resolve(p.type), required: !p.default && !p.type.optional })),
       });
     }
+    this.routes();
     for (const d of this.program.decls) if (d.kind === "Component") this.component(d);
     return this.diags;
   }
@@ -218,6 +221,28 @@ class Checker {
     if (t.list) ty = list(ty);
     if (t.optional) ty = opt(ty);
     return ty;
+  }
+
+  // ---------- routes ----------
+  // Page routes are "/static/:param" or "*"; each one once. A page's layout must exist.
+  routes() {
+    const seen = new Map<string, string>();
+    const layouts = this.program.decls.filter((d): d is ComponentDecl => d.kind === "Component" && !!d.layout).map((d) => d.name);
+    for (const d of this.program.decls) {
+      if (d.kind !== "Component" || !d.page) continue;
+      this.at = d.name;
+      const path = d.path ?? "/" + d.name.toLowerCase();
+      if (path !== "*" && !/^\/[\w\-./:]*$/.test(path)) {
+        this.err("BAD_ROUTE", `invalid route '${path}'`, d.loc, { expr: path, expected: '"/path", "/path/:param" or "*"' });
+      }
+      // Routes that differ only in param names are the same route.
+      const shape = path.replace(/:\w+/g, ":");
+      if (seen.has(shape)) this.err("BAD_ROUTE", `route '${path}' is also used by ${seen.get(shape)}`, d.loc, { expr: path });
+      seen.set(shape, d.name);
+      if (d.layoutName && !layouts.includes(d.layoutName)) {
+        this.err("UNKNOWN_TYPE", `no layout named '${d.layoutName}'`, d.loc, { expr: d.layoutName, fixes: suggest(d.layoutName, layouts) });
+      }
+    }
   }
 
   // ---------- imports ----------
@@ -282,6 +307,15 @@ class Checker {
     this.at = c.name;
     const scope = new Scope(null);
     this.withImports(scope);
+    scope.vars.set("navigate", { kind: "global", ty: fn({ k: "void" }) });
+    // Pages get their route params (typed from the path) and the query string.
+    if (c.page) {
+      const keys = [...(c.path ?? "").matchAll(/:(\w+)/g)].map((m) => m[1]);
+      if (keys.length) scope.vars.set("params", { kind: "global", ty: { k: "obj", fields: Object.fromEntries(keys.map((k) => [k, STR])), strict: true } });
+      scope.vars.set("query", { kind: "global", ty: { k: "obj", fields: {} } });
+    }
+    this.inLayout = !!c.layout;
+    this.slots = 0;
     const declare = (name: string, sym: Sym, loc: Loc) => {
       if (scope.vars.has(name)) this.err("DUPLICATE_NAME", `'${name}' is already declared in ${c.name}`, loc, { expr: name });
       scope.vars.set(name, sym);
@@ -329,6 +363,10 @@ class Checker {
     }
     this.symbols.set(c.name, scope.vars);
     this.view(c.view, scope);
+    if (c.layout && this.slots !== 1) {
+      this.err("LAYOUT_SLOT", `layout ${c.name} has ${this.slots} \`slot\`s; it needs exactly one`, c.loc, { expr: c.name, fixes: ["add `slot` where pages should render"] });
+    }
+    this.inLayout = false;
   }
 
   view(nodes: ViewNode[], scope: Scope) {
@@ -358,6 +396,11 @@ class Checker {
 
   element(el: Element, scope: Scope) {
     if (/^[A-Z]/.test(el.tag)) return this.componentUse(el, scope);
+    if (el.tag === "slot") {
+      if (!this.inLayout) this.err("LAYOUT_SLOT", "`slot` only goes inside a `layout`", el.loc, { expr: "slot", fixes: ["layout Main {\n  slot\n}"] });
+      else this.slots++;
+      return;
+    }
     const spec = ELEMENTS[el.tag];
     if (!spec) {
       this.err("UNKNOWN_ELEMENT", `unknown element '${el.tag}'`, el.loc, {
@@ -846,7 +889,11 @@ class Checker {
     }
     if (t.k === "api") return this.apiMethod(t, prop, e);
     if (t.k === "auth") return this.authMethod(t, prop, e);
-    if (t.k === "obj") return t.fields[prop] ?? ANY;
+    if (t.k === "obj") {
+      if (prop in t.fields || !t.strict) return t.fields[prop] ?? ANY;
+      this.err("UNKNOWN_FIELD", `no '${prop}' here`, e.loc, { expr: printExpr(e), expected: Object.keys(t.fields).join("|") || "nothing", fixes: suggest(prop, Object.keys(t.fields)) });
+      return ANY;
+    }
     if (t.k === "list") return listMethod(prop, t.of, t) ?? ANY;
     if (t.k === "str") return strMethod(prop) ?? ANY;
     if (t.k === "num" && (prop === "toFixed" || prop === "toString")) return fn(STR);

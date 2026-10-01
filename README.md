@@ -93,6 +93,23 @@ data products = api.products.list({ search, sort: "-price", limit: 20, offset: p
 data total = api.products.count({ search })
 ```
 
+Pages have real routes, layouts and client-side navigation (History API):
+
+```
+layout Main {
+  link "Home" to="/"
+  slot
+}
+
+page Product "/products/:id" {
+  data product = api.products.get(params.id)   // params.id is typed from the route
+}
+
+page NotFound "*" {
+  title "Not found"
+}
+```
+
 Any npm package or JS/TS module of your own can be used with `use`; the compiler checks that the module and every imported name exist, and `art build` bundles everything into one minified file:
 
 ```
@@ -134,7 +151,7 @@ src/
   cli.ts        the `art` command
 runtime/runtime.js   signals + DOM helpers + api client (~2.9 KB brotli)
 runtime/server.js    api server: REST from models, validation, SQLite storage, queries, auth, roles, server fns
-examples/            counter, todo, users (full-stack CRUD), notes (auth + private data), catalog (roles, queries)
+examples/            counter, todo, users (full-stack CRUD), notes (auth + private data), catalog (roles, queries), blog (routes, layout)
 benchmarks/          equivalent tasks in ArtScript / React / Svelte + measurement
 docs/SPEC.md         compact spec to give an AI (~1.1K tokens)
 templates/default/   starter project created by `art init`

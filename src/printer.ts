@@ -102,8 +102,9 @@ export function printDecl(d: Decl): string {
   if (d.kind === "Model") {
     return `model ${d.name} {\n${d.fields.map((f) => `${IND}${f.name}: ${printType(f.type)}`).join("\n")}\n}`;
   }
-  let head = d.page ? `page ${d.name}` : `component ${d.name}`;
+  let head = d.page ? `page ${d.name}` : d.layout ? `layout ${d.name}` : `component ${d.name}`;
   if (d.page && d.path) head += ` ${JSON.stringify(d.path)}`;
+  if (d.page && d.layoutName) head += ` layout ${d.layoutName}`;
   if (d.params.length) head += `(${d.params.map((p) => `${p.name}: ${printType(p.type)}${p.default ? ` = ${printExpr(p.default)}` : ""}`).join(", ")})`;
   const out: string[] = [];
   for (const m of d.members) {

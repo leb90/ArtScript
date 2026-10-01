@@ -301,6 +301,11 @@ switch (cmd) {
         res.writeHead(200, { "content-type": types[extname(file)] ?? "application/octet-stream" }).end(readFileSync(file));
         return;
       }
+      // Route paths (no file extension) get the app, so URLs like /products/7 work on reload.
+      if (!extname(url) && "index.html" in files) {
+        res.writeHead(200, { "content-type": "text/html", "cache-control": "no-store" }).end(files["index.html"].replace("</body>", client + "</body>"));
+        return;
+      }
       res.writeHead(404).end("404");
     });
 
