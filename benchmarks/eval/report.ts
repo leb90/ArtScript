@@ -18,6 +18,10 @@ const END = "<!-- eval-results:end -->";
 
 type Usage = { input: number; output: number; cacheRead: number; cacheWrite: number };
 type Run = { task: string; stack: string; ok: boolean; attempts: number; usage: Usage; usd: number; codeTokens: number | null; size?: { raw: number; brotli: number } };
+// Runs that never reached the model (API errors such as an exhausted credit balance) are not
+// results: they're left out of every number and counted separately.
+const notRun = (r: Run & { errors?: string[] }) => r.attempts === 0 && /^API \d+/.test(r.errors?.[0] ?? "");
+
 type ResultFile = { model: string; effort: string; runs: number; prices: { in: number; out: number; cacheRead: number; cacheWrite: number }; pricesDate: string; results: Run[] };
 
 // Stacks shown for the model being reported: those present in its results, in this order.
@@ -62,7 +66,7 @@ function merge(files: { path: string; data: ResultFile }[]): Loaded[] {
   const byModel = new Map<string, Loaded>();
   for (const { path, data } of files) {
     const prev = byModel.get(data.model);
-    if (!prev) { byModel.set(data.model, { path, data: { ...data, results: [...data.results] }, paths: [path], replaced: [], reruns: [] }); continue; }
+    if (!prev) { byModel.set(data.model, { path, data: { ...data, results: [...data.results] }, paths: [path], replaced: [], reruns: NOTES[basename(path)] ? [`${basename(path)}: ${NOTES[basename(path)]}`] : [] }); continue; }
     const cells = new Set(data.results.map((r) => `${r.task}/${r.stack}`));
     const existed = new Set(prev.data.results.map((r) => `${r.task}/${r.stack}`));
     prev.data.results = [...prev.data.results.filter((r) => !cells.has(`${r.task}/${r.stack}`)), ...data.results];
@@ -70,6 +74,7 @@ function merge(files: { path: string; data: ResultFile }[]): Loaded[] {
     const rerun = [...cells].filter((c) => existed.has(c));
     prev.replaced.push(...rerun);
     if (rerun.length) prev.reruns.push(`${rerun.length} cell(s) re-run in ${basename(path)}${NOTES[basename(path)] ? ` (${NOTES[basename(path)]})` : ""}`);
+    else if (NOTES[basename(path)]) prev.reruns.push(`${basename(path)}: ${NOTES[basename(path)]}`);
   }
   return [...byModel.values()];
 }
@@ -106,17 +111,26 @@ function projectTable(rs: Run[], what: string): string[] {
   return out;
 }
 
+// A task is reported for a model only if ArtScript, React and Svelte all ran it, so a run cut short
+// (e.g. out of credit) never compares stacks on different tasks. Vue/Solid may add columns.
+function comparable(results: Run[]): Run[] {
+  const core = ["artscript", "react", "svelte"];
+  const tasks = new Set(results.map((r) => r.task).filter((t) => core.every((k) => results.some((r) => r.task === t && r.stack === k))));
+  return results.filter((r) => tasks.has(r.task));
+}
+
 function section(loaded: Loaded[]): string {
   const out: string[] = [START, "", "## Cost eval results", ""];
   for (const { path, data: all, paths, reruns } of loaded) {
     // Larger-project tasks ("<task>@full" / "<task>@focus") get their own table below.
+    all.results = comparable(all.results);
     STACKS = ORDER.filter((k) => all.results.some((r) => r.stack === k));
     const f = { ...all, results: all.results.filter((r) => !r.task.includes("@")) };
     const project = all.results.filter((r) => r.task.includes("@"));
     const s = Object.fromEntries(STACKS.map((k) => [k, stats(f, k)]));
     const tasks = [...new Set(f.results.map((r) => r.task))];
     const date = basename(path).slice(0, 10);
-    out.push(`### ${f.model} (effort ${f.effort})`, "");
+    out.push(`### ${f.model} (${f.model.startsWith("claude-haiku") ? "no effort setting" : `effort ${f.effort}`})`, "");
     out.push(`With \`${f.model}\`, ArtScript cost **${diff(s.artscript.perSolved, s.react.perSolved)}** per solved task than React + TS and **${diff(s.artscript.perSolved, s.svelte.perSolved)}** than Svelte 5.`, "");
     out.push("| Stack | Solved | USD per solved task | vs React | Without prompt cache | Avg attempts | Output tokens / run | Final code tokens | App JS (brotli) |");
     out.push("|---|---|---|---|---|---|---|---|---|");
@@ -161,7 +175,12 @@ if (!paths.length) {
   console.error("usage: npm run eval:report -- <results.json> [...]");
   process.exit(1);
 }
-const files = paths.map((p) => ({ path: join(process.cwd(), p), data: JSON.parse(readFileSync(p, "utf8")) as ResultFile }));
+const files = paths.map((p) => {
+  const data = JSON.parse(readFileSync(p, "utf8")) as ResultFile;
+  const skipped = data.results.filter(notRun).length;
+  if (skipped) console.log(`${basename(p)}: ${skipped} run(s) never reached the model (API errors), left out`);
+  return { path: join(process.cwd(), p), data: { ...data, results: data.results.filter((r) => !notRun(r)) } };
+});
 const readme = readFileSync(README, "utf8");
 const block = section(merge(files));
 const next = readme.includes(START)
