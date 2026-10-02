@@ -1,0 +1,149 @@
+// The frame around every backoffice page: brand, navigation, signed-in user, theme.
+layout Shell {
+  data me = auth.me()
+  state menu = false
+  state dark = false
+  fn syncTheme() {
+    dark = theme() == "dark" || theme() == "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches
+  }
+  fn toggleTheme() {
+    setTheme(dark ? "light" : "dark")
+    syncTheme()
+  }
+  fn logout() {
+    await auth.logout()
+    navigate("/login")
+  }
+  mount {
+    syncTheme()
+  }
+
+  grid class=(menu ? "shell menu-open" : "shell") {
+    row class="brand" gap=2 {
+      row class="brand-mark" {
+        icon "chart" size=18
+      }
+      text "Northwind" bold
+      badge "Backoffice"
+    }
+    row class="topbar" gap=2 justify=end {
+      button class="icon-btn" -> toggleTheme() {
+        if dark {
+          icon "sun" size=18 label="Switch to light theme"
+        } else {
+          icon "moon" size=18 label="Switch to dark theme"
+        }
+      }
+      if me {
+        row class="user" gap=2 {
+          text initials(me.name) class="avatar"
+          column class="user-name" {
+            text me.name small bold
+            text me.role == "admin" ? "Admin" : "Member" small muted
+          }
+        }
+        button "Log out" small class="logout" -> logout()
+      }
+      button class="icon-btn menu-btn" -> menu = !menu {
+        if menu {
+          icon "x" size=18 label="Close menu"
+        } else {
+          icon "menu" size=18 label="Open menu"
+        }
+      }
+    }
+    column class="nav" role="navigation" gap=1 {
+      link to="/" class="nav-link" on:click=(menu = false) {
+        icon "dashboard" size=18
+        text "Dashboard"
+      }
+      link to="/orders" class="nav-link" on:click=(menu = false) {
+        icon "shopping-cart" size=18
+        text "Orders"
+      }
+      link to="/customers" class="nav-link" on:click=(menu = false) {
+        icon "users" size=18
+        text "Customers"
+      }
+      link to="/products" class="nav-link" on:click=(menu = false) {
+        icon "package" size=18
+        text "Products"
+      }
+    }
+    column class="content" role="main" {
+      slot
+    }
+  }
+}
+
+layout Plain {
+  column class="plain" align=center justify=center {
+    slot
+  }
+}
+
+page Login "/login" layout Plain {
+  data me = auth.me()
+  state mode = "login"
+  state name = ""
+  state email = ""
+  state password = ""
+  state error = ""
+  state busy = false
+  fn submit() {
+    error = ""
+    busy = true
+    try {
+      if mode == "signup" {
+        await auth.signup({ name, email, password })
+      } else {
+        await auth.login(email, password)
+      }
+      navigate("/")
+    } catch (e) {
+      error = e.message
+    } finally {
+      busy = false
+    }
+  }
+  effect {
+    if me {
+      navigate("/")
+    }
+  }
+
+  meta title="Log in · Northwind Backoffice"
+  card class="login-card" gap=4 {
+    row gap=2 {
+      row class="brand-mark" {
+        icon "chart" size=18
+      }
+      text "Northwind" bold
+      badge "Backoffice"
+    }
+    column gap=1 {
+      title mode == "signup" ? "Create your account" : "Welcome back"
+      text mode == "signup" ? "The first account becomes the admin." : "Log in to manage orders, customers and products." muted small
+    }
+    tabs mode options=[{ value: "login", label: "Log in" }, { value: "signup", label: "Sign up" }]
+    form gap=3 -> submit() {
+      if mode == "signup" {
+        input name label="Name" placeholder="Your name" required
+      }
+      input email label="Email" placeholder="you@company.com" type=email required
+      input password label="Password" placeholder="At least 8 characters" type=password required
+      if error != "" {
+        text error danger small class="form-error" role="alert"
+      }
+      button busy ? "One moment…" : mode == "signup" ? "Create account" : "Log in" primary disabled=busy
+    }
+  }
+}
+
+page NotFound "*" layout Plain {
+  column gap=3 align=center {
+    title "Page not found"
+    text "That address doesn't exist in the backoffice." muted
+    link "Back to the dashboard" to="/"
+  }
+}

@@ -1,0 +1,215 @@
+page Admin "/admin" requires admin {
+  data products = api.products.list({ sort: "name" })
+  data orders = server.allOrders()
+  state tab = "Products"
+  state editing = false
+  state editId = ""
+  state name = ""
+  state category = ""
+  state price = ""
+  state stock = 0
+  state image = "/products/placeholder.svg"
+  state description = ""
+  state error = ""
+  state saving = false
+  computed revenue = (orders ?? []).filter(o => o.status != "Cancelled").reduce((n, o) => n + o.total, 0)
+  computed lowStock = products.filter(p => p.stock <= 3).length
+  computed pictures = [{ value: "/products/placeholder.svg", label: "Plain box" }, { value: "/products/pour-over.svg", label: "Pour-over" }, { value: "/products/mug.svg", label: "Mug" }, { value: "/products/blanket.svg", label: "Blanket" }, { value: "/products/candle.svg", label: "Candle" }, { value: "/products/lamp.svg", label: "Lamp" }, { value: "/products/organizer.svg", label: "Organizer" }, { value: "/products/weekender.svg", label: "Bag" }, { value: "/products/bottle.svg", label: "Bottle" }]
+  fn startNew() {
+    editId = ""
+    name = ""
+    category = ""
+    price = ""
+    stock = 0
+    image = "/products/placeholder.svg"
+    description = ""
+    error = ""
+    editing = true
+  }
+  fn startEdit(p) {
+    editId = p.id
+    name = p.name
+    category = p.category
+    price = String(p.price)
+    stock = p.stock
+    image = p.image
+    description = p.description
+    error = ""
+    editing = true
+  }
+  fn save() {
+    error = ""
+    // A text field: `input type=number` only takes whole numbers (it has no `step`).
+    let amount = Number(price.replace(",", ".").replace("$", "").trim())
+    if price.trim() == "" || !(amount >= 0) {
+      error = "Enter a price like 24 or 24.50."
+      return
+    }
+    saving = true
+    let fields = { name: name.trim(), category: category.trim(), price: Math.round(amount * 100) / 100, stock: Math.max(0, Math.floor(Number(stock) || 0)), image, description: description.trim() }
+    try {
+      if editId == "" {
+        await api.products.create(fields)
+        notify("Product added", "success")
+      } else {
+        await api.products.update(editId, fields)
+        notify("Product saved", "success")
+      }
+      editing = false
+    } catch (e) {
+      error = e.message
+    } finally {
+      saving = false
+    }
+  }
+  fn remove(p) {
+    await api.products.remove(p.id)
+    notify(`${p.name} deleted`, "info")
+  }
+  fn setStatus(id, status) {
+    await server.setOrderStatus(id, status)
+    notify(`Order marked as ${status.toLowerCase()}`, "success")
+  }
+
+  meta title="Admin · Fernwood"
+  column gap=5 class="fade-in" {
+    row justify=between gap=3 wrap {
+      title "Admin" class="page-title"
+      button "New product" primary -> startNew()
+    }
+    grid cols=2 lg:cols=4 gap=3 {
+      card gap=1 class="stat" {
+        text "Products" small muted
+        text `${products.length}` large bold
+      }
+      card gap=1 class="stat" {
+        text "Low stock" small muted
+        text `${lowStock}` large bold
+      }
+      card gap=1 class="stat" {
+        text "Orders" small muted
+        text `${(orders ?? []).length}` large bold
+      }
+      card gap=1 class="stat" {
+        text "Revenue" small muted
+        text money(revenue) large bold
+      }
+    }
+    tabs tab options=["Products", "Orders"] label="Section" class="hide-label"
+    if tab == "Products" {
+      if products.length == 0 && !products.loading {
+        column gap=3 align=center class="empty" {
+          icon "package" size=40 muted
+          text "No products yet" bold large
+          text "Add your first product, or load the samples." muted
+          row gap=2 wrap justify=center {
+            button "New product" primary -> startNew()
+            button "Load sample products" -> server.seed()
+          }
+        }
+      } else {
+        table class="admin-table" {
+          tr {
+            th "Product"
+            th "Category"
+            th "Price"
+            th "Stock"
+            th ""
+          }
+          for p in products key p.id {
+            tr {
+              td {
+                row gap=3 {
+                  column class="thumb small-thumb" {
+                    ProductArt src=p.image name=p.name
+                  }
+                  text p.name bold
+                }
+              }
+              td p.category muted
+              td money(p.price)
+              td {
+                if p.stock <= 0 {
+                  badge "Sold out" danger
+                } else {
+                  text `${p.stock}`
+                }
+              }
+              td {
+                row gap=2 justify=end {
+                  button "Edit" small -> startEdit(p)
+                  ConfirmButton label="Delete" question=`Delete ${p.name}? Past orders keep their copy.` onConfirm=(() => remove(p))
+                }
+              }
+            }
+          }
+        }
+      }
+    } else if (orders ?? []).length == 0 {
+      column gap=2 align=center class="empty" {
+        icon "package" size=40 muted
+        text "No orders yet" bold large
+      }
+    } else {
+      table class="admin-table" {
+        tr {
+          th "Order"
+          th "Customer"
+          th "Items"
+          th "Total"
+          th "Status"
+        }
+        for o in orders ?? [] key o.id {
+          tr {
+            td {
+              column {
+                text orderNumber(o.id) bold
+                text dateText(o.createdAt) small muted
+              }
+            }
+            td {
+              column {
+                text o.name
+                text o.email small muted
+                text o.address small muted
+              }
+            }
+            td {
+              column {
+                for l in o.lines {
+                  text `${l.qty} × ${l.name}` small
+                }
+              }
+            }
+            td money(o.total)
+            td {
+              select o.status options=["Paid", "Shipped", "Delivered", "Cancelled"] label="Status" class="status-select hide-label" -> setStatus(o.id, o.status)
+            }
+          }
+        }
+      }
+    }
+    modal editing gap=3 class="editor" {
+      text editId == "" ? "New product" : "Edit product" bold large
+      form gap=3 -> save() {
+        input name label="Name" placeholder="Product name" required
+        row gap=3 class="field-row" {
+          input category label="Category" placeholder="Kitchen" required
+          select image options=pictures label="Picture"
+        }
+        row gap=3 class="field-row" {
+          input price label="Price (USD)" placeholder="0.00" required
+          input stock type=number label="Stock" placeholder="0" required
+        }
+        textarea description label="Description" placeholder="What makes it good?" rows=3
+        if error != "" {
+          text error class="alert" role="alert"
+        }
+        row gap=2 justify=end {
+          button "Cancel" -> editing = false
+          button saving ? "Saving..." : "Save product" primary disabled=saving
+        }
+      }
+    }
+  }
+}

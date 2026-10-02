@@ -1,0 +1,12 @@
+---
+description: How to write and change ArtScript (.art) code in this project
+globs: **/*.art
+alwaysApply: false
+---
+
+This project is written in ArtScript. Before writing `.art` code, read `ARTSCRIPT.md` (the whole language, ~3K tokens); to only change existing code, `ARTSCRIPT-EDIT.md` (~800 tokens) is enough.
+
+- After every change run `npx art check --ai` and fix what it reports (each error has `expected` and `fixes`).
+- Read `npx art context <Component>` instead of whole files; prefer a small `art patch` to rewriting files.
+- Write `test "..." { }` blocks for the main flows and run `npx art test`.
+- Expressions are JavaScript; only the structure (`page`, `component`, `model`, `api`, `state`, `data`, `fn`, the view) is ArtScript's own.

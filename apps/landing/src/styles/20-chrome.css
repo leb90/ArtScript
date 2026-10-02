@@ -1,0 +1,49 @@
+/* Sticky navigation and footer (the shared layout). */
+.nav { position: sticky; top: 0; z-index: 50; height: var(--nav-h); border-bottom: 1px solid transparent; transition: background-color .3s ease, border-color .3s ease, box-shadow .3s ease; }
+.nav.scrolled { background: color-mix(in srgb, var(--bg) 82%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); border-bottom-color: var(--line); }
+.nav-inner { height: 100%; gap: 16px; }
+
+.brand { display: inline-flex; align-items: center; gap: 10px; font-family: var(--serif); font-size: 1.5rem; letter-spacing: -.01em; color: var(--ink); text-decoration: none; }
+/* The mark: a coffee bean drawn with two gradients and a crease. */
+.brand-mark { position: relative; width: 22px; height: 30px; border-radius: 50%; background: var(--brand); transform: rotate(28deg); transition: transform .5s var(--ease); }
+.brand-mark::after { content: ""; position: absolute; left: 50%; top: 8%; bottom: 8%; width: 7px; margin-left: -5px; border-right: 2px solid var(--bg); border-radius: 50%; }
+.brand:hover .brand-mark { transform: rotate(208deg); }
+
+.nav-links { gap: 4px; }
+.nav-links a { position: relative; padding: 8px 14px; border-radius: 999px; font-size: .95rem; font-weight: 500; color: var(--ink-soft); text-decoration: none; transition: color .2s ease; }
+.nav-links a::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 4px; height: 1.5px; background: var(--brand); transform: scaleX(0); transform-origin: left; transition: transform .3s var(--ease); }
+.nav-links a:hover { color: var(--ink); }
+.nav-links a:hover::after { transform: scaleX(1); }
+
+.to-light { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .to-light { display: inline-flex; }
+  :root:not([data-theme="light"]) .to-dark { display: none; }
+}
+:root[data-theme="dark"] .to-light { display: inline-flex; }
+:root[data-theme="dark"] .to-dark { display: none; }
+.theme-btn:hover { transform: rotate(18deg); }
+.menu-btn { display: none; }
+
+@media (max-width: 899px) {
+  .menu-btn { display: inline-grid; }
+  .nav-links { position: absolute; top: calc(100% + 8px); left: 12px; right: 12px; flex-direction: column; align-items: stretch; gap: 0; padding: 8px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow-lg); opacity: 0; visibility: hidden; transform: translateY(-8px) scale(.98); transform-origin: top; transition: opacity .2s ease, transform .3s var(--ease), visibility 0s .3s; }
+  .nav-links.open { opacity: 1; visibility: visible; transform: none; transition: opacity .2s ease, transform .3s var(--ease), visibility 0s; }
+  .nav-links a { padding: 13px 16px; font-size: 1.05rem; color: var(--ink); border-radius: 12px; }
+  .nav-links a::after { display: none; }
+  .nav-links a:hover { background: var(--bg-tint); }
+}
+@media (max-width: 360px) {
+  .nav-cta { display: none; }
+}
+
+.footer { padding: clamp(48px, 6vw, 80px) 0 32px; border-top: 1px solid var(--line); background: var(--bg); gap: 48px; font-size: .95rem; }
+.footer-grid { gap: 40px; }
+.footer-about .p { max-width: 34ch; }
+.footer-head { font-size: .75rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
+.footer-grid a:not(.brand) { align-self: flex-start; color: var(--ink-soft); text-decoration: none; background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; transition: color .2s ease, background-size .3s var(--ease); }
+.footer-grid a:not(.brand):hover { color: var(--ink); background-size: 100% 1px; }
+.footer-base { padding-top: 24px; border-top: 1px solid var(--line); font-size: .875rem; }
+@media (min-width: 768px) {
+  .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr; }
+}

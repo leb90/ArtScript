@@ -1,0 +1,44 @@
+// Previous / next buttons for a server-paged table. `page` (0-based) is bound to the parent's state.
+component Pager(page: Number, size: Number, total: Number) {
+  computed pages = Math.max(1, Math.ceil(total / size))
+
+  row class="pager" justify=between gap=3 wrap {
+    text total == 0 ? "No results" : `${page * size + 1}–${Math.min(total, (page + 1) * size)} of ${formatNumber(total)}` small muted
+    row gap=2 {
+      button "Previous" small disabled=(page <= 0) -> page = page - 1
+      text `Page ${page + 1} of ${pages}` small muted
+      button "Next" small disabled=(page >= pages - 1) -> page = page + 1
+    }
+  }
+}
+
+// Placeholder rows while a table loads.
+component TableSkeleton(rows: Number = 6) {
+  column class="table-skeleton" gap=3 {
+    for i in Array.from({ length: rows }, (_, n) => n) {
+      row class="skeleton row-line"
+    }
+  }
+}
+
+component Empty(heading: String, hint: String = "") {
+  column class="empty-rows" gap=1 align=center {
+    icon "package" size=28 muted
+    text heading bold
+    if hint != "" {
+      text hint small muted
+    }
+  }
+}
+
+// A sortable column header: `field` is the model's field, `sort` the parent's state ("-total").
+component SortHeader(label: String, field: String, sort: String, onSort: Fn) {
+  button class=(sort == field || sort == `-${field}` ? "sort active" : "sort") -> onSort(sort == field ? `-${field}` : field) {
+    text label
+    if sort == field {
+      icon "chevron-up" size=14 label="ascending"
+    } else if sort == `-${field}` {
+      icon "chevron-down" size=14 label="descending"
+    }
+  }
+}

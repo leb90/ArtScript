@@ -1,0 +1,115 @@
+// `art test` runs these in a simulated browser against a real server; each starts from an empty
+// database. The cart link reads "Cart" followed by its count ("Cart3").
+test "adding to the cart updates the count and the total" {
+  open "/"
+  see "The shelves are empty"
+  click "Load sample products"
+  see "Canvas Weekender Bag"
+  click "Add to cart" 0
+  click "Add to cart" 1
+  click "Add to cart" 1
+  link "Cart3"
+  see "Subtotal (3 items)"
+  see "$191.00"
+  click "+" 0
+  see "Subtotal (4 items)"
+  see "$286.00"
+  click "Remove" 1
+  see "Subtotal (2 items)"
+  see "$190.00"
+  notSee "Ceramic Pour-Over Set"
+}
+
+test "sign up and checkout create an order and take the stock" {
+  open "/"
+  click "Load sample products"
+  see "Insulated Water Bottle"
+  click "Add to cart" 2
+  link "Cart1"
+  see "$32.00"
+  click "Log in to checkout"
+  link "Create an account"
+  fill "Your name" "Ada Lovelace"
+  fill "you@example.com" "ada@example.com"
+  fill "At least 8 characters" "correct-horse-9"
+  click "Sign up"
+  see "Shipping details"
+  see "1 × Insulated Water Bottle"
+  fill "Street, city, postal code, country" "12 Analytical Row, London W1"
+  click "Place order"
+  see "Your order is confirmed"
+  see "Total $32.00"
+  see "Ships to Ada Lovelace, 12 Analytical Row, London W1"
+  link "Cart0"
+  see "Your cart is empty"
+  link "Shop"
+  link "Insulated Water Bottle"
+  see "Only 2 left"
+  link "Admin"
+  click "Orders"
+  see "ada@example.com"
+}
+
+test "a sold-out product can't be added, and the cart stops at the stock" {
+  open "/"
+  click "Load sample products"
+  see "Soy Wax Candle"
+  see "Sold out"
+  link "Soy Wax Candle"
+  see "Hand-poured soy wax"
+  see "Sold out"
+  notSee "Add to cart"
+  link "All products"
+  link "Insulated Water Bottle"
+  see "Only 3 left"
+  click "+"
+  click "+"
+  click "Add to cart"
+  see "3 in your cart"
+  click "Add to cart"
+  see "3 in your cart"
+  link "View cart"
+  see "Subtotal (3 items)"
+  click "+" 0
+  see "Subtotal (3 items)"
+}
+
+test "checkout needs an account, and orders are private" {
+  open "/checkout"
+  see "Welcome back"
+  open "/orders"
+  see "Welcome back"
+  open "/admin"
+  see "Welcome back"
+}
+
+test "the first account is the admin and manages products" {
+  open "/signup"
+  fill "Your name" "Ada Lovelace"
+  fill "you@example.com" "ada@example.com"
+  fill "At least 8 characters" "correct-horse-9"
+  click "Sign up"
+  see "The shelves are empty"
+  link "Admin"
+  see "No products yet"
+  click "New product" 0
+  fill "Product name" "Brass Pen"
+  fill "Kitchen" "Workspace"
+  fill "0.00" "36.50"
+  fill "0" "4"
+  click "Save product"
+  see "$36.50"
+  click "Edit"
+  fill "0.00" "forty"
+  click "Save product"
+  see "Enter a price like 24 or 24.50."
+  fill "0.00" "40"
+  click "Save product"
+  see "$40.00"
+  link "Shop"
+  see "Brass Pen"
+  link "Admin"
+  click "Delete" 0
+  click "Delete" 1
+  see "No products yet"
+}

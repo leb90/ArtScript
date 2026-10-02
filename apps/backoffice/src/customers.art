@@ -1,0 +1,202 @@
+page Customers "/customers" layout Shell requires login {
+  state search = ""
+  state page = 0
+  state editing = false
+  state editId = ""
+  state name = ""
+  state email = ""
+  state company = ""
+  state country = "United States"
+  state errors: Any = {}
+  state saving = false
+  state asking = false
+  state doomed: Customer? = null
+  data customers = api.customers.list({ search, sort: "name", limit: 10, offset: page * 10 })
+  data total = api.customers.count({ search })
+  fn startNew() {
+    editId = ""
+    name = ""
+    email = ""
+    company = ""
+    country = "United States"
+    errors = {}
+    editing = true
+  }
+  fn startEdit(c) {
+    editId = c.id
+    name = c.name
+    email = c.email
+    company = c.company ?? ""
+    country = c.country
+    errors = {}
+    editing = true
+  }
+  fn validate() {
+    let found = {}
+    if name.trim().length < 2 {
+      found.name = "Enter the customer's name (at least 2 characters)"
+    }
+    if !isEmail(email) {
+      found.email = "Enter a valid email address, like ana@company.com"
+    }
+    if company.length > 80 {
+      found.company = "Keep the company under 80 characters"
+    }
+    errors = found
+    return Object.keys(found).length == 0
+  }
+  fn save() {
+    if !validate() {
+      return
+    }
+    saving = true
+    let fields = { name: name.trim(), email: email.trim(), company: company.trim() == "" ? null : company.trim(), country }
+    try {
+      if editId == "" {
+        await api.customers.create({ ...fields, createdAt: Date.now() })
+        notify("Customer added", "success")
+      } else {
+        await api.customers.update(editId, fields)
+        await server.renameInOrders(editId)
+        notify("Customer saved", "success")
+      }
+      editing = false
+    } catch (e) {
+      let field = e.details?.field ?? "form"
+      let found = {}
+      found[field] = e.status == 409 ? "Another customer already uses this email" : e.message
+      errors = found
+    } finally {
+      saving = false
+    }
+  }
+  fn cancel(e) {
+    // A button inside a form submits it: stop that, only close.
+    e.preventDefault()
+    editing = false
+  }
+  fn askRemove(c) {
+    doomed = c
+    asking = true
+  }
+  fn remove() {
+    if !doomed {
+      return
+    }
+    try {
+      await api.customers.remove(doomed.id)
+      notify(`${doomed.name} was deleted`, "success")
+      if customers.length == 1 && page > 0 {
+        page = page - 1
+      }
+    } catch (e) {
+      notify(e.message, "danger")
+    }
+    asking = false
+  }
+
+  meta title="Customers · Northwind Backoffice"
+  row class="page-head" justify=between gap=3 wrap {
+    column {
+      title "Customers"
+      text `${formatNumber(total)} ${total == 1 ? "customer" : "customers"}` muted
+    }
+    button "New customer" primary -> startNew()
+  }
+  card class="table-card" gap=0 pad=0 {
+    row class="toolbar" gap=3 wrap {
+      row class="search" gap=2 {
+        icon "search" size=16 muted
+        input search placeholder="Search customers" on:input=(page = 0)
+      }
+    }
+    if customers.error {
+      column class="empty-rows" gap=2 align=center {
+        text customers.error danger
+        button "Try again" small -> customers.reload()
+      }
+    } else if customers.loading {
+      TableSkeleton rows=10
+    } else if customers.length == 0 {
+      Empty heading="No customers found" hint="Add one with “New customer”."
+    } else {
+      table class="data customers" {
+        tr {
+          th "Customer"
+          th "Company" class="wide-only"
+          th "Country" class="wide-only"
+          th "Since"
+          th ""
+        }
+        for c in customers key c.id {
+          tr {
+            td {
+              row gap=3 {
+                text initials(c.name) class="avatar"
+                column {
+                  text c.name bold
+                  text c.email small muted
+                }
+              }
+            }
+            td c.company ?? "—" class="wide-only"
+            td c.country class="wide-only" muted
+            td formatDate(c.createdAt) muted
+            td class="actions" {
+              row gap=1 justify=end {
+                button class="icon-btn" -> startEdit(c) {
+                  icon "edit" size=16 label=`Edit ${c.name}`
+                }
+                button class="icon-btn danger" -> askRemove(c) {
+                  icon "trash" size=16 label=`Delete ${c.name}`
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    Pager page=page size=10 total=total
+  }
+  modal editing gap=4 class="sheet" {
+    title editId == "" ? "New customer" : "Edit customer"
+    form gap=3 -> save() {
+      column gap=1 {
+        input name label="Name" placeholder="Full name" class=(errors.name ? "invalid" : "")
+        if errors.name {
+          text errors.name danger small role="alert"
+        }
+      }
+      column gap=1 {
+        input email label="Email" placeholder="name@company.com" class=(errors.email ? "invalid" : "")
+        if errors.email {
+          text errors.email danger small role="alert"
+        }
+      }
+      column gap=1 {
+        input company label="Company (optional)" placeholder="Company" class=(errors.company ? "invalid" : "")
+        if errors.company {
+          text errors.company danger small role="alert"
+        }
+      }
+      select country options=COUNTRIES label="Country"
+      if errors.form {
+        text errors.form danger small role="alert"
+      }
+      row gap=2 justify=end {
+        button "Cancel" on:click=cancel(event)
+        button saving ? "Saving…" : "Save customer" primary disabled=saving
+      }
+    }
+  }
+  modal asking gap=4 class="sheet narrow" {
+    if doomed {
+      title "Delete customer?"
+      text `${doomed.name} and all of their orders will be deleted. This can't be undone.` muted
+      row gap=2 justify=end {
+        button "Cancel" -> asking = false
+        button "Delete customer" danger -> remove()
+      }
+    }
+  }
+}

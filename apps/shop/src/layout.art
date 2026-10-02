@@ -1,0 +1,84 @@
+use "./lib/cart.ts" { cartStore, cartCount, cartTotal }
+
+use "./lib/format.ts" { money, orderNumber, dateText }
+
+layout Main {
+  data me = auth.me()
+  state cart: CartItem[] = cartStore.get()
+  computed count = cartCount(cart)
+  mount {
+    let off = cartStore.subscribe(items => cart = items)
+    // The page shell has no favicon of its own.
+    if !document.querySelector("link[rel=icon]") {
+      let icon = document.createElement("link")
+      icon.rel = "icon"
+      icon.href = "/favicon.svg"
+      document.head.appendChild(icon)
+    }
+    cleanup {
+      off()
+    }
+  }
+  fn logout() {
+    await auth.logout()
+    notify("You're logged out", "info")
+    navigate("/")
+  }
+
+  column class="shell" {
+    row class="topbar" role="banner" {
+      row class="topbar-inner" justify=between gap=3 {
+        link to="/" class="brand" {
+          icon "shopping-bag" size=22
+          text "Fernwood" bold
+        }
+        row class="nav" gap=1 role="navigation" {
+          link "Shop" to="/" class="nav-link"
+          if me {
+            link "My orders" to="/orders" class="nav-link"
+          }
+          if me?.role == "admin" {
+            link "Admin" to="/admin" class="nav-link"
+          }
+          if me {
+            button "Log out" class="nav-link ghost" -> logout()
+          } else {
+            link "Log in" to="/login" class="nav-link"
+          }
+        }
+        link to="/cart" class="cart-link" {
+          icon "shopping-cart" size=18 label="Cart"
+          text "Cart" class="cart-word"
+          for n in [count] key n {
+            text `${n}` class=(n > 0 ? "cart-count bump" : "cart-count zero")
+          }
+        }
+      }
+    }
+    column class="page" role="main" {
+      slot
+    }
+    row class="footer" justify=between wrap gap=2 {
+      text "Fernwood · Goods for slow days" muted small
+      text "A reference app built with ArtScript" muted small
+    }
+  }
+}
+
+component Price(value: Number) {
+  text money(value) class="price"
+}
+
+component ProductArt(src: String, name: String) {
+  image src != "" ? src : "/products/placeholder.svg" alt=name class="art"
+}
+
+page NotFound "*" {
+  meta title="Page not found · Fernwood"
+  column gap=3 align=center class="empty fade-in" {
+    icon "help" size=40 muted
+    title "We couldn't find that page"
+    text "The link may be old, or the product may be gone." muted
+    link "Back to the shop" to="/" class="btn-link"
+  }
+}

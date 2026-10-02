@@ -1,0 +1,143 @@
+// One headline number with its change against the previous period.
+component Kpi(label: String, value: String, change: Any, period: String, index: Number = 0) {
+  card class="kpi" gap=2 style=`--i: ${index}` {
+    row justify=between gap=2 {
+      text label small muted
+      slot
+    }
+    text value class="kpi-value"
+    row gap=2 class="kpi-foot" {
+      if change == null {
+        text "No earlier data to compare" small muted
+      } else {
+        row gap=1 class=(change >= 0 ? "delta up" : "delta down") {
+          if change >= 0 {
+            icon "arrow-up" size=14
+          } else {
+            icon "arrow-down" size=14
+          }
+          text `${Math.abs(change).toFixed(1)}%` small bold
+        }
+        text `vs prior ${period}` small muted
+      }
+    }
+  }
+}
+
+component ChartCard(heading: String, hint: String) {
+  card class="chart-card" gap=3 {
+    column {
+      text heading bold
+      text hint small muted
+    }
+    slot
+  }
+}
+
+page Dashboard "/" layout Shell requires login {
+  state days = 30
+  state seeding = false
+  data stats = server.stats(days)
+  computed period = `${days} days`
+  computed statusTotal = stats ? stats.statuses.reduce((sum, s) => sum + s.orders, 0) : 0
+  fn loadSample() {
+    seeding = true
+    try {
+      let made = await server.seed()
+      notify(`Loaded ${made.orders} orders, ${made.customers} customers and ${made.products} products`, "success")
+    } catch (e) {
+      notify(e.message, "danger")
+    } finally {
+      seeding = false
+      stats.reload()
+    }
+  }
+
+  meta title="Dashboard · Northwind Backoffice"
+  row class="page-head" justify=between gap=3 wrap {
+    column {
+      title "Dashboard"
+      text `How the store did over the last ${period}.` muted
+    }
+    radio days class="segmented" label="Period" options=[{ value: 7, label: "7 days" }, { value: 30, label: "30 days" }, { value: 90, label: "90 days" }]
+  }
+  if stats.error {
+    card class="notice" gap=2 {
+      text "The dashboard couldn't load" bold
+      text stats.error muted
+      button "Try again" small -> stats.reload()
+    }
+  } else if !stats {
+    grid class="kpis" cols=2 xl:cols=4 gap=3 md:gap=4 {
+      for i in [0, 1, 2, 3] {
+        card class="kpi skeleton-card" gap=3 {
+          row class="skeleton w-40"
+          row class="skeleton w-60 tall"
+          row class="skeleton w-80"
+        }
+      }
+    }
+    card class="chart-card skeleton-card" gap=3 {
+      row class="skeleton w-40"
+      row class="skeleton block"
+    }
+  } else if stats.empty {
+    card class="empty" gap=3 align=center {
+      row class="empty-icon" {
+        icon "chart" size=28
+      }
+      text "No data yet" large bold
+      text "Load a sample store (40 customers, 12 products, 300 orders over the last 90 days) to see the dashboard at work." muted
+      button seeding ? "Loading sample data…" : "Load sample data" primary disabled=seeding -> loadSample()
+    }
+  } else {
+    grid class="kpis" cols=2 xl:cols=4 gap=3 md:gap=4 {
+      Kpi label="Revenue" value=formatMoney(stats.revenue) change=stats.revenueChange period=period index=0 {
+        icon "dollar" size=16 muted
+      }
+      Kpi label="Orders" value=formatNumber(stats.orders) change=stats.ordersChange period=period index=1 {
+        icon "shopping-cart" size=16 muted
+      }
+      Kpi label="New customers" value=formatNumber(stats.customers) change=stats.customersChange period=period index=2 {
+        icon "users" size=16 muted
+      }
+      Kpi label="Average order value" value=formatMoney(stats.average) change=stats.averageChange period=period index=3 {
+        icon "tag" size=16 muted
+      }
+    }
+    ChartCard heading="Revenue" hint=`Per day, last ${period} (cancelled orders excluded)` {
+      column class="chart-tall" {
+        ChartView kind="line" name="Revenue" currency=true labels=stats.points.map(p => formatDay(p.t)) values=stats.points.map(p => p.revenue)
+      }
+    }
+    grid cols=1 lg:cols=2 gap=4 {
+      ChartCard heading="Orders by category" hint=`Orders placed in the last ${period}` {
+        column class="chart-mid" {
+          ChartView kind="bar" name="Orders" labels=stats.categories.map(c => c.name) values=stats.categories.map(c => c.orders)
+        }
+      }
+      ChartCard heading="Orders by status" hint=`Where the last ${period} of orders stand` {
+        row class="donut" gap=6 {
+          column class="chart-donut" {
+            ChartView kind="doughnut" name="Orders" colors=stats.statuses.map(s => `--status-${s.name}`) labels=stats.statuses.map(s => statusLabel(s.name)) values=stats.statuses.map(s => s.orders)
+            column class="donut-total" align=center {
+              text formatNumber(statusTotal) large bold
+              text "orders" small muted
+            }
+          }
+          column class="legend" gap=2 {
+            for s in stats.statuses key s.name {
+              row gap=2 justify=between {
+                row gap=2 {
+                  row class=`dot s-${s.name}`
+                  text statusLabel(s.name) small
+                }
+                text `${formatNumber(s.orders)} · ${statusTotal == 0 ? 0 : Math.round(s.orders / statusTotal * 100)}%` small muted
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,162 @@
+component AuthShell(heading: String, hint: String) {
+  column class="auth fade-in" gap=5 {
+    column gap=1 align=center {
+      icon "shopping-bag" size=28 primary
+      title heading
+      text hint muted
+    }
+    card gap=4 class="auth-card" {
+      slot
+    }
+  }
+}
+
+page Login "/login" {
+  state email = ""
+  state password = ""
+  state error = ""
+  state busy = false
+  computed next = query.next && query.next.startsWith("/") && !query.next.startsWith("//") ? query.next : "/"
+  fn submit() {
+    error = ""
+    busy = true
+    try {
+      await auth.login(email, password)
+      notify("Welcome back", "success")
+      navigate(next)
+    } catch (e) {
+      error = e.status == 401 ? "Wrong email or password." : e.message
+    } finally {
+      busy = false
+    }
+  }
+
+  meta title="Log in · Fernwood"
+  AuthShell heading="Welcome back" hint="Log in to check out and see your orders." {
+    form gap=3 -> submit() {
+      input email type=email label="Email" placeholder="you@example.com" required
+      input password type=password label="Password" placeholder="Your password" required
+      if error != "" {
+        text error class="alert" role="alert"
+      }
+      button busy ? "Logging in..." : "Log in" primary class="a-primary big" disabled=busy
+    }
+    row gap=1 justify=center {
+      text "New here?" muted small
+      link "Create an account" to=`/signup?next=${encodeURIComponent(next)}` class="small-link"
+    }
+  }
+}
+
+page Signup "/signup" {
+  state name = ""
+  state email = ""
+  state password = ""
+  state error = ""
+  state busy = false
+  computed next = query.next && query.next.startsWith("/") && !query.next.startsWith("//") ? query.next : "/"
+  fn submit() {
+    error = ""
+    busy = true
+    try {
+      await auth.signup({ name, email, password })
+      notify("Your account is ready", "success")
+      navigate(next)
+    } catch (e) {
+      if e.status == 409 {
+        error = "That email already has an account. Log in instead."
+      } else if e.details?.field == "password" {
+        error = "Use at least 8 characters for your password."
+      } else if e.details?.field == "email" {
+        error = "Enter a valid email address."
+      } else {
+        error = e.message
+      }
+    } finally {
+      busy = false
+    }
+  }
+
+  meta title="Create an account · Fernwood"
+  AuthShell heading="Create your account" hint="It takes a few seconds, and your cart comes with you." {
+    form gap=3 -> submit() {
+      input name label="Name" placeholder="Your name" required
+      input email type=email label="Email" placeholder="you@example.com" required
+      input password type=password label="Password" placeholder="At least 8 characters" required
+      if error != "" {
+        text error class="alert" role="alert"
+      }
+      button busy ? "Creating account..." : "Sign up" primary class="a-primary big" disabled=busy
+    }
+    row gap=1 justify=center {
+      text "Already have an account?" muted small
+      link "Log in" to=`/login?next=${encodeURIComponent(next)}` class="small-link"
+    }
+  }
+}
+
+component StatusBadge(status: String) {
+  if status == "Cancelled" {
+    badge status danger
+  } else if status == "Paid" {
+    badge status primary
+  } else {
+    badge status success
+  }
+}
+
+page Orders "/orders" requires login {
+  data orders = server.myOrders()
+
+  meta title="My orders · Fernwood"
+  column gap=5 class="fade-in" {
+    title "My orders" class="page-title"
+    if query.placed {
+      row gap=3 class="banner" role="status" {
+        icon "check" size=20 success
+        column {
+          text "Thank you! Your order is confirmed." bold
+          text `Order ${orderNumber(query.placed)} is on its way to being packed.` small muted
+        }
+      }
+    }
+    if orders.loading {
+      row justify=center pad=8 {
+        spinner
+      }
+    } else if (orders ?? []).length == 0 {
+      column gap=3 align=center class="empty" {
+        icon "package" size=40 muted
+        text "No orders yet" bold large
+        text "When you buy something, it shows up here." muted
+        link "Browse products" to="/" class="btn-link"
+      }
+    } else {
+      column gap=4 {
+        for o in orders ?? [] key o.id {
+          card gap=3 class="order" {
+            row justify=between gap=2 wrap {
+              column {
+                text `Order ${orderNumber(o.id)}` bold
+                text dateText(o.createdAt) small muted
+              }
+              StatusBadge status=o.status
+            }
+            divider
+            for l in o.lines {
+              row justify=between gap=3 {
+                text `${l.qty} × ${l.name}`
+                text money(l.price * l.qty) muted
+              }
+            }
+            divider
+            row justify=between gap=3 wrap {
+              text `Ships to ${o.name}, ${o.address}` small muted class="a-small a-muted ship-to"
+              text `Total ${money(o.total)}` class="price"
+            }
+          }
+        }
+      }
+    }
+  }
+}

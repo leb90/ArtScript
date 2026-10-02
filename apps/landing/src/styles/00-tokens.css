@@ -1,0 +1,53 @@
+/* Brisa design tokens. light-dark() follows `color-scheme`, which follows ArtScript's setTheme()
+   (data-theme on <html>) or, in "auto", the system preference. */
+:root {
+  color-scheme: light dark;
+
+  --bg: light-dark(#f7f0e6, #15100c);
+  --bg-tint: light-dark(#efe4d3, #1c1510);
+  --surface: light-dark(#fffbf5, #231a14);
+  --ink: light-dark(#2b1b12, #f4eadd);
+  --ink-soft: light-dark(#6a5446, #bba896);
+  --line: light-dark(rgba(43, 27, 18, .12), rgba(244, 234, 221, .12));
+  --line-strong: light-dark(rgba(43, 27, 18, .26), rgba(244, 234, 221, .28));
+  --brand: light-dark(#ad4a20, #ea9560);
+  --brand-hover: light-dark(#933c17, #f2a877);
+  --on-brand: light-dark(#fff8f0, #1b110b);
+  --brand-wash: light-dark(rgba(173, 74, 32, .1), rgba(234, 149, 96, .14));
+  --leaf: light-dark(#476545, #a5c39f);
+  --leaf-wash: light-dark(rgba(71, 101, 69, .12), rgba(165, 195, 159, .14));
+  --gold: light-dark(#c98a1b, #ecb960);
+  --danger: light-dark(#b3261e, #ffb4a2);
+  --shadow-sm: 0 1px 2px light-dark(rgba(60, 30, 10, .06), rgba(0, 0, 0, .3)), 0 4px 12px light-dark(rgba(60, 30, 10, .05), rgba(0, 0, 0, .25));
+  --shadow-lg: 0 2px 4px light-dark(rgba(60, 30, 10, .05), rgba(0, 0, 0, .3)), 0 18px 40px -12px light-dark(rgba(60, 30, 10, .22), rgba(0, 0, 0, .6));
+
+  /* The espresso panels (featured plan, sign-up) are dark in both themes. */
+  --roast: light-dark(#2b1b12, #2c2018);
+  --roast-ink: #f7eee2;
+  --roast-soft: #cdb9a6;
+  --roast-line: rgba(247, 238, 226, .16);
+  --roast-brand: #ea9560;
+
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", P052, "URW Palladio L", Georgia, serif;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --nav-h: 68px;
+}
+
+/* ArtScript's own theme variables, mapped to the palette. `:root:root` because the runtime resets
+   them for dark mode with `:root:not([data-theme=light])`, which would beat a plain `:root`. */
+:root:root {
+  --a-bg: var(--bg);
+  --a-fg: var(--ink);
+  --a-surface: var(--surface);
+  --a-border: var(--line);
+  --a-input: var(--line-strong);
+  --a-muted: var(--ink-soft);
+  --a-primary: var(--brand);
+  --a-danger: var(--danger);
+  --a-radius: 12px;
+  --a-font: var(--sans);
+}
+
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }

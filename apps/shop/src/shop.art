@@ -1,0 +1,181 @@
+component ProductCard(p: Product) {
+  fn add() {
+    if cartStore.add(p) > 0 {
+      notify(`${p.name} added to your cart`, "success")
+    } else {
+      notify(`You already have all ${p.stock} in your cart`, "info")
+    }
+  }
+
+  card class="product" pad=0 {
+    link to=`/products/${p.id}` class="product-media" {
+      ProductArt src=p.image name=p.name
+      if p.stock <= 0 {
+        text "Sold out" class="ribbon"
+      }
+    }
+    column gap=2 class="product-body" {
+      text p.category class="eyebrow"
+      link p.name to=`/products/${p.id}` class="product-name"
+      row justify=between gap=2 class="product-foot" {
+        Price value=p.price
+        if p.stock <= 0 {
+          button "Sold out" small disabled=true
+        } else {
+          button "Add to cart" small primary -> add()
+        }
+      }
+    }
+  }
+}
+
+page Home "/" {
+  state search = ""
+  state category = "All"
+  state seeding = false
+  data products = api.products.list({ search, where: category == "All" ? {} : { category }, sort: "name" })
+  data categories = server.categories()
+  data inStore = api.products.count()
+  fn loadSamples() {
+    seeding = true
+    try {
+      let n = await server.seed()
+      notify(n > 0 ? `${n} sample products added` : "The store already has products", n > 0 ? "success" : "info")
+    } catch (e) {
+      notify(e.message, "danger")
+    } finally {
+      seeding = false
+    }
+  }
+
+  meta title="Fernwood · Goods for slow days" description="A small shop of well-made things for home, desk and travel."
+  column gap=6 class="fade-in" {
+    column gap=2 class="hero" {
+      text "New season" class="eyebrow"
+      title "Well-made things for slow days" class="hero-title"
+      text "Small-batch goods for your home, desk and next trip. Free shipping on every order." muted
+    }
+    if inStore.loading || products.loading {
+      row justify=center pad=8 {
+        spinner
+      }
+    } else if inStore == 0 {
+      column gap=3 align=center class="empty" {
+        icon "package" size=40 muted
+        title "The shelves are empty"
+        text "Load a few sample products to see the shop in action." muted
+        button seeding ? "Loading..." : "Load sample products" primary disabled=seeding -> loadSamples()
+      }
+    } else {
+      row gap=3 wrap justify=between class="filters" {
+        row gap=2 class="search" {
+          icon "search" size=18 muted
+          input search placeholder="Search products" type=text on:keydown=(event.key == "Escape" ? search = "" : null)
+        }
+        tabs category options=["All", ...categories ?? []] label="Category" class="chips"
+      }
+      if products.length == 0 {
+        column gap=2 align=center class="empty" {
+          icon "search" size=32 muted
+          text "No products match your search" bold
+          button "Clear filters" small -> {
+            search = ""
+            category = "All"
+          }
+        }
+      } else {
+        grid cols=1 sm:cols=2 lg:cols=4 gap=5 class="catalog" {
+          for p in products key p.id {
+            ProductCard p=p
+          }
+        }
+      }
+    }
+  }
+}
+
+page ProductPage "/products/:id" {
+  data p = api.products.get(params.id)
+  state qty = 1
+  state cart: CartItem[] = cartStore.get()
+  computed inCart = cart.find(i => i.id == params.id)?.qty ?? 0
+  mount {
+    let off = cartStore.subscribe(items => cart = items)
+    cleanup {
+      off()
+    }
+  }
+  fn add() {
+    if !p {
+      return
+    }
+    let added = cartStore.add(p, qty)
+    if added > 0 {
+      notify(`${added} × ${p.name} added to your cart`, "success")
+      qty = 1
+    } else {
+      notify(`You already have all ${p.stock} in your cart`, "info")
+    }
+  }
+
+  meta title=(p ? `${p.name} · Fernwood` : "Fernwood")
+  column gap=4 class="fade-in" {
+    link to="/" class="back" {
+      icon "arrow-left" size=16
+      text "All products"
+    }
+    if p.loading {
+      row justify=center pad=8 {
+        spinner
+      }
+    } else if p {
+      grid cols=1 md:cols=2 gap=8 class="detail" {
+        column class="detail-media" {
+          ProductArt src=p.image name=p.name
+        }
+        column gap=4 {
+          column gap=1 {
+            text p.category class="eyebrow"
+            title p.name class="detail-title"
+          }
+          text money(p.price) class="price detail-price"
+          text p.description muted
+          if p.stock <= 0 {
+            badge "Sold out" danger
+          } else if p.stock <= 5 {
+            badge `Only ${p.stock} left` primary
+          } else {
+            badge "In stock" success
+          }
+          if p.stock > 0 {
+            row gap=3 wrap {
+              row class="stepper" {
+                button "−" class="step" disabled=(qty <= 1) -> qty--
+                text `${qty}` class="step-value"
+                button "+" class="step" disabled=(qty + inCart >= p.stock) -> qty++
+              }
+              button "Add to cart" primary class="a-primary big" disabled=(inCart >= p.stock) -> add()
+            }
+            if inCart > 0 {
+              row gap=2 {
+                icon "check" size=16 success
+                text `${inCart} in your cart` small muted
+                link "View cart" to="/cart" class="small-link"
+              }
+            }
+          }
+          row gap=2 class="perk" {
+            icon "truck" size=18 muted
+            text "Free shipping · 30-day returns" small muted
+          }
+        }
+      }
+    } else {
+      column gap=3 align=center class="empty" {
+        icon "package" size=40 muted
+        title "This product isn't available"
+        link "Back to the shop" to="/" class="btn-link"
+      }
+    }
+  }
+}

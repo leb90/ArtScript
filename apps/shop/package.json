@@ -1,0 +1,16 @@
+{
+  "name": "shop",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "art dev",
+    "start": "art dev",
+    "build": "art build",
+    "check": "art check"
+  },
+  "devDependencies": {
+    "@artscript/core": "^0.2.0",
+    "@happy-dom/global-registrator": "^20.14.5"
+  }
+}

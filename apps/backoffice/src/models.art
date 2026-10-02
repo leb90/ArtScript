@@ -1,0 +1,167 @@
+use "./lib/format.ts" { STATUSES, STATUS_OPTIONS, STATUS_FILTER, CATEGORIES, COUNTRIES, formatMoney, formatNumber, formatDate, formatDay, statusLabel, initials, isEmail }
+
+model User {
+  id: ID
+  name: String min=2 max=60
+  email: Email unique
+  password: String min=8
+  role: String = "user"
+}
+
+model Customer {
+  id: ID
+  name: String min=2 max=80
+  email: Email unique
+  company: String? max=80
+  country: String = "United States"
+  createdAt: Number = 0
+}
+
+model Product {
+  id: ID
+  name: String min=2 max=80 unique
+  category: String
+  price: Number min=0
+  stock: Number = 0 min=0
+}
+
+model Order {
+  id: ID
+  number: String unique
+  customer: Customer cascade
+  customerName: String
+  product: Product cascade
+  quantity: Number min=1
+  total: Number min=0
+  status: String = "pending"
+  createdAt: Number
+}
+
+api users: User
+
+api customers: Customer login
+
+api products: Product login
+
+api orders: Order login
+
+auth users
+
+// The dashboard's numbers for the last `days` days, compared with the `days` before them.
+server fn stats(days) {
+  if !me {
+    fail("Log in to see the dashboard", 401)
+  }
+  let span = [7, 30, 90].includes(days) ? days : 30
+  let DAY = 86400000
+  let now = Date.now()
+  let from = now - span * DAY
+  let before = from - span * DAY
+  let orders = db.orders.list()
+  let customers = db.customers.list()
+  let current = orders.filter(o => o.createdAt > from && o.createdAt <= now)
+  let previous = orders.filter(o => o.createdAt > before && o.createdAt <= from)
+  let kept = list => list.filter(o => o.status != "cancelled")
+  let revenue = list => kept(list).reduce((sum, o) => sum + o.total, 0)
+  let average = list => kept(list).length == 0 ? 0 : revenue(list) / kept(list).length
+  let joined = (a, b) => customers.filter(c => c.createdAt > a && c.createdAt <= b).length
+  let change = (value, old) => old == 0 ? null : (value - old) / old * 100
+  let points = Array.from({ length: span }, (_, i) => ({ t: from + (i + 1) * DAY, revenue: 0, orders: 0 }))
+  for o in kept(current) {
+    let p = points[Math.min(span - 1, Math.floor((o.createdAt - from) / DAY))]
+    p.revenue += o.total
+    p.orders++
+  }
+  return { empty: orders.length == 0 && customers.length == 0 && db.products.count() == 0, span, revenue: revenue(current), revenueChange: change(revenue(current), revenue(previous)), orders: current.length, ordersChange: change(current.length, previous.length), customers: joined(from, now), customersChange: change(joined(from, now), joined(before, from)), average: average(current), averageChange: change(average(current), average(previous)), points, categories: ["Audio", "Wearables", "Home office", "Accessories", "Lighting"].map(name => ({ name, orders: current.filter(o => o.product.category == name).length })), statuses: ["pending", "paid", "shipped", "delivered", "cancelled"].map(name => ({ name, orders: current.filter(o => o.status == name).length })) }
+}
+
+// Fills an empty workspace with 40 customers, 12 products and 300 orders over the last 90 days.
+server fn seed() {
+  if !me {
+    fail("Log in to load the sample data", 401)
+  }
+  if db.customers.count() > 0 || db.products.count() > 0 || db.orders.count() > 0 {
+    fail("Sample data can only be loaded into an empty workspace", 409)
+  }
+  let FIRST = ["Olivia", "Liam", "Emma", "Noah", "Ava", "Lucas", "Mia", "Mateo", "Sofia", "Ethan", "Isabella", "Leo", "Amelia", "Hugo", "Chloe", "Daniel", "Elena", "Oscar", "Nora", "Felix"]
+  let LAST = ["Bennett", "Garcia", "Kowalski", "Tanaka", "Okafor", "Silva", "Novak", "Fischer", "Rossi", "Dubois", "Haddad", "Larsen", "Mendoza", "Patel", "Walker", "Kim", "Costa", "Ivanov", "Moreau", "Nguyen"]
+  let COMPANIES = ["Brightline", "Fernwood Labs", "Halcyon", "Kestrel & Co", "Lumen Works", "Maple Street", "Northbeam", "Quarry", "Saltwater", "Tandem"]
+  let PLACES = ["United States", "United States", "United States", "Canada", "United Kingdom", "Germany", "France", "Spain", "Argentina", "Brazil", "Mexico", "Australia"]
+  // `weight`: how often the product sells, relative to the others.
+  let CATALOG = [{ name: "Aria Wireless Headphones", category: "Audio", price: 189, stock: 42, weight: 5 }, { name: "Pulse Earbuds", category: "Audio", price: 79, stock: 120, weight: 9 }, { name: "Studio Desk Speaker", category: "Audio", price: 129, stock: 35, weight: 4 }, { name: "Orbit Smartwatch", category: "Wearables", price: 249, stock: 28, weight: 4 }, { name: "Stride Fitness Band", category: "Wearables", price: 59, stock: 96, weight: 8 }, { name: "Ergo Laptop Stand", category: "Home office", price: 49, stock: 150, weight: 9 }, { name: "Summit Standing Desk", category: "Home office", price: 449, stock: 12, weight: 2 }, { name: "Glide Mechanical Keyboard", category: "Home office", price: 119, stock: 64, weight: 6 }, { name: "Trail Canvas Backpack", category: "Accessories", price: 89, stock: 58, weight: 5 }, { name: "Braided USB-C Cable", category: "Accessories", price: 19, stock: 320, weight: 12 }, { name: "Halo Desk Lamp", category: "Lighting", price: 69, stock: 74, weight: 6 }, { name: "Ember Ambient Light", category: "Lighting", price: 39, stock: 110, weight: 7 }]
+  let DAY = 86400000
+  let now = Date.now()
+  // A small seeded generator: the same store every time, only the dates move with `now`.
+  let rng = { seed: 20260101 }
+  let rand = () => { rng.seed = rng.seed * 48271 % 2147483647; return rng.seed / 2147483647 }
+  let pick = list => list[Math.floor(rand() * list.length)]
+  let statusAt = age => { let r = rand(); if r < 0.07 { return "cancelled" }; if age < 2 { return r < 0.6 ? "pending" : "paid" }; if age < 6 { return r < 0.2 ? "pending" : r < 0.55 ? "paid" : "shipped" }; if age < 14 { return r < 0.12 ? "paid" : r < 0.4 ? "shipped" : "delivered" }; return "delivered" }
+  let customers = []
+  let products = []
+  try {
+    for i in FIRST.concat(FIRST).keys() {
+      let first = FIRST[i % 20]
+      // The second round of first names takes other last names: no two customers share an email.
+      let last = LAST[(i * 7 + 3 + Math.floor(i / 20) * 5) % 20]
+      let company = pick(COMPANIES)
+      let domain = company.toLowerCase().split("").filter(ch => ch >= "a" && ch <= "z").join("")
+      // Half the customers predate the order history; the rest signed up along the way.
+      let age = i < 20 ? 90 + rand() * 60 : rand() * 90
+      customers.push(db.customers.create({ name: `${first} ${last}`, email: `${first}.${last}@${domain}.example`.toLowerCase(), company, country: pick(PLACES), createdAt: Math.round(now - age * DAY) }))
+    }
+    for p in CATALOG {
+      products.push(db.products.create({ name: p.name, category: p.category, price: p.price, stock: p.stock }))
+    }
+    let weights = CATALOG.map(p => p.weight).reduce((a, b) => a + b, 0)
+    let orders = []
+    while orders.length < 300 {
+      // Skewed towards recent days (a growing store), quieter on weekends.
+      let age = 90 * Math.pow(rand(), 1.35)
+      let weekday = new Date(now - age * DAY).getUTCDay()
+      if (weekday == 0 || weekday == 6) && rand() < 0.45 {
+        age = 90 * Math.pow(rand(), 1.35)
+      }
+      let createdAt = Math.round(now - age * DAY)
+      // Only customers that already existed at that moment can have ordered.
+      let customer = pick(customers.filter(c => c.createdAt <= createdAt))
+      let roll = rand() * weights
+      let at = 0
+      while at < CATALOG.length - 1 && roll >= CATALOG[at].weight {
+        roll -= CATALOG[at].weight
+        at++
+      }
+      let quantity = 1 + Math.floor(Math.pow(rand(), 2.2) * 4)
+      orders.push({ number: "", customer: customer.id, customerName: customer.name, product: products[at].id, quantity, total: CATALOG[at].price * quantity, status: statusAt(age), createdAt })
+    }
+    orders.sort((a, b) => a.createdAt - b.createdAt)
+    for o, i in orders {
+      db.orders.create({ ...o, number: `ORD-${1001 + i}` })
+    }
+  } catch (e) {
+    // A server fn is not a transaction: undo what was stored (orders go with their customer).
+    for c in customers {
+      db.customers.remove(c.id)
+    }
+    for p in products {
+      db.products.remove(p.id)
+    }
+    fail(`The sample data couldn't be loaded: ${e.message}`, 500)
+  }
+  return { customers: customers.length, products: products.length, orders: 300 }
+}
+
+// Orders keep the customer's name (the server searches text fields): follow a rename.
+server fn renameInOrders(customerId) {
+  if !me {
+    fail("Log in first", 401)
+  }
+  let customer = db.customers.get(customerId)
+  if !customer {
+    return 0
+  }
+  let stale = db.orders.list({ where: { customer: customerId } }).filter(o => o.customerName != customer.name)
+  for o in stale {
+    db.orders.update(o.id, { customerName: customer.name })
+  }
+  return stale.length
+}

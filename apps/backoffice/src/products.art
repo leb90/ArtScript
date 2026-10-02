@@ -1,0 +1,201 @@
+page Products "/products" layout Shell requires login {
+  state editing = false
+  state editId = ""
+  state name = ""
+  state category = "Audio"
+  state price = 0
+  state stock = 0
+  state errors: Any = {}
+  state saving = false
+  state asking = false
+  state doomed: Product? = null
+  data products = api.products.list({ sort: "name" })
+  ref priceInput
+  mount {
+    // `input` has no `step` prop: without this the browser rejects cents in a number field.
+    priceInput.step = "any"
+    priceInput.min = "0"
+  }
+  fn startNew() {
+    editId = ""
+    name = ""
+    category = "Audio"
+    price = 0
+    stock = 0
+    errors = {}
+    editing = true
+  }
+  fn startEdit(p) {
+    editId = p.id
+    name = p.name
+    category = p.category
+    price = p.price
+    stock = p.stock
+    errors = {}
+    editing = true
+  }
+  fn validate() {
+    let found = {}
+    if name.trim().length < 2 {
+      found.name = "Enter the product's name (at least 2 characters)"
+    }
+    if !(Number(price) > 0) {
+      found.price = "Enter a price above 0"
+    }
+    if !Number.isInteger(Number(stock)) || Number(stock) < 0 {
+      found.stock = "Stock is a whole number, 0 or more"
+    }
+    errors = found
+    return Object.keys(found).length == 0
+  }
+  fn save() {
+    if !validate() {
+      return
+    }
+    saving = true
+    let fields = { name: name.trim(), category, price: Number(price), stock: Number(stock) }
+    try {
+      if editId == "" {
+        await api.products.create(fields)
+        notify("Product added", "success")
+      } else {
+        await api.products.update(editId, fields)
+        notify("Product saved", "success")
+      }
+      editing = false
+    } catch (e) {
+      let field = e.details?.field ?? "form"
+      let found = {}
+      found[field] = e.status == 409 ? "Another product already has this name" : e.message
+      errors = found
+    } finally {
+      saving = false
+    }
+  }
+  fn cancel(e) {
+    // A button inside a form submits it: stop that, only close.
+    e.preventDefault()
+    editing = false
+  }
+  fn askRemove(p) {
+    doomed = p
+    asking = true
+  }
+  fn remove() {
+    if !doomed {
+      return
+    }
+    try {
+      await api.products.remove(doomed.id)
+      notify(`${doomed.name} was deleted`, "success")
+    } catch (e) {
+      notify(e.message, "danger")
+    }
+    asking = false
+  }
+
+  meta title="Products · Northwind Backoffice"
+  row class="page-head" justify=between gap=3 wrap {
+    column {
+      title "Products"
+      text `${formatNumber(products.length)} ${products.length == 1 ? "product" : "products"} in the catalog` muted
+    }
+    button "New product" primary -> startNew()
+  }
+  card class="table-card" gap=0 pad=0 {
+    if products.error {
+      column class="empty-rows" gap=2 align=center {
+        text products.error danger
+        button "Try again" small -> products.reload()
+      }
+    } else if products.loading {
+      TableSkeleton rows=8
+    } else if products.length == 0 {
+      Empty heading="No products yet" hint="Add one with “New product”."
+    } else {
+      table class="data products" {
+        tr {
+          th "Product"
+          th "Category"
+          th "Price" class="num"
+          th "Stock" class="num"
+          th ""
+        }
+        for p in products key p.id {
+          tr {
+            td p.name class="strong"
+            td {
+              badge p.category
+            }
+            td formatMoney(p.price) class="num"
+            td class="num" {
+              if p.stock == 0 {
+                badge "Out of stock" danger
+              } else if p.stock < 20 {
+                row gap=2 justify=end {
+                  badge "Low" class="low"
+                  text formatNumber(p.stock)
+                }
+              } else {
+                text formatNumber(p.stock)
+              }
+            }
+            td class="actions" {
+              row gap=1 justify=end {
+                button class="icon-btn" -> startEdit(p) {
+                  icon "edit" size=16 label=`Edit ${p.name}`
+                }
+                button class="icon-btn danger" -> askRemove(p) {
+                  icon "trash" size=16 label=`Delete ${p.name}`
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  modal editing gap=4 class="sheet" {
+    title editId == "" ? "New product" : "Edit product"
+    form gap=3 -> save() {
+      column gap=1 {
+        input name label="Name" placeholder="Product name" class=(errors.name ? "invalid" : "")
+        if errors.name {
+          text errors.name danger small role="alert"
+        }
+      }
+      select category options=CATEGORIES label="Category"
+      grid cols=2 gap=3 {
+        column gap=1 {
+          input price label="Price (USD)" placeholder="Price" type=number ref=priceInput class=(errors.price ? "invalid" : "")
+          if errors.price {
+            text errors.price danger small role="alert"
+          }
+        }
+        column gap=1 {
+          input stock label="Stock" placeholder="Units" type=number class=(errors.stock ? "invalid" : "")
+          if errors.stock {
+            text errors.stock danger small role="alert"
+          }
+        }
+      }
+      if errors.form {
+        text errors.form danger small role="alert"
+      }
+      row gap=2 justify=end {
+        button "Cancel" on:click=cancel(event)
+        button saving ? "Saving…" : "Save product" primary disabled=saving
+      }
+    }
+  }
+  modal asking gap=4 class="sheet narrow" {
+    if doomed {
+      title "Delete product?"
+      text `${doomed.name} and the orders that include it will be deleted. This can't be undone.` muted
+      row gap=2 justify=end {
+        button "Cancel" -> asking = false
+        button "Delete product" danger -> remove()
+      }
+    }
+  }
+}

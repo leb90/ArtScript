@@ -1,0 +1,142 @@
+page Orders "/orders" layout Shell requires login {
+  state search = ""
+  state status = "all"
+  state sort = "-createdAt"
+  state page = 0
+  state detail: Order? = null
+  state showing = false
+  computed where = status == "all" ? {} : { status }
+  data orders = api.orders.list({ where, search, sort, limit: 10, offset: page * 10 })
+  data total = api.orders.count({ where, search })
+  fn setStatus(order, next) {
+    try {
+      await api.orders.update(order.id, { status: next })
+      notify(`${order.number} is now ${next}`, "success")
+    } catch (e) {
+      notify(e.message, "danger")
+      orders.reload()
+    }
+  }
+  fn open(order) {
+    detail = order
+    showing = true
+  }
+
+  meta title="Orders · Northwind Backoffice"
+  row class="page-head" justify=between gap=3 wrap {
+    column {
+      title "Orders"
+      text `${formatNumber(total)} ${total == 1 ? "order" : "orders"} match` muted
+    }
+  }
+  card class="table-card" gap=0 pad=0 {
+    row class="toolbar" gap=3 wrap {
+      row class="search" gap=2 {
+        icon "search" size=16 muted
+        input search placeholder="Search order or customer" on:input=(page = 0)
+      }
+      select status options=STATUS_FILTER label="Status" class="filter" -> page = 0
+    }
+    if orders.error {
+      column class="empty-rows" gap=2 align=center {
+        text orders.error danger
+        button "Try again" small -> orders.reload()
+      }
+    } else if orders.loading {
+      TableSkeleton rows=10
+    } else if orders.length == 0 {
+      Empty heading="No orders found" hint="Try another search or status."
+    } else {
+      table class="data orders" {
+        tr {
+          th {
+            SortHeader label="Order" field="number" sort=sort onSort=(s => sort = s)
+          }
+          th {
+            SortHeader label="Customer" field="customerName" sort=sort onSort=(s => sort = s)
+          }
+          th "Product" class="wide-only"
+          th {
+            SortHeader label="Date" field="createdAt" sort=sort onSort=(s => sort = s)
+          }
+          th class="num" {
+            SortHeader label="Total" field="total" sort=sort onSort=(s => sort = s)
+          }
+          th {
+            SortHeader label="Status" field="status" sort=sort onSort=(s => sort = s)
+          }
+          th ""
+        }
+        for o in orders key o.id {
+          tr {
+            td {
+              button o.number class="link-btn" -> open(o)
+            }
+            td o.customerName
+            td o.product.name class="wide-only" muted
+            td formatDate(o.createdAt) muted
+            td formatMoney(o.total) class="num"
+            td {
+              select o.status options=STATUS_OPTIONS label="Status" class=`status-select s-${o.status}` -> setStatus(o, o.status)
+            }
+            td class="actions" {
+              button class="icon-btn" -> open(o) {
+                icon "eye" size=16 label=`View ${o.number}`
+              }
+            }
+          }
+        }
+      }
+    }
+    Pager page=page size=10 total=total
+  }
+  modal showing gap=4 class="sheet" {
+    if detail {
+      row justify=between gap=3 {
+        column {
+          text "Order" small muted
+          title detail.number
+        }
+        badge statusLabel(detail.status) class=`status s-${detail.status}`
+      }
+      grid class="facts" cols=1 sm:cols=2 gap=4 {
+        column {
+          text "Customer" small muted
+          text detail.customerName bold
+          text detail.customer.email small muted
+        }
+        column {
+          text "Placed" small muted
+          text formatDate(detail.createdAt) bold
+          text detail.customer.country small muted
+        }
+      }
+      table class="data lines" {
+        tr {
+          th "Product"
+          th "Qty" class="num"
+          th "Price" class="num"
+          th "Total" class="num"
+        }
+        tr {
+          td {
+            column {
+              text detail.product.name
+              text detail.product.category small muted
+            }
+          }
+          td `${detail.quantity}` class="num"
+          td formatMoney(detail.total / detail.quantity) class="num"
+          td formatMoney(detail.total) class="num"
+        }
+      }
+      row justify=between class="sum" {
+        text "Order total" muted
+        text formatMoney(detail.total) large bold
+      }
+      row justify=end {
+        button "Close" -> showing = false
+      }
+    }
+  }
+}

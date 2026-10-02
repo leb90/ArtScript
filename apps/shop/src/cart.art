@@ -1,0 +1,162 @@
+page Cart "/cart" {
+  data me = auth.me()
+  state cart: CartItem[] = cartStore.get()
+  computed count = cartCount(cart)
+  computed subtotal = cartTotal(cart)
+  mount {
+    let off = cartStore.subscribe(items => cart = items)
+    cleanup {
+      off()
+    }
+  }
+
+  meta title="Your cart · Fernwood"
+  column gap=5 class="fade-in" {
+    title "Your cart" class="page-title"
+    if cart.length == 0 {
+      column gap=3 align=center class="empty" {
+        icon "shopping-cart" size=40 muted
+        text "Your cart is empty" bold large
+        text "Find something you'll keep for years." muted
+        link "Browse products" to="/" class="btn-link"
+      }
+    } else {
+      grid cols=1 lg:cols=3 gap=6 class="cart-layout" {
+        column gap=3 class="cart-lines" {
+          for i in cart key i.id {
+            row gap=4 class="cart-line" {
+              link to=`/products/${i.id}` class="thumb" {
+                ProductArt src=i.image name=i.name
+              }
+              column gap=1 class="cart-line-info" {
+                link i.name to=`/products/${i.id}` class="product-name"
+                text `${money(i.price)} each` small muted
+                row gap=3 wrap class="cart-line-actions" {
+                  row class="stepper" {
+                    button "−" class="step" -> cartStore.setQty(i.id, i.qty - 1)
+                    text `${i.qty}` class="step-value"
+                    button "+" class="step" disabled=(i.qty >= i.stock) -> cartStore.setQty(i.id, i.qty + 1)
+                  }
+                  button "Remove" small class="a-small ghost" -> cartStore.remove(i.id)
+                }
+              }
+              text money(i.price * i.qty) class="price line-total"
+            }
+          }
+        }
+        card gap=3 class="summary" {
+          text "Order summary" bold
+          row justify=between {
+            text `Subtotal (${count} ${count == 1 ? "item" : "items"})` muted
+            text money(subtotal)
+          }
+          row justify=between {
+            text "Shipping" muted
+            text "Free"
+          }
+          divider
+          row justify=between {
+            text "Total" bold
+            text money(subtotal) class="price total"
+          }
+          button me ? "Checkout" : "Log in to checkout" primary class="a-primary big" -> navigate(me ? "/checkout" : "/login?next=/checkout")
+          link "Continue shopping" to="/" class="small-link center"
+        }
+      }
+    }
+  }
+}
+
+page Checkout "/checkout" requires login {
+  data me = auth.me()
+  state cart: CartItem[] = cartStore.get()
+  data quote = server.checkout(cart.map(i => ({ id: i.id, qty: i.qty })), null)
+  state name = ""
+  state address = ""
+  state error = ""
+  state placing = false
+  mount {
+    let off = cartStore.subscribe(items => cart = items)
+    cleanup {
+      off()
+    }
+  }
+  effect {
+    if me && name == "" {
+      name = me.name
+    }
+  }
+  fn place() {
+    error = ""
+    placing = true
+    try {
+      let order = await server.checkout(cart.map(i => ({ id: i.id, qty: i.qty })), { name, address })
+      cartStore.clear()
+      navigate(`/orders?placed=${order.id}`)
+    } catch (e) {
+      error = e.message
+    } finally {
+      placing = false
+    }
+  }
+
+  meta title="Checkout · Fernwood"
+  column gap=5 class="fade-in" {
+    title "Checkout" class="page-title"
+    if cart.length == 0 {
+      column gap=3 align=center class="empty" {
+        icon "shopping-cart" size=40 muted
+        text "There's nothing to check out" bold large
+        link "Browse products" to="/" class="btn-link"
+      }
+    } else {
+      grid cols=1 lg:cols=3 gap=6 class="cart-layout" {
+        form gap=4 class="checkout-form" -> place() {
+          text "Shipping details" bold
+          input name label="Full name" placeholder="Ada Lovelace" required
+          textarea address label="Shipping address" placeholder="Street, city, postal code, country" rows=3 required
+          if error != "" {
+            row gap=2 class="alert" role="alert" {
+              icon "alert" size=18 danger
+              text error
+            }
+          }
+          if quote && quote.problems.length > 0 {
+            column gap=1 class="alert" role="alert" {
+              for msg in quote.problems {
+                text msg
+              }
+              link "Review your cart" to="/cart" class="small-link"
+            }
+          }
+          button placing ? "Placing order..." : "Place order" primary class="a-primary big" disabled=(placing || (quote?.problems.length ?? 0) > 0)
+          text "This is a demo store: no payment is taken." small muted
+        }
+        card gap=3 class="summary" {
+          text "Order summary" bold
+          if quote {
+            for l in quote.lines {
+              row justify=between gap=3 {
+                text `${l.qty} × ${l.name}` muted
+                text money(l.price * l.qty)
+              }
+            }
+            row justify=between {
+              text "Shipping" muted
+              text "Free"
+            }
+            divider
+            row justify=between {
+              text "Total" bold
+              text money(quote.total) class="price total"
+            }
+          } else {
+            row justify=center pad=4 {
+              spinner
+            }
+          }
+        }
+      }
+    }
+  }
+}

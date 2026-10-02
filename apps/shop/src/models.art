@@ -1,0 +1,157 @@
+// `owner` is never set, so with `private` no account can list or read the others through
+// /api/users (`login` would show every name and email to anyone signed in); auth still works.
+model User {
+  id: ID
+  email: Email unique
+  password: String min=8
+  name: String min=1 max=80
+  role: String
+  owner: ID?
+}
+
+model Product {
+  id: ID
+  name: String min=2 max=80
+  description: String max=600
+  category: String min=2 max=40
+  price: Number min=0
+  stock: Number = 0 min=0
+  image: String
+}
+
+model OrderLine {
+  productId: String
+  name: String
+  price: Number
+  qty: Number
+}
+
+// Orders are written only by `placeOrder`. Their `owner` is "server", so no account can read or
+// change one through /api/orders; `customer` is who bought (see `myOrders`).
+model Order {
+  id: ID
+  owner: ID
+  customer: ID
+  email: String
+  name: String
+  address: String
+  lines: OrderLine[]
+  total: Number
+  status: String
+  createdAt: String
+}
+
+model CartItem {
+  id: String
+  name: String
+  price: Number
+  image: String
+  stock: Number
+  qty: Number
+}
+
+model Quote {
+  lines: OrderLine[]
+  total: Number
+  problems: String[]
+}
+
+api users: User private
+
+api products: Product admin
+
+api orders: Order private
+
+auth users
+
+// ~8 products for an empty store. Does nothing once there is a catalog.
+server fn seed() {
+  if db.products.count() > 0 {
+    return 0
+  }
+  let samples = [{ name: "Ceramic Pour-Over Set", category: "Kitchen", price: 48, stock: 12, image: "/products/pour-over.svg", description: "A hand-glazed dripper and carafe that brew two generous cups. Slow coffee, done properly." }, { name: "Stoneware Mug", category: "Kitchen", price: 18, stock: 40, image: "/products/mug.svg", description: "A 12 oz mug with a dipped glaze and a handle that fits four fingers. Dishwasher safe." }, { name: "Linen Throw Blanket", category: "Home", price: 79, stock: 8, image: "/products/blanket.svg", description: "Stonewashed European linen, soft from day one and softer every wash. 50 x 70 in." }, { name: "Soy Wax Candle", category: "Home", price: 24, stock: 0, image: "/products/candle.svg", description: "Cedar, fig and a little smoke. Hand-poured soy wax with a 45 hour burn time." }, { name: "Oak Desk Lamp", category: "Workspace", price: 129, stock: 5, image: "/products/lamp.svg", description: "A jointed oak arm, a matte steel shade and a warm dimmable LED. Light where you want it." }, { name: "Walnut Desk Organizer", category: "Workspace", price: 42, stock: 15, image: "/products/organizer.svg", description: "Solid walnut with room for pens, cards and the cables you swear you'll sort out." }, { name: "Canvas Weekender Bag", category: "Travel", price: 95, stock: 6, image: "/products/weekender.svg", description: "Waxed canvas, leather handles and brass hardware. Fits two nights and an extra pair of shoes." }, { name: "Insulated Water Bottle", category: "Travel", price: 32, stock: 3, image: "/products/bottle.svg", description: "Double-wall steel that keeps drinks cold for 24 hours or hot for 12. 20 oz, leakproof." }]
+  for p in samples {
+    db.products.create(p)
+  }
+  return samples.length
+}
+
+server fn categories() {
+  return [...new Set(db.products.list().map(p => p.category))].sort()
+}
+
+// Prices a cart from the stored products (the browser only says which product and how many) and,
+// with `ship`, places the order of the signed-in user: the stock is checked and taken, and nothing
+// is written if a line can't be fulfilled. Without `ship` it only returns the quote.
+server fn checkout(items, ship) {
+  let wanted = new Map()
+  for w in Array.isArray(items) ? items : [] {
+    let qty = Math.floor(Number(w?.qty))
+    if typeof w?.id == "string" && qty > 0 {
+      wanted.set(w.id, (wanted.get(w.id) ?? 0) + qty)
+    }
+  }
+  let lines = []
+  let problems = []
+  for entry in [...wanted] {
+    let p = db.products.get(entry[0])
+    if !p {
+      problems.push("A product in your cart is no longer available")
+    } else if p.stock <= 0 {
+      problems.push(`${p.name} is sold out`)
+    } else if p.stock < entry[1] {
+      problems.push(`Only ${p.stock} left of ${p.name}`)
+    } else {
+      lines.push({ productId: p.id, name: p.name, price: p.price, qty: entry[1], left: p.stock - entry[1] })
+    }
+  }
+  let total = Math.round(lines.reduce((n, l) => n + l.price * l.qty, 0) * 100) / 100
+  if !ship {
+    return { lines, total, problems }
+  }
+  if !me {
+    fail("Log in to place your order", 401)
+  }
+  let name = String(ship.name ?? "").trim()
+  let address = String(ship.address ?? "").trim()
+  if name.length < 2 {
+    fail("Enter your full name", 400)
+  }
+  if address.length < 8 {
+    fail("Enter a complete shipping address", 400)
+  }
+  if problems.length > 0 {
+    fail(problems[0], 409)
+  }
+  if lines.length == 0 {
+    fail("Your cart is empty", 400)
+  }
+  for l in lines {
+    db.products.update(l.productId, { stock: l.left })
+  }
+  return db.orders.create({ owner: "server", customer: me.id, email: me.email, name: name.slice(0, 80), address: address.slice(0, 300), lines: lines.map(l => ({ productId: l.productId, name: l.name, price: l.price, qty: l.qty })), total, status: "Paid", createdAt: new Date().toISOString() })
+}
+
+server fn myOrders() {
+  if !me {
+    return []
+  }
+  return db.orders.list({ where: { owner: "server", customer: me.id }, sort: "-createdAt" })
+}
+
+server fn allOrders() {
+  if me?.role != "admin" {
+    fail("Only admins can see every order", 403)
+  }
+  return db.orders.list({ where: { owner: "server" }, sort: "-createdAt" })
+}
+
+server fn setOrderStatus(id, status) {
+  if me?.role != "admin" {
+    fail("Only admins can update orders", 403)
+  }
+  if !["Paid", "Shipped", "Delivered", "Cancelled"].includes(status) {
+    fail("Unknown status", 400)
+  }
+  return db.orders.update(id, { status })
+}
