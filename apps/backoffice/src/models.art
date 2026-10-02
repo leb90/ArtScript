@@ -1,4 +1,6 @@
-use "./lib/format.ts" { STATUSES, STATUS_OPTIONS, STATUS_FILTER, CATEGORIES, COUNTRIES, formatMoney, formatNumber, formatDate, formatDay, statusLabel, initials, isEmail }
+use "./lib/format.ts" { STATUSES, STATUS_OPTIONS, STATUS_FILTER, CATEGORIES, COUNTRIES, formatMoney, formatNumber, formatDate, formatDay, statusLabel, initials }
+
+use "./lib/sample.ts" { samplePlan, freshOrders, statusAfter, SAMPLE_DOMAIN }
 
 model User {
   id: ID
@@ -72,7 +74,7 @@ server fn stats(days) {
     p.revenue += o.total
     p.orders++
   }
-  return { empty: orders.length == 0 && customers.length == 0 && db.products.count() == 0, span, revenue: revenue(current), revenueChange: change(revenue(current), revenue(previous)), orders: current.length, ordersChange: change(current.length, previous.length), customers: joined(from, now), customersChange: change(joined(from, now), joined(before, from)), average: average(current), averageChange: change(average(current), average(previous)), points, categories: ["Audio", "Wearables", "Home office", "Accessories", "Lighting"].map(name => ({ name, orders: current.filter(o => o.product.category == name).length })), statuses: ["pending", "paid", "shipped", "delivered", "cancelled"].map(name => ({ name, orders: current.filter(o => o.status == name).length })) }
+  return { empty: orders.length == 0 && customers.length == 0 && db.products.count() == 0, span, revenue: revenue(current), revenueChange: change(revenue(current), revenue(previous)), orders: current.length, ordersChange: change(current.length, previous.length), customers: joined(from, now), customersChange: change(joined(from, now), joined(before, from)), average: average(current), averageChange: change(average(current), average(previous)), points, categories: CATEGORIES.map(name => ({ name, orders: current.filter(o => o.product.category == name).length })), statuses: STATUSES.map(name => ({ name, orders: current.filter(o => o.status == name).length })) }
 }
 
 // Fills an empty workspace with 40 customers, 12 products and 300 orders over the last 90 days.
@@ -83,59 +85,19 @@ server fn seed() {
   if db.customers.count() > 0 || db.products.count() > 0 || db.orders.count() > 0 {
     fail("Sample data can only be loaded into an empty workspace", 409)
   }
-  let FIRST = ["Olivia", "Liam", "Emma", "Noah", "Ava", "Lucas", "Mia", "Mateo", "Sofia", "Ethan", "Isabella", "Leo", "Amelia", "Hugo", "Chloe", "Daniel", "Elena", "Oscar", "Nora", "Felix"]
-  let LAST = ["Bennett", "Garcia", "Kowalski", "Tanaka", "Okafor", "Silva", "Novak", "Fischer", "Rossi", "Dubois", "Haddad", "Larsen", "Mendoza", "Patel", "Walker", "Kim", "Costa", "Ivanov", "Moreau", "Nguyen"]
-  let COMPANIES = ["Brightline", "Fernwood Labs", "Halcyon", "Kestrel & Co", "Lumen Works", "Maple Street", "Northbeam", "Quarry", "Saltwater", "Tandem"]
-  let PLACES = ["United States", "United States", "United States", "Canada", "United Kingdom", "Germany", "France", "Spain", "Argentina", "Brazil", "Mexico", "Australia"]
-  // `weight`: how often the product sells, relative to the others.
-  let CATALOG = [{ name: "Aria Wireless Headphones", category: "Audio", price: 189, stock: 42, weight: 5 }, { name: "Pulse Earbuds", category: "Audio", price: 79, stock: 120, weight: 9 }, { name: "Studio Desk Speaker", category: "Audio", price: 129, stock: 35, weight: 4 }, { name: "Orbit Smartwatch", category: "Wearables", price: 249, stock: 28, weight: 4 }, { name: "Stride Fitness Band", category: "Wearables", price: 59, stock: 96, weight: 8 }, { name: "Ergo Laptop Stand", category: "Home office", price: 49, stock: 150, weight: 9 }, { name: "Summit Standing Desk", category: "Home office", price: 449, stock: 12, weight: 2 }, { name: "Glide Mechanical Keyboard", category: "Home office", price: 119, stock: 64, weight: 6 }, { name: "Trail Canvas Backpack", category: "Accessories", price: 89, stock: 58, weight: 5 }, { name: "Braided USB-C Cable", category: "Accessories", price: 19, stock: 320, weight: 12 }, { name: "Halo Desk Lamp", category: "Lighting", price: 69, stock: 74, weight: 6 }, { name: "Ember Ambient Light", category: "Lighting", price: 39, stock: 110, weight: 7 }]
-  let DAY = 86400000
-  let now = Date.now()
-  // A small seeded generator: the same store every time, only the dates move with `now`.
-  let rng = { seed: 20260101 }
-  let rand = () => { rng.seed = rng.seed * 48271 % 2147483647; return rng.seed / 2147483647 }
-  let pick = list => list[Math.floor(rand() * list.length)]
-  let statusAt = age => { let r = rand(); if r < 0.07 { return "cancelled" }; if age < 2 { return r < 0.6 ? "pending" : "paid" }; if age < 6 { return r < 0.2 ? "pending" : r < 0.55 ? "paid" : "shipped" }; if age < 14 { return r < 0.12 ? "paid" : r < 0.4 ? "shipped" : "delivered" }; return "delivered" }
+  let plan = samplePlan(Date.now())
   let customers = []
   let products = []
   try {
-    for i in FIRST.concat(FIRST).keys() {
-      let first = FIRST[i % 20]
-      // The second round of first names takes other last names: no two customers share an email.
-      let last = LAST[(i * 7 + 3 + Math.floor(i / 20) * 5) % 20]
-      let company = pick(COMPANIES)
-      let domain = company.toLowerCase().split("").filter(ch => ch >= "a" && ch <= "z").join("")
-      // Half the customers predate the order history; the rest signed up along the way.
-      let age = i < 20 ? 90 + rand() * 60 : rand() * 90
-      customers.push(db.customers.create({ name: `${first} ${last}`, email: `${first}.${last}@${domain}.example`.toLowerCase(), company, country: pick(PLACES), createdAt: Math.round(now - age * DAY) }))
+    for c in plan.customers {
+      customers.push(db.customers.create(c))
     }
-    for p in CATALOG {
-      products.push(db.products.create({ name: p.name, category: p.category, price: p.price, stock: p.stock }))
+    for p in plan.products {
+      products.push(db.products.create(p))
     }
-    let weights = CATALOG.map(p => p.weight).reduce((a, b) => a + b, 0)
-    let orders = []
-    while orders.length < 300 {
-      // Skewed towards recent days (a growing store), quieter on weekends.
-      let age = 90 * Math.pow(rand(), 1.35)
-      let weekday = new Date(now - age * DAY).getUTCDay()
-      if (weekday == 0 || weekday == 6) && rand() < 0.45 {
-        age = 90 * Math.pow(rand(), 1.35)
-      }
-      let createdAt = Math.round(now - age * DAY)
-      // Only customers that already existed at that moment can have ordered.
-      let customer = pick(customers.filter(c => c.createdAt <= createdAt))
-      let roll = rand() * weights
-      let at = 0
-      while at < CATALOG.length - 1 && roll >= CATALOG[at].weight {
-        roll -= CATALOG[at].weight
-        at++
-      }
-      let quantity = 1 + Math.floor(Math.pow(rand(), 2.2) * 4)
-      orders.push({ number: "", customer: customer.id, customerName: customer.name, product: products[at].id, quantity, total: CATALOG[at].price * quantity, status: statusAt(age), createdAt })
-    }
-    orders.sort((a, b) => a.createdAt - b.createdAt)
-    for o, i in orders {
-      db.orders.create({ ...o, number: `ORD-${1001 + i}` })
+    for o in plan.orders {
+      let customer = customers[o.customer]
+      db.orders.create({ ...o, customer: customer.id, customerName: customer.name, product: products[o.product].id })
     }
   } catch (e) {
     // A server fn is not a transaction: undo what was stored (orders go with their customer).
@@ -147,7 +109,7 @@ server fn seed() {
     }
     fail(`The sample data couldn't be loaded: ${e.message}`, 500)
   }
-  return { customers: customers.length, products: products.length, orders: 300 }
+  return { customers: customers.length, products: products.length, orders: plan.orders.length }
 }
 
 // Orders keep the customer's name (the server searches text fields): follow a rename.
@@ -164,4 +126,31 @@ server fn renameInOrders(customerId) {
     db.orders.update(o.id, { customerName: customer.name })
   }
   return stale.length
+}
+
+// Keeps the sample store alive: open orders move on with the days, and when the newest order is
+// more than a day old, a few more arrive for the days since. Does nothing in a store without the
+// sample customers.
+server job refreshSample every "1h" {
+  let DAY = 86400000
+  let now = Date.now()
+  let customers = db.customers.list().filter(c => c.email.endsWith(SAMPLE_DOMAIN))
+  let orders = db.orders.list()
+  if customers.length == 0 || orders.length == 0 {
+    return
+  }
+  let newest = Math.max(...orders.map(o => o.createdAt))
+  if now - newest < DAY {
+    return
+  }
+  for o in orders {
+    let status = statusAfter(o.status, (now - o.createdAt) / DAY)
+    if status != o.status {
+      db.orders.update(o.id, { status })
+    }
+  }
+  let next = 1 + Math.max(1000, ...orders.map(o => Number(o.number.replace("ORD-", "")) || 0))
+  for o in freshOrders(now, newest, customers, db.products.list(), next) {
+    db.orders.create(o)
+  }
 }

@@ -22,22 +22,14 @@
 /* Hero entrance: staggered. --enter-offset (set in `mount`) lets the live app continue the
    animation the prerendered HTML already started instead of replaying it. */
 .enter { animation: rise .9s var(--ease) backwards; animation-delay: calc(var(--d, 0ms) + var(--enter-offset, 0ms)); }
-.d0 { --d: 40ms; }
-.d1 { --d: 130ms; }
-.d2 { --d: 220ms; }
-.d3 { --d: 310ms; }
-.d4 { --d: 400ms; }
 
 /* Reveal on scroll: `pre` is only ever added by JS to elements below the fold. */
 .reveal.pre { opacity: 0; transform: translateY(28px); }
 .reveal.in { animation: rise .9s var(--ease) backwards; animation-delay: calc(var(--s, 0) * 110ms); }
-.s1 { --s: 1; }
-.s2 { --s: 2; }
-.s3 { --s: 3; }
 
 /* The price re-animates on every toggle: two identical animations with different names. */
-.price.swap-a { animation: swap-a .45s var(--ease); }
-.price.swap-b { animation: swap-b .45s var(--ease); }
+.price[data-swap="a"] { animation: swap-a .45s var(--ease); }
+.price[data-swap="b"] { animation: swap-b .45s var(--ease); }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -48,6 +40,6 @@
   .marquee-track { width: 100%; }
   .marquee-group { flex: 1 1 auto; flex-wrap: wrap; justify-content: center; row-gap: 10px; padding-inline: 20px; }
   .marquee-group .press-name:last-child::after { display: none; }
-  .marquee-group.deco { display: none; }
+  .marquee-group[aria-hidden] { display: none; }
   .btn:hover, .feature:hover, .plan:hover, .quote:hover { transform: none; }
 }

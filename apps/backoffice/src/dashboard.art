@@ -56,7 +56,7 @@ page Dashboard "/" layout Shell requires login {
   meta title="Dashboard · Northwind Backoffice"
   row class="page-head" justify=between gap=3 wrap {
     column {
-      title "Dashboard"
+      title "Dashboard" tag=h1
       text `How the store did over the last ${period}.` muted
     }
     radio days class="segmented" label="Period" options=[{ value: 7, label: "7 days" }, { value: 30, label: "30 days" }, { value: 90, label: "90 days" }]

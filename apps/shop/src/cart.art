@@ -1,18 +1,9 @@
 page Cart "/cart" {
   data me = auth.me()
-  state cart: CartItem[] = cartStore.get()
-  computed count = cartCount(cart)
-  computed subtotal = cartTotal(cart)
-  mount {
-    let off = cartStore.subscribe(items => cart = items)
-    cleanup {
-      off()
-    }
-  }
 
   meta title="Your cart · Fernwood"
   column gap=5 class="fade-in" {
-    title "Your cart" class="page-title"
+    title "Your cart" class="page-title" tag=h1
     if cart.length == 0 {
       column gap=3 align=center class="empty" {
         icon "shopping-cart" size=40 muted
@@ -33,11 +24,11 @@ page Cart "/cart" {
                 text `${money(i.price)} each` small muted
                 row gap=3 wrap class="cart-line-actions" {
                   row class="stepper" {
-                    button "−" class="step" -> cartStore.setQty(i.id, i.qty - 1)
+                    button "−" class="step" aria-label=`One less ${i.name}` -> setCartQty(i, i.qty - 1)
                     text `${i.qty}` class="step-value"
-                    button "+" class="step" disabled=(i.qty >= i.stock) -> cartStore.setQty(i.id, i.qty + 1)
+                    button "+" class="step" aria-label=`One more ${i.name}` disabled=(i.qty >= i.stock) -> setCartQty(i, i.qty + 1)
                   }
-                  button "Remove" small class="a-small ghost" -> cartStore.remove(i.id)
+                  button "Remove" small class="ghost" -> setCartQty(i, 0)
                 }
               }
               text money(i.price * i.qty) class="price line-total"
@@ -47,8 +38,8 @@ page Cart "/cart" {
         card gap=3 class="summary" {
           text "Order summary" bold
           row justify=between {
-            text `Subtotal (${count} ${count == 1 ? "item" : "items"})` muted
-            text money(subtotal)
+            text `Subtotal (${cartCount} ${cartCount == 1 ? "item" : "items"})` muted
+            text money(cartSubtotal)
           }
           row justify=between {
             text "Shipping" muted
@@ -57,9 +48,9 @@ page Cart "/cart" {
           divider
           row justify=between {
             text "Total" bold
-            text money(subtotal) class="price total"
+            text money(cartSubtotal) class="price total"
           }
-          button me ? "Checkout" : "Log in to checkout" primary class="a-primary big" -> navigate(me ? "/checkout" : "/login?next=/checkout")
+          button me ? "Checkout" : "Log in to checkout" primary class="big" -> navigate("/checkout")
           link "Continue shopping" to="/" class="small-link center"
         }
       }
@@ -69,18 +60,11 @@ page Cart "/cart" {
 
 page Checkout "/checkout" requires login {
   data me = auth.me()
-  state cart: CartItem[] = cartStore.get()
-  data quote = server.checkout(cart.map(i => ({ id: i.id, qty: i.qty })), null)
+  data quote = server.quote(cartRefs)
   state name = ""
   state address = ""
   state error = ""
   state placing = false
-  mount {
-    let off = cartStore.subscribe(items => cart = items)
-    cleanup {
-      off()
-    }
-  }
   effect {
     if me && name == "" {
       name = me.name
@@ -90,8 +74,8 @@ page Checkout "/checkout" requires login {
     error = ""
     placing = true
     try {
-      let order = await server.checkout(cart.map(i => ({ id: i.id, qty: i.qty })), { name, address })
-      cartStore.clear()
+      let order = await server.placeOrder(cartRefs, name, address)
+      cart = []
       navigate(`/orders?placed=${order.id}`)
     } catch (e) {
       error = e.message
@@ -102,7 +86,7 @@ page Checkout "/checkout" requires login {
 
   meta title="Checkout · Fernwood"
   column gap=5 class="fade-in" {
-    title "Checkout" class="page-title"
+    title "Checkout" class="page-title" tag=h1
     if cart.length == 0 {
       column gap=3 align=center class="empty" {
         icon "shopping-cart" size=40 muted
@@ -129,7 +113,7 @@ page Checkout "/checkout" requires login {
               link "Review your cart" to="/cart" class="small-link"
             }
           }
-          button placing ? "Placing order..." : "Place order" primary class="a-primary big" disabled=(placing || (quote?.problems.length ?? 0) > 0)
+          button placing ? "Placing order..." : "Place order" primary class="big" disabled=(placing || (quote?.problems.length ?? 0) > 0)
           text "This is a demo store: no payment is taken." small muted
         }
         card gap=3 class="summary" {

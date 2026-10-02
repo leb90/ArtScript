@@ -6,20 +6,20 @@ page Admin "/admin" requires admin {
   state editId = ""
   state name = ""
   state category = ""
-  state price = ""
+  state price = 0
   state stock = 0
   state image = "/products/placeholder.svg"
   state description = ""
   state error = ""
   state saving = false
-  computed revenue = (orders ?? []).filter(o => o.status != "Cancelled").reduce((n, o) => n + o.total, 0)
+  computed revenue = orders.filter(o => o.status != "Cancelled").reduce((n, o) => n + o.total, 0)
   computed lowStock = products.filter(p => p.stock <= 3).length
   computed pictures = [{ value: "/products/placeholder.svg", label: "Plain box" }, { value: "/products/pour-over.svg", label: "Pour-over" }, { value: "/products/mug.svg", label: "Mug" }, { value: "/products/blanket.svg", label: "Blanket" }, { value: "/products/candle.svg", label: "Candle" }, { value: "/products/lamp.svg", label: "Lamp" }, { value: "/products/organizer.svg", label: "Organizer" }, { value: "/products/weekender.svg", label: "Bag" }, { value: "/products/bottle.svg", label: "Bottle" }]
   fn startNew() {
     editId = ""
     name = ""
     category = ""
-    price = ""
+    price = 0
     stock = 0
     image = "/products/placeholder.svg"
     description = ""
@@ -30,7 +30,7 @@ page Admin "/admin" requires admin {
     editId = p.id
     name = p.name
     category = p.category
-    price = String(p.price)
+    price = p.price
     stock = p.stock
     image = p.image
     description = p.description
@@ -39,14 +39,8 @@ page Admin "/admin" requires admin {
   }
   fn save() {
     error = ""
-    // A text field: `input type=number` only takes whole numbers (it has no `step`).
-    let amount = Number(price.replace(",", ".").replace("$", "").trim())
-    if price.trim() == "" || !(amount >= 0) {
-      error = "Enter a price like 24 or 24.50."
-      return
-    }
     saving = true
-    let fields = { name: name.trim(), category: category.trim(), price: Math.round(amount * 100) / 100, stock: Math.max(0, Math.floor(Number(stock) || 0)), image, description: description.trim() }
+    let fields = { name: name.trim(), category: category.trim(), price: Math.round(Number(price) * 100) / 100, stock: Math.max(0, Math.floor(Number(stock) || 0)), image, description: description.trim() }
     try {
       if editId == "" {
         await api.products.create(fields)
@@ -74,7 +68,7 @@ page Admin "/admin" requires admin {
   meta title="Admin · Fernwood"
   column gap=5 class="fade-in" {
     row justify=between gap=3 wrap {
-      title "Admin" class="page-title"
+      title "Admin" class="page-title" tag=h1
       button "New product" primary -> startNew()
     }
     grid cols=2 lg:cols=4 gap=3 {
@@ -88,7 +82,7 @@ page Admin "/admin" requires admin {
       }
       card gap=1 class="stat" {
         text "Orders" small muted
-        text `${(orders ?? []).length}` large bold
+        text `${orders.length}` large bold
       }
       card gap=1 class="stat" {
         text "Revenue" small muted
@@ -145,7 +139,7 @@ page Admin "/admin" requires admin {
           }
         }
       }
-    } else if (orders ?? []).length == 0 {
+    } else if orders.length == 0 {
       column gap=2 align=center class="empty" {
         icon "package" size=40 muted
         text "No orders yet" bold large
@@ -159,7 +153,7 @@ page Admin "/admin" requires admin {
           th "Total"
           th "Status"
         }
-        for o in orders ?? [] key o.id {
+        for o in orders key o.id {
           tr {
             td {
               column {
@@ -198,8 +192,8 @@ page Admin "/admin" requires admin {
           select image options=pictures label="Picture"
         }
         row gap=3 class="field-row" {
-          input price label="Price (USD)" placeholder="0.00" required
-          input stock type=number label="Stock" placeholder="0" required
+          input price type=number step="any" min=0 label="Price (USD)" placeholder="0.00" required
+          input stock type=number step=1 min=0 label="Stock" placeholder="0" required
         }
         textarea description label="Description" placeholder="What makes it good?" rows=3
         if error != "" {

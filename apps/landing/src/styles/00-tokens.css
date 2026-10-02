@@ -1,8 +1,6 @@
-/* Brisa design tokens. light-dark() follows `color-scheme`, which follows ArtScript's setTheme()
-   (data-theme on <html>) or, in "auto", the system preference. */
+/* Brisa design tokens. light-dark() follows `color-scheme`, which ArtScript sets from setTheme()
+   (data-theme on <html>) or, in "auto", from the system preference. */
 :root {
-  color-scheme: light dark;
-
   --bg: light-dark(#f7f0e6, #15100c);
   --bg-tint: light-dark(#efe4d3, #1c1510);
   --surface: light-dark(#fffbf5, #231a14);
@@ -34,9 +32,8 @@
   --nav-h: 68px;
 }
 
-/* ArtScript's own theme variables, mapped to the palette. `:root:root` because the runtime resets
-   them for dark mode with `:root:not([data-theme=light])`, which would beat a plain `:root`. */
-:root:root {
+/* ArtScript's own theme variables, mapped to the palette. */
+:root {
   --a-bg: var(--bg);
   --a-fg: var(--ink);
   --a-surface: var(--surface);
@@ -48,6 +45,3 @@
   --a-radius: 12px;
   --a-font: var(--sans);
 }
-
-:root[data-theme="light"] { color-scheme: light; }
-:root[data-theme="dark"] { color-scheme: dark; }

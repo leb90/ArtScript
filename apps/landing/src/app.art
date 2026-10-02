@@ -1,36 +1,30 @@
-use "./lib/dom.ts" { isDark, watchScroll, syncEntrance, favicon, aria, reveal, isEmail }
+use "./lib/dom.ts" { syncEntrance, reveal }
 
 layout Site {
   state menuOpen = false
   state scrolled = false
   fn toggleTheme() {
-    setTheme(isDark(theme()) ? "light" : "dark")
-  }
-  ref menuBtn
-  effect {
-    let open = menuOpen
-    if menuBtn {
-      menuBtn.setAttribute("aria-expanded", String(open))
-      menuBtn.setAttribute("aria-controls", "site-menu")
-    }
+    let dark = theme() == "dark" || theme() == "auto" && matchMedia("(prefers-color-scheme: dark)").matches
+    setTheme(dark ? "light" : "dark")
   }
   mount {
-    favicon("/favicon.svg")
-    let stop = watchScroll(v => scrolled = v)
+    let onScroll = () => scrolled = window.scrollY > 8
+    onScroll()
+    window.addEventListener("scroll", onScroll, { passive: true })
     cleanup {
-      stop()
+      window.removeEventListener("scroll", onScroll)
     }
   }
 
   column class="site" {
     link "Skip to content" href="#main" class="skip"
-    row class=(scrolled ? "nav scrolled" : "nav") role="banner" {
+    row tag=header class="nav" data-scrolled=scrolled {
       row class="nav-inner wrap" justify=between {
         link to="/" class="brand" {
-          column class="brand-mark deco"
+          column class="brand-mark" aria-hidden="true"
           text "Brisa"
         }
-        row class=(menuOpen ? "nav-links open" : "nav-links") role="navigation" id="site-menu" {
+        row tag=nav class="nav-links" data-open=menuOpen id="site-menu" aria-label="Main" {
           link "Why Brisa" href="/#why" on:click=(menuOpen = false)
           link "How it works" href="/#how" on:click=(menuOpen = false)
           link "Plans" href="/#plans" on:click=(menuOpen = false)
@@ -39,11 +33,11 @@ layout Site {
         }
         row class="nav-actions" gap=2 {
           button class="icon-btn theme-btn" -> toggleTheme() {
-            icon "moon" size=18 label="Switch to dark theme" class="a-icon to-dark"
-            icon "sun" size=18 label="Switch to light theme" class="a-icon to-light"
+            icon "moon" size=18 label="Switch to dark theme" class="to-dark"
+            icon "sun" size=18 label="Switch to light theme" class="to-light"
           }
           link "Start brewing" href="/#plans" class="btn btn-primary btn-sm nav-cta"
-          button class="icon-btn menu-btn" ref=menuBtn -> menuOpen = !menuOpen {
+          button class="icon-btn menu-btn" aria-expanded=menuOpen aria-controls="site-menu" -> menuOpen = !menuOpen {
             if menuOpen {
               icon "x" size=20 label="Close menu"
             } else {
@@ -53,7 +47,7 @@ layout Site {
         }
       }
     }
-    column id="main" role="main" class="main" {
+    column tag=main id="main" class="main" {
       slot
     }
     Footer
@@ -61,14 +55,14 @@ layout Site {
 }
 
 component Footer {
-  column class="footer" role="contentinfo" {
-    grid class="wrap footer-grid" {
+  column tag=footer class="footer" {
+    grid class="wrap footer-grid" cols=1 md:cols=4 gap=10 {
       column class="footer-about" gap=3 {
         link to="/" class="brand" {
-          column class="brand-mark deco"
+          column class="brand-mark" aria-hidden="true"
           text "Brisa"
         }
-        text "Single-origin coffee from small farms, roasted to order and shipped the same day." class="p soft"
+        text "Single-origin coffee from small farms, roasted to order and shipped the same day." tag=p class="p soft"
       }
       column gap=3 {
         text "Coffee" class="footer-head"
@@ -99,7 +93,6 @@ component Footer {
 page Home "/" {
   mount {
     syncEntrance()
-    aria()
     let stop = reveal()
     cleanup {
       stop()
@@ -120,28 +113,28 @@ page Home "/" {
 }
 
 component Hero {
-  column class="hero" {
-    column class="hero-glow deco"
-    grid class="wrap hero-grid" {
+  column tag=section class="hero" {
+    column class="hero-glow" aria-hidden="true"
+    grid class="wrap hero-grid" cols=1 lg:cols=2 {
       column class="hero-copy" align=start {
-        row class="eyebrow enter d0" {
-          column class="dot deco"
+        row class="eyebrow enter" style="--d: 40ms" {
+          column class="dot" aria-hidden="true"
           text "Small-batch coffee subscription"
         }
-        column class="display h1 enter d1" role="heading" {
+        column tag=h1 class="display enter" style="--d: 130ms" {
           text "Roasted on Monday. "
           text "At your door by Thursday." class="accent"
         }
-        text "Brisa sends you single-origin beans from small farms, roasted to order in 12-kilo batches and posted the same day. No warehouse shelf, no stale bags." class="lede enter d2"
-        row class="hero-cta enter d3" wrap {
+        text "Brisa sends you single-origin beans from small farms, roasted to order in 12-kilo batches and posted the same day. No warehouse shelf, no stale bags." tag=p class="lede enter" style="--d: 220ms"
+        row class="hero-cta enter" style="--d: 310ms" wrap {
           link href="#plans" class="btn btn-primary btn-lg" {
             text "Choose your plan"
-            icon "arrow-right" size=18 class="a-icon btn-arrow"
+            icon "arrow-right" size=18 class="btn-arrow"
           }
           link "See how it works" href="#how" class="btn btn-ghost btn-lg"
         }
-        row class="hero-proof enter d4" wrap {
-          row class="stars" role="img" id="hero-stars" gap=1 {
+        row class="hero-proof enter" style="--d: 400ms" wrap {
+          row class="stars" role="img" aria-label="Rated 4.9 out of 5" gap=1 {
             icon "star" size=16
             icon "star" size=16
             icon "star" size=16
@@ -149,12 +142,12 @@ component Hero {
             icon "star" size=16
           }
           text "4.9 from 2,300+ subscribers" class="proof-text"
-          text "·" class="soft deco"
+          text "·" class="soft" aria-hidden="true"
           text "Skip or cancel anytime" class="soft"
         }
       }
-      column class="art-wrap enter d3" {
-        column class="art deco" {
+      column class="art-wrap enter" style="--d: 310ms" {
+        column class="art" aria-hidden="true" {
           column class="art-sun"
           column class="art-orbit"
           column class="steam" {
@@ -206,7 +199,7 @@ component Press {
             text n class="press-name"
           }
         }
-        row class="marquee-group deco" {
+        row class="marquee-group" aria-hidden="true" {
           for n in names {
             text n class="press-name"
           }
@@ -231,23 +224,23 @@ component SectionHead(kicker: String, heading: String, sub: String = "") {
     text kicker class="kicker"
     title heading class="h2"
     if sub != "" {
-      text sub class="lede"
+      text sub tag=p class="lede"
     }
   }
 }
 
 component Feature(heading: String, body: String, i: Number = 0) {
-  column class=`feature reveal s${i}` {
+  column class="feature reveal" style=`--s: ${i}` {
     row class="feature-icon" {
       slot
     }
-    text heading class="h3" role="heading"
-    text body class="p soft"
+    text heading tag=h3 class="h3"
+    text body tag=p class="p soft"
   }
 }
 
 component Features {
-  column class="section" id="why" {
+  column tag=section class="section" id="why" {
     column class="wrap" {
       SectionHead kicker="Why Brisa" heading="Fresh is a date, not an adjective." sub="Most coffee waits months on a shelf. Ours is roasted for you, with the roast date printed on the bag."
       grid class="features" cols=1 sm:cols=2 lg:cols=4 gap=5 {
@@ -271,15 +264,15 @@ component Features {
 component Steps {
   state steps = [{ n: "01", title: "Tell us how you brew", body: "Pick your brewer, how adventurous you feel and how much you drink. It takes a minute." }, { n: "02", title: "We roast your batch", body: "Every Monday our roasters fire up for the week's orders. Yours is bagged warm and posted that day." }, { n: "03", title: "It lands. You brew.", body: "Letterbox-friendly bags arrive by Thursday with brew notes for your exact setup." }]
 
-  column class="section section-tint" id="how" {
+  column tag=section class="section section-tint" id="how" {
     column class="wrap" {
       SectionHead kicker="How it works" heading="From the drum to your door in three steps."
       grid class="steps" cols=1 md:cols=3 gap=6 {
         for s, i in steps {
-          column class=`step reveal s${i}` {
-            text s.n class="step-n deco"
-            text s.title class="h3" role="heading"
-            text s.body class="p soft"
+          column class="step reveal" style=`--s: ${i}` {
+            text s.n class="step-n" aria-hidden="true"
+            text s.title tag=h3 class="h3"
+            text s.body tag=p class="p soft"
           }
         }
       }
@@ -292,37 +285,37 @@ component Pricing {
   state plans = [{ name: "Taster", blurb: "One bag to keep things interesting.", monthly: 16, yearly: 13, bags: "1 × 250 g bag a month", perks: ["A new origin every month", "Brew notes for your setup", "Free shipping"], featured: false }, { name: "Regular", blurb: "A cup or two every day, covered.", monthly: 29, yearly: 24, bags: "2 × 250 g bags a month", perks: ["Choose or be surprised", "Brew notes for your setup", "Free shipping", "First pick of micro-lots"], featured: true }, { name: "Household", blurb: "For homes that go through a lot.", monthly: 52, yearly: 43, bags: "4 × 250 g bags a month", perks: ["Split across two roasts", "Brew notes for your setup", "Free express shipping", "First pick of micro-lots"], featured: false }]
   computed yearly = billing == "Yearly"
 
-  column class="section" id="plans" {
+  column tag=section class="section" id="plans" {
     column class="wrap" {
       SectionHead kicker="Plans" heading="Pick a rhythm. Change it whenever." sub="Every plan includes shipping. Pay yearly and two months are on us."
       row class="billing reveal" justify=center gap=3 {
         tabs billing options=["Monthly", "Yearly"] label="Billing period" class="segmented"
-        text "2 months free" class=(yearly ? "save on" : "save")
+        text "2 months free" class="save" data-on=yearly
       }
       grid class="plans" cols=1 lg:cols=3 gap=5 {
         for p, i in plans {
-          column class=`plan reveal s${i}${p.featured ? " featured" : ""}` {
+          column class="plan reveal" data-featured=p.featured style=`--s: ${i}` {
             row justify=between {
-              text p.name class="h3" role="heading"
+              text p.name tag=h3 class="h3"
               if p.featured {
                 text "Most popular" class="pill"
               }
             }
-            text p.blurb class="p soft"
+            text p.blurb tag=p class="p soft"
             row class="price-row" align=end gap=2 {
-              text `$${yearly ? p.yearly : p.monthly}` class=(yearly ? "price swap-a" : "price swap-b")
+              text `$${yearly ? p.yearly : p.monthly}` class="price" data-swap=(yearly ? "a" : "b")
               text "/ month" class="soft per"
             }
             text yearly ? `Billed $${p.yearly * 12} once a year` : "Billed monthly, cancel anytime" class="billed soft"
-            link `Start with ${p.name}` href="#start" class=(p.featured ? "btn btn-primary" : "btn btn-outline")
+            link `Start with ${p.name}` href="#start" class="btn plan-btn"
             column class="perks" gap=2 {
               row class="perk" gap=2 align=start {
-                icon "package" size=16 class="a-icon perk-icon"
+                icon "package" size=16 class="perk-icon"
                 text p.bags class="perk-strong"
               }
               for perk in p.perks {
                 row class="perk" gap=2 align=start {
-                  icon "check" size=16 class="a-icon perk-icon"
+                  icon "check" size=16 class="perk-icon"
                   text perk
                 }
               }
@@ -337,16 +330,16 @@ component Pricing {
 component Stories {
   state quotes = [{ body: "I didn't know coffee could taste like mandarin until the first Brisa bag. Now the supermarket stuff tastes like cardboard.", name: "Maya Rosário", place: "Lisbon · filter", initials: "MR" }, { body: "The brew notes are tuned to my moka pot, down to the grind. It's the first subscription I've never thought about cancelling.", name: "Tomás Echeverría", place: "Buenos Aires · moka", initials: "TE" }, { body: "We skip August every year and it takes ten seconds. The roast date on the bag is always within the week.", name: "Priya Nair", place: "Toronto · espresso", initials: "PN" }]
 
-  column class="section section-tint" id="stories" {
+  column tag=section class="section section-tint" id="stories" {
     column class="wrap" {
       SectionHead kicker="Stories" heading="Mornings, slightly improved."
       grid class="quotes" cols=1 lg:cols=3 gap=5 {
         for q, i in quotes {
-          column class=`quote reveal s${i}` {
-            text "“" class="quote-mark deco"
+          column class="quote reveal" style=`--s: ${i}` {
+            text "“" class="quote-mark" aria-hidden="true"
             text q.body class="quote-body"
             row class="quote-by" gap=3 {
-              row class="avatar deco" justify=center {
+              row class="avatar" aria-hidden="true" justify=center {
                 text q.initials
               }
               column {
@@ -361,19 +354,8 @@ component Stories {
   }
 }
 
-component FaqItem(q: String, a: String, start: Bool = false) {
+component FaqItem(n: Number, q: String, a: String, start: Bool = false) {
   state open = start
-  ref btn
-  fn sync() {
-    btn.setAttribute("aria-expanded", String(open))
-  }
-  fn toggle() {
-    open = !open
-    sync()
-  }
-  mount {
-    sync()
-  }
   style {
     .faq-item { border-bottom: 1px solid var(--line); }
     .faq-q { all: unset; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 24px; width: 100%; padding: 22px 4px; cursor: pointer; font-family: var(--serif); font-size: clamp(1.1rem, 1.6vw, 1.3rem); line-height: 1.3; color: var(--ink); transition: color .2s ease; }
@@ -382,26 +364,26 @@ component FaqItem(q: String, a: String, start: Bool = false) {
     .faq-sign { position: relative; flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line-strong); transition: background .25s ease, border-color .25s ease, transform .35s cubic-bezier(.2, .8, .2, 1); }
     .faq-sign::before, .faq-sign::after { content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 1.5px; margin: -0.75px 0 0 -6px; background: currentColor; transition: transform .35s cubic-bezier(.2, .8, .2, 1); }
     .faq-sign::after { transform: rotate(90deg); }
-    .open .faq-sign { background: var(--brand); border-color: var(--brand); color: var(--on-brand); transform: rotate(180deg); }
-    .open .faq-sign::after { transform: rotate(0deg); }
+    .faq-item[data-open] .faq-sign { background: var(--brand); border-color: var(--brand); color: var(--on-brand); transform: rotate(180deg); }
+    .faq-item[data-open] .faq-sign::after { transform: rotate(0deg); }
     .faq-a { display: grid; grid-template-rows: 0fr; visibility: hidden; transition: grid-template-rows .4s cubic-bezier(.2, .8, .2, 1), visibility 0s .4s; }
     .faq-a-inner { overflow: hidden; min-height: 0; }
     .faq-a-inner .p { padding: 0 56px 24px 4px; max-width: 64ch; opacity: 0; transform: translateY(-6px); transition: opacity .3s ease, transform .4s cubic-bezier(.2, .8, .2, 1); }
-    .faq-item.open .faq-a { grid-template-rows: 1fr; visibility: visible; transition: grid-template-rows .4s cubic-bezier(.2, .8, .2, 1), visibility 0s; }
-    .open .faq-a-inner .p { opacity: 1; transform: none; }
+    .faq-item[data-open] .faq-a { grid-template-rows: 1fr; visibility: visible; transition: grid-template-rows .4s cubic-bezier(.2, .8, .2, 1), visibility 0s; }
+    .faq-item[data-open] .faq-a-inner .p { opacity: 1; transform: none; }
     @media (prefers-reduced-motion: reduce) {
       .faq-a, .faq-sign, .faq-sign::before, .faq-sign::after, .faq-a-inner .p { transition: none; }
     }
   }
 
-  column class=(open ? "faq-item open" : "faq-item") {
-    button class="faq-q" ref=btn -> toggle() {
+  column class="faq-item" data-open=open {
+    button class="faq-q" aria-expanded=open aria-controls=`faq-${n}` -> open = !open {
       text q
-      row class="faq-sign deco"
+      row class="faq-sign" aria-hidden="true"
     }
-    column class="faq-a" {
+    column class="faq-a" id=`faq-${n}` role="region" aria-label=q aria-hidden=!open {
       column class="faq-a-inner" {
-        text a class="p soft"
+        text a tag=p class="p soft"
       }
     }
   }
@@ -410,14 +392,14 @@ component FaqItem(q: String, a: String, start: Bool = false) {
 component Faq {
   state items = [{ q: "When will my coffee arrive?", a: "We roast every Monday and post the same day. Most addresses receive their bags by Thursday; you get a tracking link as soon as they leave the roastery." }, { q: "Can I choose whole beans or ground?", a: "Yes. Tell us your brewer and we grind for it, or send whole beans if you have a grinder (we'd recommend it: whole beans stay fresh about three weeks longer)." }, { q: "How do I skip, pause or cancel?", a: "From your account, in two taps, any time before Sunday midnight. There is no minimum term and no cancellation fee, on monthly and yearly plans alike." }, { q: "What if I don't like a coffee?", a: "Tell us and the next bag is free. We'd rather adjust your profile than have you drink something you don't enjoy." }, { q: "Where do the beans come from?", a: "From 31 small farms and co-operatives in Colombia, Ethiopia, Guatemala, Peru and Rwanda. Each bag lists the farm, the lot, the altitude and the price we paid for it." }]
 
-  column class="section" id="faq" {
+  column tag=section class="section" id="faq" {
     grid class="wrap faq-grid" {
       column class="faq-head" {
         SectionHead kicker="FAQ" heading="Questions, answered." sub="Anything else? Write to hello@brisa.coffee and a human replies within a day."
       }
       column class="faq-list reveal" {
         for f, i in items {
-          FaqItem q=f.q a=f.a start=(i == 0)
+          FaqItem n=(i + 1) q=f.q a=f.a start=(i == 0)
         }
       }
     }
@@ -429,20 +411,13 @@ component Signup {
   state error = ""
   state done = false
   state sentTo = ""
-  ref formEl
-  mount {
-    // Our own messages instead of the browser's validation bubble (there is no `novalidate` prop).
-    if formEl {
-      formEl.noValidate = true
-    }
-  }
   fn submit() {
     let v = email.trim()
     if v == "" {
       error = "Enter your email address to get the sample."
       return
     }
-    if !isEmail(v) {
+    if !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v) {
       error = "That doesn't look like an email address. Try name@example.com."
       return
     }
@@ -451,15 +426,15 @@ component Signup {
     done = true
   }
 
-  column class="section signup-section" id="start" {
+  column tag=section class="section signup-section" id="start" {
     column class="wrap" {
       column class="signup reveal" {
-        column class="signup-glow deco"
-        column class="bean sb1 deco"
-        column class="bean sb2 deco"
+        column class="signup-glow" aria-hidden="true"
+        column class="bean sb1" aria-hidden="true"
+        column class="bean sb2" aria-hidden="true"
         text "Your first cup is on us" class="kicker"
         title "Try a free 100 g sample before you subscribe." class="h2"
-        text "Leave your email and we'll send you a sample of this week's roast, with brew notes. No card needed." class="lede"
+        text "Leave your email and we'll send you a sample of this week's roast, with brew notes. No card needed." tag=p class="lede"
         if done {
           row class="signup-done" role="status" gap=4 {
             row class="done-check" justify=center {
@@ -471,7 +446,7 @@ component Signup {
             }
           }
         } else {
-          form class=(error != "" ? "signup-form invalid" : "signup-form") ref=formEl -> submit() {
+          form class="signup-form" data-invalid=(error != "") novalidate -> submit() {
             row class="signup-field" {
               input email type=email placeholder="you@example.com" label="Email address" class="signup-input" on:input=(error = "")
               button "Send my sample" class="btn btn-primary btn-lg"
@@ -494,26 +469,25 @@ component Signup {
 page Privacy "/privacy" {
   mount {
     syncEntrance()
-    aria()
   }
 
   meta title="Privacy — Brisa" description="What Brisa collects, why, and how to have it deleted. Short version: as little as possible." image="/og.png"
   column class="prose-page" {
     column class="wrap prose" {
-      text "Legal" class="kicker enter d0"
-      column class="display h1 small-display enter d1" role="heading" {
+      text "Legal" class="kicker enter" style="--d: 40ms"
+      column tag=h1 class="display small-display enter" style="--d: 130ms" {
         text "Privacy, in plain words."
       }
-      text "Last updated 1 September 2026" class="soft enter d2"
-      column class="prose-body enter d3" {
-        title "What we collect" class="h3"
-        text "Your name, delivery address and email, so your coffee reaches you; and your brewing preferences, so it is the right coffee. Card details go straight to our payment provider and never touch our servers." class="p"
-        title "What we don't do" class="h3"
-        text "We don't sell or rent your data, we don't run advertising trackers, and this site sets no cookies. Your theme preference is stored in your own browser and nowhere else." class="p"
-        title "How long we keep it" class="h3"
-        text "For as long as you have a subscription, plus the period tax law requires for invoices. Ask us to delete everything else and we will, within seven days." class="p"
-        title "Talk to a person" class="h3"
-        text "Write to privacy@brisa.coffee. Brisa is a fictional brand and this page is part of a demo, but we think a privacy policy should read like this one." class="p"
+      text "Last updated 1 September 2026" class="soft enter" style="--d: 220ms"
+      column class="prose-body enter" style="--d: 310ms" {
+        title "What we collect" tag=h3 class="h3"
+        text "Your name, delivery address and email, so your coffee reaches you; and your brewing preferences, so it is the right coffee. Card details go straight to our payment provider and never touch our servers." tag=p class="p"
+        title "What we don't do" tag=h3 class="h3"
+        text "We don't sell or rent your data, we don't run advertising trackers, and this site sets no cookies. Your theme preference is stored in your own browser and nowhere else." tag=p class="p"
+        title "How long we keep it" tag=h3 class="h3"
+        text "For as long as you have a subscription, plus the period tax law requires for invoices. Ask us to delete everything else and we will, within seven days." tag=p class="p"
+        title "Talk to a person" tag=h3 class="h3"
+        text "Write to privacy@brisa.coffee. Brisa is a fictional brand and this page is part of a demo, but we think a privacy policy should read like this one." tag=p class="p"
         link href="/" class="btn btn-outline back-link" {
           icon "arrow-left" size=18
           text "Back to the coffee"
@@ -526,19 +500,18 @@ page Privacy "/privacy" {
 page NotFound "*" {
   mount {
     syncEntrance()
-    aria()
   }
 
   meta title="Page not found — Brisa" description="This page doesn't exist."
   column class="lost" align=center {
-    text "404" class="lost-code deco"
-    column class="display h1 small-display enter d1" role="heading" {
+    text "404" class="lost-code" aria-hidden="true"
+    column tag=h1 class="display small-display enter" style="--d: 130ms" {
       text "This cup is empty."
     }
-    text "The page you're looking for was moved, renamed or never brewed in the first place." class="lede"
+    text "The page you're looking for was moved, renamed or never brewed in the first place." tag=p class="lede"
     link href="/" class="btn btn-primary btn-lg" {
       text "Back to Brisa"
-      icon "arrow-right" size=18 class="a-icon btn-arrow"
+      icon "arrow-right" size=18 class="btn-arrow"
     }
   }
 }

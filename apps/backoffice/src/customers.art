@@ -36,7 +36,7 @@ page Customers "/customers" layout Shell requires login {
     if name.trim().length < 2 {
       found.name = "Enter the customer's name (at least 2 characters)"
     }
-    if !isEmail(email) {
+    if !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim()) {
       found.email = "Enter a valid email address, like ana@company.com"
     }
     if company.length > 80 {
@@ -63,17 +63,10 @@ page Customers "/customers" layout Shell requires login {
       editing = false
     } catch (e) {
       let field = e.details?.field ?? "form"
-      let found = {}
-      found[field] = e.status == 409 ? "Another customer already uses this email" : e.message
-      errors = found
+      errors = { [field]: e.status == 409 ? "Another customer already uses this email" : e.message }
     } finally {
       saving = false
     }
-  }
-  fn cancel(e) {
-    // A button inside a form submits it: stop that, only close.
-    e.preventDefault()
-    editing = false
   }
   fn askRemove(c) {
     doomed = c
@@ -98,7 +91,7 @@ page Customers "/customers" layout Shell requires login {
   meta title="Customers · Northwind Backoffice"
   row class="page-head" justify=between gap=3 wrap {
     column {
-      title "Customers"
+      title "Customers" tag=h1
       text `${formatNumber(total)} ${total == 1 ? "customer" : "customers"}` muted
     }
     button "New customer" primary -> startNew()
@@ -144,11 +137,11 @@ page Customers "/customers" layout Shell requires login {
             td formatDate(c.createdAt) muted
             td class="actions" {
               row gap=1 justify=end {
-                button class="icon-btn" -> startEdit(c) {
-                  icon "edit" size=16 label=`Edit ${c.name}`
+                button class="icon-btn" aria-label=`Edit ${c.name}` -> startEdit(c) {
+                  icon "edit" size=16
                 }
-                button class="icon-btn danger" -> askRemove(c) {
-                  icon "trash" size=16 label=`Delete ${c.name}`
+                button class="icon-btn danger" aria-label=`Delete ${c.name}` -> askRemove(c) {
+                  icon "trash" size=16
                 }
               }
             }
@@ -160,7 +153,7 @@ page Customers "/customers" layout Shell requires login {
   }
   modal editing gap=4 class="sheet" {
     title editId == "" ? "New customer" : "Edit customer"
-    form gap=3 -> save() {
+    form gap=3 novalidate -> save() {
       column gap=1 {
         input name label="Name" placeholder="Full name" class=(errors.name ? "invalid" : "")
         if errors.name {
@@ -184,7 +177,7 @@ page Customers "/customers" layout Shell requires login {
         text errors.form danger small role="alert"
       }
       row gap=2 justify=end {
-        button "Cancel" on:click=cancel(event)
+        button "Cancel" -> editing = false
         button saving ? "Saving…" : "Save customer" primary disabled=saving
       }
     }

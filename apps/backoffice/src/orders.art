@@ -25,7 +25,7 @@ page Orders "/orders" layout Shell requires login {
   meta title="Orders · Northwind Backoffice"
   row class="page-head" justify=between gap=3 wrap {
     column {
-      title "Orders"
+      title "Orders" tag=h1
       text `${formatNumber(total)} ${total == 1 ? "order" : "orders"} match` muted
     }
   }
@@ -80,8 +80,8 @@ page Orders "/orders" layout Shell requires login {
               select o.status options=STATUS_OPTIONS label="Status" class=`status-select s-${o.status}` -> setStatus(o, o.status)
             }
             td class="actions" {
-              button class="icon-btn" -> open(o) {
-                icon "eye" size=16 label=`View ${o.number}`
+              button class="icon-btn" aria-label=`View ${o.number}` -> open(o) {
+                icon "eye" size=16
               }
             }
           }

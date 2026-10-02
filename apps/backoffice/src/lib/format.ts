@@ -37,7 +37,3 @@ export function statusLabel(status: string): string {
 export function initials(name: string): string {
   return (name ?? "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
 }
-
-export function isEmail(text: string): boolean {
-  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test((text ?? "").trim());
-}

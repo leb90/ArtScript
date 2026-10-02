@@ -56,7 +56,7 @@
 .chip-notes span:nth-child(2) { background: var(--brand-wash); color: var(--brand); }
 @media (max-width: 480px) {
   .hero-cta .btn { flex: 1 1 100%; }
-  .hero-proof .deco { display: none; }
+  .hero-proof > span[aria-hidden] { display: none; }
   .hero-proof .soft { flex-basis: 100%; }
 }
 @media (max-width: 420px) {

@@ -2,7 +2,7 @@ component AuthShell(heading: String, hint: String) {
   column class="auth fade-in" gap=5 {
     column gap=1 align=center {
       icon "shopping-bag" size=28 primary
-      title heading
+      title heading tag=h1
       text hint muted
     }
     card gap=4 class="auth-card" {
@@ -39,7 +39,7 @@ page Login "/login" {
       if error != "" {
         text error class="alert" role="alert"
       }
-      button busy ? "Logging in..." : "Log in" primary class="a-primary big" disabled=busy
+      button busy ? "Logging in..." : "Log in" primary class="big" disabled=busy
     }
     row gap=1 justify=center {
       text "New here?" muted small
@@ -86,7 +86,7 @@ page Signup "/signup" {
       if error != "" {
         text error class="alert" role="alert"
       }
-      button busy ? "Creating account..." : "Sign up" primary class="a-primary big" disabled=busy
+      button busy ? "Creating account..." : "Sign up" primary class="big" disabled=busy
     }
     row gap=1 justify=center {
       text "Already have an account?" muted small
@@ -106,11 +106,11 @@ component StatusBadge(status: String) {
 }
 
 page Orders "/orders" requires login {
-  data orders = server.myOrders()
+  data orders = api.orders.list({ sort: "-createdAt" })
 
   meta title="My orders · Fernwood"
   column gap=5 class="fade-in" {
-    title "My orders" class="page-title"
+    title "My orders" class="page-title" tag=h1
     if query.placed {
       row gap=3 class="banner" role="status" {
         icon "check" size=20 success
@@ -124,7 +124,7 @@ page Orders "/orders" requires login {
       row justify=center pad=8 {
         spinner
       }
-    } else if (orders ?? []).length == 0 {
+    } else if orders.length == 0 {
       column gap=3 align=center class="empty" {
         icon "package" size=40 muted
         text "No orders yet" bold large
@@ -133,7 +133,7 @@ page Orders "/orders" requires login {
       }
     } else {
       column gap=4 {
-        for o in orders ?? [] key o.id {
+        for o in orders key o.id {
           card gap=3 class="order" {
             row justify=between gap=2 wrap {
               column {
@@ -151,7 +151,7 @@ page Orders "/orders" requires login {
             }
             divider
             row justify=between gap=3 wrap {
-              text `Ships to ${o.name}, ${o.address}` small muted class="a-small a-muted ship-to"
+              text `Ships to ${o.name}, ${o.address}` small muted class="ship-to"
               text `Total ${money(o.total)}` class="price"
             }
           }

@@ -1,11 +1,12 @@
-use "chart.js/auto" as Chart
+use "./lib/chart.ts" { Chart }
 
 // A Chart.js chart that follows its data and the light/dark theme.
 // `kind`: "line", "bar" (horizontal) or "doughnut"; `colors`: CSS variables, one per doughnut slice.
 component ChartView(kind: String, labels: String[], values: Number[], name: String, colors: String[] = [], currency: Bool = false) {
   ref box
+  ref chart
   fn token(name) {
-    return window.getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
   }
   fn show(value) {
     return currency ? formatMoney(value) : formatNumber(value)
@@ -25,7 +26,7 @@ component ChartView(kind: String, labels: String[], values: Number[], name: Stri
     let muted = token("--a-muted")
     let line = token("--chart-grid")
     let tooltip = { backgroundColor: token("--tooltip-bg"), titleColor: token("--tooltip-fg"), bodyColor: token("--tooltip-fg"), padding: 10, cornerRadius: 8, displayColors: kind == "doughnut", boxPadding: 4, callbacks: { label: item => ` ${kind == "doughnut" ? item.label : name}: ${show(item.raw)}` } }
-    let base = { responsive: true, maintainAspectRatio: false, animation: { duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500 }, plugins: { legend: { display: false }, tooltip } }
+    let base = { responsive: true, maintainAspectRatio: false, animation: { duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500 }, plugins: { legend: { display: false }, tooltip } }
     let quiet = { display: false }
     let ticks = { color: muted, font: { size: 12 } }
     if kind == "line" {
@@ -37,7 +38,6 @@ component ChartView(kind: String, labels: String[], values: Number[], name: Stri
     return { ...base, cutout: "68%" }
   }
   fn paint() {
-    let chart = box ? Chart.getChart(box.firstChild) : null
     if !chart {
       return
     }
@@ -47,24 +47,22 @@ component ChartView(kind: String, labels: String[], values: Number[], name: Stri
     chart.update()
   }
   mount {
-    let canvas = document.createElement("canvas")
-    canvas.setAttribute("role", "img")
-    canvas.setAttribute("aria-label", name)
-    box.appendChild(canvas)
-    let chart = new Chart(canvas, { type: kind, data: { labels, datasets: [dataset()] }, options: options() })
-    let system = window.matchMedia("(prefers-color-scheme: dark)")
-    let repaint = () => paint()
-    system.addEventListener("change", repaint)
+    chart = new Chart(box, { type: kind, data: { labels, datasets: [dataset()] }, options: options() })
+    let system = matchMedia("(prefers-color-scheme: dark)")
+    system.addEventListener("change", paint)
     cleanup {
-      system.removeEventListener("change", repaint)
+      system.removeEventListener("change", paint)
       chart.destroy()
+      chart = null
     }
   }
   effect {
     // Reads what the chart depends on; paints on the next frame, when the theme's CSS is in place.
     let deps = [labels, values, theme()]
-    requestAnimationFrame(() => paint())
+    requestAnimationFrame(paint)
   }
 
-  column class="chart-box" ref=box
+  column class="chart-box" {
+    canvas ref=box role="img" aria-label=name
+  }
 }

@@ -1,3 +1,5 @@
+use "./lib/pricing.ts" { priceCart }
+
 // `owner` is never set, so with `private` no account can list or read the others through
 // /api/users (`login` would show every name and email to anyone signed in); auth still works.
 model User {
@@ -26,12 +28,10 @@ model OrderLine {
   qty: Number
 }
 
-// Orders are written only by `placeOrder`. Their `owner` is "server", so no account can read or
-// change one through /api/orders; `customer` is who bought (see `myOrders`).
+// `private readonly`: a customer reads their own orders; only `placeOrder` writes them.
 model Order {
   id: ID
   owner: ID
-  customer: ID
   email: String
   name: String
   address: String
@@ -50,17 +50,11 @@ model CartItem {
   qty: Number
 }
 
-model Quote {
-  lines: OrderLine[]
-  total: Number
-  problems: String[]
-}
-
 api users: User private
 
 api products: Product admin
 
-api orders: Order private
+api orders: Order private readonly
 
 auth users
 
@@ -80,70 +74,43 @@ server fn categories() {
   return [...new Set(db.products.list().map(p => p.category))].sort()
 }
 
-// Prices a cart from the stored products (the browser only says which product and how many) and,
-// with `ship`, places the order of the signed-in user: the stock is checked and taken, and nothing
-// is written if a line can't be fulfilled. Without `ship` it only returns the quote.
-server fn checkout(items, ship) {
-  let wanted = new Map()
-  for w in Array.isArray(items) ? items : [] {
-    let qty = Math.floor(Number(w?.qty))
-    if typeof w?.id == "string" && qty > 0 {
-      wanted.set(w.id, (wanted.get(w.id) ?? 0) + qty)
-    }
-  }
-  let lines = []
-  let problems = []
-  for entry in [...wanted] {
-    let p = db.products.get(entry[0])
-    if !p {
-      problems.push("A product in your cart is no longer available")
-    } else if p.stock <= 0 {
-      problems.push(`${p.name} is sold out`)
-    } else if p.stock < entry[1] {
-      problems.push(`Only ${p.stock} left of ${p.name}`)
-    } else {
-      lines.push({ productId: p.id, name: p.name, price: p.price, qty: entry[1], left: p.stock - entry[1] })
-    }
-  }
-  let total = Math.round(lines.reduce((n, l) => n + l.price * l.qty, 0) * 100) / 100
-  if !ship {
-    return { lines, total, problems }
-  }
+// What the cart costs right now, with the server's prices and stock.
+server fn quote(items) {
+  return priceCart(id => db.products.get(id), items)
+}
+
+// Creates the order of the signed-in user: the total comes from the stored prices, the stock is
+// checked and taken, and nothing is written if any line can't be fulfilled.
+server fn placeOrder(items, name, address) {
   if !me {
     fail("Log in to place your order", 401)
   }
-  let name = String(ship.name ?? "").trim()
-  let address = String(ship.address ?? "").trim()
-  if name.length < 2 {
+  let fullName = String(name ?? "").trim()
+  let shipTo = String(address ?? "").trim()
+  if fullName.length < 2 {
     fail("Enter your full name", 400)
   }
-  if address.length < 8 {
+  if shipTo.length < 8 {
     fail("Enter a complete shipping address", 400)
   }
-  if problems.length > 0 {
-    fail(problems[0], 409)
+  let q = priceCart(id => db.products.get(id), items)
+  if q.problems.length > 0 {
+    fail(q.problems[0], 409)
   }
-  if lines.length == 0 {
+  if q.lines.length == 0 {
     fail("Your cart is empty", 400)
   }
-  for l in lines {
-    db.products.update(l.productId, { stock: l.left })
+  for l in q.lines {
+    db.products.update(l.productId, { stock: (db.products.get(l.productId)?.stock ?? 0) - l.qty })
   }
-  return db.orders.create({ owner: "server", customer: me.id, email: me.email, name: name.slice(0, 80), address: address.slice(0, 300), lines: lines.map(l => ({ productId: l.productId, name: l.name, price: l.price, qty: l.qty })), total, status: "Paid", createdAt: new Date().toISOString() })
-}
-
-server fn myOrders() {
-  if !me {
-    return []
-  }
-  return db.orders.list({ where: { owner: "server", customer: me.id }, sort: "-createdAt" })
+  return db.orders.create({ owner: me.id, email: me.email, name: fullName.slice(0, 80), address: shipTo.slice(0, 300), lines: q.lines, total: q.total, status: "Paid", createdAt: new Date().toISOString() })
 }
 
 server fn allOrders() {
   if me?.role != "admin" {
     fail("Only admins can see every order", 403)
   }
-  return db.orders.list({ where: { owner: "server" }, sort: "-createdAt" })
+  return db.orders.list({ sort: "-createdAt" })
 }
 
 server fn setOrderStatus(id, status) {

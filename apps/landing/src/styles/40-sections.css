@@ -45,7 +45,7 @@
 .segmented button { position: relative; min-width: 108px; padding: 9px 20px; border-radius: 999px; font-weight: 600; font-size: .95rem; color: var(--ink-soft); transition: color .25s ease; }
 .segmented button.a-active { box-shadow: none; color: var(--ink); }
 .save { padding: 5px 12px; border-radius: 999px; background: var(--leaf-wash); color: var(--leaf); font-size: .8125rem; font-weight: 700; transition: transform .4s var(--ease), background-color .3s ease, color .3s ease; }
-.save.on { background: var(--leaf); color: var(--bg); transform: scale(1.06) rotate(-2deg); }
+.save[data-on] { background: var(--leaf); color: var(--bg); transform: scale(1.06) rotate(-2deg); }
 
 .plans { align-items: stretch; }
 .plan { gap: 14px; padding: 32px 30px 34px; border: 1px solid var(--line); border-radius: 26px; background: var(--surface); transition: transform .35s var(--ease), box-shadow .35s var(--ease), border-color .3s ease; }
@@ -57,16 +57,18 @@
 .per { padding-bottom: 8px; }
 .billed { font-size: .9rem; margin-bottom: 8px; }
 .plan .btn { width: 100%; }
+.plan-btn { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+.plan-btn:hover { background: var(--surface); border-color: var(--ink); transform: translateY(-2px); }
 .perks { margin-top: 14px; padding-top: 20px; border-top: 1px solid var(--line); font-size: .975rem; }
 .perk-icon { flex: none; margin-top: 4px; color: var(--leaf); }
 .perk-strong { font-weight: 600; }
 .pill { padding: 4px 11px; border-radius: 999px; background: var(--roast-brand); color: #23130a; font-size: .75rem; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
 
-.plan.featured { --ink: var(--roast-ink); --ink-soft: var(--roast-soft); --line: var(--roast-line); --leaf: #b9d4b3; background: radial-gradient(120% 80% at 100% 0%, rgba(234, 149, 96, .22), transparent 60%), var(--roast); border-color: transparent; color: var(--roast-ink); box-shadow: var(--shadow-lg); }
-.plan.featured .btn-primary { background: var(--roast-brand); color: #23130a; box-shadow: 0 10px 24px -10px var(--roast-brand); }
-.plan.featured .btn-primary:hover { background: #f2a877; }
+.plan[data-featured] { --ink: var(--roast-ink); --ink-soft: var(--roast-soft); --line: var(--roast-line); --leaf: #b9d4b3; background: radial-gradient(120% 80% at 100% 0%, rgba(234, 149, 96, .22), transparent 60%), var(--roast); border-color: transparent; color: var(--roast-ink); box-shadow: var(--shadow-lg); }
+.plan[data-featured] .plan-btn { border-color: transparent; background: var(--roast-brand); color: #23130a; box-shadow: 0 10px 24px -10px var(--roast-brand); }
+.plan[data-featured] .plan-btn:hover { background: #f2a877; border-color: transparent; }
 @media (min-width: 1024px) {
-  .plan.featured { margin-block: -14px; padding-block: 46px 48px; }
+  .plan[data-featured] { margin-block: -14px; padding-block: 46px 48px; }
 }
 @media (max-width: 1023px) {
   .plans, .quotes { width: 100%; max-width: 560px; margin-inline: auto; }
@@ -107,11 +109,10 @@
 .signup-field:focus-within { border-color: var(--roast-brand); box-shadow: 0 0 0 4px rgba(234, 149, 96, .22); background: rgba(247, 238, 226, .1); }
 .signup-field .a-field { flex: 1; min-width: 0; }
 .signup-field .a-field > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-/* The built-in input rule has three :not()s, hence the long selector. */
-.signup .signup-field .a-field input.signup-input { width: 100%; padding: 12px 8px 12px 18px; border: 0; border-radius: 999px; background: transparent; color: var(--roast-ink); font-size: 1.05rem; outline: none; }
+.signup-input { width: 100%; padding: 12px 8px 12px 18px; border: 0; border-radius: 999px; background: transparent; color: var(--roast-ink); font-size: 1.05rem; outline: none; }
 .signup-input::placeholder { color: rgba(247, 238, 226, .5); }
 .signup-hint { font-size: .875rem; color: var(--roast-soft); }
-.signup-form.invalid .signup-field { border-color: var(--danger); box-shadow: 0 0 0 4px rgba(255, 180, 162, .16); animation: shake .4s ease; }
+.signup-form[data-invalid] .signup-field { border-color: var(--danger); box-shadow: 0 0 0 4px rgba(255, 180, 162, .16); animation: shake .4s ease; }
 .signup-error { color: var(--danger); font-size: .925rem; font-weight: 500; text-align: left; animation: rise-sm .3s var(--ease) backwards; }
 .signup-done { margin-top: 12px; padding: 18px 24px 18px 18px; border: 1px solid var(--roast-line); border-radius: 22px; background: rgba(247, 238, 226, .07); text-align: left; max-width: 540px; animation: rise-sm .5s var(--ease) backwards; }
 .done-check { flex: none; width: 46px; height: 46px; border-radius: 50%; background: #b9d4b3; color: #1d2b1b; animation: pop .6s var(--ease) .1s backwards; }
@@ -119,7 +120,7 @@
 .done-text { display: block; font-size: .925rem; color: var(--roast-soft); overflow-wrap: anywhere; }
 @media (max-width: 560px) {
   .signup-field { flex-direction: column; align-items: stretch; padding: 8px; border-radius: 26px; }
-  .signup .signup-field .a-field input.signup-input { text-align: center; padding: 12px; }
+  .signup-input { text-align: center; padding: 12px; }
 }
 @media (max-width: 899px) {
   .signup .bean { display: none; }

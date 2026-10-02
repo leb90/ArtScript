@@ -1,0 +1,43 @@
+// The cart: one value for every page. It starts from localStorage, and layout Main saves it there.
+state cart: CartItem[] = savedCart()
+
+computed cartCount = cart.reduce((n, i) => n + i.qty, 0)
+
+computed cartSubtotal = Math.round(cart.reduce((n, i) => n + i.price * i.qty, 0) * 100) / 100
+
+computed cartRefs = cart.map(i => ({ id: i.id, qty: i.qty }))
+
+fn savedCart() {
+  try {
+    // No localStorage while the server renders the page.
+    let saved = typeof localStorage == "undefined" ? [] : JSON.parse(localStorage.getItem("shop.cart.v1") ?? "[]")
+    return Array.isArray(saved) ? saved.filter(i => i && typeof i.id == "string" && i.qty > 0) : []
+  } catch (e) {
+    return []
+  }
+}
+
+// Adds `qty` of a product, never past its stock. Returns how many were actually added.
+fn addToCart(p, qty = 1) {
+  let line = cart.find(i => i.id == p.id)
+  let added = Math.min(qty, Math.max(0, p.stock - (line?.qty ?? 0)))
+  if added <= 0 {
+    return 0
+  }
+  if line {
+    line.qty += added
+    line.price = p.price
+    line.stock = p.stock
+  } else {
+    cart.push({ id: p.id, name: p.name, price: p.price, image: p.image, stock: p.stock, qty: added })
+  }
+  return added
+}
+
+fn setCartQty(item, qty) {
+  if qty <= 0 {
+    cart = cart.filter(i => i.id != item.id)
+  } else {
+    item.qty = Math.min(qty, Math.max(1, item.stock))
+  }
+}

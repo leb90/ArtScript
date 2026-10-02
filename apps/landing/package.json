@@ -6,10 +6,12 @@
   "scripts": {
     "dev": "art dev",
     "start": "art dev",
-    "build": "art build",
+    "build": "art build --prerender --site https://brisa.example",
+    "test": "art test",
     "check": "art check"
   },
   "devDependencies": {
-    "@artscript/core": "^0.2.0"
+    "@artscript/core": "^0.2.1",
+    "@happy-dom/global-registrator": "^20.14.5"
   }
 }

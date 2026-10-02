@@ -4,7 +4,7 @@ layout Shell {
   state menu = false
   state dark = false
   fn syncTheme() {
-    dark = theme() == "dark" || theme() == "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches
+    dark = theme() == "dark" || theme() == "auto" && matchMedia("(prefers-color-scheme: dark)").matches
   }
   fn toggleTheme() {
     setTheme(dark ? "light" : "dark")
@@ -19,7 +19,7 @@ layout Shell {
   }
 
   grid class=(menu ? "shell menu-open" : "shell") {
-    row class="brand" gap=2 {
+    row class="brand" gap=2 tag=header {
       row class="brand-mark" {
         icon "chart" size=18
       }
@@ -27,11 +27,11 @@ layout Shell {
       badge "Backoffice"
     }
     row class="topbar" gap=2 justify=end {
-      button class="icon-btn" -> toggleTheme() {
+      button class="icon-btn" aria-label=(dark ? "Switch to light theme" : "Switch to dark theme") -> toggleTheme() {
         if dark {
-          icon "sun" size=18 label="Switch to light theme"
+          icon "sun" size=18
         } else {
-          icon "moon" size=18 label="Switch to dark theme"
+          icon "moon" size=18
         }
       }
       if me {
@@ -44,15 +44,15 @@ layout Shell {
         }
         button "Log out" small class="logout" -> logout()
       }
-      button class="icon-btn menu-btn" -> menu = !menu {
+      button class="icon-btn menu-btn" aria-label="Menu" aria-expanded=menu aria-controls="nav" -> menu = !menu {
         if menu {
-          icon "x" size=18 label="Close menu"
+          icon "x" size=18
         } else {
-          icon "menu" size=18 label="Open menu"
+          icon "menu" size=18
         }
       }
     }
-    column class="nav" role="navigation" gap=1 {
+    column class="nav" id="nav" tag=nav aria-label="Main" gap=1 {
       link to="/" class="nav-link" on:click=(menu = false) {
         icon "dashboard" size=18
         text "Dashboard"
@@ -70,14 +70,14 @@ layout Shell {
         text "Products"
       }
     }
-    column class="content" role="main" {
+    column class="content" tag=main {
       slot
     }
   }
 }
 
 layout Plain {
-  column class="plain" align=center justify=center {
+  column class="plain" tag=main align=center justify=center {
     slot
   }
 }
@@ -90,6 +90,8 @@ page Login "/login" layout Plain {
   state password = ""
   state error = ""
   state busy = false
+  // Where `requires login` sent the visitor from (`/login?next=/orders`); only paths of this app.
+  computed next = /^\/(?!\/)/.test(query.next ?? "") ? query.next : "/"
   fn submit() {
     error = ""
     busy = true
@@ -99,7 +101,7 @@ page Login "/login" layout Plain {
       } else {
         await auth.login(email, password)
       }
-      navigate("/")
+      navigate(next)
     } catch (e) {
       error = e.message
     } finally {
@@ -108,7 +110,7 @@ page Login "/login" layout Plain {
   }
   effect {
     if me {
-      navigate("/")
+      navigate(next)
     }
   }
 
@@ -122,7 +124,7 @@ page Login "/login" layout Plain {
       badge "Backoffice"
     }
     column gap=1 {
-      title mode == "signup" ? "Create your account" : "Welcome back"
+      title mode == "signup" ? "Create your account" : "Welcome back" tag=h1
       text mode == "signup" ? "The first account becomes the admin." : "Log in to manage orders, customers and products." muted small
     }
     tabs mode options=[{ value: "login", label: "Log in" }, { value: "signup", label: "Sign up" }]
@@ -142,7 +144,7 @@ page Login "/login" layout Plain {
 
 page NotFound "*" layout Plain {
   column gap=3 align=center {
-    title "Page not found"
+    title "Page not found" tag=h1
     text "That address doesn't exist in the backoffice." muted
     link "Back to the dashboard" to="/"
   }

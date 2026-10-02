@@ -1,0 +1,40 @@
+test "the billing toggle changes the prices" {
+  open "/"
+  see "$29"
+  see "Billed monthly, cancel anytime"
+  click "Yearly"
+  see "$24"
+  see "Billed $288 once a year"
+  notSee "$29"
+}
+
+test "a question opens its answer" {
+  open "/"
+  click "How do I skip, pause or cancel?"
+  see "any time before Sunday midnight"
+}
+
+test "the sample form validates the email" {
+  open "/"
+  click "Send my sample"
+  see "Enter your email address"
+  fill "you@example.com" "abc"
+  click "Send my sample"
+  see "doesn't look like an email address"
+  fill "you@example.com" "maya@example.com"
+  click "Send my sample"
+  see "You're on the list."
+  see "maya@example.com"
+}
+
+test "the footer links to the privacy page" {
+  open "/"
+  link "Privacy"
+  see "Privacy, in plain words."
+  see "What we collect"
+}
+
+test "an unknown address shows the not-found page" {
+  open "/nope"
+  see "This cup is empty."
+}

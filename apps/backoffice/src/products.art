@@ -10,12 +10,6 @@ page Products "/products" layout Shell requires login {
   state asking = false
   state doomed: Product? = null
   data products = api.products.list({ sort: "name" })
-  ref priceInput
-  mount {
-    // `input` has no `step` prop: without this the browser rejects cents in a number field.
-    priceInput.step = "any"
-    priceInput.min = "0"
-  }
   fn startNew() {
     editId = ""
     name = ""
@@ -65,17 +59,10 @@ page Products "/products" layout Shell requires login {
       editing = false
     } catch (e) {
       let field = e.details?.field ?? "form"
-      let found = {}
-      found[field] = e.status == 409 ? "Another product already has this name" : e.message
-      errors = found
+      errors = { [field]: e.status == 409 ? "Another product already has this name" : e.message }
     } finally {
       saving = false
     }
-  }
-  fn cancel(e) {
-    // A button inside a form submits it: stop that, only close.
-    e.preventDefault()
-    editing = false
   }
   fn askRemove(p) {
     doomed = p
@@ -97,7 +84,7 @@ page Products "/products" layout Shell requires login {
   meta title="Products · Northwind Backoffice"
   row class="page-head" justify=between gap=3 wrap {
     column {
-      title "Products"
+      title "Products" tag=h1
       text `${formatNumber(products.length)} ${products.length == 1 ? "product" : "products"} in the catalog` muted
     }
     button "New product" primary -> startNew()
@@ -123,7 +110,7 @@ page Products "/products" layout Shell requires login {
         }
         for p in products key p.id {
           tr {
-            td p.name class="strong"
+            td p.name bold
             td {
               badge p.category
             }
@@ -142,11 +129,11 @@ page Products "/products" layout Shell requires login {
             }
             td class="actions" {
               row gap=1 justify=end {
-                button class="icon-btn" -> startEdit(p) {
-                  icon "edit" size=16 label=`Edit ${p.name}`
+                button class="icon-btn" aria-label=`Edit ${p.name}` -> startEdit(p) {
+                  icon "edit" size=16
                 }
-                button class="icon-btn danger" -> askRemove(p) {
-                  icon "trash" size=16 label=`Delete ${p.name}`
+                button class="icon-btn danger" aria-label=`Delete ${p.name}` -> askRemove(p) {
+                  icon "trash" size=16
                 }
               }
             }
@@ -157,7 +144,7 @@ page Products "/products" layout Shell requires login {
   }
   modal editing gap=4 class="sheet" {
     title editId == "" ? "New product" : "Edit product"
-    form gap=3 -> save() {
+    form gap=3 novalidate -> save() {
       column gap=1 {
         input name label="Name" placeholder="Product name" class=(errors.name ? "invalid" : "")
         if errors.name {
@@ -167,13 +154,13 @@ page Products "/products" layout Shell requires login {
       select category options=CATEGORIES label="Category"
       grid cols=2 gap=3 {
         column gap=1 {
-          input price label="Price (USD)" placeholder="Price" type=number ref=priceInput class=(errors.price ? "invalid" : "")
+          input price label="Price (USD)" placeholder="Price" type=number step=0.01 min=0 class=(errors.price ? "invalid" : "")
           if errors.price {
             text errors.price danger small role="alert"
           }
         }
         column gap=1 {
-          input stock label="Stock" placeholder="Units" type=number class=(errors.stock ? "invalid" : "")
+          input stock label="Stock" placeholder="Units" type=number step=1 min=0 class=(errors.stock ? "invalid" : "")
           if errors.stock {
             text errors.stock danger small role="alert"
           }
@@ -183,7 +170,7 @@ page Products "/products" layout Shell requires login {
         text errors.form danger small role="alert"
       }
       row gap=2 justify=end {
-        button "Cancel" on:click=cancel(event)
+        button "Cancel" -> editing = false
         button saving ? "Saving…" : "Save product" primary disabled=saving
       }
     }

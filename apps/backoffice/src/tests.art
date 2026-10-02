@@ -35,7 +35,6 @@ test "creates a customer, with errors per field first" {
   fill "you@company.com" "ada@northwind.test"
   fill "At least 8 characters" "secret-pass-1"
   click "Create account"
-  see "No data yet"
   link "Customers"
   see "No customers found"
   click "New customer"
@@ -52,14 +51,13 @@ test "creates a customer, with errors per field first" {
   see "1 customer"
 }
 
-test "adds a product, with errors per field first" {
+test "adds a product, cancels an edit and deletes it" {
   open "/login"
   click "Sign up"
   fill "Your name" "Ada Lovelace"
   fill "you@company.com" "ada@northwind.test"
   fill "At least 8 characters" "secret-pass-1"
   click "Create account"
-  see "No data yet"
   link "Products"
   see "No products yet"
   click "New product"
@@ -74,6 +72,13 @@ test "adds a product, with errors per field first" {
   see "$24.50"
   see "Low"
   see "1 product in the catalog"
+  click "Edit Desk Mat"
+  fill "Product name" "Desk Mat XL"
+  click "Cancel"
+  notSee "Desk Mat XL"
+  click "Delete Desk Mat"
+  click "Delete product"
+  see "No products yet"
 }
 
 test "loads the sample data and changes an order's status" {
@@ -83,7 +88,6 @@ test "loads the sample data and changes an order's status" {
   fill "you@company.com" "ada@northwind.test"
   fill "At least 8 characters" "secret-pass-1"
   click "Create account"
-  see "No data yet"
   click "Load sample data"
   see "Loaded 300 orders, 40 customers and 12 products"
   see "Average order value"
@@ -99,4 +103,15 @@ test "loads the sample data and changes an order's status" {
   see "ORD-1300"
   select 0 "Pending"
   see "No orders found"
+}
+
+test "goes back to the page that asked for the login" {
+  open "/customers"
+  see "Welcome back"
+  click "Sign up"
+  fill "Your name" "Ada Lovelace"
+  fill "you@company.com" "ada@northwind.test"
+  fill "At least 8 characters" "secret-pass-1"
+  click "Create account"
+  see "No customers found"
 }

@@ -52,15 +52,17 @@ fn add(x) {                      // function; body = JS statements
 }
 ```
 
+- `state`, `computed` and `fn` written outside any component are shared by all of them (`state cart: Item[] = []`: one cart for every page).
 - Assigning to a `state` updates the UI: `count++`, `name = "x"`, `users.push(u)`, `user.name = "x"`, also through a fn parameter (`fn sell(p) { p.stock-- }`).
 - A component that assigns its prop (`items = items.filter(...)`) changes the parent's state: pass a state (`List items=items`).
 - No hooks, setters or manual dependencies.
 - Statements: expression, `let x = ...`, `if cond { } else { }`, `for x in xs { }`, `while cond { }`, `return`, `try { } catch (e) { } finally { }`.
 - For DOM libraries (charts, maps), timers and subscriptions:
   ```
-  ref box                          // the element marked `ref=box` (set before mount runs)
+  ref box                          // the element marked `canvas ref=box` (set before mount runs)
+  ref chart                        // a ref also holds any value that isn't state
   mount {                          // once, when the view is in the page
-    let chart = new Chart(box, { data: points })
+    chart = new Chart(box, { data: points })
     cleanup { chart.destroy() }    // on unmount
   }
   effect {                         // re-runs when the states it reads change
@@ -80,7 +82,7 @@ api users: User                    // REST at /api/users: validated against the 
 - Query: `list({ where: { active: true }, search: "pan", sort: "-price", limit: 20, offset: 40 })` (`-` = descending; `search` matches text fields); `count({ where, search })`. Inside `data` they re-run when the states they use change (`offset: page * 20`).
 - `data users = api.users.list()` loads on mount and **reloads by itself** after any write, login or logout. A list starts as `[]`, a count as `0`, `get` as `null` (`T?`). `users.loading` (until the first response), `users.error` (message or `null`), `users.reload()`. `... live` also reloads when someone else writes.
 - `await` and `try { } catch (e) { }` work as in JS; `e.message` explains a validation error (`e.details.field` names the field; `e.status` is 409 when a `unique` value is taken).
-- Access: `api notes: Note login` needs a session; `private` also scopes rows per user (the model needs `owner: ID`, filled in); `admin`: anyone reads, admins write (accounts need `role: String`; the first account is "admin", later ones "user").
+- Access: `api notes: Note login` needs a session; `private` also scopes rows per user (the model needs `owner: ID`, filled in); `readonly` after it (`api orders: Order private readonly`): clients only read, server fns write; `admin`: anyone reads, admins write (accounts need `role: String`; the first account is "admin", later ones "user").
 - `auth users` (the model needs `email: Email` and `password: String`): `auth.signup(obj)`, `auth.login(email, password)`, `auth.logout()`, `auth.logoutAll()`, `data me = auth.me()` (`T?`). `auth users with google, github`: `auth.loginWith("google")`.
 - `auth.requestReset(email)` emails a link to `/reset-password?token=...`, a page that calls `auth.resetPassword(query.token, password)`. With `verified: Bool` in the model, sign-up emails `/verify-email?token=...` (`auth.verifyEmail(query.token)`).
 - `server fn name(a, b) { ... }` runs on the server; call it as `server.name(a, b)` (also in `data`). Inside: `db.<api>` (no `await`, not scoped per user), `me` (logged-in user or `null`), `fail("message", status?)` and `await email(to, subject, text)`.
@@ -124,13 +126,14 @@ column gap=4 align=center {
 | `badge` | text | — | | primary success danger |
 | `icon` | Lucide name (`"check" "trash" "edit" "search" "user" "home"`...) | — | size label | muted primary success danger |
 | `spinner` `divider` | — | — | | |
+| `canvas` | — | — | width height | |
 | `row` `column` `card` | — | — | gap pad align justify | row: wrap |
 | `grid` | — | — | gap pad align justify cols | |
 | `form` | — | submit | gap pad align justify | |
 | `list` > `item` | item: text | item: click | | item: muted |
 | `table` > `tr` > `th` `td` | th/td: text | tr: click | | td: muted |
 
-- All take `class style id role` (`column role="main" { slot }`); a field without `label=` is named by its `placeholder`. `style { .box { ... } }` in a component: CSS only for its elements. `.css` files in the project are bundled; theme: `:root { --a-primary: #e11d48; --a-radius: 4px; --a-font: Inter }` (also `--a-bg --a-fg --a-surface --a-border --a-muted --a-danger --a-success`).
+- All take `class style id role aria-* data-*` (`button "Menu" aria-expanded=open`); texts and containers take `tag=` for the HTML element (`title "Plans" tag=h1`, `column tag=nav`; default: `title` is an h2, `text` a span); a field without `label=` is named by its `placeholder`. `style { .box { ... } }` in a component: CSS only for its elements. `.css` files in the project are bundled; theme: `:root { --a-primary: #e11d48; --a-radius: 4px; --a-font: Inter }` (also `--a-bg --a-fg --a-surface --a-border --a-muted --a-danger --a-success`).
 - Conditional flag: `text t.title muted=t.done`.
 - `gap=4` and `pad=4`: 1 unit = 4px. `align=start|center|end|stretch`. `justify=start|center|end|between|around`. `cols=3`.
 - `type=text|number|email|password|checkbox|date`. With `type=checkbox`, `input` binds a Bool.
@@ -149,7 +152,7 @@ column gap=4 align=center {
 
 ## Expressions
 
-JavaScript: literals, `` `template ${x}` ``, `a.b`, `a?.b`, `a[i]`, `f(x)`, `x => x * 2`, `{ a, ...b }`, `[...xs]`, `? :`, `??`, `&&`, `||`.
+JavaScript: literals, `/regex/`, `` `template ${x}` ``, `a.b`, `a?.b`, `a[i]`, `f(x)`, `x => x * 2`, `{ a, ...b, [key]: 1 }`, `[...xs]`, `? :`, `??`, `&&`, `||`.
 `==` and `!=` compile to `===` and `!==`. A line starting with `?`, `:`, `.`, `&&`, `||` or `??` continues the previous one. JS globals work (`Math JSON Date crypto fetch localStorage`...).
 
 ## Rules the compiler checks
