@@ -33,7 +33,7 @@ export const GLOBALS = new Set([
   "parseInt", "parseFloat", "isNaN", "alert", "confirm", "prompt", "setTimeout", "clearTimeout", "setInterval", "clearInterval",
   "encodeURIComponent", "decodeURIComponent", "structuredClone", "Infinity", "NaN",
   "URL", "URLSearchParams", "history", "Blob", "FormData", "TextEncoder", "TextDecoder", "AbortController",
-  "requestAnimationFrame", "cancelAnimationFrame", "matchMedia", "getComputedStyle", "IntersectionObserver", "ResizeObserver", "MutationObserver", "performance", "queueMicrotask", "RegExp", "Error", "BigInt", "Symbol",
+  "requestAnimationFrame", "cancelAnimationFrame", "matchMedia", "getComputedStyle", "globalThis", "IntersectionObserver", "ResizeObserver", "MutationObserver", "performance", "queueMicrotask", "RegExp", "Error", "BigInt", "Symbol",
 ]);
 
 export function show(t: Ty): string {

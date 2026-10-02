@@ -63,7 +63,7 @@ class Page {
     await this.settle();
   }
   async link(label: string, index = 0) {
-    const a = [...document.querySelectorAll<HTMLAnchorElement>("a")].filter((x) => visible(x) && norm(x.textContent ?? "") === label)[index];
+    const a = [...document.querySelectorAll<HTMLAnchorElement>("a")].filter((x) => visible(x) && (norm(x.textContent ?? "") === label || x.getAttribute("aria-label") === label))[index];
     if (!a) throw new StepError(`no link "${label}"`);
     a.dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }));
     await this.settle();
