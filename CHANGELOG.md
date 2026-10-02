@@ -2,7 +2,7 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
-## Unreleased (next: 0.2.2)
+## 0.2.2 (2026-10-02)
 
 - Fixed (a 0.2.1 regression): a dynamic `class=(expr)` was missing from prerendered and server-rendered HTML.
 - `h1`–`h6` and `p` (from `tag=`) have no default margin, like `title`; `novalidate` is in the static HTML; the build's size table shows the prerendered pages.
