@@ -440,7 +440,8 @@ async function main() {
   const tasks = TASKS.filter((t) => TASK_IDS.includes(t.id));
   const checkpoint = CHECKPOINT ? join(HERE, "results", `${CHECKPOINT}.jsonl`) : null;
   // A run that never got its answer (API error, budget cut) isn't a result: it runs again.
-  const complete = (r: RunResult) => !/^(API \d+|budget exhausted)/.test(r.errors[0] ?? "");
+  // (nor is a refusal, which says nothing about the stack)
+  const complete = (r: RunResult) => !/^(API \d+|budget exhausted|refusal$)/.test(r.errors[0] ?? "");
   const saved = new Map<string, RunResult>();
   if (checkpoint && existsSync(checkpoint)) {
     for (const line of readFileSync(checkpoint, "utf8").split("\n").filter(Boolean)) {

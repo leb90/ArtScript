@@ -207,6 +207,15 @@ class Checker {
   }
 
   run(): Diagnostic[] {
+    // `auth User` names the model: the api that stores it is meant (declared here if there is none).
+    for (const d of this.program.decls) {
+      if (d.kind !== "Auth" || this.program.decls.some((x) => x.kind === "Api" && x.name === d.api)) continue;
+      if (!this.program.decls.some((x) => x.kind === "Model" && x.name === d.api)) continue;
+      const model = d.api;
+      const api = this.program.decls.find((x) => x.kind === "Api" && x.model === model);
+      d.api = api?.name ?? model[0].toLowerCase() + model.slice(1) + "s";
+      if (!api) this.program.decls.push({ kind: "Api", name: d.api, model, access: "public", modelLoc: d.loc, loc: d.loc });
+    }
     const seen = new Set<string>();
     for (const d of this.program.decls) {
       if (d.kind === "Use") continue; // several files may use the same module
@@ -772,6 +781,10 @@ class Checker {
         // The caught error: `e.message` always exists; api errors also carry `status` and `details`.
         if (s.param) h.vars.set(s.param, { kind: "let", ty: { k: "obj", fields: { message: STR, status: NUM, details: ANY } } });
         this.stmts(s.handler, h);
+        if (s.finally) this.stmts(s.finally, new Scope(scope));
+      } else if (s.kind === "While") {
+        this.infer(s.cond, scope);
+        this.stmts(s.body, new Scope(scope));
       } else if (s.kind === "Loop") {
         const body = new Scope(scope);
         body.vars.set(s.name, { kind: "let", ty: this.infer(s.init, scope) });
@@ -887,7 +900,7 @@ class Checker {
     const direct = t.kind === "Ident";
     // A computed can be assigned (it keeps that value until a dependency changes); a prop assigned
     // directly is bound two-way to the parent's state (checked where the component is used).
-    const ok = sym.kind === "state" || sym.kind === "data" || sym.kind === "let" || sym.kind === "computed" || sym.kind === "prop" || (sym.kind === "global" && !direct) || (!direct && (sym.kind === "loop" || sym.kind === "param" || sym.kind === "ref"));
+    const ok = sym.kind === "state" || sym.kind === "data" || sym.kind === "let" || sym.kind === "computed" || sym.kind === "prop" || (sym.kind === "global" && !direct) || sym.kind === "ref" || (!direct && (sym.kind === "loop" || sym.kind === "param"));
     if (!ok) {
       const fixes = sym.kind === "loop" ? ["change a field (`item.done = true`) or assign the list"] : [];
       this.err("ASSIGN_READONLY", `'${root.name}' is a ${sym.kind} and can't be changed`, t.loc, { expr: printExpr(t), actual: sym.kind, expected: "state|let", fixes });

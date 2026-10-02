@@ -61,7 +61,9 @@ class Parser {
   toks: Token[];
   i = 0;
   errors: Diagnostic[] | null = null; // collecting (parseAll) instead of stopping at the first error
-  hoisted: Decl[] = []; // `server fn` written inside a component: it's a top-level declaration
+  hoisted: Decl[] = [];
+  members: Member[] = []; // of the component being parsed: a member written inside its view joins them
+  loops = 0; // `for` blocks of the view around the current node // `server fn` written inside a component: it's a top-level declaration
   comments: Comment[];
   ci = 0; // comments before index ci are attached
   constructor(toks: Token[], comments: Comment[] = []) {
@@ -411,13 +413,14 @@ class Parser {
     this.expect("{");
     const members: Member[] = [];
     const view: ViewNode[] = [];
+    this.members = members;
     this.skipSep();
     while (!this.is("}")) {
       if (this.tok.t === "eof") this.fail("'}'");
       // A bad member or view line is reported and the next line of the component is parsed.
       const col = this.tok.loc.col;
       this.recover(col, () => {
-        if (this.is("server") && (this.is("fn", this.peek()) || this.is("job", this.peek()))) this.hoisted.push(this.serverFn());
+        if (this.declAhead()) this.hoisted.push(this.decl());
         // `view { ... }` around the view (other frameworks have it): its content is the view.
         else if (this.is("view") && this.is("{", this.peek())) { this.next(); view.push(...this.viewBlock()); }
         else if (this.memberAhead()) members.push(this.noted(() => this.member()));
@@ -428,6 +431,17 @@ class Parser {
     this.closing(view.length ? view : members);
     this.expect("}");
     return { kind: "Component", page, ...(layout ? { layout: true } : {}), name, path, ...(layoutName ? { layoutName } : {}), ...(requires ? { requires } : {}), params, members, view, loc: kw.loc };
+  }
+
+  // `api users: User`, `model X { }`, `auth users` or `server fn` written inside a component: they
+  // are top-level declarations (fmt moves them out).
+  declAhead(): boolean {
+    const n = this.peek();
+    if (this.is("server")) return this.is("fn", n) || this.is("job", n);
+    if (this.is("api")) return n.t === "id" && this.is(":", this.peek(2));
+    if (this.is("model")) return n.t === "id" && this.is("{", this.peek(2));
+    if (this.is("auth")) return n.t === "id" && (this.peek(2).t === "nl" || this.is("with", this.peek(2)) || this.is(":", this.peek(2)));
+    return false;
   }
 
   memberAhead(): boolean {
@@ -491,7 +505,10 @@ class Parser {
     this.skipSep();
     while (!this.is("}")) {
       if (this.tok.t === "eof") this.fail("'}'");
-      nodes.push(this.noted(() => this.viewNode()));
+      // A member written among the elements (`computed total = ...` inside a column) is the
+      // component's; inside a `for` it could depend on the item, so there it's an error (below).
+      if (this.memberAhead() && !(this.loops && (this.is("let") || this.is("const")))) this.members.push(this.noted(() => this.member()));
+      else nodes.push(this.noted(() => this.viewNode()));
       this.skipSep();
     }
     this.closing(nodes);
@@ -526,7 +543,8 @@ class Parser {
       this.expect("in");
       const list = this.expr();
       const key = this.is("key") ? (this.next(), this.expr()) : null;
-      return { kind: "ForView", item, index, list, ...(key ? { key } : {}), body: this.viewBlock(), loc: t.loc };
+      this.loops++;
+      try { return { kind: "ForView", item, index, list, ...(key ? { key } : {}), body: this.viewBlock(), loc: t.loc }; } finally { this.loops--; }
     }
     return this.element();
   }
@@ -565,8 +583,12 @@ class Parser {
       }));
     }
     if (takesContent && !atEnd() && !propAhead()) content = this.ternary();
+    // `Card()` / `Card(title="x", big)`: called like a function; the parentheses and commas are dropped.
+    const called = isComponent && this.is("(") && this.tok.loc.line === tag.loc.line && this.tok.loc.col === tag.loc.col + tag.v.length;
+    if (called) this.next();
     const readProps = () => {
       while (!atEnd()) {
+        if (called && (this.is(",") || this.is(")"))) { this.next(); continue; }
         // The content written after a prop (`image alt="Photo" user.photo.url`): fmt moves it first.
         const n1 = this.peek();
         if (takesContent && content === null && (this.tok.t === "str" || this.tok.t === "tpl" || (this.tok.t === "id" && n1.t === "op" && [".", "?.", "(", "["].includes(n1.v)))) {
@@ -596,6 +618,8 @@ class Parser {
       readProps();
     }
     const children = this.is("{") ? this.viewBlock() : [];
+    // A prop without a value on a component (`Badge big`) is true, as a flag on an element.
+    if (isComponent) for (const p of props) p.value ??= { kind: "Bool", value: true, loc: p.loc };
     return { kind: "Element", tag: tag.v, content, props, action, children, loc: tag.loc };
   }
 
@@ -665,7 +689,13 @@ class Parser {
       let param: string | null = null;
       if (this.eat("(")) { param = this.ident("an error name").v; this.expect(")"); }
       else if (this.tok.t === "id") param = this.next().v;
-      return { kind: "Try", body, param, handler: this.block(), loc: t.loc };
+      const handler = this.block();
+      const last = this.keywordAhead("finally") ? (this.next(), this.block()) : null;
+      return { kind: "Try", body, param, handler, ...(last ? { finally: last } : {}), loc: t.loc };
+    }
+    if (this.is("while")) {
+      this.next();
+      return { kind: "While", cond: this.expr(), body: this.block(), loc: t.loc };
     }
     if (this.is("cleanup") && this.is("{", this.peek())) {
       this.next();
@@ -691,6 +721,7 @@ class Parser {
   }
 
   arrowAhead(): boolean {
+    if (this.is("=>")) return true; // `=> save()`: no parameters
     if (this.tok.t === "id" && this.is("=>", this.peek())) return true;
     if (!this.is("(")) return false;
     let depth = 0;
@@ -712,7 +743,7 @@ class Parser {
         if (!this.eat(",")) break;
       }
       this.expect(")");
-    } else params.push(this.next().v);
+    } else if (!this.is("=>")) params.push(this.next().v);
     this.expect("=>");
     const body = this.is("{") ? this.block() : this.expr();
     return { kind: "Arrow", params, body, loc };

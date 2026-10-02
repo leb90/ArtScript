@@ -317,14 +317,13 @@ test("server fn inside a page is hoisted; a component named as a layout is one; 
   assert.match(r.server!.fns, /async total\(/);
 });
 
-test("errors that say where things go: top-level state, let in the view, api and auth given a model", () => {
+test("errors that say where things go: top-level state, let in the view, an api given a model", () => {
   const first = (src: string) => compile([{ file: "a.art", src }]).diagnostics[0];
   assert.match(first('state likes = 0\n\npage P "/" {\n  text likes\n}\n').fixes![1], /layout Main \{ state likes/);
   const inView = first('page P "/" {\n  state xs = [1]\n\n  for x in xs {\n    let y = x * 2\n    text y\n  }\n}\n');
   assert.equal(inView.type, "STATEMENT_IN_VIEW");
   assert.match(inView.fixes![0], /^computed y/);
   assert.match(first('model Note {\n  id: ID\n}\n\napi Note private\n').fixes![0], /^api notes: Note private/);
-  assert.match(first('model User {\n  id: ID\n  email: Email\n  password: String\n}\n\nauth User\n').fixes![0], /^api users: User\nauth users/);
 });
 
 test("art patch: set with params separated by spaces after a colon", () => {
@@ -332,4 +331,84 @@ test("art patch: set with params separated by spaces after a colon", () => {
   const r = applyPatch([{ file: "a.art", src }], "set Row item: Any onRemove: Fn");
   assert.deepEqual(r.diagnostics, []);
   assert.match(r.files["a.art"], /component Row\(item: Any, onRemove: Fn\)/);
+});
+
+// ---------- from the second Haiku run ----------
+
+test("auth given the model; api, model and auth written inside a page; members written inside the view", () => {
+  const src = 'model User {\n  id: ID\n  email: Email\n  password: String\n}\n\nauth User\n\npage P "/" {\n  model Note {\n    id: ID\n    text: String\n  }\n  api notes: Note\n  data me = auth.me()\n\n  column {\n    computed n = notes.length\n    data notes = api.notes.list()\n    text n\n    text (me?.email ?? "")\n  }\n}\n';
+  const r = compile([{ file: "a.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  assert.deepEqual(Object.keys(r.server!.apis).sort(), ["notes", "users"]);
+  assert.equal(r.server!.auth, "users");
+});
+
+test("while, try/finally, an arrow without parameters, a component called like a function, an assigned ref", async () => {
+  const src = `component Badge(label: String = "x", big: Bool = false) {
+  text label id="badge"
+}
+
+page P "/" {
+  state n = 0
+  state busy = true
+  ref timer
+  fn run() {
+    let i = 0
+    while i < 3 {
+      n += i
+      i++
+    }
+    try {
+      n += 10
+    } catch (e) {
+      n = -1
+    } finally {
+      busy = false
+    }
+    timer = 5
+  }
+
+  button "go" on:click=(=> run())
+  Badge(label="hi", big)
+  title \`n \${n} \${busy}\` danger id="n"
+}
+`;
+  assert.deepEqual(types(src), []);
+  const printed = printProgram(parse(src, "t"));
+  assert.match(printed, /while i < 3 \{/);
+  assert.match(printed, /\} finally \{/);
+  assert.match(printed, /Badge label="hi" big=true/);
+  assert.equal(printProgram(parse(printed, "t")), printed);
+  const dir = mkdtempSync(join(tmpdir(), "art-while-"));
+  writeFileSync(join(dir, "app.js"), compile([{ file: "app.art", src }]).js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    (await import(pathToFileURL(join(dir, "app.js")).href)).start(document.getElementById("app"));
+    document.querySelector("button")!.click();
+    assert.equal(document.getElementById("n")!.textContent, "n 13 false");
+    assert.equal(document.getElementById("badge")!.textContent, "hi");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});
+
+test("a toast goes away when the user acts again", async () => {
+  const src = 'page P "/" {\n  state name = ""\n\n  input name placeholder="Name"\n  button "Add" -> notify("Name required", "danger")\n}\n';
+  const dir = mkdtempSync(join(tmpdir(), "art-toast-"));
+  writeFileSync(join(dir, "app.js"), compile([{ file: "app.art", src }]).js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    (await import(pathToFileURL(join(dir, "app.js")).href)).start(document.getElementById("app"));
+    document.querySelector("button")!.click();
+    assert.match(document.body.textContent!, /Name required/);
+    await new Promise((r) => setTimeout(r, 5));
+    document.querySelector("input")!.dispatchEvent(new Event("input", { bubbles: true }));
+    assert.doesNotMatch(document.body.textContent!, /Name required/);
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
 });

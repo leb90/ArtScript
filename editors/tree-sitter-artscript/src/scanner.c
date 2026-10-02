@@ -97,6 +97,8 @@ static bool scan_end(TSLexer *lexer) {
       return !at_keyword(lexer, "else");
     case 'c':
       return !at_keyword(lexer, "catch");
+    case 'f':
+      return !at_keyword(lexer, "finally");
     default:
       return true;
   }

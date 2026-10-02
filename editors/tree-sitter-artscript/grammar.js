@@ -148,6 +148,7 @@ module.exports = grammar({
       $.if_statement,
       $.for_statement,
       $.loop_statement,
+      $.while_statement,
       $.try_statement,
       $.cleanup_statement,
     ),
@@ -169,7 +170,9 @@ module.exports = grammar({
       "try", field("body", $.block),
       "catch", optional(choice(seq("(", field("error", $.identifier), ")"), field("error", $.identifier))),
       field("handler", $.block),
+      optional(seq("finally", field("finally", $.block))),
     ),
+    while_statement: ($) => seq("while", field("condition", $._expression), field("body", $.block)),
     cleanup_statement: ($) => seq("cleanup", field("body", $.block)),
 
     // ---------- expressions ----------

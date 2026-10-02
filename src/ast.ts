@@ -115,7 +115,8 @@ export type Stmt =
   | { kind: "Let"; name: string; init: Expr; loc: Loc }
   | { kind: "If"; cond: Expr; then: Stmt[]; else: Stmt[] | null; loc: Loc }
   | { kind: "Return"; value: Expr | null; loc: Loc }
-  | { kind: "Try"; body: Stmt[]; param: string | null; handler: Stmt[]; loc: Loc }
+  | { kind: "Try"; body: Stmt[]; param: string | null; handler: Stmt[]; finally?: Stmt[]; loc: Loc }
+  | { kind: "While"; cond: Expr; body: Stmt[]; loc: Loc }
   | { kind: "Cleanup"; body: Stmt[]; loc: Loc }
   // `for x in xs { }` / `for x, i in xs { }`: runs the body for each item, in order.
   | { kind: "For"; item: string; index: string | null; list: Expr; body: Stmt[]; loc: Loc }

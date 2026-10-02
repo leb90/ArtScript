@@ -598,6 +598,14 @@ class ComponentGen {
         if (s.param) h.vars.set(s.param, { kind: "let" });
         this.emit(s.param ? `} catch (${s.param}) {` : "} catch {");
         this.nested(() => this.stmts(s.handler, h));
+        if (s.finally) {
+          this.emit("} finally {");
+          this.nested(() => this.stmts(s.finally!, scope.child()));
+        }
+        this.emit("}");
+      } else if (s.kind === "While") {
+        this.emit(`while (${this.expr(s.cond, scope)}) {`);
+        this.nested(() => this.stmts(s.body, scope.child()));
         this.emit("}");
       } else {
         this.emit(`if (${this.expr(s.cond, scope)}) {`);
@@ -754,7 +762,8 @@ function hasAwait(stmts: Stmt[]): boolean {
     if (s.kind === "ExprStmt") return exprHasAwait(s.expr);
     if (s.kind === "Let") return exprHasAwait(s.init);
     if (s.kind === "Return") return s.value !== null && exprHasAwait(s.value);
-    if (s.kind === "Try") return hasAwait(s.body) || hasAwait(s.handler);
+    if (s.kind === "Try") return hasAwait(s.body) || hasAwait(s.handler) || hasAwait(s.finally ?? []);
+    if (s.kind === "While") return exprHasAwait(s.cond) || hasAwait(s.body);
     if (s.kind === "Cleanup") return false;
     if (s.kind === "Loop") return hasAwait(s.body);
     if (s.kind === "For") return exprHasAwait(s.list) || hasAwait(s.body);

@@ -55,7 +55,7 @@ fn add(x) {                      // function; body = JS statements
 - Assigning to a `state` updates the UI: `count++`, `name = "x"`, `users.push(u)`, `user.name = "x"`, also through a fn parameter (`fn sell(p) { p.stock-- }`).
 - A component that assigns its prop (`items = items.filter(...)`) changes the parent's state: pass a state (`List items=items`).
 - No hooks, setters or manual dependencies.
-- Statements: expression, `let x = ...`, `if cond { } else { }`, `for x in xs { }`, `return`, `try { } catch (e) { }`.
+- Statements: expression, `let x = ...`, `if cond { } else { }`, `for x in xs { }`, `while cond { }`, `return`, `try { } catch (e) { } finally { }`.
 - For DOM libraries (charts, maps), timers and subscriptions:
   ```
   ref box                          // the element marked `ref=box` (set before mount runs)
@@ -79,7 +79,7 @@ api users: User                    // REST at /api/users: validated against the 
 - Typed client in any component: `api.users.list(query?)`, `count(query?)`, `get(id)`, `create(obj)`, `update(id, changes)`, `remove(id)`.
 - Query: `list({ where: { active: true }, search: "pan", sort: "-price", limit: 20, offset: 40 })` (`-` = descending; `search` matches text fields); `count({ where, search })`. Inside `data` they re-run when the states they use change (`offset: page * 20`).
 - `data users = api.users.list()` loads on mount and **reloads by itself** after any write, login or logout. A list starts as `[]`, a count as `0`, `get` as `null` (`T?`). `users.loading` (until the first response), `users.error` (message or `null`), `users.reload()`. `... live` also reloads when someone else writes.
-- `await` and `try { } catch (e) { }` work as in JS; `e.message` explains a validation error.
+- `await` and `try { } catch (e) { }` work as in JS; `e.message` explains a validation error (`e.details.field` names the field; `e.status` is 409 when a `unique` value is taken).
 - Access: `api notes: Note login` needs a session; `private` also scopes rows per user (the model needs `owner: ID`, filled in); `admin`: anyone reads, admins write (accounts need `role: String`; the first account is "admin", later ones "user").
 - `auth users` (the model needs `email: Email` and `password: String`): `auth.signup(obj)`, `auth.login(email, password)`, `auth.logout()`, `auth.logoutAll()`, `data me = auth.me()` (`T?`). `auth users with google, github`: `auth.loginWith("google")`.
 - `auth.requestReset(email)` emails a link to `/reset-password?token=...`, a page that calls `auth.resetPassword(query.token, password)`. With `verified: Bool` in the model, sign-up emails `/verify-email?token=...` (`auth.verifyEmail(query.token)`).

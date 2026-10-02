@@ -5,7 +5,7 @@
   "let" "const"
 ] @keyword
 
-["if" "else" "for" "in" "key" "return" "try" "catch"] @keyword.control
+["if" "else" "for" "while" "in" "key" "return" "try" "catch" "finally"] @keyword.control
 ["as" "with" "every" "requires" "live"] @keyword.modifier
 ["typeof" "await" "new"] @keyword.operator
 

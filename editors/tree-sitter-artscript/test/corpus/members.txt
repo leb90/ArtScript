@@ -261,3 +261,58 @@ page P {
                 (assignment
                   (identifier)
                   (identifier))))))))))
+
+====================
+While and try/finally
+====================
+
+page P {
+  fn run() {
+    while i < 3 {
+      i++
+    }
+    try {
+      a()
+    } catch (e) {
+      b()
+    } finally {
+      c()
+    }
+  }
+}
+
+---
+
+(source_file
+  (page
+    (type_identifier)
+    (body
+      (function
+        (identifier)
+        (parameters)
+        (block
+          (while_statement
+            (binary
+              (identifier)
+              (number))
+            (block
+              (expression_statement
+                (update
+                  (identifier)))))
+          (try_statement
+            (block
+              (expression_statement
+                (call
+                  (identifier)
+                  (arguments))))
+            (identifier)
+            (block
+              (expression_statement
+                (call
+                  (identifier)
+                  (arguments))))
+            (block
+              (expression_statement
+                (call
+                  (identifier)
+                  (arguments))))))))))

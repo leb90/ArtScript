@@ -73,7 +73,8 @@ export function printStmt(s: Stmt): string {
     case "ExprStmt": return printExpr(s.expr);
     case "Let": return `let ${s.name} = ${printExpr(s.init)}`;
     case "Return": return s.value ? `return ${printExpr(s.value)}` : "return";
-    case "Try": return `try ${printBlockInline(s.body)} catch${s.param ? ` (${s.param})` : ""} ${printBlockInline(s.handler)}`;
+    case "Try": return `try ${printBlockInline(s.body)} catch${s.param ? ` (${s.param})` : ""} ${printBlockInline(s.handler)}${s.finally ? ` finally ${printBlockInline(s.finally)}` : ""}`;
+    case "While": return `while ${printExpr(s.cond)} ${printBlockInline(s.body)}`;
     case "Cleanup": return `cleanup ${printBlockInline(s.body)}`;
     case "Loop": return `for (let ${s.name} = ${printExpr(s.init)}; ${printExpr(s.cond)}; ${printExpr(s.update)}) ${printBlockInline(s.body)}`;
     case "For": return `for ${s.item}${s.index ? `, ${s.index}` : ""} in ${printExpr(s.list)} ${printBlockInline(s.body)}`;
@@ -189,8 +190,12 @@ function printStmt1(s: Stmt, depth: number, pad: string, out: string[]) {
       out.push(`${pad}for (let ${s.name} = ${printExpr(s.init)}; ${printExpr(s.cond)}; ${printExpr(s.update)}) {`, ...printStmts(s.body, depth + 1), `${pad}}`);
     } else if (s.kind === "For") {
       out.push(`${pad}for ${s.item}${s.index ? `, ${s.index}` : ""} in ${printExpr(s.list)} {`, ...printStmts(s.body, depth + 1), `${pad}}`);
+    } else if (s.kind === "While") {
+      out.push(`${pad}while ${printExpr(s.cond)} {`, ...printStmts(s.body, depth + 1), `${pad}}`);
     } else if (s.kind === "Try") {
-      out.push(`${pad}try {`, ...printStmts(s.body, depth + 1), `${pad}} catch${s.param ? ` (${s.param})` : ""} {`, ...printStmts(s.handler, depth + 1), `${pad}}`);
+      out.push(`${pad}try {`, ...printStmts(s.body, depth + 1), `${pad}} catch${s.param ? ` (${s.param})` : ""} {`, ...printStmts(s.handler, depth + 1));
+      if (s.finally) out.push(`${pad}} finally {`, ...printStmts(s.finally, depth + 1));
+      out.push(`${pad}}`);
     } else out.push(pad + printStmt(s));
   }
 }
