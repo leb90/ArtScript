@@ -453,6 +453,8 @@ class ComponentGen {
       if (spec.content === "text") {
         const lit = literal(c);
         if (lit !== null) this.emit(`${v}.textContent = ${JSON.stringify(String(lit))};`);
+        // With children, the text gets its own node so updating it doesn't remove them.
+        else if (el.children.length) this.emit(`$.$text(${v}.appendChild(document.createTextNode("")), () => ${this.expr(c, scope)});`);
         else this.emit(`$.$text(${v}, () => ${this.expr(c, scope)});`);
       } else if (spec.content === "src") this.attr(v, "src", c, scope);
       else if (spec.content === "bind") {
@@ -479,7 +481,13 @@ class ComponentGen {
       this.nested(() => this.stmts(el.action!, scope.child()));
       this.emit("});");
     }
-    this.view(el.children, v, scope);
+    // Rows go in a <tbody>, as the HTML parser would put them.
+    let inner = v;
+    if (el.tag === "table") {
+      inner = this.v();
+      this.emit(`const ${inner} = $.$el(${v}, "tbody");`);
+    }
+    this.view(el.children, inner, scope);
   }
 
   // `md:cols=3` → class a-md-cols-3 with its rule in a media query. Larger breakpoints repeat the

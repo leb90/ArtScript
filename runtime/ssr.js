@@ -44,6 +44,8 @@ class Node {
   html() { return this.childNodes.map((c) => c.html()).join(""); }
 }
 
+Object.defineProperty(Node.prototype, "nodeType", { get() { return this instanceof Element ? 1 : this instanceof Text ? 3 : this instanceof Comment ? 8 : 11; } });
+
 class Text extends Node {
   constructor(data) { super(); this.data = data; }
   get textContent() { return this.data; }

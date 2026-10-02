@@ -218,3 +218,152 @@ test("named slots: header { } fills `slot header`, the rest the unnamed slot", a
     await GlobalRegistrator.unregister();
   }
 });
+
+test("ui: links with children, tables with a tbody, text next to children", async () => {
+  const src = `page P "/" {
+  state n = 0
+  state rows = [{ id: 1, label: "a" }]
+
+  link to="/x" class="card-link" {
+    card {
+      text "Card"
+    }
+  }
+  table {
+    for r in rows key r.id {
+      tr {
+        td \`\${r.label} \${n}\` {
+          button "inc" -> n++
+        }
+      }
+    }
+  }
+}
+`;
+  assert.deepEqual(types(src), []);
+  const r = compile([{ file: "app.art", src }]);
+  const dir = mkdtempSync(join(tmpdir(), "art-ui2-"));
+  writeFileSync(join(dir, "app.js"), r.js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    const app = await import(pathToFileURL(join(dir, "app.js")).href);
+    app.start(document.getElementById("app"));
+    assert.equal(document.querySelector("a.card-link > .a-card")?.textContent, "Card");
+    assert.equal(document.querySelectorAll("table > tbody > tr").length, 1);
+    const td = document.querySelector("td")!;
+    assert.equal(td.textContent, "a 0inc");
+    document.querySelector("button")!.click();
+    assert.equal(td.textContent, "a 1inc", "the text updates and the button stays");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});
+
+test("parser: an element without content may start with on:event or md:prop", () => {
+  const src = 'page P {\n  state n = 0\n\n  link on:click=n++ {\n    text "a"\n  }\n  grid md:cols=2 {\n    text "b"\n  }\n}\n';
+  const el = (parse(src, "t").decls[0] as any).view[0];
+  assert.equal(el.content, null);
+  assert.equal(el.props[0].name, "on:click");
+  assert.equal(printProgram(parse(src, "t")), src);
+  assert.deepEqual(types(src), []);
+});
+
+test("keyed lists: a swap moves only the swapped rows; unchanged text isn't rewritten", async () => {
+  const src = `page P "/" {
+  state rows = Array.from({ length: 10 }, (_, i) => ({ id: i, label: \`row \${i}\` }))
+
+  button "swap" -> { let a = rows[1]; rows[1] = rows[8]; rows[8] = a }
+  button "reverse" -> rows = [...rows].reverse()
+  button "drop" -> rows = rows.filter(r => r.id != 4)
+  button "touch" -> rows[0].label = "first"
+  column {
+    for r in rows key r.id {
+      text r.label
+    }
+  }
+}
+`;
+  const r = compile([{ file: "app.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  const dir = mkdtempSync(join(tmpdir(), "art-keyed-"));
+  writeFileSync(join(dir, "app.js"), r.js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    const app = await import(pathToFileURL(join(dir, "app.js")).href);
+    app.start(document.getElementById("app"));
+    const list = document.querySelector(".a-column")!;
+    const spans = () => [...list.querySelectorAll("span")];
+    const labels = () => spans().map((s) => s.textContent).join(",");
+    const click = (label: string) => [...document.querySelectorAll("button")].find((b) => b.textContent === label)!.click();
+    const record = async (action: () => void) => {
+      const seen: MutationRecord[] = [];
+      const mo = new MutationObserver((m) => seen.push(...m));
+      mo.observe(list, { childList: true, subtree: true, characterData: true });
+      action();
+      await new Promise((ok) => setTimeout(ok, 0));
+      mo.disconnect();
+      return seen;
+    };
+    const before = spans();
+    const moves = await record(() => click("swap"));
+    assert.equal(labels(), "row 0,row 8,row 2,row 3,row 4,row 5,row 6,row 7,row 1,row 9");
+    assert.ok(moves.filter((m) => m.addedNodes.length).length <= 6, `few moves (${moves.length} records)`);
+    assert.equal(spans()[1], before[8], "rows keep their DOM");
+    click("reverse");
+    assert.equal(labels(), "row 9,row 1,row 7,row 6,row 5,row 4,row 3,row 2,row 8,row 0");
+    click("drop");
+    assert.equal(labels(), "row 9,row 1,row 7,row 6,row 5,row 3,row 2,row 8,row 0");
+    const writes = await record(() => click("touch"));
+    assert.equal(new Set(writes.map((m) => m.target)).size, 1, "only the changed row's text is written");
+    assert.equal(spans()[0].textContent, "first");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});
+
+test("keyed lists: in-place changes always show (fields, nested lists, through parameters)", async () => {
+  const src = `page P "/" {
+  state rows = [{ id: 1, done: false, tags: ["a"] }, { id: 2, done: false, tags: [] }]
+
+  fn finish(r) {
+    r.done = true
+  }
+
+  button "tag" -> rows[1].tags.push("b")
+  button "all" -> rows.forEach(r => r.done = true)
+  button "one" -> finish(rows[0])
+  button "undo" -> rows[0].done = false
+  for r in rows key r.id {
+    text \`\${r.id}:\${r.done}:\${r.tags.length}\`
+  }
+}
+`;
+  const r = compile([{ file: "app.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  const dir = mkdtempSync(join(tmpdir(), "art-inplace-"));
+  writeFileSync(join(dir, "app.js"), r.js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    const app = await import(pathToFileURL(join(dir, "app.js")).href);
+    app.start(document.getElementById("app"));
+    const text = () => [...document.querySelectorAll("span")].map((s) => s.textContent).join(" ");
+    const click = (label: string) => [...document.querySelectorAll("button")].find((b) => b.textContent === label)!.click();
+    assert.equal(text(), "1:false:1 2:false:0");
+    click("tag");
+    assert.equal(text(), "1:false:1 2:false:1", "a nested list");
+    click("undo");
+    click("one");
+    assert.equal(text(), "1:true:1 2:false:1", "through a fn parameter");
+    click("undo");
+    click("all");
+    assert.equal(text(), "1:true:1 2:true:1", "through an arrow parameter");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});

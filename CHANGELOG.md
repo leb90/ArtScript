@@ -13,6 +13,8 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 - Assignable `computed`, two-way props, mutations through parameters update the screen, TS-style annotations and defaults accepted in params.
 - `test "..." { ... }` blocks run by `art test`; steps find inputs by placeholder or label.
 - Layouts inside layouts (`layout Docs layout Site`); a slot inside an `if` renders its page when it appears. Links to the current page get `aria-current="page"`.
+- `link` takes children (a clickable card: `link to="/p/1" { card { ... } }`); `table` rows go in a `<tbody>`; an element's text next to its children updates without removing them; `link on:click=...` with no text parses.
+- Faster updates: bindings write the DOM only when their value changed, and keyed lists move only the rows outside the longest unchanged run (a swap moves two rows, not all of them).
 - `use "x" { a as b }` renames an import. `URL`, `history`, `Blob`, `FormData` and other browser globals are known to the checker.
 - `new` expressions (`new Chart(box, opts)`); `process` and `Buffer` in server functions; setting properties of a `ref` (`box.innerHTML = html`).
 - A button with `->` inside a `form` only runs its action (it no longer submits the form too).
@@ -29,6 +31,7 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 - `art mcp` (MCP server), `art add` (official components as source), `art init --template`, `art build --prerender --site`, self-contained `dist/server.js` with a Dockerfile.
 - `docs/SPEC-EDIT.md`, a ~800-token spec for changing code.
 - `art build` splits dynamic `import()` into chunks loaded on demand.
+- An ArtScript implementation for js-framework-benchmark (`benchmarks/js-framework-benchmark`), passing its `isKeyed` check.
 - `art init` adds a Cursor rule (`.cursor/rules/artscript.mdc`).
 - `art build --base /sub` for apps served under a subpath; same-page `#section` links scroll, and links to files that aren't routes load them.
 - Several files may `use` the same names; the compiler also bundles for the browser without shims.

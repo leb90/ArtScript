@@ -117,14 +117,21 @@ export function $el(parent, tag, cls) {
   parent.appendChild(n);
   return n;
 }
-export function $text(n, fn) { effect(() => { n.textContent = str(fn()); }); }
+// Each binding writes the DOM only when its value changed (re-running is cheap; writing isn't).
+export function $text(n, fn) {
+  let last;
+  effect(() => { const v = str(fn()); if (v !== last) n.textContent = last = v; });
+}
 // URLs from data can't run code: `javascript:` (and `vbscript:`, `data:text/html`) become "#".
 const URL_ATTRS = new Set(["href", "src", "action", "formAction", "poster"]);
 const unsafeUrl = (v) => typeof v === "string" && /^\s*(javascript|vbscript|data:text\/html)/i.test(v.replace(/[\u0000-\u001f]/g, ""));
 export function $attr(n, name, fn) {
+  let last = {};
   effect(() => {
     let v = fn();
     if (URL_ATTRS.has(name)) v = unsafeUrl(v) ? "#" : withBase(v);
+    if (v === last) return;
+    last = v;
     if (name in n) n[name] = v ?? "";
     else if (v == null || v === false) n.removeAttribute(name);
     else n.setAttribute(name, v === true ? "" : v);
@@ -150,8 +157,14 @@ export function $css(n, cls, rule) {
   sheet ??= document.head.appendChild(document.createElement("style"));
   sheet.textContent += rule;
 }
-export function $class(n, cls, fn) { effect(() => { n.classList.toggle(cls, !!fn()); }); }
-export function $style(n, prop, fn) { effect(() => { n.style[prop] = str(fn()); }); }
+export function $class(n, cls, fn) {
+  let last;
+  effect(() => { const v = !!fn(); if (v !== last) n.classList.toggle(cls, last = v); });
+}
+export function $style(n, prop, fn) {
+  let last;
+  effect(() => { const v = str(fn()); if (v !== last) n.style[prop] = last = v; });
+}
 export function $on(n, kind, fn) {
   const type = kind === "enter" ? "keydown" : kind;
   // A button with its own `->` inside a form only runs that action; one without it submits.
@@ -288,6 +301,36 @@ export function $if(parent, cond, a, b) {
   });
 }
 
+// A plain object's fields as [key, value, ...] when they're all primitives; otherwise null.
+function flat(it) {
+  if (it === null || typeof it !== "object") return [it];
+  const proto = Object.getPrototypeOf(it);
+  if (proto !== Object.prototype && proto !== null) return null;
+  const out = [];
+  for (const k in it) {
+    const v = it[k];
+    if ((typeof v === "object" && v !== null) || typeof v === "function") return null;
+    out.push(k, v);
+  }
+  return out;
+}
+const same = (a, b) => !!b && a.length === b.length && a.every((x, i) => Object.is(x, b[i]));
+
+// Indexes of a longest increasing subsequence of `a` (entries < 0 are skipped). O(n log n).
+function lis(a) {
+  const prev = new Array(a.length), tails = [];
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] < 0) continue;
+    let lo = 0, hi = tails.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (a[tails[mid]] < a[i]) lo = mid + 1; else hi = mid; }
+    prev[i] = lo ? tails[lo - 1] : -1;
+    tails[lo] = i;
+  }
+  const out = new Set();
+  for (let i = tails.length ? tails[tails.length - 1] : -1; i >= 0; i = prev[i]) out.add(i);
+  return out;
+}
+
 // Keyed list: rows whose key (default: the item itself) survives an update keep their DOM and
 // get the new item through their signal; only new rows render and only moved rows move.
 export function $for(parent, list, render, key = (it) => it) {
@@ -309,26 +352,47 @@ export function $for(parent, list, render, key = (it) => it) {
       const k = key(it, i);
       const r = old.get(k)?.shift();
       if (r) {
-        r.item._v = it; // always notified below: the item may have been mutated in place
+        // The item may have been changed in place: a plain object of primitives is compared field
+        // by field with its last snapshot; anything else is always re-rendered.
+        const snap = flat(it);
+        if (it !== r.item._v || !snap || !same(snap, r.snap)) kept.push(r.item);
+        r.item._v = it;
+        r.snap = snap;
         if (r.index._v !== i) { r.index._v = i; kept.push(r.index); }
-        kept.push(r.item);
         return r;
       }
-      const n = { key: k, item: new Signal(it), index: new Signal(i), start: document.createComment(""), end: document.createComment("") };
-      const frag = document.createDocumentFragment();
-      frag.appendChild(n.start);
-      n.dispose = root(() => render(frag, n.item, n.index));
-      frag.appendChild(n.end);
+      const n = { key: k, item: new Signal(it), index: new Signal(i), snap: flat(it), start: document.createComment(""), end: document.createComment(""), frag: document.createDocumentFragment() };
+      n.frag.appendChild(n.start);
+      n.dispose = root(() => render(n.frag, n.item, n.index));
+      n.frag.appendChild(n.end);
+      // A row that is a single element (`tr`, `card`...) is its own marker: no comments around it.
+      const only = n.start.nextSibling;
+      if (only.nodeType === 1 && only.nextSibling === n.end) {
+        n.frag.removeChild(n.start);
+        n.frag.removeChild(n.end);
+        n.start = n.end = only;
+      }
       return n;
     });
+    const parent = anchor.parentNode;
+    // Emptied, and the list is all its container holds: clear it in one go.
+    if (!next.length && rows.length && parent.firstChild === rows[0].start && parent.lastChild === anchor) {
+      for (const r of rows) r.dispose();
+      parent.textContent = "";
+      parent.appendChild(anchor);
+      rows = [];
+      return;
+    }
     for (const rs of old.values()) rs.forEach(drop);
+    // Rows in the longest run that kept its relative order stay; only the others move.
+    const before = new Map(rows.map((r, i) => [r, i]));
+    const stay = lis(next.map((r) => before.get(r) ?? -1));
     rows = next;
     let ref = anchor;
     for (let j = next.length - 1; j >= 0; j--) {
       const r = next[j];
-      if (r.end.nextSibling !== ref || r.end.parentNode !== anchor.parentNode) {
-        for (const n of range(r)) anchor.parentNode.insertBefore(n, ref);
-      }
+      if (r.frag) { parent.insertBefore(r.frag, ref); r.frag = null; }
+      else if (!stay.has(j)) for (const n of range(r)) parent.insertBefore(n, ref);
       ref = r.start;
     }
     untrack(() => batch(() => kept.forEach((s) => s.notify())));

@@ -37,6 +37,11 @@ page Benchmarks "/benchmarks" {
       text "Read the numbers honestly" bold
       text "Two or three runs per task is an early signal, not a definitive benchmark. With the smallest model, Haiku, ArtScript solved fewer of the new-app tasks than React; on modifications of large projects with focused context it is close to even. The raw data of every run is in the repository, and anyone can reproduce it with npm run eval."
     }
+    card class="callout" gap=2 {
+      text "Runtime speed" bold
+      text "In a local run of js-framework-benchmark's own harness, ArtScript is in the group of Solid, Svelte and Vue on most operations (fastest of them at selecting a row) and still about 1.5× slower at updating every 10th row. Apps ship about 6 KB compressed."
+      link "The full table and how to reproduce it" href="https://github.com/leb90/ArtScript/blob/main/benchmarks/js-framework-benchmark/RESULTS.md"
+    }
     column gap=3 {
       title "How it was measured" class="doc-title"
       Markdown html=methodologyHtml

@@ -482,7 +482,9 @@ class Parser {
     const props: Prop[] = [];
 
     const atEnd = () => this.tok.t === "nl" || this.tok.t === "eof" || this.is("}") || this.is("{") || this.is("->") || this.is(";");
-    const propAhead = () => this.tok.t === "id" && this.is("=", this.peek());
+    // `name=` or `on:click=` / `md:cols=` (a prop, not the element's content).
+    const t = (n: number) => this.toks[this.i + n];
+    const propAhead = () => this.tok.t === "id" && (this.is("=", t(1)) || (this.is(":", t(1)) && t(2)?.t === "id" && this.is("=", t(3))));
     const takesContent = !isComponent && tag.v !== "meta" && !(spec && spec.content === null);
 
     if (takesContent && !atEnd() && !propAhead()) content = this.ternary();

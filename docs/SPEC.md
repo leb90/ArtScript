@@ -135,7 +135,7 @@ column gap=4 align=center {
 - `gap=4` and `pad=4`: 1 unit = 4px. `align=start|center|end|stretch`. `justify=start|center|end|between|around`. `cols=3`.
 - `type=text|number|email|password|checkbox|date`. With `type=checkbox`, `input` binds a Bool.
 - `options=["S", "M"]` or objects (`value`/`id`, `label`/`name`); the state gets the option's value. `label="Email"` adds a visible label. `modal open { ... }` shows while `open` is true (Esc or the backdrop set it to false).
-- `item`, `th`, `td` take text and/or `{ children }`.
+- `item`, `th`, `td`, `link` take text and/or `{ children }` (`link to="/p/1" { card { ... } }`).
 - Prop values: literal, name, `a.b`, call, or `( expression )` in parentheses.
 - Component: `Name prop=value`. Children `Card { ... }` go where it puts `slot`; `slot header` is filled by `Card { header { ... } }`. `onPick: Fn(User)` types a callback (`onPick=(u => ...)` gets `u: User`).
 - Other events: `on:<event>=statement` with `event`: `card on:mouseenter=(hover = true)`, `input q on:keydown=(event.key == "Escape" ? q = "" : null)`.
