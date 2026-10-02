@@ -253,6 +253,30 @@ const CHECKS: Record<string, Check> = {
     await p.until(() => has(p, "Mesa") && has(p, "AB1") && !has(p, "Silla") && !has(p, "CD2"), "solo Mesa guardada en el servidor después de recargar");
   },
 
+  async "fs-avatar"(p) {
+    await p.until(() => p.count("Subir") === 1, 'el botón "Subir"');
+    // The image must show these bytes: from a URL the app's server answers, or as a data: URL.
+    const shows = async (bytes: string) => {
+      for (const src of p.images()) {
+        if (src.startsWith("data:")) { if (Buffer.from(src.split(",")[1] ?? "", src.includes(";base64") ? "base64" : "utf8").toString() === bytes) return true; continue; }
+        try { if (src && (await (await fetch(new URL(src, p.url))).text()) === bytes) return true; } catch { /* not served */ }
+      }
+      return false;
+    };
+    const until = async (bytes: string, what: string) => {
+      for (let i = 0; i < 100; i++) { if (await shows(bytes)) return; await p.settle(25); }
+      throw new BehaviorError(`se esperaba ${what}. Imágenes en pantalla: ${JSON.stringify(p.images().map((s) => s.slice(0, 60)))}`);
+    };
+    await p.upload(0, "yo.png", "PNG-1", "image/png");
+    await p.click("Subir");
+    await until("PNG-1", "la foto subida en una imagen");
+    await p.upload(0, "otra.png", "PNG-2", "image/png");
+    await p.click("Subir");
+    await until("PNG-2", "la foto nueva en lugar de la anterior");
+    await p.open();
+    await until("PNG-2", "la foto guardada en el servidor después de recargar");
+  },
+
   async routes(p) {
     await p.until(() => has(p, "Productos") && has(p, "Mesa") && has(p, "Silla"), 'en "/" el título "Productos" con Mesa y Silla');
     await p.link("Ver", 1);

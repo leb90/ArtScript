@@ -16,3 +16,4 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run eval -- --dry-run
+      - run: npm run eval -- --dry-run --stacks vue,solid

@@ -1,0 +1,28 @@
+model Profile {
+  id: ID
+  photo: File? accept="image/*"
+}
+
+api profiles: Profile
+
+page Me "/" {
+  data profiles = api.profiles.list()
+  state picked = null
+  fn upload() {
+    if profiles.length == 0 {
+      await api.profiles.create({ photo: picked })
+    } else {
+      await api.profiles.update(profiles[0].id, { photo: picked })
+    }
+  }
+
+  column gap=3 {
+    file picked accept="image/*"
+    button "Subir" primary -> upload()
+    for p in profiles {
+      if p.photo {
+        image p.photo.url alt="Foto de perfil"
+      }
+    }
+  }
+}

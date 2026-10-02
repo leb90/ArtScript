@@ -287,6 +287,21 @@ export class Page {
 
   path(): string { return window.location.pathname; }
 
+  // Picks a file in the `index`-th visible file input, like choosing it in the dialog.
+  async upload(index: number, name: string, content: string, type: string) {
+    const inputs = [...document.querySelectorAll<HTMLInputElement>("input[type=file]")].filter(visible);
+    const el = inputs[index];
+    if (!el) throw new BehaviorError(`no hay un input de archivo número ${index + 1} (hay ${inputs.length})`);
+    const file = new window.File([content], name, { type });
+    Object.defineProperty(el, "files", { value: Object.assign([file], { item: (i: number) => [file][i] ?? null }), configurable: true });
+    el.dispatchEvent(new window.Event("input", { bubbles: true }));
+    el.dispatchEvent(new window.Event("change", { bubbles: true }));
+    await this.settle();
+  }
+
+  // The src of every visible image.
+  images(): string[] { return [...document.querySelectorAll<HTMLImageElement>("img")].filter(visible).map((i) => i.getAttribute("src") ?? ""); }
+
   async check(index: number) {
     const boxes = [...document.querySelectorAll<HTMLInputElement>("input[type=checkbox]")];
     if (!boxes[index]) throw new BehaviorError(`no hay un checkbox número ${index + 1} (hay ${boxes.length})`);

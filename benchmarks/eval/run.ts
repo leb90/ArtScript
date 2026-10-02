@@ -416,7 +416,16 @@ async function main() {
   if (args.includes("--prompt-sizes")) return promptSizes();
   if (args.includes("--replay")) return replay(args.slice(args.indexOf("--replay") + 1).filter((a) => a.endsWith(".json")));
   if (!PRICES[MODEL]) throw new Error(`modelo sin precio cargado: ${MODEL}. Disponibles: ${Object.keys(PRICES).join(", ")}`);
-  if (DRY) return dryRun();
+  if (DRY) {
+    // Any ✗ line (a reference or a check that failed) makes the run fail, for CI.
+    const log = console.log;
+    let failed = 0;
+    console.log = (...a: unknown[]) => { if (String(a[0]).startsWith("✗")) failed++; log(...a); };
+    await dryRun();
+    console.log = log;
+    if (failed) { console.error(`\n${failed} failed`); process.exitCode = 1; }
+    return;
+  }
   if (existsSync(join(REPO, ".env"))) process.loadEnvFile(join(REPO, ".env"));
   if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
     console.error("Missing ANTHROPIC_API_KEY (in the environment or in .env at the repo root). Try first: npm run eval -- --dry-run");

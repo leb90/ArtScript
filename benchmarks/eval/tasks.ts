@@ -76,6 +76,11 @@ export const TASKS: Task[] = [
     prompt: "Creá un registro full-stack de productos: inputs con placeholder 'Nombre', 'Código' y 'Precio', y un botón 'Guardar' que crea el producto en el servidor. El servidor rechaza un nombre de menos de 3 caracteres (mostrá 'Nombre muy corto'), un código que ya existe (mostrá 'Código repetido') y un precio negativo (mostrá 'Precio inválido'); en esos casos no se crea nada. Cada producto guardado muestra su nombre y su código. Los datos viven en el servidor: al recargar la página siguen ahí.",
   },
   {
+    id: "fs-avatar",
+    fullstack: true,
+    prompt: "Creá una página de perfil full-stack: un input de archivo para elegir una foto y un botón 'Subir' que la guarda en el servidor. Debajo mostrá la foto subida (una imagen). Si se sube otra, reemplaza a la anterior. La foto vive en el servidor: al recargar la página sigue ahí.",
+  },
+  {
     id: "routes",
     prompt: "Creá una app con rutas (URLs reales que cambian sin recargar la página). Los productos son Mesa (id 1) y Silla (id 2). En '/' mostrá el título 'Productos' y, por cada producto, su nombre y un link 'Ver' que lleva a '/productos/<id>'. La página '/productos/<id>' muestra el nombre del producto y un link 'Volver' que lleva a '/'. Cualquier otra URL muestra 'No encontrado'.",
   },
