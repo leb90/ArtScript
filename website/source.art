@@ -1,0 +1,35 @@
+use "./lib/content.ts" { SOURCE, artFiles, artLines, lines, sourceByFile, REPO }
+
+page Source "/source" {
+  state file = "website/site.art"
+  computed current = sourceByFile(file)
+
+  meta title="This site's source · ArtScript" description="The ArtScript website is an ArtScript app. Here is every file it is made of."
+  column class="container page-pad" gap=8 {
+    column gap=3 {
+      text "Built with ArtScript" class="crumb"
+      title "This website is an ArtScript app" class="page-title"
+      text `It is ${artFiles.length} .art files with ${artLines} lines, plus a stylesheet. The build compiles them, prerenders every page to HTML and copies the Markdown for AI agents: npm run site. Small TypeScript helpers, imported with use, render the repository's Markdown and run the compiler in the playground.` class="page-lead"
+      row gap=3 wrap {
+        link "Browse it on GitHub" href=`${REPO}/tree/main/website` class="btn primary"
+        link "How use works" to="/learn/libraries" class="btn"
+      }
+    }
+    grid cols=1 lg:cols=3 gap=6 {
+      column gap=2 {
+        for f in SOURCE key f.file {
+          card class=(f.file == file ? "file-row active" : "file-row") gap=1 on:click=(file = f.file) {
+            row justify=between {
+              text f.file class="mono" bold
+              text `${lines(f.src)}` class="tag"
+            }
+            text f.what muted small
+          }
+        }
+      }
+      column gap=0 class="src-view" {
+        Code src=current.src lang=current.lang
+      }
+    }
+  }
+}

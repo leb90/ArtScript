@@ -37,7 +37,7 @@ export function printExpr(e: Expr): string {
     case "Member": return wrap(e.object, 10) + (e.optional ? "?." : ".") + e.prop;
     case "Index": return wrap(e.object, 10) + (e.optional ? "?.[" : "[") + printExpr(e.index) + "]";
     case "Call": return wrap(e.callee, 10) + (e.optional ? "?.(" : "(") + e.args.map(printExpr).join(", ") + ")";
-    case "Unary": return (e.op === "typeof" || e.op === "await" ? e.op + " " : e.op) + wrap(e.arg, 9);
+    case "Unary": return (e.op === "typeof" || e.op === "await" || e.op === "new" ? e.op + " " : e.op) + wrap(e.arg, 9);
     case "Update": return e.prefix ? e.op + wrap(e.arg, 10) : wrap(e.arg, 10) + e.op;
     case "Binary": {
       const p = PREC[e.op];

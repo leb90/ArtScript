@@ -1,16 +1,20 @@
 // Resolves `use` modules (npm packages or local JS/TS files) and lists their exports, so the
 // checker can verify imported names. Uses esbuild's bundler to follow re-exports.
-import { createRequire } from "node:module";
-import { dirname, isAbsolute, resolve } from "node:path";
+// Node built-ins are loaded lazily so the compiler also bundles for the browser (the playground),
+// where `use` imports simply aren't verified.
+const builtin = <T>(name: string): T | null => (globalThis as any).process?.getBuiltinModule?.(name) ?? null;
+const path = builtin<typeof import("node:path")>("node:path");
+const isAbsolute = (p: string) => (path ? path.isAbsolute(p) : p.startsWith("/"));
+const dirname = (p: string) => (path ? path.dirname(p) : p.replace(/\/[^/]*$/, "") || "/");
+const resolve = (...ps: string[]) => (path ? path.resolve(...ps) : ps.join("/"));
 
 // `exports: null` means they can't be known statically (CommonJS): names aren't checked.
 export type ModuleInfo = { found: false; reason: string } | { found: true; exports: string[] | null; hasDefault: boolean };
 
-const require_ = createRequire(import.meta.url);
 let esbuild: typeof import("esbuild") | null | undefined;
 function loadEsbuild() {
   if (esbuild === undefined) {
-    try { esbuild = require_("esbuild"); } catch { esbuild = null; }
+    try { esbuild = builtin<typeof import("node:module")>("node:module")!.createRequire(import.meta.url)("esbuild"); } catch { esbuild = null; }
   }
   return esbuild;
 }

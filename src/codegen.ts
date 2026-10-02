@@ -37,11 +37,14 @@ const JS_OPS: Record<string, string> = { "==": "===", "!=": "!==" };
 // `use` declarations as ES imports; only those whose names appear in `onlyFor` when given.
 function importLines(program: Program, onlyFor?: string): string[] {
   const out: string[] = [];
+  // Several files may `use` the same names: each is imported once (they're global to the project).
+  const seen = new Set<string>();
   for (const d of program.decls) {
     if (d.kind !== "Use") continue;
-    const used = (n: string) => onlyFor === undefined || new RegExp(`\\b${n}\\b`).test(onlyFor);
+    const used = (n: string) => !seen.has(n) && (onlyFor === undefined || new RegExp(`\\b${n}\\b`).test(onlyFor));
     const def = d.default && used(d.default) ? d.default : null;
     const names = d.names.filter(used);
+    for (const n of [def, ...names]) if (n) seen.add(n);
     if (!def && !names.length) continue;
     const what = [def, names.length ? `{ ${names.join(", ")} }` : null].filter(Boolean).join(", ");
     out.push(`import ${what} from ${JSON.stringify(specifier(d.source, d.loc.file))};`);
@@ -79,7 +82,7 @@ export function generateMapped(program: Program): { js: string; marks: (Loc | un
     }
   }
   out.push(`export const routes = [${pages.join(", ")}];`);
-  out.push("export const start = (el) => $.start(routes, el);", "");
+  out.push("export const start = (el, base) => $.start(routes, el, base);", "");
   return { js: out.join("\n"), marks };
 }
 
@@ -198,9 +201,9 @@ export function serverEntry(schema: ServerSchema): string {
 
 // `head`/`body`: a prerendered page's extra <head> tags and the HTML inside #app.
 // `css`: the project has its own styles (app.css), linked last so they override the runtime's.
-export function htmlShell(title = "ArtScript", head = "", body = "", css = false): string {
+export function htmlShell(title = "ArtScript", head = "", body = "", css = false, base = "/"): string {
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${head}${css ? '<link rel="stylesheet" href="/app.css">' : ""}</head><body><div id="app">${body}</div><script type="module" src="/app.js"></script></body></html>\n`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${head}${css ? `<link rel="stylesheet" href="${base}app.css">` : ""}</head><body><div id="app">${body}</div><script type="module" src="${base}app.js"></script></body></html>\n`;
 }
 
 class ComponentGen {
@@ -500,7 +503,8 @@ class ComponentGen {
 
   attr(v: string, name: string, val: Expr, scope: Scope, wrap = (s: string) => s) {
     const lit = literal(val);
-    if (lit !== null) this.emit(`${v}.${name} = ${wrap(JSON.stringify(lit))};`);
+    // A root-relative URL gets the app's base path (`art build --base`).
+    if (lit !== null) this.emit(`${v}.${name} = ${wrap(typeof lit === "string" && /^\/(?!\/)/.test(lit) && ["href", "src", "poster"].includes(name) ? `$.withBase(${JSON.stringify(lit)})` : JSON.stringify(lit))};`);
     else this.emit(`$.$attr(${v}, "${name}", () => ${wrap(this.expr(val, scope))});`);
   }
 
@@ -580,7 +584,7 @@ class ComponentGen {
         }
         return call;
       }
-      case "Unary": return e.op === "typeof" || e.op === "await" ? `(${e.op} ${x(e.arg)})` : `${e.op}(${x(e.arg)})`;
+      case "Unary": return e.op === "typeof" || e.op === "await" || e.op === "new" ? `(${e.op} ${x(e.arg)})` : `${e.op}(${x(e.arg)})`;
       case "Update": {
         if (this.isProp(e.arg, scope)) return `${x(e.arg)}.set(${x(e.arg)}() ${e.op[0]} 1)`.replace(/\(\)\.set/, ".set");
         return this.mutation(e.arg, e.prefix ? `${e.op}${x(e.arg)}` : `${x(e.arg)}${e.op}`, scope);

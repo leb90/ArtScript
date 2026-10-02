@@ -638,6 +638,11 @@ class Parser {
       this.next();
       return { kind: "Unary", op: t.v, arg: this.unary(), loc: t.loc };
     }
+    // `new Chart(box, opts)`: the operand is the call (`new a.b(c).d` keeps JS's meaning when printed back).
+    if (this.is("new")) {
+      this.next();
+      return { kind: "Unary", op: "new", arg: this.postfix(), loc: t.loc };
+    }
     if (t.t === "op" && (t.v === "++" || t.v === "--")) {
       this.next();
       return { kind: "Update", op: t.v, prefix: true, arg: this.unary(), loc: t.loc };

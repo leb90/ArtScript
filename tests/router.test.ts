@@ -61,7 +61,7 @@ page NotFound "*" {
 }
 `;
 
-async function mount(url: string) {
+async function mount(url: string, base?: string) {
   const r = compile([{ file: "app.art", src: APP }]);
   assert.deepEqual(r.diagnostics, []);
   const dir = mkdtempSync(join(tmpdir(), "art-router-"));
@@ -70,7 +70,7 @@ async function mount(url: string) {
   GlobalRegistrator.register({ url });
   document.body.innerHTML = '<div id="app"></div>';
   const app = await import(pathToFileURL(join(dir, "app.js")).href + `?u=${encodeURIComponent(url)}`);
-  app.start(document.getElementById("app"));
+  app.start(document.getElementById("app"), base);
   const text = () => document.getElementById("app")!.textContent!.replace(/\s+/g, " ");
   const click = (label: string) => [...document.querySelectorAll<HTMLElement>("a, button")].find((x) => x.textContent === label)!.click();
   return { text, click };
@@ -110,6 +110,23 @@ test("router: unknown paths render the * page", async () => {
   try {
     assert.match(text(), /No encontrado/);
     assert.match(text(), /visitas: 0/, "inside the layout");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});
+
+test("router: an app served under a base path (art build --base)", async () => {
+  const { text, click } = await mount("http://localhost/ArtScript/products/7", "/ArtScript/");
+  try {
+    assert.match(text(), /Producto 7/);
+    const home = [...document.querySelectorAll("a")].find((a) => a.textContent === "Inicio")!;
+    assert.equal(home.getAttribute("href"), "/ArtScript/", "links get the prefix");
+    click("siguiente");
+    assert.equal(location.pathname, "/ArtScript/products/8", "navigate() too");
+    assert.match(text(), /Producto 8/);
+    click("Inicio");
+    assert.equal(location.pathname, "/ArtScript/");
+    assert.match(text(), /Inicio/);
   } finally {
     await GlobalRegistrator.unregister();
   }

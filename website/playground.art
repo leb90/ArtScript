@@ -1,0 +1,67 @@
+// The real compiler runs in this page: what you type is checked and compiled on every keystroke.
+use "./lib/playground.ts" { compileApp, runApp, decode, shareUrl, onEditorKey }
+
+use "./lib/content.ts" { EXAMPLES, exampleByName, prefersDark }
+
+use "./lib/markdown.ts" { copyText }
+
+page Playground "/playground" {
+  state example = query.example ?? "counter"
+  state code = decode(query.code ?? "") ?? exampleByName(example).src
+  state shared = false
+  computed result = compileApp(code)
+  computed dark = theme() == "dark" || theme() == "auto" && prefersDark()
+  ref preview
+  fn run(wait = 250) {
+    if result.js {
+      runApp(preview, result.js, dark, wait)
+    }
+  }
+  fn load() {
+    code = exampleByName(example).src
+  }
+  fn share() {
+    copyText(shareUrl(code))
+    shared = true
+    setTimeout(() => shared = false, 1500)
+  }
+  effect {
+    run()
+  }
+
+  meta title="Playground · ArtScript" description="Write ArtScript and see the app run: the real compiler, in your browser."
+  column class="pg" gap=0 {
+    textarea code class="pg-editor" on:keydown=onEditorKey(event, () => run(0))
+    column class="pg-side" gap=0 {
+      row class="pg-bar" gap=2 justify=between wrap {
+        row gap=2 {
+          select example options=EXAMPLES.filter(e => e.runs).map(e => ({ value: e.name, label: e.title })) -> load()
+          button "Run" primary small -> run(0)
+          button shared ? "Link copied" : "Share" small class="ghost" -> share()
+        }
+        if result.problems.length == 0 {
+          text `Compiled · ${(result.bytes / 1024).toFixed(1)} KB of JS` class="pg-ok" success
+        } else {
+          text `${result.problems.length} problem(s)` danger small
+        }
+      }
+      column ref=preview class="pg-frame"
+      if result.server {
+        text "This code declares an api: run it with art dev to get the server. The preview has no backend." class="pg-error" muted
+      }
+      if result.problems.length > 0 {
+        column class="pg-errors" gap=0 {
+          for p in result.problems {
+            column class="pg-error" gap=1 {
+              text `line ${p.line}:${p.col}  ${p.type}` danger bold
+              text p.msg
+              if p.fixes != "" {
+                text `fix: ${p.fixes}` muted
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

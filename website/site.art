@@ -1,0 +1,170 @@
+use "./lib/content.ts" { NAV, REPO, setupHead, prefersDark, docBySlug, docHeadings, docFile, editUrl, renderDoc, prevPage, nextPage, artFiles, artLines }
+
+use "./lib/markdown.ts" { codeBlock, onDocClick, copyText }
+
+layout Site {
+  state menu = false
+  computed dark = theme() == "dark" || theme() == "auto" && prefersDark()
+  mount {
+    setupHead()
+  }
+
+  column gap=0 {
+    column class="site-header" {
+      row class="container bar" justify=between gap=4 {
+        row gap=6 {
+          link "ArtScript" to="/" class="logo"
+          row gap=1 class=(menu ? "nav open" : "nav") {
+            link "Learn" to="/learn" on:click=(menu = false)
+            link "Reference" to="/reference/spec" on:click=(menu = false)
+            link "For AI" to="/ai" on:click=(menu = false)
+            link "Examples" to="/examples" on:click=(menu = false)
+            link "Benchmarks" to="/benchmarks" on:click=(menu = false)
+            link "Playground" to="/playground" on:click=(menu = false)
+          }
+        }
+        row gap=2 {
+          link "Built with ArtScript" to="/source" class="badge-built"
+          button dark ? "Light" : "Dark" small class="ghost" -> setTheme(dark ? "light" : "dark")
+          link "GitHub" href=REPO class="pill"
+          button menu ? "Close" : "Menu" small class="ghost menu-btn" -> menu = !menu
+        }
+      }
+    }
+    slot
+    Footer
+  }
+}
+
+component Footer {
+  column class="footer" {
+    column class="container" gap=8 {
+      grid cols=2 md:cols=4 gap=6 {
+        column gap=2 align=start {
+          text "Learn" class="col-title"
+          link "Introduction" to="/learn"
+          link "Quick start" to="/learn/quick-start"
+          link "Tutorial" to="/learn/tutorial"
+          link "Deploying" to="/learn/deploy"
+        }
+        column gap=2 align=start {
+          text "For AI" class="col-title"
+          link "Overview" to="/ai"
+          link "Working with agents" to="/ai/agents"
+          link "llms.txt" href="/llms.txt"
+          link "llms-full.txt" href="/llms-full.txt"
+        }
+        column gap=2 align=start {
+          text "Reference" class="col-title"
+          link "Language spec" to="/reference/spec"
+          link "UI elements" to="/reference/elements"
+          link "Errors" to="/reference/errors"
+          link "CLI" to="/reference/cli"
+        }
+        column gap=2 align=start {
+          text "Project" class="col-title"
+          link "GitHub" href=REPO
+          link "Benchmarks" to="/benchmarks"
+          link "Security" to="/reference/security"
+          link "This site's source" to="/source"
+        }
+      }
+      divider
+      row justify=between wrap gap=3 {
+        text `This website is built with ArtScript: ${artFiles.length} .art files, ${artLines} lines.` class="made"
+        text "MIT License" class="made"
+      }
+    }
+  }
+}
+
+// A highlighted code block with a copy button.
+component Code(src: String, lang: String = "art") {
+  ref box
+  effect {
+    box.innerHTML = codeBlock(src, lang)
+  }
+
+  column ref=box class="code-box" on:click=onDocClick(event)
+}
+
+// HTML rendered from Markdown at build time (and again in the browser).
+component Markdown(html: String) {
+  ref box
+  effect {
+    box.innerHTML = html
+  }
+
+  column ref=box class="prose" on:click=onDocClick(event)
+}
+
+component Sidebar(path: String, open: Bool = false) {
+  column gap=0 class=(open ? "sidebar open" : "sidebar") {
+    for s in NAV {
+      text s.title class="group"
+      for it in s.items {
+        link it.title to=it.path class=(it.path == path ? "active" : "")
+      }
+    }
+  }
+}
+
+// The frame of every docs page: sidebar, title, content, previous/next and "on this page".
+component DocShell(path: String, section: String, heading: String, slug: String = "") {
+  state open = false
+  computed prev = prevPage(path)
+  computed next = nextPage(path)
+
+  grid class="container docs" {
+    Sidebar path=path open=open
+    column class="doc-main" gap=0 {
+      button open ? "Hide menu" : "All pages" small class="ghost docs-toggle" -> open = !open
+      text section class="crumb"
+      title heading class="doc-title"
+      slot
+      row gap=4 class="pager" {
+        if prev {
+          link `← ${prev.title}` to=prev.path
+        }
+        if next {
+          link `${next.title} →` to=next.path class="next"
+        }
+      }
+    }
+    if slug != "" {
+      column class="toc" gap=0 {
+        text "On this page" class="group"
+        for h in docHeadings(slug) {
+          link h.text href=`#${h.id}` class=(h.level == 3 ? "sub" : "")
+        }
+      }
+    }
+  }
+}
+
+// A docs page from a Markdown file of the repository.
+component DocPage(slug: String) {
+  computed doc = docBySlug(slug)
+
+  DocShell path=doc.path section=doc.section heading=doc.title slug=slug {
+    row gap=2 wrap class="doc-tools" {
+      button "Copy page for your AI" small class="pill" -> copyText(doc.md)
+      link "Markdown" href=docFile(slug) class="pill"
+      link "Edit on GitHub" href=editUrl(slug) class="pill"
+    }
+    Markdown html=renderDoc(slug)
+  }
+}
+
+page NotFound "*" {
+  meta title="Not found · ArtScript"
+  column class="container page-pad" gap=4 align=start {
+    text "404" class="crumb"
+    title "This page doesn't exist" class="page-title"
+    text "It may have moved. The docs start here:" class="page-lead"
+    row gap=3 {
+      link "Learn ArtScript" to="/learn" class="btn primary"
+      link "Home" to="/" class="btn"
+    }
+  }
+}

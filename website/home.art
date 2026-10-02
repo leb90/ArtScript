@@ -1,0 +1,179 @@
+use "./lib/content.ts" { COMPARE, stackByName, resultFor, barWidth, specTokens, artFiles, artLines }
+
+page Home "/" {
+  state other = "React"
+  computed art = COMPARE[0]
+  computed them = stackByName(other)
+  computed sonnet = resultFor("claude-sonnet-5-5")
+
+  meta title="ArtScript: the web framework built for AI" description="A full-stack web language designed so AI models build and change apps with fewer tokens, retries and dollars than React, Svelte or Vue."
+  column gap=0 {
+    column class="hero" {
+      column class="container" align=center gap=0 {
+        link "Version 0.1 · Measured against React, Svelte, Vue and SolidJS →" to="/benchmarks" class="eyebrow"
+        title "The web framework built for AI" class="hero-title"
+        text "ArtScript is a full-stack language for web apps, designed so that models like Claude write them with fewer tokens, fewer retries and fewer dollars. Your agent writes a third of the code, the compiler catches its mistakes, and the app ships about 3 KB of JavaScript." class="lead"
+        row gap=3 wrap justify=center class="cta" {
+          link "Get started" to="/learn/quick-start" class="btn primary"
+          link "Open the playground" to="/playground" class="btn"
+          link "Give it to your AI" to="/ai" class="btn"
+        }
+      }
+    }
+    column class="container" {
+      grid cols=1 sm:cols=2 lg:cols=4 gap=4 {
+        card class="stat" gap=1 {
+          text `−${sonnet.headline}%` class="num grad"
+          text `cost per working app vs React + TypeScript (${sonnet.name})` class="label"
+        }
+        card class="stat" gap=1 {
+          text "~3 KB" class="num"
+          text "of JavaScript per app (brotli), runtime included. React: ~59 KB" class="label"
+        }
+        card class="stat" gap=1 {
+          text `${Math.round(specTokens / 100) / 10}K` class="num"
+          text "tokens: the whole language spec your agent reads" class="label"
+        }
+        card class="stat" gap=1 {
+          text "1 line" class="num"
+          text "for a validated REST api with storage: api users: User" class="label"
+        }
+      }
+    }
+    column class="section" {
+      column class="container" gap=0 {
+        title "Same app. A fraction of the code." class="section-title"
+        text "A full-stack users list (form, validation, a REST api and storage) exactly as the eval measured it in each stack. The labels are in Spanish, like the eval's dataset." class="section-lead"
+        row justify=center {
+          tabs other options=["React", "Svelte", "Vue", "SolidJS"]
+        }
+        grid cols=1 md:cols=2 gap=5 class="compare" {
+          column gap=2 class="compare-col" {
+            row justify=between {
+              text "ArtScript · app.art" class="compare-head"
+              text `${art.lines} lines · ≈${art.tokens} tokens` class="compare-head n"
+            }
+            Code src=art.code lang="art"
+          }
+          column gap=2 class="compare-col" {
+            row justify=between {
+              text `${them.name} · ${them.files}` class="compare-head"
+              text `${them.lines} lines · ≈${them.tokens} tokens` class="compare-head n"
+            }
+            Code src=them.code lang=them.lang
+          }
+        }
+      }
+    }
+    column class="section alt" {
+      column class="container" gap=0 {
+        title "Everything an app needs, nothing an agent has to guess" class="section-title"
+        text "The language is small enough to fit in a prompt and complete enough to ship real products." class="section-lead"
+        grid cols=1 md:cols=2 lg:cols=3 gap=5 {
+          Feature heading="A third of the code" body="One line per element, no hooks, no imports, no boilerplate. The same app takes about a third of the tokens of React, so every request an agent makes costs less." {
+            icon "zap" size=22
+          }
+          Feature heading="Full stack in one file" body="model, api, auth and server fn sit next to the UI. api users: User is a validated REST api with SQLite storage; data loads it and reloads by itself after writes." {
+            icon "dashboard" size=22
+          }
+          Feature heading="Typed end to end" body="The compiler checks the UI, the api calls against the models, and null safety. Mistakes are caught before the app runs, not by a user." {
+            icon "check" size=22
+          }
+          Feature heading="Errors written for models" body="Every error has a stable code, what was expected, what was found and the fix. art check --ai prints them as JSON, so a retry is one cheap step." {
+            icon "info" size=22
+          }
+          Feature heading="Edits, not rewrites" body="An agent changes existing code with art patch: small, addressable, typechecked and atomic. It doesn't re-send whole files to rename a button." {
+            icon "edit" size=22
+          }
+          Feature heading="About 3 KB of JavaScript" body="Signals and direct DOM updates, no virtual DOM. A typical app ships 2 to 5 KB brotli including the runtime, against about 59 KB for React." {
+            icon "package" size=22
+          }
+          Feature heading="Secure by default" body="Hashed passwords, cookie sessions, CSRF protection, rate limits, validation on the server, CSP headers and safe URLs, with nothing to configure." {
+            icon "lock" size=22
+          }
+          Feature heading="Real pages" body="Routes, layouts, meta tags, guards and prerendered HTML for search engines and AI crawlers. Dark mode and responsive props are built in." {
+            icon "globe" size=22
+          }
+          Feature heading="The whole npm ecosystem" body="use \"date-fns\" { format } imports any package or your own TypeScript, and the compiler checks the names exist. Charts and maps work through ref and mount." {
+            icon "link" size=22
+          }
+        }
+      }
+    }
+    column class="section" {
+      column class="container" gap=8 {
+        grid cols=1 lg:cols=2 gap=8 align=center {
+          column gap=4 align=start {
+            text "For AI agents" class="crumb"
+            title "Errors that tell the model how to fix them" class="section-title" style="text-align:left"
+            text "A typo in a field name is caught at compile time. The model gets one JSON line with what was expected and the fix, so the retry costs a few tokens instead of a debugging session." class="page-lead"
+            text "Agents also get an MCP server, a compact project map and a patch format, so they read and write only what changes." class="page-lead"
+            row gap=3 wrap {
+              link "How to set up your agent" to="/ai" class="btn primary"
+              link "Edit spec" to="/reference/edit" class="btn"
+            }
+          }
+          column gap=3 {
+            Code src="for u in users {\n  text u.emial\n}" lang="art"
+            Code src="$ art check --ai\n{\"code\":\"E1011\",\"type\":\"UNKNOWN_FIELD\",\"loc\":\"app.art:13:10\",\"at\":\"Users\",\"expr\":\"u.emial\",\"expected\":\"id|name|email\",\"fixes\":[\"email\"]}" lang="sh"
+          }
+        }
+      }
+    }
+    column class="section alt" {
+      column class="container" gap=6 {
+        title "Measured, not claimed" class="section-title"
+        text `${sonnet.name} built the same apps in every stack. Each app was run and used in a simulated browser; the cost counts the spec, retries and thinking tokens.` class="section-lead"
+        card class="model" gap=4 {
+          row justify=between wrap gap=3 {
+            text "USD per working app" bold
+            text sonnet.name muted
+          }
+          for r in sonnet.rows {
+            row class="bar-row" {
+              text r.stack bold=r.ours
+              column class="bar-track" {
+                column class=(r.ours ? "bar-fill ours" : "bar-fill") style=`width:${barWidth(sonnet.rows, r.usd)}`
+              }
+              text `$${r.usd.toFixed(4)}` class="bar-usd"
+            }
+          }
+        }
+        row justify=center {
+          link "All models, tasks and the methodology →" to="/benchmarks" class="btn"
+        }
+      }
+    }
+    column class="section" {
+      column class="container" {
+        card class="built" gap=4 align=start {
+          text "Dogfooding" class="crumb"
+          title "This website is written in ArtScript" class="section-title" style="text-align:left"
+          text `Every page you are reading, the docs, the benchmarks charts and the playground are ${artFiles.length} .art files with ${artLines} lines, compiled by ArtScript and prerendered to static HTML. The guides are Markdown files from the repository, so people and AI agents read the same source.` class="page-lead"
+          row gap=3 wrap {
+            link "Read this site's source" to="/source" class="btn primary"
+            link "See it on GitHub" href="https://github.com/leb90/ArtScript/tree/main/website" class="btn"
+          }
+        }
+      }
+    }
+    column class="section" style="padding-top:0" {
+      column class="container" align=center gap=4 {
+        title "Start building" class="section-title"
+        text "Create an app, open it in your editor and ask your agent for the first feature." class="section-lead"
+        Code src="git clone https://github.com/leb90/ArtScript && cd ArtScript && npm install\nnode src/cli.ts init ../my-app --template todo\ncd ../my-app && npm install && npm run dev" lang="sh"
+        link "Read the quick start →" to="/learn/quick-start" class="btn primary"
+      }
+    }
+  }
+}
+
+component Feature(heading: String, body: String) {
+  card class="feature" gap=3 {
+    column class="feature-icon" align=center justify=center {
+      slot
+    }
+    text heading class="h3" bold
+    text body class="body"
+  }
+}

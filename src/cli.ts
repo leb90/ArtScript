@@ -34,7 +34,7 @@ const HELP = `art ${PKG.version} — the ArtScript compiler
 
   art init <name> [--template t]                   create a new project
   art dev [path] [--port 3000]      dev server with live reload
-  art build [path] [--out dist] [--sourcemap] [--prerender [--site url]]
+  art build [path] [--out dist] [--sourcemap] [--base /sub] [--prerender [--site url]]
                                     build for production (prerender: HTML per route; site: sitemap.xml)
   art check [path] [--ai]           typecheck; --ai = one JSON line per error
   art fmt [path] [--write]          canonical format (without --write it only prints)
@@ -62,7 +62,7 @@ for (let i = 1; i < argv.length; i++) {
   const a = argv[i];
   if (a.startsWith("--")) {
     const next = argv[i + 1];
-    if (next !== undefined && !next.startsWith("--") && ["--out", "--port", "--dir", "--budget", "--template", "--site"].includes(a)) { flags.set(a, next); i++; }
+    if (next !== undefined && !next.startsWith("--") && ["--out", "--port", "--dir", "--budget", "--template", "--site", "--base"].includes(a)) { flags.set(a, next); i++; }
     else flags.set(a, true);
   } else pos.push(a);
 }
@@ -135,7 +135,7 @@ function sizes(files: Record<string, string>): string {
 // Compiles in memory: { "index.html", "app.js" } or the diagnostics. app.js is one bundle with the
 // runtime and every `use` module (npm packages resolve from the project's node_modules).
 // With apis, `server` is the schema for the server runtime.
-async function buildFiles(target: string, minify: boolean, maps: "inline" | "linked" | false = minify ? false : "inline"): Promise<{ files: Record<string, string>; server: ServerSchema | null } | { diagnostics: Diagnostic[] }> {
+async function buildFiles(target: string, minify: boolean, maps: "inline" | "linked" | false = minify ? false : "inline", base = "/"): Promise<{ files: Record<string, string>; server: ServerSchema | null } | { diagnostics: Diagnostic[] }> {
   const r = compile(sources(target));
   if (!r.js) return { diagnostics: r.diagnostics };
   const esbuild = await import("esbuild");
@@ -143,7 +143,7 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
     const out = await esbuild.build({
       // The bundle starts the app itself, so index.html has no inline script (a strict CSP works).
       // The .art source map goes in as an input map, so esbuild's map points back to the .art files.
-      stdin: { contents: r.js.replace('"./runtime.js"', JSON.stringify(RUNTIME)) + "\nstart();\n" + (maps && r.map ? `//# sourceMappingURL=data:application/json;base64,${Buffer.from(r.map).toString("base64")}\n` : ""), resolveDir: resolve(projectRoot(target)), loader: "js", sourcefile: "app.art.js" },
+      stdin: { contents: r.js.replace('"./runtime.js"', JSON.stringify(RUNTIME)) + `\nstart(undefined, ${JSON.stringify(base)});\n` + (maps && r.map ? `//# sourceMappingURL=data:application/json;base64,${Buffer.from(r.map).toString("base64")}\n` : ""), resolveDir: resolve(projectRoot(target)), loader: "js", sourcefile: "app.art.js" },
       bundle: true, format: "esm", platform: "browser", write: false, minify, logLevel: "silent", outfile: "app.js", sourcemap: maps || false,
       define: { "process.env.NODE_ENV": minify ? '"production"' : '"development"' },
     });
@@ -154,7 +154,7 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
     const css = cssFiles.map((f) => `/* ${relative(root, f)} */\n${readFileSync(f, "utf8")}`).join("\n");
     const js = out.outputFiles.find((f) => f.path.endsWith("app.js"))!.text;
     const map = out.outputFiles.find((f) => f.path.endsWith("app.js.map"));
-    const files: Record<string, string> = { "index.html": htmlShell("ArtScript", "", "", !!css), "app.js": js, ...(map ? { "app.js.map": map.text } : {}) };
+    const files: Record<string, string> = { "index.html": htmlShell("ArtScript", "", "", !!css, base), "app.js": js, ...(map ? { "app.js.map": map.text } : {}) };
     if (css) files["app.css"] = css;
     return { files, server: r.server };
   } catch (e: any) {
@@ -196,7 +196,9 @@ switch (cmd) {
   case "build": {
     const target = pos[0] ?? defaultTarget();
     const outDir = (flag("--out") as string) ?? join(projectRoot(target), "dist");
-    const r = await buildFiles(target, true, flags.has("--sourcemap") ? "linked" : false);
+    // --base /sub: the app is served under that path (GitHub Pages project sites, a proxy prefix).
+    const base = `/${((flag("--base") as string | undefined) ?? "").replace(/^\/+|\/+$/g, "")}/`.replace("//", "/");
+    const r = await buildFiles(target, true, flags.has("--sourcemap") ? "linked" : false, base);
     if ("diagnostics" in r) { report(r.diagnostics, false); process.exit(1); }
     mkdirSync(outDir, { recursive: true });
     for (const [f, s] of Object.entries(r.files)) writeFileSync(join(outDir, f), s);
@@ -208,10 +210,10 @@ switch (cmd) {
       // Routes that aren't prerendered (`/posts/:id`) are served this empty shell, not the home page.
       writeFileSync(join(outDir, "_app.html"), r.files["index.html"]);
       for (const path of paths) {
-        const page = await prerender(pathToFileURL(join(outDir, "app.js")).href, path);
+        const page = await prerender(pathToFileURL(join(outDir, "app.js")).href, base.slice(0, -1) + path);
         const file = path === "/" ? join(outDir, "index.html") : join(outDir, path, "index.html");
         mkdirSync(dirname(file), { recursive: true });
-        writeFileSync(file, htmlShell(page.title || "ArtScript", page.head, page.html, "app.css" in r.files));
+        writeFileSync(file, htmlShell(page.title || "ArtScript", page.head, page.html, "app.css" in r.files, base));
       }
       console.log(`prerendered: ${paths.join(" ")}`);
       // --site https://example.com: sitemap.xml with those routes, and robots.txt pointing to it.

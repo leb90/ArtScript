@@ -1,0 +1,94 @@
+use "./lib/content.ts" { specText, editText, specTokens, editTokens, AGENTS_MD }
+
+use "./lib/markdown.ts" { copyText }
+
+page Ai "/ai" {
+  state tools = [{ name: "art_spec", what: "The language spec (full, or the short edit version)." }, { name: "art_check", what: "Typechecks the project; errors as JSON with expected, actual and fixes." }, { name: "art_context", what: "The project map, or a component's source with every patch path." }, { name: "art_patch", what: "Applies a structured edit: atomic and typechecked, nothing is written on error." }]
+  state loop = [{ n: "1", title: "Read the spec once", body: "About 3K tokens describe the whole language. With prompt caching it is billed at the cache rate after the first request." }, { n: "2", title: "Write .art files", body: "One file can hold the models, the api, the pages and the tests. Expressions are plain JavaScript, so nothing new to learn there." }, { n: "3", title: "Check, fix, repeat", body: "art check --ai returns one JSON line per error with the fix. Most retries are a single small patch." }, { n: "4", title: "Verify behavior", body: "test blocks click, type and read the screen in a simulated browser: art test runs them with a fresh database." }, { n: "5", title: "Change with patches", body: "For later changes the agent reads art context for the part it needs and sends an art patch instead of rewriting files." }]
+
+  meta title="ArtScript for AI agents" description="How to give an AI agent ArtScript: llms.txt, the spec, the MCP server, the instructions file and the build-check-patch loop."
+  DocShell path="/ai" section="For AI" heading="ArtScript for AI agents" {
+    column gap=6 class="prose" {
+      text "ArtScript is designed around one number: what it costs a model to build an app and to keep changing it. This page is what you give your agent, and what it can read by itself." class="page-lead"
+      grid cols=1 md:cols=2 gap=4 {
+        card class="feature" gap=2 {
+          text "llms.txt" class="h3" bold
+          text "The entry point for AI crawlers and agents: what ArtScript is and where each document is." class="body"
+          row gap=2 wrap {
+            link "Open llms.txt" href="/llms.txt" class="pill"
+            link "llms-full.txt" href="/llms-full.txt" class="pill"
+          }
+        }
+        card class="feature" gap=2 {
+          text `Full spec · ~${specTokens} tokens` class="h3" bold
+          text "The whole language: declarations, state, the backend, the view, tests and the rules the compiler checks. Give it before the first line of code." class="body"
+          row gap=2 wrap {
+            button "Copy the spec" small class="pill" -> copyText(specText)
+            link "Markdown" href="/md/SPEC.md" class="pill"
+            link "Read it" to="/reference/spec" class="pill"
+          }
+        }
+        card class="feature" gap=2 {
+          text `Edit spec · ~${editTokens} tokens` class="h3" bold
+          text "Enough to change existing code: the code the agent reads already shows the syntax. Use it for every task after the first one." class="body"
+          row gap=2 wrap {
+            button "Copy the edit spec" small class="pill" -> copyText(editText)
+            link "Markdown" href="/md/SPEC-EDIT.md" class="pill"
+          }
+        }
+        card class="feature" gap=2 {
+          text "Every page as Markdown" class="h3" bold
+          text "Each guide has a Markdown version and a button that copies it for your AI. Every page is also prerendered HTML, readable without JavaScript." class="body"
+          row gap=2 wrap {
+            link "Working with agents" to="/ai/agents" class="pill"
+          }
+        }
+      }
+      title "Connect the tools (MCP)"
+      text "art mcp is an MCP server over stdio. In a project created with art init:"
+      Code src="claude mcp add artscript -- npx art mcp" lang="sh"
+      text "Cursor, Windsurf and other MCP clients take the same command in their config:"
+      Code src="{\n  \"mcpServers\": {\n    \"artscript\": { \"command\": \"npx\", \"args\": [\"art\", \"mcp\"] }\n  }\n}" lang="json"
+      column class="table" {
+        table class="ref-table" {
+          tr {
+            th "Tool"
+            th "What it does"
+          }
+          for t in tools {
+            tr {
+              td {
+                text t.name class="mono" bold
+              }
+              td t.what
+            }
+          }
+        }
+      }
+      title "The instructions file"
+      text "art init writes this AGENTS.md (and the same CLAUDE.md) into every new project, next to ARTSCRIPT.md and ARTSCRIPT-EDIT.md. Agents that read instruction files follow it without being told."
+      Code src=AGENTS_MD lang="markdown"
+      title "The loop that keeps it cheap"
+      column gap=3 {
+        for s in loop {
+          row gap=4 align=start {
+            column class="feature-icon" align=center justify=center {
+              text s.n bold
+            }
+            column gap=1 {
+              text s.title bold
+              text s.body muted
+            }
+          }
+        }
+      }
+      title "A prompt that works"
+      Code src="You are building a web app in ArtScript. The spec is attached (ARTSCRIPT.md).\nWrite the app in src/app.art. After every change run `npx art check --ai`\nand fix what it reports. Add test blocks for the main flows and run `npx art test`.\nFor changes to existing code, read `npx art context <Component>` and send an art patch." lang="text"
+      card class="callout" gap=2 {
+        text "Why it costs less" bold
+        text "Fewer output tokens per feature (no imports, hooks or boilerplate), a backend that is one line per resource, errors that carry their fix, and edits that send only what changes. The benchmarks page has the measured numbers per model."
+        link "See the benchmarks →" to="/benchmarks"
+      }
+    }
+  }
+}

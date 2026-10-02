@@ -1,6 +1,6 @@
 // `art test`: runs the `test "..." { ... }` blocks of a project in a simulated browser (happy-dom,
 // an optional dependency) against a real server when the app has apis. Each test starts from a
-// fresh database. Steps use what a person sees: texts, buttons, placeholders, links.
+// fresh database. Steps use what a person sees: texts, buttons, placeholders, labels, links.
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -68,8 +68,10 @@ class Page {
   }
   private input(placeholder: string): HTMLInputElement {
     const all = [...document.querySelectorAll<HTMLInputElement>("input, textarea")].filter(visible);
-    const el = all.find((i) => i.placeholder === placeholder);
-    if (!el) throw new StepError(`no input with placeholder "${placeholder}"; placeholders: ${all.map((i) => `"${i.placeholder}"`).join(", ") || "none"}`);
+    // By placeholder, or by the visible label (`input email label="Email"`).
+    const label = (i: HTMLElement) => norm(i.closest("label")?.textContent ?? "");
+    const el = all.find((i) => i.placeholder === placeholder) ?? all.find((i) => label(i) === placeholder);
+    if (!el) throw new StepError(`no input with placeholder or label "${placeholder}"; inputs: ${all.map((i) => `"${i.placeholder || label(i)}"`).join(", ") || "none"}`);
     return el;
   }
   async fill(placeholder: string, value: string) {
@@ -164,6 +166,9 @@ export async function runTests(sources: Source[]): Promise<TestResult[] | { diag
     } catch (e) {
       results.push({ name: t.name, ok: false, error: (e as Error).message });
     } finally {
+      // Let pending requests and updates finish first: they can't run once the DOM is gone.
+      const win = (globalThis as any).window;
+      if (reg.isRegistered) await Promise.race([win?.happyDOM?.waitUntilComplete?.(), new Promise((r) => setTimeout(r, 1000))]);
       if (reg.isRegistered) await reg.unregister();
       server?.closeAllConnections();
       server?.close();

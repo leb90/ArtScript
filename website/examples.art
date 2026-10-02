@@ -1,0 +1,42 @@
+use "./lib/content.ts" { EXAMPLES, REPO, lines }
+
+page Examples "/examples" {
+  state open = "counter"
+
+  meta title="Examples · ArtScript" description="Complete ArtScript apps, from a counter to a CRM with relations, uploads and live data."
+  column class="container page-pad" gap=8 {
+    column gap=3 {
+      text "Examples" class="crumb"
+      title "Complete apps, short files" class="page-title"
+      text "Each example is one .art file from the repository. The client-side ones run in the playground; the full-stack ones run with art dev, which also serves their api and database." class="page-lead"
+    }
+    grid cols=1 md:cols=2 gap=5 {
+      for ex in EXAMPLES key ex.name {
+        card class="example" gap=3 {
+          row justify=between {
+            text ex.title bold large
+            text `${lines(ex.src)} lines` class="tag"
+          }
+          text ex.summary muted
+          row gap=2 wrap {
+            for f in ex.features {
+              text f class="tag"
+            }
+          }
+          row gap=2 wrap {
+            button open == ex.name ? "Hide code" : "Show code" small class="pill" -> open = open == ex.name ? "" : ex.name
+            if ex.runs {
+              link "Open in playground" to=`/playground?example=${ex.name}` class="pill"
+            } else {
+              text `art dev examples/${ex.name}` class="tag"
+            }
+            link "GitHub" href=`${REPO}/blob/main/examples/${ex.name}/app.art` class="pill"
+          }
+          if open == ex.name {
+            Code src=ex.src lang="art"
+          }
+        }
+      }
+    }
+  }
+}

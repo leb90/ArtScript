@@ -11,7 +11,9 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 - `on:<event>`, `ref`, `mount`, `effect`, `cleanup`; component children with `slot` and named slots; typed callbacks `Fn(User)`.
 - Keyed lists (`for p in xs key p.id`) that keep their DOM; responsive props (`md:cols=3`).
 - Assignable `computed`, two-way props, mutations through parameters update the screen, TS-style annotations and defaults accepted in params.
-- `test "..." { ... }` blocks run by `art test`.
+- `test "..." { ... }` blocks run by `art test`; steps find inputs by placeholder or label.
+- `new` expressions (`new Chart(box, opts)`); `process` and `Buffer` in server functions; setting properties of a `ref` (`box.innerHTML = html`).
+- A button with `->` inside a `form` only runs its action (it no longer submits the form too).
 
 ### Backend
 - Field rules (`min`, `max`, `match`, `unique`), defaults, automatic migrations (`was=`), relations with `cascade`.
@@ -24,6 +26,9 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 - Every syntax error of a file in one compile; source maps; `art lsp` (errors, format, completion, definition, hover, rename) and a VS Code extension.
 - `art mcp` (MCP server), `art add` (official components as source), `art init --template`, `art build --prerender --site`, self-contained `dist/server.js` with a Dockerfile.
 - `docs/SPEC-EDIT.md`, a ~800-token spec for changing code.
+- `art build --base /sub` for apps served under a subpath; same-page `#section` links scroll, and links to files that aren't routes load them.
+- Several files may `use` the same names; the compiler also bundles for the browser without shims.
+- The website is an ArtScript app (`website/`), with `llms.txt`, `llms-full.txt` and every guide as Markdown.
 
 ### Changes to existing code
 - Indexing a list (`xs[i]`) is `T` instead of `T?`, as in TypeScript; `find()` and `get()` are still `T?`.

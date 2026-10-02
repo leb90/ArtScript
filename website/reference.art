@@ -1,0 +1,74 @@
+// These tables are read from the compiler itself (src/elements.ts and src/errors.ts), so they can't drift.
+use "./lib/content.ts" { ELEMENT_ROWS, ERRORS }
+
+page Elements "/reference/elements" {
+  state q = ""
+  computed rows = ELEMENT_ROWS.filter(e => q == "" || e.name.includes(q.toLowerCase()))
+
+  meta title="UI elements · ArtScript" description="Every built-in ArtScript element with its content, event, props and flags, read from the compiler."
+  DocShell path="/reference/elements" section="Reference" heading="UI elements" {
+    column gap=4 class="prose" {
+      text "Every element the compiler knows, straight from src/elements.ts. All of them also take class, style, id and ref, and any DOM event with on:event." class="page-lead"
+      input q placeholder="Filter elements" type=text
+      column class="table" {
+        table class="ref-table" {
+          tr {
+            th "Element"
+            th "Content"
+            th "-> fires on"
+            th "Props"
+            th "Flags"
+            th "HTML"
+          }
+          for e in rows key e.name {
+            tr {
+              td {
+                text e.name class="mono" bold
+              }
+              td e.content
+              td e.action
+              td e.props
+              td e.flags muted
+              td `<${e.html}>` muted
+            }
+          }
+        }
+      }
+      Code src="column gap=4 align=center {\n  title \"Users\"\n  input draft placeholder=\"Name\" -> add(draft)\n  button \"Add\" primary -> add(draft)\n  for u in users key u.id {\n    UserCard user=u\n  }\n}" lang="art"
+    }
+  }
+}
+
+page Errors "/reference/errors" {
+  state q = ""
+  computed rows = ERRORS.filter(e => q == "" || `${e.code} ${e.type} ${e.desc}`.toLowerCase().includes(q.toLowerCase()))
+
+  meta title="Errors · ArtScript" description="Every ArtScript compiler error with its stable code, read from the compiler's catalog."
+  DocShell path="/reference/errors" section="Reference" heading="Errors" {
+    column gap=4 class="prose" {
+      text "Every error has a stable code and type. art check prints it for people; art check --ai prints one JSON line with expected, actual and fixes, ready to send back to a model." class="page-lead"
+      Code src="$ art check --ai\n{\"code\":\"E1011\",\"type\":\"UNKNOWN_FIELD\",\"loc\":\"app.art:13:10\",\"at\":\"Users\",\"expr\":\"u.emial\",\"expected\":\"id|name|email\",\"fixes\":[\"email\"]}" lang="sh"
+      input q placeholder="Search by code, type or text" type=text
+      column class="table" {
+        table class="ref-table" {
+          tr {
+            th "Code"
+            th "Type"
+            th "Meaning"
+          }
+          for e in rows key e.type {
+            tr {
+              td {
+                text e.code class="mono"
+              }
+              td {
+                text e.type class="mono" bold
+              }
+              td e.desc
+            }
+          }
+        }
+      }
+    }
+  }
+}

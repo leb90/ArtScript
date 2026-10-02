@@ -1,0 +1,51 @@
+// The charts are drawn from the results table the eval writes into the README.
+use "./lib/content.ts" { RESULTS, barWidth, resultsHtml, methodologyHtml }
+
+page Benchmarks "/benchmarks" {
+  state detail = false
+
+  meta title="Benchmarks · ArtScript" description="What it costs Claude Opus, Sonnet and Haiku to build and change the same apps in ArtScript, React, Svelte, Vue and SolidJS."
+  column class="container page-pad" gap=8 {
+    column gap=3 {
+      text "Benchmarks" class="crumb"
+      title "What an app costs to build with AI" class="page-title"
+      text "Claude built the same apps in each stack: small apps from scratch, full-stack apps, and changes to existing projects of 11, 42 and 102 components. Every app was run and used in a simulated browser. The cost is the real API bill: the spec in the prompt, every retry and the thinking tokens." class="page-lead"
+    }
+    grid cols=1 lg:cols=3 gap=5 {
+      for m in RESULTS {
+        card class="model" gap=4 {
+          column gap=1 {
+            text m.name bold
+            text `−${m.headline}%` class="big-pct grad"
+            text "cost per working app vs React + TypeScript" muted small
+          }
+          for r in m.rows {
+            column gap=1 {
+              row justify=between {
+                text r.stack bold=r.ours small
+                text `$${r.usd.toFixed(4)} · ${r.solved}` class="bar-usd" small
+              }
+              column class="bar-track" style="height:12px" {
+                column class=(r.ours ? "bar-fill ours" : "bar-fill") style=`width:${barWidth(m.rows, r.usd)}`
+              }
+            }
+          }
+        }
+      }
+    }
+    card class="callout" gap=2 {
+      text "Read the numbers honestly" bold
+      text "Two or three runs per task is an early signal, not a definitive benchmark. With the smallest model, Haiku, ArtScript solved fewer of the new-app tasks than React; on modifications of large projects with focused context it is close to even. The raw data of every run is in the repository, and anyone can reproduce it with npm run eval."
+    }
+    column gap=3 {
+      title "How it was measured" class="doc-title"
+      Markdown html=methodologyHtml
+    }
+    column gap=3 align=start {
+      button detail ? "Hide the full tables" : "Show every table, per task and per project" class="ghost" -> detail = !detail
+      if detail {
+        Markdown html=resultsHtml
+      }
+    }
+  }
+}

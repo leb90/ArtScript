@@ -1,0 +1,39 @@
+# ArtScript
+
+> A web language and framework designed so that AI models build and change full-stack web apps with fewer tokens, retries and dollars than React, Svelte or Vue. `.art` files compile to small, dependency-free JavaScript (signals, direct DOM) plus a Node server (REST apis from models, SQLite, auth). This website is itself an ArtScript app.
+
+Read the spec before writing code; read the edit spec when only changing existing code.
+
+## Docs
+
+- [Spec](https://leb90.github.io/ArtScript/md/SPEC.md): the whole language in ~3K tokens (declarations, members, backend, view, tests, rules).
+- [Edit spec](https://leb90.github.io/ArtScript/md/SPEC-EDIT.md): ~800 tokens, enough to change existing code.
+- [Working with AI agents](https://leb90.github.io/ArtScript/md/agents.md): MCP, the instructions file and the build-check-patch loop.
+- [Quick start](https://leb90.github.io/ArtScript/md/quick-start.md): create, run and build an app.
+- [Tutorial](https://leb90.github.io/ArtScript/md/tutorial.md): a full-stack app step by step.
+- [CLI](https://leb90.github.io/ArtScript/md/cli.md): every `art` command.
+- [Deploying](https://leb90.github.io/ArtScript/md/DEPLOY.md): static hosts, Node, Docker, Fly.io, Railway, Render.
+- [Security](https://leb90.github.io/ArtScript/md/SECURITY.md): what apps get by default.
+
+## Guides
+
+- [Components and state](https://leb90.github.io/ArtScript/md/components.md)
+- [Pages and routing](https://leb90.github.io/ArtScript/md/routing.md)
+- [Data and backend](https://leb90.github.io/ArtScript/md/backend.md)
+- [Accounts and access](https://leb90.github.io/ArtScript/md/auth.md)
+- [Styling and themes](https://leb90.github.io/ArtScript/md/styling.md)
+- [Testing](https://leb90.github.io/ArtScript/md/testing.md)
+- [JavaScript libraries](https://leb90.github.io/ArtScript/md/libraries.md)
+
+## Tools for agents
+
+- `art mcp`: an MCP server with `art_spec`, `art_check`, `art_context` and `art_patch`.
+- `art check --ai`: errors as JSON with `expected`, `actual` and `fixes`.
+- `art context [Name...]`: compact context and every addressable patch path.
+- `art patch`: structured, atomic, type-checked edits instead of rewriting files.
+
+## Optional
+
+- [Everything in one file](https://leb90.github.io/ArtScript/llms-full.txt): the spec, the edit spec and every guide.
+- [Benchmarks](https://leb90.github.io/ArtScript/benchmarks): measured cost against React, Svelte, Vue and SolidJS.
+- [Source code](https://github.com/leb90/ArtScript)

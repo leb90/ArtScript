@@ -60,7 +60,7 @@
     "eval:report": "node benchmarks/eval/report.ts",
     "eval:retries": "node benchmarks/eval/retries.ts",
     "eval:sizes": "node benchmarks/eval/sizes.ts",
-    "site": "node scripts/site.ts",
+    "site": "sh website/build.sh",
     "art": "node src/cli.ts",
     "prepack": "npm run build",
     "prepublishOnly": "npm test && npm run typecheck"

@@ -1,4 +1,4 @@
-# Builds the docs site and playground (npm run site) and publishes it on GitHub Pages.
+# Builds the website (website/, an ArtScript app: npm run site) and publishes it on GitHub Pages.
 # Enable it once: repository Settings → Pages → Source: GitHub Actions.
 name: site
 on:

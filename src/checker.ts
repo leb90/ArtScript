@@ -415,6 +415,8 @@ class Checker {
     }
     scope.vars.set("fail", { kind: "global", ty: fn({ k: "void" }) });
     scope.vars.set("email", { kind: "global", ty: fn({ k: "async", of: { k: "void" } }) }); // email(to, subject, text)
+    // Node's globals: secrets come from `process.env`.
+    for (const g of ["process", "Buffer"]) scope.vars.set(g, { kind: "global", ty: ANY });
     for (const p of d.params) scope.vars.set(p, { kind: "param", ty: ANY });
     this.returns = [];
     this.stmts(d.body, scope);
@@ -837,7 +839,7 @@ class Checker {
     const direct = t.kind === "Ident";
     // A computed can be assigned (it keeps that value until a dependency changes); a prop assigned
     // directly is bound two-way to the parent's state (checked where the component is used).
-    const ok = sym.kind === "state" || sym.kind === "data" || sym.kind === "let" || sym.kind === "computed" || sym.kind === "prop" || (sym.kind === "global" && !direct) || (!direct && (sym.kind === "loop" || sym.kind === "param"));
+    const ok = sym.kind === "state" || sym.kind === "data" || sym.kind === "let" || sym.kind === "computed" || sym.kind === "prop" || (sym.kind === "global" && !direct) || (!direct && (sym.kind === "loop" || sym.kind === "param" || sym.kind === "ref"));
     if (!ok) {
       const fixes = sym.kind === "loop" ? ["change a field (`item.done = true`) or assign the list"] : [];
       this.err("ASSIGN_READONLY", `'${root.name}' is a ${sym.kind} and can't be changed`, t.loc, { expr: printExpr(t), actual: sym.kind, expected: "state|let", fixes });
@@ -979,6 +981,7 @@ class Checker {
       }
       case "Unary": {
         const t = this.infer(e.arg, scope);
+        if (e.op === "new") return ANY;
         if (e.op === "!") return BOOL;
         if (e.op === "typeof") return STR;
         if (e.op === "await") return t.k === "async" ? t.of : t;

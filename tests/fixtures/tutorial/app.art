@@ -1,0 +1,126 @@
+model User {
+  id: ID
+  email: Email unique
+  password: String min=8
+}
+
+api users: User
+
+auth users
+
+model Book {
+  id: ID
+  owner: ID
+  title: String min=1 max=120
+  author: String?
+  read: Bool = false
+}
+
+api books: Book private
+
+layout Main {
+  data me = auth.me()
+
+  column gap=0 {
+    row justify=between pad=4 {
+      link "Reading list" to="/"
+      if me {
+        row gap=2 {
+          text me.email muted small
+          button "Sign out" small -> auth.logout()
+        }
+      }
+    }
+    slot
+  }
+}
+
+page Books "/" requires login {
+  state show = "All"
+  state q = ""
+  data books = api.books.list({ search: q, where: show == "To read" ? { read: false } : {}, sort: "title" })
+  state title = ""
+  state problem = ""
+  fn add() {
+    try {
+      await api.books.create({ title, author: null })
+      title = ""
+      problem = ""
+    } catch (e) {
+      problem = e.message
+    }
+  }
+
+  column gap=4 pad=6 {
+    title "Reading list"
+    row gap=2 {
+      tabs show options=["All", "To read"]
+      input q placeholder="Search"
+    }
+    row gap=2 {
+      input title placeholder="Book title" -> add()
+      button "Add" primary -> add()
+    }
+    if problem != "" {
+      text problem danger
+    }
+    if books.loading {
+      spinner
+    } else if books.length == 0 {
+      text "Nothing yet. What do you want to read?" muted
+    }
+    for b in books key b.id {
+      row gap=2 {
+        checkbox b.read -> api.books.update(b.id, { read: b.read })
+        text b.title muted=b.read
+        button "Remove" small danger -> api.books.remove(b.id)
+      }
+    }
+  }
+}
+
+page Login "/login" {
+  state email = ""
+  state password = ""
+  state problem = ""
+  fn submit() {
+    try {
+      await auth.login(email, password)
+      navigate("/")
+    } catch (e) {
+      problem = e.message
+    }
+  }
+  fn join() {
+    try {
+      await auth.signup({ email, password })
+      navigate("/")
+    } catch (e) {
+      problem = e.message
+    }
+  }
+
+  form gap=3 pad=6 -> submit() {
+    title "Sign in"
+    input email label="Email" type=email
+    input password label="Password" type=password
+    if problem != "" {
+      text problem danger
+    }
+    row gap=2 {
+      button "Sign in" primary
+      button "Create account" -> join()
+    }
+  }
+}
+
+test "adds a book after signing up" {
+  open "/login"
+  fill "Email" "ana@example.com"
+  fill "Password" "12345678"
+  click "Create account"
+  see "Sign out"
+  fill "Book title" "Dune"
+  click "Add"
+  see "Dune"
+}

@@ -124,7 +124,7 @@ const unsafeUrl = (v) => typeof v === "string" && /^\s*(javascript|vbscript|data
 export function $attr(n, name, fn) {
   effect(() => {
     let v = fn();
-    if (URL_ATTRS.has(name) && unsafeUrl(v)) v = "#";
+    if (URL_ATTRS.has(name)) v = unsafeUrl(v) ? "#" : withBase(v);
     if (name in n) n[name] = v ?? "";
     else if (v == null || v === false) n.removeAttribute(name);
     else n.setAttribute(name, v === true ? "" : v);
@@ -154,6 +154,8 @@ export function $class(n, cls, fn) { effect(() => { n.classList.toggle(cls, !!fn
 export function $style(n, prop, fn) { effect(() => { n.style[prop] = str(fn()); }); }
 export function $on(n, kind, fn) {
   const type = kind === "enter" ? "keydown" : kind;
+  // A button with its own `->` inside a form only runs that action; one without it submits.
+  if (kind === "click" && n.tagName === "BUTTON") n.type = "button";
   n.addEventListener(type, (e) => {
     if (kind === "enter" && e.key !== "Enter") return;
     if (kind === "submit") e.preventDefault();
@@ -563,8 +565,11 @@ export function $icon(parent, markup, size, label, cls) {
 // Routes: { path: "/products/:id" | "*", comp, layout? }. Internal <a href="/..."> clicks and
 // navigate() change the URL without reloading; a layout stays mounted while its pages change.
 let render = () => {};
+// An app served under a subpath (`art build --base /docs`): its own absolute URLs get the prefix.
+let base = "";
+export const withBase = (u) => (base && typeof u === "string" && u[0] === "/" && u[1] !== "/" && u !== base && !u.startsWith(base + "/") ? base + u : u);
 export function navigate(to) {
-  history.pushState(null, "", to);
+  history.pushState(null, "", withBase(to));
   render();
 }
 
@@ -575,7 +580,9 @@ function compileRoute(path) {
   return { re: new RegExp(`^${pattern}/?$`), keys };
 }
 
-export function start(routes, mount = document.getElementById("app")) {
+export function start(routes, mount = document.getElementById("app"), prefix = "") {
+  base = prefix.replace(/\/+$/, "");
+  if (!apiBase) apiBase = base;
   // A prerendered page already has the styles; its HTML is replaced by the live app.
   if (!document.getElementById("art-css")) {
     const style = document.createElement("style");
@@ -586,10 +593,14 @@ export function start(routes, mount = document.getElementById("app")) {
   mount.textContent = "";
   try { const saved = localStorage.getItem("art-theme"); if (saved) { themeSig._v = saved; applyTheme(saved); } } catch { /* no storage */ }
   const table = routes.map((r) => ({ ...r, ...compileRoute(r.path) }));
+  const local = (at) => (base && (at === base || at.startsWith(base + "/")) ? at.slice(base.length) : at) || "/";
   let layout, layoutDispose = null, slot = null, pageDispose = null;
 
+  let rendered = "";
   render = () => {
-    const path = location.pathname || "/";
+    const at = location.pathname;
+    rendered = at + location.search;
+    const path = local(at);
     const query = Object.fromEntries(new URLSearchParams(location.search));
     let route = null, params = {};
     for (const r of table) {
@@ -600,12 +611,13 @@ export function start(routes, mount = document.getElementById("app")) {
       break;
     }
     route ??= table.find((r) => r.path === "*") ?? table[0];
+    if (!route) return; // an app without pages
     // `requires login|admin`: ask who's signed in first; without access, go to /login (when the app
     // has it) or home. The api protects the data; this keeps the page from showing.
     if (route.requires) {
       const want = route;
       request("GET", "_auth/me").then((me) => {
-        if (location.pathname !== path) return; // navigated away meanwhile
+        if (location.pathname !== at) return; // navigated away meanwhile
         const ok = me && (want.requires === "login" || me.role === "admin");
         if (ok) show(want, params, query);
         else navigate(!me && table.some((r) => r.path === "/login") ? "/login" : "/");
@@ -633,17 +645,24 @@ export function start(routes, mount = document.getElementById("app")) {
     } else {
       pageDispose = root(() => route.comp(props, mount));
     }
-    window.scrollTo?.(0, 0);
+    const target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (target) target.scrollIntoView?.();
+    else window.scrollTo?.(0, 0);
   };
 
-  window.addEventListener("popstate", render);
+  // A `#section` link changes only the hash: the browser scrolls, the page stays.
+  window.addEventListener("popstate", () => { if (location.pathname + location.search !== rendered) render(); });
   document.addEventListener("click", (e) => {
     const a = e.target.closest?.("a[href]");
     if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || a.target || a.hasAttribute("download")) return;
     const url = new URL(a.href, location.href);
     if (url.origin !== location.origin) return;
+    // `#section` of this same page: the browser scrolls. A file (`/docs/guide.pdf`) that isn't a route: it loads.
+    if (url.hash && url.pathname === location.pathname && url.search === location.search) return;
+    const path = local(url.pathname);
+    if (/\.\w+$/.test(path) && !table.some((r) => r.re && r.re.test(path))) return;
     e.preventDefault();
-    navigate(url.pathname + url.search);
+    navigate(url.pathname + url.search + url.hash);
   });
   render();
 }
