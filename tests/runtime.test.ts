@@ -61,3 +61,24 @@ test("effects only track dependencies read in their last run", () => {
   b.v = "B";
   assert.deepEqual(seen, ["a", "b", "B"]);
 });
+
+test("many notifications of one signal in a batch mark its subscribers once", () => {
+  const list = signal([1, 2, 3]);
+  const total = computed(() => list.v.reduce((a: number, b: number) => a + b, 0));
+  const seen: number[] = [];
+  root(() => effect(() => seen.push(total.v)));
+  let marks = 0;
+  const mark = [...list.subs][0].mark.bind([...list.subs][0]);
+  [...list.subs][0].mark = () => { marks++; mark(); };
+  batch(() => {
+    for (let i = 0; i < 3; i++) $m(list, list.v[i]++);
+    assert.equal(marks, 1);
+    // Reading the computed in between subscribes it again: the next notification reaches it.
+    assert.equal(total.v, 9);
+    $m(list, list.v[0] = 10);
+    assert.equal(total.v, 17);
+  });
+  assert.deepEqual(seen, [6, 17]);
+  $m(list, list.v[0] = 0);
+  assert.deepEqual(seen, [6, 17, 7]);
+});

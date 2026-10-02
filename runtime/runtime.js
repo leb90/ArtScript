@@ -5,9 +5,12 @@ let owner = null; // disposers of the current scope
 let depth = 0;
 let flushing = false;
 const queue = new Set();
+// Bumps on every flush pass. A signal notified again in the same pass, with no new subscriber
+// since, has nothing left to mark (`rows.forEach(r => r.done = true)` notifies once per row).
+let epoch = 1;
 
 function track(src) {
-  if (listener) { src.subs.add(listener); listener.deps.add(src); }
+  if (listener) { src.subs.add(listener); listener.deps.add(src); src.hot = 0; }
 }
 function unsub(c) {
   for (const d of c.deps) d.subs.delete(c);
@@ -24,7 +27,11 @@ class Signal {
   constructor(v) { this._v = v; this.subs = new Set(); }
   get v() { track(this); return this._v; }
   set v(n) { if (!Object.is(n, this._v)) { this._v = n; this.notify(); } }
-  notify() { batch(() => { for (const s of [...this.subs]) s.mark(); }); }
+  notify() {
+    if (this.hot === epoch) return;
+    this.hot = epoch;
+    batch(() => { for (const s of [...this.subs]) s.mark(); });
+  }
 }
 
 // Lazy: marked dirty when a dependency changes, recomputed on read. Assigning it overrides the
@@ -66,6 +73,7 @@ function flush() {
       if (guard > 1e4) throw new Error("ArtScript: infinite reactive loop");
       const list = [...queue];
       queue.clear();
+      epoch++;
       for (const e of list) e.run();
     }
   } finally { flushing = false; }
@@ -325,7 +333,17 @@ function flat(it) {
   }
   return out;
 }
-const same = (a, b) => !!b && a.length === b.length && a.every((x, i) => Object.is(x, b[i]));
+// Whether `it` still matches the snapshot `flat` took of it (without building a new one).
+function fresh(it, snap) {
+  if (!snap) return false;
+  if (it === null || typeof it !== "object") return true;
+  let n = 0;
+  for (const k in it) {
+    if (snap[n] !== k || !Object.is(snap[n + 1], it[k])) return false;
+    n += 2;
+  }
+  return n === snap.length;
+}
 
 // Indexes of a longest increasing subsequence of `a` (entries < 0 are skipped). O(n log n).
 function lis(a) {
@@ -356,23 +374,28 @@ export function $for(parent, list, render, key = (it) => it) {
   onDispose(() => { rows.forEach(drop); rows = []; });
   effect(() => {
     const items = list() ?? [];
-    const old = new Map();
-    for (const r of rows) old.has(r.key) ? old.get(r.key).push(r) : old.set(r.key, [r]);
     const kept = [];
-    const next = items.map((it, i) => {
-      const k = key(it, i);
+    // A row that stays gets its new item and index. The item may have been changed in place: a
+    // plain object of primitives is compared field by field with its last snapshot; anything
+    // else is always re-rendered.
+    const keep = (r, it, i) => {
+      if (it !== r.item._v || !fresh(it, r.snap)) { kept.push(r.item); r.snap = flat(it); }
+      r.item._v = it;
+      if (r.index._v !== i) { r.index._v = i; kept.push(r.index); }
+      return r;
+    };
+    // Rows at the start that are where they were need no reconciling: all of them when the list
+    // only changed in place, most of them on an append or a removal.
+    let p = 0;
+    while (p < rows.length && p < items.length && key(items[p], p) === rows[p].key) keep(rows[p], items[p], p++);
+    const tail = rows.slice(p);
+    const old = new Map();
+    for (const r of tail) old.has(r.key) ? old.get(r.key).push(r) : old.set(r.key, [r]);
+    const next = items.slice(p).map((it, j) => {
+      const k = key(it, p + j);
       const r = old.get(k)?.shift();
-      if (r) {
-        // The item may have been changed in place: a plain object of primitives is compared field
-        // by field with its last snapshot; anything else is always re-rendered.
-        const snap = flat(it);
-        if (it !== r.item._v || !snap || !same(snap, r.snap)) kept.push(r.item);
-        r.item._v = it;
-        r.snap = snap;
-        if (r.index._v !== i) { r.index._v = i; kept.push(r.index); }
-        return r;
-      }
-      const n = { key: k, item: new Signal(it), index: new Signal(i), snap: flat(it), start: document.createComment(""), end: document.createComment(""), frag: document.createDocumentFragment() };
+      if (r) return keep(r, it, p + j);
+      const n = { key: k, item: new Signal(it), index: new Signal(p + j), snap: flat(it), start: document.createComment(""), end: document.createComment(""), frag: document.createDocumentFragment() };
       n.frag.appendChild(n.start);
       n.dispose = root(() => render(n.frag, n.item, n.index));
       n.frag.appendChild(n.end);
@@ -387,7 +410,7 @@ export function $for(parent, list, render, key = (it) => it) {
     });
     const parent = anchor.parentNode;
     // Emptied, and the list is all its container holds: clear it in one go.
-    if (!next.length && rows.length && parent.firstChild === rows[0].start && parent.lastChild === anchor) {
+    if (!items.length && rows.length && parent.firstChild === rows[0].start && parent.lastChild === anchor) {
       for (const r of rows) r.dispose();
       parent.textContent = "";
       parent.appendChild(anchor);
@@ -396,9 +419,9 @@ export function $for(parent, list, render, key = (it) => it) {
     }
     for (const rs of old.values()) rs.forEach(drop);
     // Rows in the longest run that kept its relative order stay; only the others move.
-    const before = new Map(rows.map((r, i) => [r, i]));
+    const before = new Map(tail.map((r, i) => [r, i]));
     const stay = lis(next.map((r) => before.get(r) ?? -1));
-    rows = next;
+    rows = rows.slice(0, p).concat(next);
     let ref = anchor;
     for (let j = next.length - 1; j >= 0; j--) {
       const r = next[j];
@@ -596,7 +619,7 @@ export function $data(fn, initial) {
 
 // ---------- App ----------
 // Theme: override the --a-* variables in your own CSS (`:root { --a-primary: #e11d48 }`).
-const CSS = `:root{--a-primary:#2563eb;--a-danger:#dc2626;--a-success:#16a34a;--a-bg:#fafafa;--a-fg:#1a1a1a;--a-surface:#fff;--a-border:#e5e5e5;--a-input:#d4d4d4;--a-muted:#737373;--a-radius:8px;--a-font:system-ui,sans-serif}@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--a-bg:#111;--a-fg:#eee;--a-surface:#1a1a1a;--a-border:#333;--a-input:#444;--a-muted:#999;color-scheme:dark}}:root[data-theme=dark]{--a-bg:#111;--a-fg:#eee;--a-surface:#1a1a1a;--a-border:#333;--a-input:#444;--a-muted:#999;color-scheme:dark}*{box-sizing:border-box}body{margin:0;font:16px/1.5 var(--a-font);color:var(--a-fg);background:var(--a-bg)}#app{padding:24px;max-width:960px;margin:0 auto}.a-row{display:flex;align-items:center}.a-column{display:flex;flex-direction:column}.a-grid{display:grid}.a-wrap{flex-wrap:wrap}.a-card{display:flex;flex-direction:column;padding:16px;border:1px solid var(--a-border);border-radius:calc(var(--a-radius) * 1.5);background:var(--a-surface)}button{font:inherit;padding:6px 14px;border-radius:var(--a-radius);border:1px solid var(--a-input);background:var(--a-surface);color:inherit;cursor:pointer}button.a-primary{background:var(--a-primary);border-color:var(--a-primary);color:#fff}button.a-danger{color:var(--a-danger);border-color:var(--a-danger)}button.a-small{padding:2px 8px;font-size:.875em}span.a-danger{color:var(--a-danger)}span.a-primary{color:var(--a-primary)}span.a-success{color:var(--a-success)}input,textarea,select{font:inherit;color:inherit}input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{padding:6px 10px;border:1px solid var(--a-input);border-radius:var(--a-radius);background:inherit}.a-bold{font-weight:600}.a-muted{color:var(--a-muted)}.a-small{font-size:.875em}.a-large{font-size:1.25em}h2{margin:0}a{color:var(--a-primary)}.a-field{display:flex;flex-direction:column;gap:4px}.a-check{display:flex;flex-direction:row;align-items:center;gap:8px}.a-radio{display:flex;flex-direction:column;gap:4px}.a-tabs{display:flex;gap:4px;border-bottom:1px solid var(--a-border)}.a-tabs button{border:0;border-radius:var(--a-radius) var(--a-radius) 0 0;background:none}.a-tabs .a-active{box-shadow:inset 0 -2px var(--a-primary);font-weight:600}.a-modal{border:0;border-radius:calc(var(--a-radius) * 1.5);padding:20px;min-width:min(420px,90vw);background:var(--a-surface);color:inherit}.a-modal::backdrop{background:#0006}.a-badge{display:inline-block;padding:0 8px;border-radius:999px;font-size:.75em;background:var(--a-border)}.a-badge.a-primary{background:color-mix(in srgb,var(--a-primary) 15%,transparent);color:var(--a-primary)}.a-badge.a-success{background:color-mix(in srgb,var(--a-success) 15%,transparent);color:var(--a-success)}.a-badge.a-danger{background:color-mix(in srgb,var(--a-danger) 15%,transparent);color:var(--a-danger)}.a-spinner{display:inline-block;width:1em;height:1em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:a-spin .7s linear infinite}@keyframes a-spin{to{transform:rotate(360deg)}}hr{border:0;border-top:1px solid var(--a-border);margin:8px 0;width:100%}.a-toasts{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:100}.a-toast{padding:10px 16px;border-radius:var(--a-radius);background:var(--a-fg);color:var(--a-bg);box-shadow:0 4px 12px #0003}.a-toast.a-success{background:var(--a-success);color:#fff}.a-toast.a-danger{background:var(--a-danger);color:#fff}.a-list{margin:0;padding-left:20px}.a-icon{display:inline-flex;vertical-align:middle;line-height:0}.a-table{border-collapse:collapse;width:100%}.a-table th,.a-table td{text-align:left;padding:8px;border-bottom:1px solid var(--a-border)}video,img{max-width:100%}`;
+const CSS = `:root{--a-primary:#2563eb;--a-danger:#dc2626;--a-success:#16a34a;--a-bg:#fafafa;--a-fg:#1a1a1a;--a-surface:#fff;--a-border:#e5e5e5;--a-input:#d4d4d4;--a-muted:#737373;--a-radius:8px;--a-font:system-ui,sans-serif}@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--a-bg:#111;--a-fg:#eee;--a-surface:#1a1a1a;--a-border:#333;--a-input:#444;--a-muted:#999;color-scheme:dark}}:root[data-theme=dark]{--a-bg:#111;--a-fg:#eee;--a-surface:#1a1a1a;--a-border:#333;--a-input:#444;--a-muted:#999;color-scheme:dark}*{box-sizing:border-box}body{margin:0;font:16px/1.5 var(--a-font);color:var(--a-fg);background:var(--a-bg)}#app{padding:24px;max-width:960px;margin:0 auto}.a-row{display:flex;align-items:center}.a-column{display:flex;flex-direction:column}.a-grid{display:grid}.a-wrap{flex-wrap:wrap}.a-card{display:flex;flex-direction:column;padding:16px;border:1px solid var(--a-border);border-radius:calc(var(--a-radius) * 1.5);background:var(--a-surface)}button{font:inherit;padding:6px 14px;border-radius:var(--a-radius);border:1px solid var(--a-input);background:var(--a-surface);color:inherit;cursor:pointer}button.a-primary{background:var(--a-primary);border-color:var(--a-primary);color:#fff}button.a-danger{color:var(--a-danger);border-color:var(--a-danger)}button.a-small{padding:2px 8px;font-size:.875em}span.a-danger{color:var(--a-danger)}span.a-primary{color:var(--a-primary)}span.a-success{color:var(--a-success)}input,textarea,select{font:inherit;color:inherit}input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{padding:6px 10px;border:1px solid var(--a-input);border-radius:var(--a-radius);background:inherit}.a-bold{font-weight:600}.a-muted{color:var(--a-muted)}.a-small{font-size:.875em}.a-large{font-size:1.25em}h2{margin:0}a{color:var(--a-primary)}.a-field{display:flex;flex-direction:column;gap:4px}.a-check{display:flex;flex-direction:row;align-items:center;gap:8px}.a-radio{display:flex;flex-direction:column;gap:4px}.a-tabs{display:flex;gap:4px;border-bottom:1px solid var(--a-border)}.a-tabs button{border:0;border-radius:var(--a-radius) var(--a-radius) 0 0;background:none}.a-tabs .a-active{box-shadow:inset 0 -2px var(--a-primary);font-weight:600}.a-modal{border:0;border-radius:calc(var(--a-radius) * 1.5);padding:20px;min-width:min(420px,90vw);background:var(--a-surface);color:inherit}.a-modal::backdrop{background:#0006}.a-badge{display:inline-block;padding:0 8px;border-radius:999px;font-size:.75em;background:var(--a-border)}.a-badge.a-primary{background:color-mix(in srgb,var(--a-primary) 15%,transparent);color:var(--a-primary)}.a-badge.a-success{background:color-mix(in srgb,var(--a-success) 15%,transparent);color:var(--a-success)}.a-badge.a-danger{background:color-mix(in srgb,var(--a-danger) 15%,transparent);color:var(--a-danger)}.a-spinner{display:inline-block;width:1em;height:1em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:a-spin .7s linear infinite}@keyframes a-spin{to{transform:rotate(360deg)}}hr{border:0;border-top:1px solid var(--a-border);margin:8px 0;width:100%}.a-toasts{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:100}.a-toast{padding:10px 16px;border-radius:var(--a-radius);background:var(--a-fg);color:var(--a-bg);box-shadow:0 4px 12px #0003}.a-toast.a-success{background:var(--a-success);color:#fff}.a-toast.a-danger{background:var(--a-danger);color:#fff}.a-list{margin:0;padding-left:20px}.a-icon{display:inline-flex;vertical-align:middle;line-height:0}.a-scroll{overflow-x:auto}.a-table{border-collapse:collapse;width:100%}.a-table th,.a-table td{text-align:left;padding:8px;border-bottom:1px solid var(--a-border)}video,img{max-width:100%}`;
 
 // `meta title=... description=... image=...`: the page's title, description and Open Graph tags.
 function metaTag(attr, key) {

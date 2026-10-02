@@ -30,6 +30,8 @@ class Scope {
 }
 
 // In-place mutating methods: after calling them, the owning state must be notified.
+// Array methods whose callback receives the array's own items first.
+const ITERATORS = new Set(["forEach", "map", "filter", "find", "findLast", "findIndex", "some", "every", "flatMap"]);
 const MUTATORS = new Set(["push", "pop", "shift", "unshift", "splice", "sort", "reverse", "fill", "copyWithin", "set", "delete", "add", "clear"]);
 const ALIGN: Record<string, string> = { start: "flex-start", end: "flex-end", center: "center", stretch: "stretch", between: "space-between", around: "space-around" };
 const JS_OPS: Record<string, string> = { "==": "===", "!=": "!==" };
@@ -67,9 +69,10 @@ export function generate(program: Program): string {
 }
 
 // The JS and, per JS line, the .art location it comes from (undefined for glue code).
-export function generateMapped(program: Program): { js: string; marks: (Loc | undefined)[] } {
+export function generateMapped(program: Program, dev = false): { js: string; marks: (Loc | undefined)[] } {
   const marks: (Loc | undefined)[] = [];
-  const out: string[] = ['import * as $ from "./runtime.js";', ...importLines(program), "const navigate = $.navigate, notify = $.notify, setTheme = $.setTheme, theme = $.theme;", ""];
+  devMode = dev;
+  const out: string[] = ['import * as $ from "./runtime.js";', ...(dev ? ['import { $inspect } from "./devtools.js";'] : []), ...importLines(program), "const navigate = $.navigate, notify = $.notify, setTheme = $.setTheme, theme = $.theme;", ""];
   const apis = program.decls.filter((d) => d.kind === "Api");
   // Typed REST client: one entry per `api` declaration.
   if (apis.length) out.push(`const api = { ${apis.map((a) => `${a.name}: $.$api(${JSON.stringify(a.name)})`).join(", ")} };`, "");
@@ -214,6 +217,9 @@ export function htmlShell(title = "ArtScript", head = "", body = "", css = false
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${head}${css ? `<link rel="stylesheet" href="${base}app.css">` : ""}</head><body><div id="app">${body}</div><script type="module" src="${base}app.js"></script></body></html>\n`;
 }
 
+// Dev builds: each component reports its members to the dev tools.
+let devMode = false;
+
 class ComponentGen {
   c: ComponentDecl;
   lines: string[] = [];
@@ -274,6 +280,15 @@ class ComponentGen {
         this.ind--;
         this.emit("}");
       }
+    }
+    if (devMode) {
+      this.at = c.loc;
+      const entries = [...(c.page ? ["params", "query"] : []), ...c.params.map((p) => p.name)].map((n) => `${n}: ["prop", () => ${n}()]`);
+      for (const m of c.members) {
+        if (m.kind === "State") entries.push(`${m.name}: ["state", () => ${m.name}.v, ($v) => { ${m.name}.v = $v; }]`);
+        else if (m.kind === "Computed" || m.kind === "Data") entries.push(`${m.name}: ["${m.kind.toLowerCase()}", () => ${m.name}.v]`);
+      }
+      this.emit(`$inspect(${JSON.stringify(c.name)}, { ${entries.join(", ")} });`);
     }
     this.view(c.view, "$parent", scope);
     for (const m of c.members) {
@@ -381,6 +396,13 @@ class ComponentGen {
       parent = w;
       if (!after) this.labelText(w, label, scope);
     }
+    // A table sits in a block of its own: a wide one scrolls sideways instead of stretching the
+    // page, and as a direct flex item (in a `column` or `card`) Chrome lays it out ~30% slower.
+    if (spec.wrap) {
+      const w = this.v();
+      this.emit(`const ${w} = $.$el(${parent}, "div", "${spec.wrap}");`);
+      parent = w;
+    }
     const v = this.v();
     this.emit(`const ${v} = $.$el(${parent}, "${spec.html}"${classes ? `, "${classes}"` : ""});`);
     if (this.c.members.some((m) => m.kind === "Style")) this.emit(`${v}.setAttribute("data-s", ${JSON.stringify(this.c.name)});`);
@@ -455,7 +477,9 @@ class ComponentGen {
       const c = el.content;
       if (spec.content === "text") {
         const lit = literal(c);
-        if (lit !== null) this.emit(`${v}.textContent = ${JSON.stringify(String(lit))};`);
+        // An empty `text` only carries a class (an icon font): decorative, hidden from screen readers.
+        if (lit === "" && el.tag === "text") this.emit(`${v}.setAttribute("aria-hidden", "true");`);
+        else if (lit !== null) this.emit(`${v}.textContent = ${JSON.stringify(String(lit))};`);
         // With children, the text gets its own node so updating it doesn't remove them.
         else if (el.children.length) this.emit(`$.$text(${v}.appendChild(document.createTextNode("")), () => ${this.expr(c, scope)});`);
         else this.emit(`$.$text(${v}, () => ${this.expr(c, scope)});`);
@@ -598,9 +622,14 @@ class ComponentGen {
         return `${this.wrapPostfix(e.object, scope)}${e.optional ? "?." : "."}${e.prop}`;
       case "Index": return `${this.wrapPostfix(e.object, scope)}${e.optional ? "?.[" : "["}${x(e.index)}]`;
       case "Call": {
-        const call = `${this.wrapPostfix(e.callee, scope)}${e.optional ? "?.(" : "("}${e.args.map(x).join(", ")})`;
+        // `rows.forEach(r => r.done = true)`: the callback's item belongs to the state it iterates,
+        // so mutating it notifies that state alone. (A computed's items belong to other states.)
+        let owner = e.callee.kind === "Member" && ITERATORS.has(e.callee.prop) ? this.signalOf(e.callee.object, scope) : undefined;
+        if (owner && !["state", "data"].includes(scope.get(owner)?.kind ?? "")) owner = undefined;
+        const args = e.args.map((a) => (owner && a.kind === "Arrow" ? this.arrow(a, scope, owner) : x(a)));
+        const call = `${this.wrapPostfix(e.callee, scope)}${e.optional ? "?.(" : "("}${args.join(", ")})`;
         if (e.callee.kind === "Member" && MUTATORS.has(e.callee.prop)) {
-          const sig = this.signalOf(e.callee.object, scope) ?? this.untracked(e.callee.object, scope);
+          const sig = this.notifier(e.callee.object, scope);
           if (sig) return `$.$m(${sig}, ${call})`;
         }
         return call;
@@ -622,22 +651,25 @@ class ComponentGen {
       }
       case "Array": return `[${e.items.map(x).join(", ")}]`;
       case "Object": return `{ ${e.props.map((p) => ("spread" in p ? `...${x(p.spread)}` : `${JSON.stringify(p.key)}: ${x(p.value)}`)).join(", ")} }`;
-      case "Arrow": {
-        const s = scope.child();
-        for (const p of e.params) s.vars.set(p, { kind: "param" });
-        const asyncKw = (Array.isArray(e.body) ? hasAwait(e.body) : exprHasAwait(e.body)) ? "async " : "";
-        if (!Array.isArray(e.body)) {
-          const b = this.expr(e.body, s);
-          return `(${asyncKw}(${e.params.join(", ")}) => ${e.body.kind === "Object" ? `(${b})` : b})`;
-        }
-        const sub = new ComponentGen(this.c);
-        sub.n = this.n;
-        sub.ind = 0;
-        sub.stmts(e.body, s);
-        return `(${asyncKw}(${e.params.join(", ")}) => { ${sub.lines.join(" ")} })`;
-      }
+      case "Arrow": return this.arrow(e, scope);
       case "Spread": return `...${x(e.arg)}`;
     }
+  }
+
+  // `itemSig`: the signal that owns the first parameter (the callback of `state.forEach(...)`).
+  arrow(e: Expr & { kind: "Arrow" }, scope: Scope, itemSig?: string): string {
+    const s = scope.child();
+    e.params.forEach((p, i) => s.vars.set(p, i === 0 && itemSig ? { kind: "let", sig: itemSig } : { kind: "param" }));
+    const asyncKw = (Array.isArray(e.body) ? hasAwait(e.body) : exprHasAwait(e.body)) ? "async " : "";
+    if (!Array.isArray(e.body)) {
+      const b = this.expr(e.body, s);
+      return `(${asyncKw}(${e.params.join(", ")}) => ${e.body.kind === "Object" ? `(${b})` : b})`;
+    }
+    const sub = new ComponentGen(this.c);
+    sub.n = this.n;
+    sub.ind = 0;
+    sub.stmts(e.body, s);
+    return `(${asyncKw}(${e.params.join(", ")}) => { ${sub.lines.join(" ")} })`;
   }
 
   wrapPostfix(e: Expr, scope: Scope): string {
@@ -648,8 +680,16 @@ class ComponentGen {
   // Direct assignment to a state uses its setter; nested mutations notify the root signal.
   mutation(target: Expr, code: string, scope: Scope): string {
     if (target.kind === "Ident") return code;
-    const sig = this.signalOf(target, scope) ?? this.untracked(target, scope);
+    const sig = this.notifier(target, scope);
     return sig ? `$.$m(${sig}, ${code})` : code;
+  }
+
+  // What to notify when `target` is mutated in place. A computed's items belong to the states it
+  // derives from, which aren't known here: every state is notified.
+  notifier(target: Expr, scope: Scope): string | undefined {
+    const sig = this.signalOf(target, scope);
+    if (sig && scope.get(sig)?.kind === "computed") return this.c.name === "server" ? undefined : "$.$all";
+    return sig ?? this.untracked(target, scope);
   }
 
   isProp(e: Expr, scope: Scope): boolean {

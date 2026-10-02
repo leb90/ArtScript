@@ -368,6 +368,62 @@ test("keyed lists: in-place changes always show (fields, nested lists, through p
   }
 });
 
+test("in-place changes through a computed's items and through iteration callbacks", async () => {
+  const src = `page P "/" {
+  state todos = [{ id: 1, done: false }, { id: 2, done: false }, { id: 3, done: true }]
+  state other = 0
+  computed open = todos.filter(t => !t.done)
+
+  button "all" -> open.forEach(t => t.done = true)
+  button "reset" -> todos.forEach(t => t.done = false)
+  text \`open \${open.length} other \${other}\` id="count"
+  for t in open key t.id {
+    button \`do \${t.id}\` -> t.done = true
+  }
+  for t in todos key t.id {
+    text \`\${t.id}:\${t.done}\` class="row"
+  }
+}
+`;
+  const r = compile([{ file: "app.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  // The callback's item belongs to the state being iterated: only that state is notified.
+  assert.match(r.js!, /todos\.v\.forEach\(\(\(t\) => \$\.\$m\(todos, /);
+  assert.match(r.js!, /open\.v\.forEach\(\(\(t\) => \$\.\$m\(\$\.\$all, /);
+  const dir = mkdtempSync(join(tmpdir(), "art-computed-items-"));
+  writeFileSync(join(dir, "app.js"), r.js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    const app = await import(pathToFileURL(join(dir, "app.js")).href);
+    app.start(document.getElementById("app"));
+    const rows = () => [...document.querySelectorAll(".row")].map((s) => s.textContent).join(" ");
+    const count = () => document.getElementById("count")!.textContent;
+    const click = (label: string) => [...document.querySelectorAll("button")].find((b) => b.textContent === label)!.click();
+    assert.equal(count(), "open 2 other 0");
+    click("do 1");
+    assert.equal(rows(), "1:true 2:false 3:true", "a row of a computed changes the state it came from");
+    assert.equal(count(), "open 1 other 0");
+    click("reset");
+    assert.equal(rows(), "1:false 2:false 3:false");
+    assert.equal(count(), "open 3 other 0");
+    click("all");
+    assert.equal(rows(), "1:true 2:true 3:true");
+    assert.equal(count(), "open 0 other 0");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});
+
+test("tables render inside a block that scrolls sideways; an empty text is hidden from screen readers", () => {
+  const src = 'page P "/" {\n  column {\n    table {\n      tr {\n        td "a"\n      }\n    }\n    text "" class="glyphicon"\n  }\n}\n';
+  assert.deepEqual(types(src), []);
+  const js = compile([{ file: "a.art", src }]).js!;
+  assert.match(js, /const (\w+) = \$\.\$el\(\w+, "div", "a-scroll"\);\s+const \w+ = \$\.\$el\(\1, "table", "a-table"\);/);
+  assert.match(js, /setAttribute\("aria-hidden", "true"\)/);
+});
+
 test("a11y: role on any element; a field without a label is named by its placeholder", () => {
   const src = 'page P {\n  state q = ""\n  state s = ""\n\n  column role="main" {\n    input q placeholder="Search"\n    input s label="Name" placeholder="Ana"\n  }\n}\n';
   assert.deepEqual(types(src), []);

@@ -3,6 +3,7 @@
 export type ElementSpec = {
   html: string;
   cls?: string;
+  wrap?: string; // class of a <div> rendered around it
   type?: string; // fixed `type` attribute (checkbox, file)
   content: "text" | "bind" | "src" | null; // what the positional expression means
   // How a bound element reads/writes its state (default: `value`, or by `type=`).
@@ -45,7 +46,7 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   form: { html: "form", cls: "a-column", content: null, action: "submit", children: true, props: LAYOUT, flags: [] },
   list: { html: "ul", cls: "a-list", content: null, action: null, children: true, props: [], flags: [] },
   item: { html: "li", content: "text", action: "click", children: true, props: [], flags: ["muted"] },
-  table: { html: "table", cls: "a-table", content: null, action: null, children: true, props: [], flags: [] },
+  table: { html: "table", cls: "a-table", wrap: "a-scroll", content: null, action: null, children: true, props: [], flags: [] },
   tr: { html: "tr", content: null, action: "click", children: true, props: [], flags: [] },
   th: { html: "th", content: "text", action: null, children: true, props: [], flags: [] },
   td: { html: "td", content: "text", action: null, children: true, props: [], flags: ["muted"] },
