@@ -1,35 +1,29 @@
-# Publishing to npm (once the MVP is stable)
+# Publishing to npm
 
-**Not published yet.** `package.json` has `"private": true`, which blocks an accidental `npm publish`.
+Two packages, both at the same version:
 
-## What's ready
+- `@artscript/core` (this repository's root): the compiler, the `art` command, the runtime and the templates. npm rejects the unscoped name `artscript` as too similar to `rescript`, so the package lives in the `artscript` organization.
+- `create-artscript` (`packages/create-artscript`): what `npm create artscript@latest my-app` runs. It depends on `@artscript/core` and calls `art init`.
 
-- The package is `artscript-lang`: npm rejects `artscript` as too similar to `rescript` (2026-10-02). The command is still `art`.
-- `npm run build` compiles `src/*.ts` → `lib/*.js` + `.d.ts` types. Node doesn't run TypeScript inside `node_modules`, so the package ships JS.
-- `bin: art → lib/cli.js`, `files` (lib, runtime, templates, docs/SPEC.md), `exports`, `engines: node >=24`, MIT license, repository and metadata.
-- `prepack` builds automatically; `prepublishOnly` runs tests + typecheck.
-- No install scripts (`postinstall`/`prepare`): npm shows no security warnings on install.
-- Tested: `npm pack` → install the `.tgz` in an empty folder → `art init` → `npm install` → `check`, `build` and `dev` work.
+## What's in `@artscript/core`
 
-## Checklist before publishing
+- `npm run build` compiles `src/*.ts` → `lib/*.js` + `.d.ts` types (Node doesn't run TypeScript inside `node_modules`); `prepack` runs it, `prepublishOnly` runs the tests and the typecheck.
+- `files`: `lib`, `runtime`, `templates`, the two specs, `llms.txt` and the usual notices. No tests, benchmarks, website or examples.
+- No install scripts.
 
-1. [ ] Stable MVP: real database, `for` with keys, `fmt` that keeps comments.
-2. [x] Agent cost eval (`npm run eval`) with a favorable result.
-3. [ ] Pick the first version (`0.1.0` signals "experimental"; semver 0.x allows breaking changes).
-4. [x] README in English.
-5. [ ] Create the `create-artscript` package so `npm create artscript@latest my-app` works (today: `npx art init my-app`).
-6. [ ] Remove `"private": true` from `package.json`.
-7. [ ] `npm login` (the author's npm account, with 2FA).
-8. [ ] `npm publish --access public` (try `--dry-run` first).
-9. [ ] Git tag: `git tag v0.1.0 && git push --tags`.
+## Releasing a version
 
-## Trying the package locally without publishing
+1. Set the same `version` in `package.json` and `packages/create-artscript/package.json` (and the `@artscript/core` range there), and move the CHANGELOG's "Unreleased" under it.
+2. Try it without publishing:
+   ```sh
+   npm pack                                   # artscript-core-<version>.tgz
+   cd /tmp && mkdir try && cd try && npm init -y
+   npm i /path/to/artscript-core-<version>.tgz
+   npx art init my-app && cd my-app          # then point its dependency at the .tgz, npm install,
+   npx art check && npx art build            # and run check, build and dev
+   ```
+3. `npm publish --access public` in the root, then in `packages/create-artscript` (both ask for the account's one-time password).
+4. `npm view @artscript/core version`, then `npm create artscript@latest my-app` in an empty folder.
+5. `git tag v<version> && git push --tags`.
 
-```sh
-npm pack                                   # creates artscript-0.1.0.tgz
-cd /tmp && mkdir try && cd try
-npm init -y && npm i /path/to/artscript-0.1.0.tgz
-npx art init my-app
-```
-
-`art init` run from the repo (not installed) points the new project at the local copy (`file:`); installed from npm it points at `^<version>`.
+`art init` run from the repository (not installed) points the new project at the local copy (`file:`); installed from npm it points at `^<version>`.

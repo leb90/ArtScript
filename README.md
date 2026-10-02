@@ -39,9 +39,11 @@ npm run bench          # tokens and bytes vs React/Svelte
 Create a new project (it comes with `npm run dev`, `npm run build` and `npm run check`):
 
 ```sh
-node src/cli.ts init my-app
+npm create artscript@latest my-app
 cd my-app && npm install && npm run dev
 ```
+
+(`--template todo|blog|users|notes|catalog|crm` starts from a working app. From a clone of this repository: `node src/cli.ts init my-app`.)
 
 A full-stack CRUD needs one line of backend. `api users: User` serves `/api/users` (list, get, create, update, remove), validated against the model and stored as JSON; `data` loads it and reloads by itself after every write:
 
@@ -145,7 +147,7 @@ Editors: `art lsp` is a language server (live errors with the compiler's fixes, 
 
 Other commands: `npm run art -- <command>` (for example `npm run art -- check examples/todo --ai`). Full list: `npm run art -- help`.
 
-Not published on npm yet (see [docs/PUBLISHING.md](docs/PUBLISHING.md)).
+On npm: [`@artscript/core`](https://www.npmjs.com/package/@artscript/core) (the compiler and the `art` command) and `create-artscript` (see [docs/PUBLISHING.md](docs/PUBLISHING.md)).
 
 ## Layout
 

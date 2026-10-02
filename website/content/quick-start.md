@@ -1,20 +1,12 @@
 # Quick start
 
-You need **Node 24** or newer. ArtScript isn't published on npm yet, so for now you create projects from a copy of the repository.
+You need **Node 24** or newer.
 
-## 1. Get ArtScript
-
-```sh
-git clone https://github.com/leb90/ArtScript
-cd ArtScript
-npm install
-```
-
-## 2. Create an app
+## Create an app
 
 ```sh
-node src/cli.ts init ../my-app
-cd ../my-app
+npm create artscript@latest my-app
+cd my-app
 npm install
 npm run dev
 ```
@@ -24,7 +16,7 @@ Open http://localhost:3000. Edit `src/app.art` and save: the page reloads by its
 To start from a working app instead of a blank page, pick a template:
 
 ```sh
-node src/cli.ts init ../my-app --template todo
+npm create artscript@latest my-app -- --template todo
 ```
 
 | Template | What it shows |
@@ -36,7 +28,7 @@ node src/cli.ts init ../my-app --template todo
 | `catalog` | Admin role, search, sorting and pagination |
 | `crm` | Relations, uploads, live data and a modal |
 
-## 3. What's in the project
+## What's in the project
 
 ```text
 my-app/
@@ -50,7 +42,7 @@ my-app/
 
 You can split the app into as many `.art` files as you like, in any folders under `src/`: every declaration is visible from every file. `.css` files are bundled too.
 
-## 4. Your first change
+## Your first change
 
 Replace `src/app.art` with:
 
@@ -75,7 +67,7 @@ page Home "/" {
 
 `input name` binds the input to the `name` state both ways. `->` is the action: on a button it runs on click, on an input when Enter is pressed. Assigning or pushing to a `state` updates the screen; there's nothing else to call.
 
-## 5. Check, test, build
+## Check, test, build
 
 ```sh
 npx art check          # types and errors, with the fix for each one
@@ -85,7 +77,7 @@ npm run build          # production build in dist/
 
 `art build` writes `dist/index.html` and a single minified `app.js`. When the app declares an `api`, it also writes `dist/server.js` (one file, no `node_modules`) and a `Dockerfile`: see [Deploying](/learn/deploy).
 
-## 6. Bring your agent
+## Bring your agent
 
 Open the project in Claude Code, Cursor or any agent: `AGENTS.md` tells it to read `ARTSCRIPT.md` and to check its work with `art check --ai`. To give it the tools directly:
 

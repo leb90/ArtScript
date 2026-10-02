@@ -161,7 +161,7 @@ page Home "/" {
       column class="container" align=center gap=4 {
         title "Start building" class="section-title"
         text "Create an app, open it in your editor and ask your agent for the first feature." class="section-lead"
-        Code src="git clone https://github.com/leb90/ArtScript && cd ArtScript && npm install\nnode src/cli.ts init ../my-app --template todo\ncd ../my-app && npm install && npm run dev" lang="sh"
+        Code src="npm create artscript@latest my-app\ncd my-app && npm install\nnpm run dev" lang="sh"
         link "Read the quick start →" to="/learn/quick-start" class="btn primary"
       }
     }

@@ -5,7 +5,7 @@
   "private": true,
   "type": "module",
   "js-framework-benchmark": {
-    "frameworkVersionFromPackage": "artscript-lang",
+    "frameworkVersionFromPackage": "@artscript/core",
     "frameworkHomeURL": "https://github.com/leb90/ArtScript"
   },
   "scripts": {
@@ -13,6 +13,6 @@
     "build-prod": "art build src --out dist"
   },
   "devDependencies": {
-    "artscript-lang": "^0.2.0"
+    "@artscript/core": "^0.2.0"
   }
 }

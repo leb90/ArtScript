@@ -1,0 +1,26 @@
+{
+  "name": "create-artscript",
+  "version": "0.2.0",
+  "description": "Create an ArtScript app: npm create artscript@latest my-app",
+  "license": "MIT",
+  "author": "Leandro Bisceglie",
+  "homepage": "https://leb90.github.io/ArtScript/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leb90/ArtScript.git",
+    "directory": "packages/create-artscript"
+  },
+  "type": "module",
+  "bin": {
+    "create-artscript": "index.js"
+  },
+  "files": [
+    "index.js"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@artscript/core": "^0.2.0"
+  }
+}
