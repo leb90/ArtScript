@@ -33,7 +33,7 @@ export const GLOBALS = new Set([
   "parseInt", "parseFloat", "isNaN", "alert", "confirm", "prompt", "setTimeout", "clearTimeout", "setInterval", "clearInterval",
   "encodeURIComponent", "decodeURIComponent", "structuredClone", "Infinity", "NaN",
   "URL", "URLSearchParams", "history", "Blob", "FormData", "TextEncoder", "TextDecoder", "AbortController",
-  "requestAnimationFrame", "cancelAnimationFrame", "performance", "queueMicrotask", "RegExp", "Error", "BigInt", "Symbol",
+  "requestAnimationFrame", "cancelAnimationFrame", "matchMedia", "getComputedStyle", "IntersectionObserver", "ResizeObserver", "MutationObserver", "performance", "queueMicrotask", "RegExp", "Error", "BigInt", "Symbol",
 ]);
 
 export function show(t: Ty): string {
@@ -299,6 +299,16 @@ class Checker {
     }
     this.routes();
     this.twoWay = twoWayProps(this.program);
+    // Shared members (top-level `state`, `computed`, `fn`) are checked as one component's would be;
+    // every component then sees them.
+    const shared = this.program.decls.filter((d) => d.kind === "Shared");
+    if (shared.length) {
+      const host: ComponentDecl = { kind: "Component", page: false, name: "(shared)", path: null, params: [], members: shared.map((d) => d.member), view: [], loc: shared[0].loc };
+      this.component(host);
+      const names = new Set(shared.map((d) => d.name));
+      for (const [name, sym] of this.symbols.get(host.name) ?? []) if (names.has(name)) this.shared.vars.set(name, sym);
+      this.symbols.delete(host.name);
+    }
     for (const d of this.program.decls) if (d.kind === "Component") this.component(d);
     for (const d of this.program.decls) if (d.kind === "Test") this.test(d);
     return this.diags;
@@ -487,9 +497,11 @@ class Checker {
   }
 
   // ---------- components ----------
+  shared = new Scope(null);
+
   component(c: ComponentDecl) {
     this.at = c.name;
-    const scope = new Scope(null);
+    const scope = new Scope(this.shared);
     this.withImports(scope);
     scope.vars.set("navigate", { kind: "global", ty: fn({ k: "void" }) });
     scope.vars.set("notify", { kind: "global", ty: { k: "fn", ret: { k: "void" }, params: [STR, STR] } }); // notify("Saved", "success"?)
@@ -550,6 +562,7 @@ class Checker {
         // Lists start as [] and objects as null until the request resolves.
         const t = this.infer(m.expr, scope);
         // count() starts at 0, so it isn't nullable either.
+        if (t.k === "async" && t.of.k === "list") m.startsEmpty = true; // also a server fn's list
         if (t.k === "async") sym.ty = t.of.k === "list" || t.of.k === "num" ? t.of : opt(t.of);
         else if (t.k !== "any") this.err("TYPE_MISMATCH", "`data` needs an api call", m.expr.loc, { expr: printExpr(m.expr), expected: "api.<name>.list() | get(id)", actual: show(t) });
       } else if (m.kind === "Fn") {
@@ -621,7 +634,7 @@ class Checker {
     }
     // `icon "check"`: a literal name of the built-in set (only used icons go into the app).
     if (el.tag === "icon" && el.content) {
-      if (el.content.kind !== "Str") this.err("TYPE_MISMATCH", "an icon's name must be written as text: `icon \"check\"` (use `if` to switch icons)", el.content.loc, { expr: printExpr(el.content), expected: '"check"' });
+      if (el.content.kind !== "Str") this.err("TYPE_MISMATCH", "an icon's name must be a literal (only the icons an app names are bundled): to switch icons use `if`", el.content.loc, { expr: printExpr(el.content), expected: '"check"' });
       else if (!ICONS[el.content.value]) this.err("UNKNOWN_ELEMENT", `unknown icon '${el.content.value}'`, el.content.loc, { expr: el.content.value, expected: "a Lucide icon name", fixes: suggest(el.content.value, Object.keys(ICONS)) });
     }
     if (el.content) {
@@ -942,7 +955,7 @@ class Checker {
     if (!fields) return;
     const given = new Set<string>();
     for (const p of e.props) {
-      if ("spread" in p) return; // completeness can't be verified with a spread
+      if ("spread" in p || "computed" in p) return; // completeness can't be verified with a spread
       given.add(p.key);
       if (!(p.key in fields)) {
         this.err("UNKNOWN_FIELD", `${model} has no field '${p.key}'`, p.value.loc, { expr: p.key, expected: Object.keys(fields).join("|"), fixes: suggest(p.key, Object.keys(fields)) });
@@ -990,6 +1003,7 @@ class Checker {
         else this.braces(e, scope);
         return STR;
       case "Bool": return BOOL;
+      case "Regex": return ANY;
       case "Null": return NULL;
       case "Ident": {
         const sym = scope.get(e.name);
@@ -1094,9 +1108,10 @@ class Checker {
         const fields: Record<string, Ty> = {};
         for (const p of e.props) {
           if ("spread" in p) this.infer(p.spread, scope);
+          else if ("computed" in p) { this.infer(p.computed, scope); this.infer(p.value, scope); }
           else fields[p.key] = this.infer(p.value, scope);
         }
-        return { k: "obj", fields };
+        return e.props.some((p) => "computed" in p) ? ANY : { k: "obj", fields };
       }
       case "Arrow": {
         const s = new Scope(scope);
@@ -1172,7 +1187,7 @@ class Checker {
     const keys = method === "list" ? ["where", "search", "sort", "limit", "offset", "include"] : ["where", "search"];
     const fields = Object.keys(this.models.get(t.model) ?? {});
     for (const p of q.props) {
-      if ("spread" in p) continue;
+      if ("spread" in p || "computed" in p) continue;
       if (!keys.includes(p.key)) {
         this.err("UNKNOWN_FIELD", `${method}() has no option '${p.key}'`, p.value.loc, { expr: p.key, expected: keys.join("|"), fixes: suggest(p.key, keys) });
         continue;

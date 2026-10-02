@@ -17,7 +17,7 @@ test("checker: events, refs, hooks, children, responsive props", () => {
   const [ev] = check(parse('page P {\n  state q = ""\n  input q on:keydwn=(q = "")\n}', "t"));
   assert.deepEqual([ev.type, ev.fixes], ["UNKNOWN_PROP", ["on:keydown"]]);
   assert.deepEqual(types('page P {\n  state q = ""\n  input q on:keydown=(q = event.key)\n}'), []);
-  assert.deepEqual(types('page P {\n  state c = 0\n  canvas ref=c\n}'), ["UNKNOWN_ELEMENT", "TYPE_MISMATCH"].slice(0, 1));
+  assert.deepEqual(types('page P {\n  state c = 0\n  canvas ref=c\n}'), ["TYPE_MISMATCH"]); // `ref=` needs a name declared with `ref`
   assert.deepEqual(types('page P {\n  state c = 0\n  row ref=c\n}'), ["TYPE_MISMATCH"]);
   assert.deepEqual(types("page P {\n  ref box\n  mount {\n    box.focus()\n    cleanup {\n      console.log(1)\n    }\n  }\n\n  row ref=box\n}"), []);
   assert.deepEqual(types("page P {\n  fn f() {\n    cleanup {\n      console.log(1)\n    }\n  }\n\n  text \"x\"\n}"), ["BAD_CLEANUP"]);
@@ -473,6 +473,54 @@ test("attributes and HTML tags: aria-*, data-*, tag=, style next to layout props
     const icon = document.querySelector(".mark")!;
     assert.ok(icon.classList.contains("a-icon"));
     assert.equal(icon.getAttribute("aria-hidden"), "true");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});
+
+test("shared state: top-level state, computed and fn are one value for every component", async () => {
+  const src = `state cart: Number[] = []
+
+computed total = cart.reduce((a, b) => a + b, 0)
+
+fn add(n) {
+  cart.push(n)
+}
+
+layout Main {
+  text \`cart \${cart.length} total \${total}\` id="head"
+  slot
+}
+
+component Product(price: Number) {
+  button \`add \${price}\` -> add(price)
+}
+
+page Home "/" {
+  Product price=5
+  Product price=7
+  button "clear" -> cart = []
+}
+`;
+  assert.deepEqual(types(src), []);
+  assert.equal(printProgram(parse(src, "t")), src);
+  // A shared name can't be used before it exists, and unknown names are still errors.
+  assert.deepEqual(types(src.replace("add(price)", "ad(price)")), ["UNDEFINED_NAME"]);
+  const dir = mkdtempSync(join(tmpdir(), "art-shared-"));
+  writeFileSync(join(dir, "app.js"), compile([{ file: "app.art", src }]).js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    (await import(pathToFileURL(join(dir, "app.js")).href)).start(document.getElementById("app"));
+    const head = () => document.getElementById("head")!.textContent;
+    const click = (label: string) => [...document.querySelectorAll("button")].find((b) => b.textContent === label)!.click();
+    assert.equal(head(), "cart 0 total 0");
+    click("add 5");
+    click("add 7");
+    assert.equal(head(), "cart 2 total 12");
+    click("clear");
+    assert.equal(head(), "cart 0 total 0");
   } finally {
     await GlobalRegistrator.unregister();
   }

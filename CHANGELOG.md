@@ -9,6 +9,11 @@ From building three apps with the published package (a shop, a backoffice, a lan
 - `aria-*` and `data-*` on any element (`button "Menu" aria-expanded=open`), and `tag=` on texts and containers for the HTML element (`title "Plans" tag=h1`, `column tag=nav`). `form ... novalidate`.
 - The runtime's base styles and the rules of responsive props are in a cascade layer (`@layer art`): any rule of your own CSS wins, whatever its specificity (before, `.footer-grid { grid-template-columns: ... }` lost to `md:cols=4`, and `:root { --a-bg: ... }` to the dark theme).
 - Fixed: `style="..."` together with `gap`/`pad` crashed (and replaced the element's styles; it now adds to them); prerender wrote a string `style` as garbage; browser-only code in `mount` (an observer, `matchMedia`) aborted `art build --prerender`; a `class` on `icon` dropped its own class; links to a section of the current page (`/#plans`) were marked `aria-current`.
+- Shared state: `state`, `computed` and `fn` written outside any component are one value for the whole app (a cart every page sees).
+- `api orders: Order private readonly`: clients only read, server fns write (an order's total can't be forged over REST).
+- Regular expressions (`/^\d+$/.test(x)`), computed keys (`{ [field]: msg }`), `try { } finally { }` without `catch`, `canvas`, `step`/`min`/`max` on `input`, `bold` on `td`, `matchMedia` and the observers known to the checker. A `ref` can be assigned (to keep a chart instance).
+- Fixed: a closed `modal` with `gap` was visible; a custom `class` removed `primary`/`small`/`muted`, and written after responsive props it removed theirs; `art test` crashed when a server fn used a local module; a page behind `requires login` now goes to `/login?next=<where>`; `data x = server.fn()` of a list starts as `[]`.
+- `art test`: `click`, `link` and `fill` wait for what they act on, buttons without text are found by their `aria-label`, and failures show more of the screen.
 - `art build --prerender` writes `404.html` (the `"*"` page), links `public/favicon.*` from every page, and with `--site` makes `og:image` absolute.
 
 ## 0.2.0 (2026-10-02)

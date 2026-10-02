@@ -54,7 +54,7 @@ test("ssr: guards redirect on the server, as the visitor", async () => {
   const base = await start();
   const anon = await fetch(`${base}/admin`, { redirect: "manual" });
   assert.equal(anon.status, 302);
-  assert.equal(anon.headers.get("location"), "/login");
+  assert.equal(anon.headers.get("location"), "/login?next=%2Fadmin");
 
   const json = { "content-type": "application/json" };
   const signup = await fetch(`${base}/api/_auth/signup`, { method: "POST", headers: json, body: JSON.stringify({ email: "a@x.co", password: "12345678" }) });

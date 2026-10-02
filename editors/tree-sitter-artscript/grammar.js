@@ -4,7 +4,7 @@
 
 // Elements without positional content (`row wrap { }`): what follows the tag is a prop or a flag.
 // Kept in sync with src/elements.ts by tests/treesitter.test.ts.
-const NO_CONTENT = ["spinner", "divider", "row", "column", "grid", "card", "form", "list", "table", "tr", "meta"];
+const NO_CONTENT = ["spinner", "divider", "row", "column", "grid", "card", "form", "list", "table", "tr", "canvas", "meta"];
 
 const PREC = {
   assign: 1, arrow: 1, ternary: 2, nullish: 3, or: 4, and: 5, equality: 6, compare: 7, add: 8, mul: 9, exp: 10,
@@ -40,7 +40,8 @@ module.exports = grammar({
     _terminator: ($) => choice($._end, ";"),
 
     // ---------- declarations ----------
-    _declaration: ($) => choice($.model, $.api, $.auth, $.use, $.server_function, $.server_job, $.component, $.page, $.layout, $.test),
+    // (`state`, `computed` and `fn` at the top level are shared by every component)
+    _declaration: ($) => choice($.model, $.api, $.auth, $.use, $.server_function, $.server_job, $.component, $.page, $.layout, $.test, $.state, $.computed, $.function),
 
     model: ($) => seq("model", field("name", typeName($)), "{", repeat($.field), "}"),
     field: ($) => seq(
@@ -58,7 +59,7 @@ module.exports = grammar({
       optional("?"),
     ),
 
-    api: ($) => seq("api", field("name", $.identifier), ":", field("model", typeName($)), optional(field("access", choice("login", "private", "admin"))), $._terminator),
+    api: ($) => seq("api", field("name", $.identifier), ":", field("model", typeName($)), optional(field("access", choice("login", "private", "admin"))), optional("readonly"), $._terminator),
     auth: ($) => seq("auth", field("api", $.identifier), optional(seq("with", $.identifier, repeat(seq(",", $.identifier)))), $._terminator),
 
     use: ($) => seq(

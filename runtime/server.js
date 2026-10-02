@@ -159,7 +159,7 @@ function migrate(db, name, model, schema, defaults, backup) {
   db.prepare("INSERT OR REPLACE INTO _schema VALUES (?, ?)").run(name, current);
 }
 
-function makeTable(schema, db, dataDir, name, { model, access }, backup) {
+function makeTable(schema, db, dataDir, name, { model, access, readonly }, backup) {
   const fields = schema.models[model] ?? {};
   const key = idField(fields);
   const isAuth = schema.auth === name;
@@ -299,7 +299,7 @@ function makeTable(schema, db, dataDir, name, { model, access }, backup) {
   };
 
   return {
-    name, model, access, key, isAuth, out, byEmail, find,
+    name, model, access, readonly, key, isAuth, out, byEmail, find,
     list(me, q) {
       const { where, order, limit, offset, args } = query(q, me);
       const include = Array.isArray(q?.include) ? q.include.map(String) : [];
@@ -771,6 +771,8 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
         throw new HttpError(401, "LOGIN_REQUIRED", `log in to use /api/${t.name}`);
       }
       if (t.access === "admin" && write && !isAdmin(me)) throw new HttpError(403, "FORBIDDEN", `only admins can change /api/${t.name}`);
+      // `readonly`: clients only read; rows are written by server fns (`db.<api>`).
+      if (t.readonly && write) throw new HttpError(403, "FORBIDDEN", `/api/${t.name} is read-only`);
       const id = m[2] === undefined ? null : decodeURIComponent(m[2]);
       // Accounts: create them with auth.signup; each user changes only themselves (admins: anyone),
       // and only admins change roles.

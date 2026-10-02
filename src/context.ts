@@ -97,6 +97,7 @@ export function declContexts(p: Program, a: Analysis, targets: string[], budget 
     if (d.kind === "ServerFn") { blocks.push([`server fn ${d.name} → server.${d.name}(${d.params.join(", ")}) — ${d.loc.file}`, printDecl(d)]); continue; }
     if (d.kind === "Use") { blocks.push([`${printDecl(d)} — ${d.loc.file}`]); continue; }
     if (d.kind === "Test") { blocks.push([printDecl(d)]); continue; }
+    if (d.kind === "Shared") { blocks.push([`shared by every component — ${d.loc.file}`, printDecl(d)]); continue; }
     for (const m of modelDeps(d, a)) models.add(m);
     const by = usedBy(d.name);
     // The source starts with the signature, so the header only adds where it lives and who uses it.

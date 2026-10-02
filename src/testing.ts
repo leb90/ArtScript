@@ -1,11 +1,11 @@
 // `art test`: runs the `test "..." { ... }` blocks of a project in a simulated browser (happy-dom,
 // an optional dependency) against a real server when the app has apis. Each test starts from a
 // fresh database. Steps use what a person sees: texts, buttons, placeholders, labels, links.
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Expr, Program, Stmt, TestDecl } from "./ast.ts";
 import { compile, type Source } from "./compile.ts";
@@ -55,7 +55,8 @@ class Page {
   }
   private buttons() { return [...document.querySelectorAll<HTMLElement>("button, [role=button], [role=tab]")].filter(visible); }
   async click(label: string, index = 0) {
-    const b = this.buttons().filter((x) => norm(x.textContent ?? "") === label)[index];
+    // By its text, or by its accessible name when it has no text (an icon button).
+    const b = this.buttons().filter((x) => (norm(x.textContent ?? "") || x.getAttribute("aria-label") || x.querySelector("[aria-label]")?.getAttribute("aria-label")) === label)[index];
     if (!b) throw new StepError(`no button "${label}"${index ? ` #${index + 1}` : ""}; buttons: ${this.buttons().map((x) => `"${norm(x.textContent ?? "")}"`).join(", ") || "none"}`);
     b.click();
     await this.settle();
@@ -103,7 +104,7 @@ class Page {
   }
   async until(cond: () => boolean, expected: string, ms = 5000) {
     for (const end = Date.now() + ms; !cond(); await new Promise((r) => setTimeout(r, 15))) {
-      if (Date.now() > end) throw new StepError(`expected ${expected}; the screen shows: "${this.text().slice(0, 200)}"`);
+      if (Date.now() > end) throw new StepError(`expected ${expected}; the screen shows: "${this.text().slice(0, 600)}"`);
     }
   }
 }
@@ -119,7 +120,12 @@ async function run(page: Page, steps: Stmt[]) {
       if (step === "open") await page.open(a);
       else if (step === "see") await page.until(() => page.text().includes(a), `"${a}"`);
       else if (step === "notSee") await page.until(() => !page.text().includes(a), `no "${a}"`);
-      else await (page as any)[step](a, b);
+      else {
+        // What the step acts on may still be loading: it's retried for a moment, as `see` waits.
+        for (const end = Date.now() + 2000; ; await new Promise((r) => setTimeout(r, 25))) {
+          try { await (page as any)[step](a, b); break; } catch (e) { if (!(e instanceof StepError) || Date.now() > end) throw e; }
+        }
+      }
     } catch (e) {
       throw new StepError(`line ${s.loc.line}: ${step}: ${(e as Error).message}`);
     }
@@ -146,7 +152,14 @@ export async function runTests(sources: Source[]): Promise<TestResult[] | { diag
   const bundle = join(dir, "app.js");
   writeFileSync(bundle, out.outputFiles[0].text);
   const { createApi } = await import(new URL("../runtime/server.js", import.meta.url).href);
-  const fns = r.server ? await import(`data:text/javascript,${encodeURIComponent(r.server.fns)}`) : null;
+  // Next to the project, so the `use` imports of server fns resolve as they do in `art dev`.
+  let fns: any = null;
+  if (r.server) {
+    const file = join(process.cwd(), ".art", `test-fns-${Date.now()}.mjs`);
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, r.server.fns);
+    try { fns = await import(pathToFileURL(file).href); } finally { rmSync(file, { force: true }); }
+  }
   const results: TestResult[] = [];
   for (const t of tests) {
     // A fresh server and database per test.

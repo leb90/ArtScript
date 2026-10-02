@@ -26,7 +26,7 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   text: { html: "span", content: "text", action: null, children: false, props: [], flags: ["bold", "muted", "small", "large", "danger", "primary", "success"] },
   title: { html: "h2", content: "text", action: null, children: false, props: [], flags: ["bold", "muted", "small", "large", "danger", "primary", "success"] },
   button: { html: "button", content: "text", action: "click", children: true, props: ["disabled"], flags: ["primary", "danger", "small"] },
-  input: { html: "input", content: "bind", action: "enter", children: false, props: ["placeholder", "type", "disabled", "label"], flags: ["required"], attrs: ["required"] },
+  input: { html: "input", content: "bind", action: "enter", children: false, props: ["placeholder", "type", "disabled", "label", "min", "max", "step"], flags: ["required"], attrs: ["required"] },
   textarea: { html: "textarea", content: "bind", action: null, children: false, props: ["placeholder", "rows", "disabled", "label"], flags: ["required"], attrs: ["required"] },
   select: { html: "select", content: "bind", bind: "choice", action: "change", children: false, props: ["options", "placeholder", "disabled", "label"], flags: [] },
   checkbox: { html: "input", type: "checkbox", content: "bind", bind: "checked", action: "change", children: false, props: ["label", "disabled"], flags: [] },
@@ -52,7 +52,9 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   table: { html: "table", cls: "a-table", wrap: "a-scroll", content: null, action: null, children: true, props: [], flags: [] },
   tr: { html: "tr", content: null, action: "click", children: true, props: [], flags: [] },
   th: { html: "th", content: "text", action: null, children: true, props: [], flags: [] },
-  td: { html: "td", content: "text", action: null, children: true, props: [], flags: ["muted"] },
+  td: { html: "td", content: "text", action: null, children: true, props: [], flags: ["muted", "bold"] },
+  // For drawing libraries (`canvas ref=chart`, then `new Chart(chart, ...)` in `mount`).
+  canvas: { html: "canvas", content: null, action: null, children: false, props: ["width", "height"], flags: [] },
 };
 
 for (const [name, spec] of Object.entries(ELEMENTS)) spec.props = [...spec.props, ...COMMON, ...(TAG_ELEMENTS.includes(name) ? ["tag"] : [])];

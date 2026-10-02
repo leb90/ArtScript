@@ -51,6 +51,7 @@ export function printExpr(e: Expr): string {
       if (!e.props.length) return "{}";
       return "{ " + e.props.map((p) => {
         if ("spread" in p) return "..." + printExpr(p.spread);
+        if ("computed" in p) return `[${printExpr(p.computed)}]: ${printExpr(p.value)}`;
         if (p.value.kind === "Ident" && p.value.name === p.key) return p.key;
         return `${/^[A-Za-z_$][\w$]*$/.test(p.key) ? p.key : JSON.stringify(p.key)}: ${printExpr(p.value)}`;
       }).join(", ") + " }";
@@ -60,6 +61,7 @@ export function printExpr(e: Expr): string {
       return `${ps} => ${body}`;
     }
     case "Spread": return "..." + printExpr(e.arg);
+    case "Regex": return e.source;
   }
 }
 
@@ -73,7 +75,7 @@ export function printStmt(s: Stmt): string {
     case "ExprStmt": return printExpr(s.expr);
     case "Let": return `let ${s.name} = ${printExpr(s.init)}`;
     case "Return": return s.value ? `return ${printExpr(s.value)}` : "return";
-    case "Try": return `try ${printBlockInline(s.body)} catch${s.param ? ` (${s.param})` : ""} ${printBlockInline(s.handler)}${s.finally ? ` finally ${printBlockInline(s.finally)}` : ""}`;
+    case "Try": return `try ${printBlockInline(s.body)}${s.rethrow ? "" : ` catch${s.param ? ` (${s.param})` : ""} ${printBlockInline(s.handler)}`}${s.finally ? ` finally ${printBlockInline(s.finally)}` : ""}`;
     case "While": return `while ${printExpr(s.cond)} ${printBlockInline(s.body)}`;
     case "Cleanup": return `cleanup ${printBlockInline(s.body)}`;
     case "Loop": return `for (let ${s.name} = ${printExpr(s.init)}; ${printExpr(s.cond)}; ${printExpr(s.update)}) ${printBlockInline(s.body)}`;
@@ -125,8 +127,13 @@ export function printParams(f: { params: string[]; defaults?: (Expr | null)[] })
 }
 
 export function printDecl(d: Decl): string {
+  // A shared member prints as it would inside a component, without the indentation.
+  if (d.kind === "Shared") {
+    const host: Decl = { kind: "Component", page: false, name: "X", path: null, params: [], members: [d.member], view: [], loc: d.loc };
+    return printDecl(host).split("\n").slice(1, -1).map((l) => l.slice(IND.length)).join("\n");
+  }
   if (d.kind === "Use") return `use ${JSON.stringify(d.source)}${d.default ? ` as ${d.default}` : ""}${d.names.length ? ` { ${d.names.map((n) => (d.renames?.[n] ? `${d.renames[n]} as ${n}` : n)).join(", ")} }` : ""}`;
-  if (d.kind === "Api") return `api ${d.name}: ${d.model}${d.access === "public" ? "" : " " + d.access}`;
+  if (d.kind === "Api") return `api ${d.name}: ${d.model}${d.access === "public" ? "" : " " + d.access}${d.readonly ? " readonly" : ""}`;
   if (d.kind === "Auth") return `auth ${d.api}${d.providers ? ` with ${d.providers.join(", ")}` : ""}`;
   if (d.kind === "Test") {
     const step = (s: Stmt) => s.kind === "ExprStmt" && s.expr.kind === "Call" ? `${printExpr(s.expr.callee)} ${s.expr.args.map(printExpr).join(" ")}`.trimEnd() : printStmt(s);
@@ -193,7 +200,8 @@ function printStmt1(s: Stmt, depth: number, pad: string, out: string[]) {
     } else if (s.kind === "While") {
       out.push(`${pad}while ${printExpr(s.cond)} {`, ...printStmts(s.body, depth + 1), `${pad}}`);
     } else if (s.kind === "Try") {
-      out.push(`${pad}try {`, ...printStmts(s.body, depth + 1), `${pad}} catch${s.param ? ` (${s.param})` : ""} {`, ...printStmts(s.handler, depth + 1));
+      out.push(`${pad}try {`, ...printStmts(s.body, depth + 1));
+      if (!s.rethrow) out.push(`${pad}} catch${s.param ? ` (${s.param})` : ""} {`, ...printStmts(s.handler, depth + 1));
       if (s.finally) out.push(`${pad}} finally {`, ...printStmts(s.finally, depth + 1));
       out.push(`${pad}}`);
     } else out.push(pad + printStmt(s));

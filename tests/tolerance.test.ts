@@ -319,7 +319,7 @@ test("server fn inside a page is hoisted; a component named as a layout is one; 
 
 test("errors that say where things go: top-level state, let in the view, an api given a model", () => {
   const first = (src: string) => compile([{ file: "a.art", src }]).diagnostics[0];
-  assert.match(first('state likes = 0\n\npage P "/" {\n  text likes\n}\n').fixes![1], /layout Main \{ state likes/);
+  assert.equal(first('state likes = 0\n\npage P "/" {\n  text likes\n}\n'), undefined); // shared state, since 0.2.1
   const inView = first('page P "/" {\n  state xs = [1]\n\n  for x in xs {\n    let y = x * 2\n    text y\n  }\n}\n');
   assert.equal(inView.type, "STATEMENT_IN_VIEW");
   assert.match(inView.fixes![0], /^computed y/);
@@ -419,4 +419,75 @@ test("an object literal passed as a prop compiles to valid JavaScript", async ()
   const esbuild = await import("esbuild");
   await esbuild.transform(js, { loader: "js" }); // throws on a syntax error
   assert.match(js, /product: \(\) => \(\{/);
+});
+
+// ---------- from building the shop, the backoffice and the landing page with the package ----------
+
+test("a custom class keeps the flags; try/finally without catch; number inputs take step", async () => {
+  const src = 'page P "/" {\n  state n = 0\n  state price = 0\n  fn run() {\n    try {\n      n++\n    } finally {\n      n += 10\n    }\n  }\n\n  button "Go" primary small class="big" -> run()\n  text "x" muted class="note"\n  input price type=number step=0.5 min=0 max=10\n  text n id="n"\n}\n';
+  assert.deepEqual(types(src), []);
+  assert.equal(printProgram(parse(src, "t")), src);
+  const dir = mkdtempSync(join(tmpdir(), "art-class-"));
+  writeFileSync(join(dir, "app.js"), compile([{ file: "app.art", src }]).js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    (await import(pathToFileURL(join(dir, "app.js")).href)).start(document.getElementById("app"));
+    const button = document.querySelector("button")!;
+    assert.equal(button.className, "a-primary a-small big");
+    assert.equal(document.querySelector(".note")!.className, "a-muted note");
+    assert.equal(document.querySelector("input")!.step, "0.5");
+    button.click();
+    assert.equal(document.getElementById("n")!.textContent, "11");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});
+
+test("api ... readonly: declared, printed and in the server schema", () => {
+  const src = 'model Order {\n  id: ID\n  owner: ID\n  total: Number\n}\n\nmodel User {\n  id: ID\n  email: Email\n  password: String\n}\n\napi users: User\n\napi orders: Order private readonly\n\nauth users\n\nserver fn mine() {\n  return db.orders.list()\n}\n\npage P "/" {\n  data rows = server.mine()\n\n  text rows.length\n}\n';
+  const r = compile([{ file: "a.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  assert.equal(r.server!.apis.orders.readonly, true);
+  assert.match(printProgram(parse(src, "t")), /api orders: Order private readonly/);
+});
+
+test("regular expressions, computed keys, a canvas, class after responsive props", async () => {
+  const src = `page P "/" {
+  state email = "a@b.co"
+  state big = false
+  ref chart
+  computed ok = /^[^@\\s]+@[^@\\s]+\\.[a-z]+$/i.test(email)
+  fn errors(field) {
+    return { [field]: "bad", n: 10 / 2 / 1 }
+  }
+
+  grid cols=1 md:cols=3 gap=2 class=(big ? "kpis big" : "kpis") id="grid" {
+    text ok ? "valid" : "invalid" id="ok"
+    text errors("name").name id="err"
+  }
+  canvas ref=chart width=200
+  button "big" -> big = true
+}
+`;
+  assert.deepEqual(types(src), []);
+  assert.equal(printProgram(parse(src, "t")), src);
+  const dir = mkdtempSync(join(tmpdir(), "art-regex-"));
+  writeFileSync(join(dir, "app.js"), compile([{ file: "app.art", src }]).js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    (await import(pathToFileURL(join(dir, "app.js")).href)).start(document.getElementById("app"));
+    assert.equal(document.getElementById("ok")!.textContent, "valid");
+    assert.equal(document.getElementById("err")!.textContent, "bad");
+    assert.ok(document.querySelector("canvas"));
+    const grid = document.getElementById("grid")!;
+    for (const c of ["a-grid", "kpis", "a-cols-1", "a-md-cols-3"]) assert.ok(grid.classList.contains(c), c);
+    document.querySelector("button")!.click();
+    for (const c of ["a-grid", "kpis", "big", "a-cols-1", "a-md-cols-3"]) assert.ok(grid.classList.contains(c), c);
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
 });

@@ -16,6 +16,14 @@
         "named": true
       },
       {
+        "type": "computed",
+        "named": true
+      },
+      {
+        "type": "function",
+        "named": true
+      },
+      {
         "type": "layout",
         "named": true
       },
@@ -33,6 +41,10 @@
       },
       {
         "type": "server_job",
+        "named": true
+      },
+      {
+        "type": "state",
         "named": true
       },
       {
@@ -5155,6 +5167,10 @@
   {
     "type": "property_identifier",
     "named": true
+  },
+  {
+    "type": "readonly",
+    "named": false
   },
   {
     "type": "ref",

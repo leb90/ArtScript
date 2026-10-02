@@ -65,6 +65,18 @@
         {
           "type": "SYMBOL",
           "name": "test"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "state"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "computed"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "function"
         }
       ]
     },
@@ -403,6 +415,18 @@
                   }
                 ]
               }
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "readonly"
             },
             {
               "type": "BLANK"
@@ -1747,6 +1771,10 @@
                     {
                       "type": "STRING",
                       "value": "tr"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "canvas"
                     },
                     {
                       "type": "STRING",

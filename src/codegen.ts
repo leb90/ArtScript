@@ -1,5 +1,5 @@
 // Generates an ES module that builds the DOM directly (no virtual DOM) using runtime.js.
-import type { ApiAccess, ComponentDecl, FieldRules, Element, Expr, Loc, Program, ServerFnDecl, Stmt, ViewNode } from "./ast.ts";
+import type { ApiAccess, ComponentDecl, FieldRules, Element, Expr, Loc, Member, Program, ServerFnDecl, Stmt, ViewNode } from "./ast.ts";
 import { specifier } from "./modules.ts";
 import { printDecl, printType } from "./printer.ts";
 import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
@@ -78,6 +78,15 @@ export function generateMapped(program: Program, dev = false): { js: string; mar
   if (apis.length) out.push(`const api = { ${apis.map((a) => `${a.name}: $.$api(${JSON.stringify(a.name)})`).join(", ")} };`, "");
   if (program.decls.some((d) => d.kind === "Auth")) out.push("const auth = $.$auth();", "");
   if (program.decls.some((d) => d.kind === "ServerFn")) out.push("const server = $.$server();", "");
+  sharedScope = new Scope(null);
+  const shared = program.decls.filter((d) => d.kind === "Shared");
+  if (shared.length) {
+    const g = new ComponentGen({ kind: "Component", page: false, name: "(shared)", path: null, params: [], members: [], view: [], loc: shared[0].loc });
+    g.ind = 0;
+    for (const d of shared) sharedScope.vars.set(d.name, { kind: d.member.kind === "State" ? "state" : d.member.kind === "Computed" ? "computed" : "fn" });
+    g.members(shared.map((d) => d.member), sharedScope);
+    out.push(...g.lines, "");
+  }
   const pages: string[] = [];
   twoWay = twoWayProps(program);
   slotsOf = new Map(program.decls.flatMap((d) => (d.kind === "Component" ? [[d.name, slotNames(d.view)] as const] : [])));
@@ -138,7 +147,7 @@ export type ServerSchema = {
   refs: Record<string, Record<string, { api: string; list: boolean }>>;
   // Field defaults per model (JSON values), for create and for migrating existing rows.
   defaults: Record<string, Record<string, unknown>>;
-  apis: Record<string, { model: string; access: ApiAccess }>;
+  apis: Record<string, { model: string; access: ApiAccess; readonly?: boolean }>;
   auth: string | null;
   // Sign-in providers of `auth ... with`.
   oauth?: string[];
@@ -153,7 +162,7 @@ export function serverSchema(program: Program): ServerSchema | null {
   const rules: ServerSchema["rules"] = {};
   const defaults: ServerSchema["defaults"] = {};
   for (const d of program.decls) {
-    if (d.kind === "Api") apis[d.name] = { model: d.model, access: d.access };
+    if (d.kind === "Api") apis[d.name] = { model: d.model, access: d.access, ...(d.readonly ? { readonly: true } : {}) };
     if (d.kind === "Model") {
       models[d.name] = Object.fromEntries(d.fields.map((f) => [f.name, printType(f.type)]));
       const withRules = d.fields.filter((f) => f.rules);
@@ -223,6 +232,9 @@ export function htmlShell(title = "ArtScript", head = "", body = "", css = false
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${head}${css ? `<link rel="stylesheet" href="${base}app.css">` : ""}</head><body><div id="app">${body}</div><script type="module" src="${base}app.js"></script></body></html>\n`;
 }
 
+// Top-level `state`, `computed` and `fn`: module-level, visible in every component.
+let sharedScope = new Scope(null);
+
 // Dev builds: each component reports its members to the dev tools.
 let devMode = false;
 
@@ -247,7 +259,7 @@ class ComponentGen {
   gen(): string {
     const c = this.c;
     this.at = c.loc;
-    const scope = new Scope(null);
+    const scope = new Scope(sharedScope);
     for (const p of c.params) scope.vars.set(p.name, { kind: "prop" });
     // Pages read their route params and query string as props from the router.
     if (c.page) {
@@ -264,29 +276,7 @@ class ComponentGen {
       const def = p.default ? `(() => ${this.expr(p.default, scope)})` : "(() => undefined)";
       this.emit(`const ${p.name} = $p.${p.name} ?? ${def};`);
     }
-    for (const m of c.members) {
-      this.at = m.loc;
-      if (m.kind === "Mount" || m.kind === "Effect") continue; // after the view, so refs are set
-      if (m.kind === "Style") { this.emit(`$.$scopedCss(${JSON.stringify(c.name)}, ${JSON.stringify(scopeCss(m.css, c.name))});`); continue; }
-      if (m.kind === "Ref") this.emit(`let ${m.name} = null;`);
-      else if (m.kind === "State") this.emit(`const ${m.name} = $.signal(${this.expr(m.init, scope)});`);
-      else if (m.kind === "Computed") this.emit(`const ${m.name} = $.computed(() => ${this.expr(m.expr, scope)});`);
-      else if (m.kind === "Data") {
-        // Lists start as [] so views can iterate right away, counts as 0; anything else as null.
-        const method = m.expr.kind === "Call" && m.expr.callee.kind === "Member" ? m.expr.callee.prop : "";
-        this.emit(`const ${m.name} = $.$data(() => ${this.expr(m.expr, scope)}, ${method === "list" ? "[]" : method === "count" ? "0" : "null"});`);
-        if (m.live) this.emit("$.$live();");
-      } else if (m.kind === "Fn") {
-        const fs = scope.child();
-        for (const p of m.params) fs.vars.set(p, { kind: "param" });
-        const ps = m.params.map((p, i) => (m.defaults?.[i] ? `${p} = ${this.expr(m.defaults[i]!, scope)}` : p));
-        this.emit(`${hasAwait(m.body) ? "async " : ""}function ${m.name}(${ps.join(", ")}) {`);
-        this.ind++;
-        this.stmts(m.body, fs);
-        this.ind--;
-        this.emit("}");
-      }
-    }
+    this.members(c.members, scope);
     if (devMode) {
       this.at = c.loc;
       const entries = [...(c.page ? ["params", "query"] : []), ...c.params.map((p) => p.name)].map((n) => `${n}: ["prop", () => ${n}()]`);
@@ -304,6 +294,33 @@ class ComponentGen {
       this.emit("});");
     }
     return `function ${c.name}($p, $parent) {\n${this.lines.join("\n")}\n}`;
+  }
+
+  members(members: Member[], scope: Scope) {
+    const c = this.c;
+    for (const m of members) {
+      this.at = m.loc;
+      if (m.kind === "Mount" || m.kind === "Effect") continue; // after the view, so refs are set
+      if (m.kind === "Style") { this.emit(`$.$scopedCss(${JSON.stringify(c.name)}, ${JSON.stringify(scopeCss(m.css, c.name))});`); continue; }
+      if (m.kind === "Ref") this.emit(`let ${m.name} = null;`);
+      else if (m.kind === "State") this.emit(`const ${m.name} = $.signal(${this.expr(m.init, scope)});`);
+      else if (m.kind === "Computed") this.emit(`const ${m.name} = $.computed(() => ${this.expr(m.expr, scope)});`);
+      else if (m.kind === "Data") {
+        // Lists start as [] so views can iterate right away, counts as 0; anything else as null.
+        const method = m.expr.kind === "Call" && m.expr.callee.kind === "Member" ? m.expr.callee.prop : "";
+        this.emit(`const ${m.name} = $.$data(() => ${this.expr(m.expr, scope)}, ${method === "list" || m.startsEmpty ? "[]" : method === "count" ? "0" : "null"});`);
+        if (m.live) this.emit("$.$live();");
+      } else if (m.kind === "Fn") {
+        const fs = scope.child();
+        for (const p of m.params) fs.vars.set(p, { kind: "param" });
+        const ps = m.params.map((p, i) => (m.defaults?.[i] ? `${p} = ${this.expr(m.defaults[i]!, scope)}` : p));
+        this.emit(`${hasAwait(m.body) ? "async " : ""}function ${m.name}(${ps.join(", ")}) {`);
+        this.ind++;
+        this.stmts(m.body, fs);
+        this.ind--;
+        this.emit("}");
+      }
+    }
   }
 
   // ---------- view ----------
@@ -426,7 +443,8 @@ class ComponentGen {
     const inputType = spec.type ?? (typeProp?.kind === "Ident" ? typeProp.name : typeProp?.kind === "Str" ? typeProp.value : null);
     const options = el.props.find((p) => p.name === "options")?.value;
 
-    for (const p of el.props) {
+    // `class` first: the classes other props add (responsive props, conditional flags) come after it.
+    for (const p of [...el.props.filter((q) => q.name === "class"), ...el.props.filter((q) => q.name !== "class")]) {
       if (!p.value) {
         if (/^(aria|data)-/.test(p.name)) this.emit(`${v}.setAttribute(${JSON.stringify(p.name)}, "true");`);
         else if (isAttr(p.name)) this.emit(`${v}.${p.name === "novalidate" ? "noValidate" : p.name} = true;`);
@@ -478,7 +496,7 @@ class ComponentGen {
       } else if (p.name === "to") {
         this.attr(v, "href", val, scope); // internal links navigate without reloading (see the router)
       } else if (p.name === "class") {
-        this.attr(v, "className", val, scope, (s) => (spec.cls ? `${JSON.stringify(classes + " ")} + ${s}` : s));
+        this.attr(v, "className", val, scope, (s) => (classes ? `${JSON.stringify(classes + " ")} + ${s}` : s));
       } else this.attr(v, p.name, val, scope);
     }
 
@@ -608,8 +626,10 @@ class ComponentGen {
         this.nested(() => this.stmts(s.body, scope.child()));
         const h = scope.child();
         if (s.param) h.vars.set(s.param, { kind: "let" });
-        this.emit(s.param ? `} catch (${s.param}) {` : "} catch {");
-        this.nested(() => this.stmts(s.handler, h));
+        if (!s.rethrow) {
+          this.emit(s.param ? `} catch (${s.param}) {` : "} catch {");
+          this.nested(() => this.stmts(s.handler, h));
+        }
         if (s.finally) {
           this.emit("} finally {");
           this.nested(() => this.stmts(s.finally!, scope.child()));
@@ -694,9 +714,10 @@ class ComponentGen {
       }
       case "Array": return `[${e.items.map(x).join(", ")}]`;
       // In parentheses: as the body of a `() => ...` it would otherwise read as a block.
-      case "Object": return `({ ${e.props.map((p) => ("spread" in p ? `...${x(p.spread)}` : `${JSON.stringify(p.key)}: ${x(p.value)}`)).join(", ")} })`;
+      case "Object": return `({ ${e.props.map((p) => ("spread" in p ? `...${x(p.spread)}` : "computed" in p ? `[${x(p.computed)}]: ${x(p.value)}` : `${JSON.stringify(p.key)}: ${x(p.value)}`)).join(", ")} })`;
       case "Arrow": return this.arrow(e, scope);
       case "Spread": return `...${x(e.arg)}`;
+      case "Regex": return e.source;
     }
   }
 
@@ -765,7 +786,7 @@ function exprHasAwait(e: Expr): boolean {
     case "Cond": return exprHasAwait(e.test) || exprHasAwait(e.then) || exprHasAwait(e.else);
     case "Assign": return exprHasAwait(e.target) || exprHasAwait(e.value);
     case "Array": return e.items.some(exprHasAwait);
-    case "Object": return e.props.some((p) => exprHasAwait("spread" in p ? p.spread : p.value));
+    case "Object": return e.props.some((p) => ("spread" in p ? exprHasAwait(p.spread) : exprHasAwait(p.value) || ("computed" in p && exprHasAwait(p.computed))));
     default: return false;
   }
 }

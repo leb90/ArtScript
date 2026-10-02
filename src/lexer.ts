@@ -4,7 +4,7 @@ import { CompileError, diag } from "./errors.ts";
 export type TplPart = { src: string; line: number; col: number };
 
 export type Token = {
-  t: "id" | "num" | "str" | "tpl" | "op" | "nl" | "eof" | "css";
+  t: "id" | "num" | "str" | "tpl" | "op" | "nl" | "eof" | "css" | "regex";
   v: string;
   loc: Loc;
   quasis?: string[]; // only for `tpl`
@@ -153,6 +153,16 @@ export function lex(src: string, file: string, startLine = 1, startCol = 1, comm
       continue;
     }
 
+    // A regular expression: a `/` where a value goes (after an operator, `(`, `,` or at the start).
+    const before = out[out.length - 1];
+    if (c === "/" && (!before || before.t === "nl" || (before.t === "op" && ![")", "]", "}", "++", "--"].includes(before.v)) || (before.t === "id" && ["return", "typeof"].includes(before.v)))) {
+      const m = /^\/(?![*\/\s])(?:\\.|\[(?:\\.|[^\]\\\n])*\]|[^\/\\\n\[])+\/[a-z]*/.exec(src.slice(i));
+      if (m) {
+        out.push({ t: "regex", v: m[0], loc: start });
+        adv(m[0].length);
+        continue;
+      }
+    }
     const op = OPS.find((o) => src.startsWith(o, i));
     if (!op) throw new CompileError(diag("UNEXPECTED_CHAR", `unexpected character '${c}'`, start));
     if (op === "(" || op === "[" || op === "{") depth.push(op);

@@ -1,5 +1,5 @@
 import type {
-  ApiAccess, ApiDecl, Commented, ComponentDecl, Decl, Element, Expr, Field, FnDecl, Loc, Member, ModelDecl, ObjProp, Param, Program, Prop, ServerFnDecl, Stmt, TypeRef, UseDecl, ViewNode,
+  ApiAccess, ApiDecl, SharedDecl, Commented, ComponentDecl, Decl, Element, Expr, Field, FnDecl, Loc, Member, ModelDecl, ObjProp, Param, Program, Prop, ServerFnDecl, Stmt, TypeRef, UseDecl, ViewNode,
 } from "./ast.ts";
 import { ELEMENTS } from "./elements.ts";
 import { CompileError, diag, type Diagnostic } from "./errors.ts";
@@ -181,12 +181,11 @@ class Parser {
       if (this.is("server")) return this.serverFn();
       if (this.is("component") || this.is("page") || this.is("layout")) return this.component();
       if (this.is("test") && this.peek().t === "str") return this.test();
-      // `state` outside a component: states live in one; a layout's state is shared by its pages.
-      if ((this.is("state") || this.is("computed") || this.is("let") || this.is("const")) && this.peek().t === "id") {
-        throw new CompileError(diag("UNEXPECTED_TOKEN", `\`${this.tok.v}\` goes inside a component, page or layout`, this.tok.loc, {
-          expected: "a declaration", actual: `'${this.tok.v}'`,
-          fixes: [`move it into the component that uses it`, `shared by several pages: put it in their layout (\`layout Main { state ${this.peek().v} = ... }\`)`],
-        }));
+      // `state`, `computed` and `fn` outside a component are shared by all of them.
+      if ((this.is("state") || this.is("computed") || this.is("fn") || this.is("let") || this.is("const")) && this.peek().t === "id") {
+        const loc = this.tok.loc;
+        const member = this.member() as SharedDecl["member"];
+        return { kind: "Shared", name: member.name, member, loc };
       }
       return this.fail("'use', 'model', 'api', 'auth', 'server fn', 'component', 'page' or 'test'");
     }
@@ -238,7 +237,8 @@ class Parser {
     const model = this.ident("the api's model");
     let access: ApiAccess = "public";
     if (this.is("login") || this.is("private") || this.is("admin")) access = this.next().v as ApiAccess;
-    return { kind: "Api", name, model: model.v, access, modelLoc: model.loc, loc };
+    const readonly = this.eat("readonly");
+    return { kind: "Api", name, model: model.v, access, ...(readonly ? { readonly } : {}), modelLoc: model.loc, loc };
   }
 
   use(): UseDecl {
@@ -688,6 +688,11 @@ class Parser {
     if (this.is("try")) {
       this.next();
       const body = this.block();
+      // `try { } finally { }` (no catch): the error goes on after the `finally`.
+      if (this.keywordAhead("finally")) {
+        this.next();
+        return { kind: "Try", body, param: null, handler: [], rethrow: true, finally: this.block(), loc: t.loc };
+      }
       if (!this.keywordAhead("catch")) this.fail("'catch'");
       this.next();
       // `catch (e)`, `catch e` and a bare `catch` are all accepted.
@@ -844,6 +849,7 @@ class Parser {
     const loc: Loc = t.loc;
     if (t.t === "num") { this.next(); return { kind: "Num", value: Number(t.v), loc }; }
     if (t.t === "str") { this.next(); return { kind: "Str", value: t.v, loc }; }
+    if (t.t === "regex") { this.next(); return { kind: "Regex", source: t.v, loc }; }
     if (t.t === "tpl") {
       this.next();
       const exprs = t.parts!.map((p) => {
@@ -881,7 +887,12 @@ class Parser {
       this.skipNl();
       while (!this.is("}")) {
         if (this.eat("...")) props.push({ spread: this.expr() });
-        else {
+        else if (this.eat("[")) {
+          const computed = this.expr();
+          this.expect("]");
+          this.expect(":");
+          props.push({ computed, value: this.expr() });
+        } else {
           const k = this.tok;
           if (k.t !== "id" && k.t !== "str") this.fail("a property name");
           this.next();

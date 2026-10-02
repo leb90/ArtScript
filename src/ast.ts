@@ -13,7 +13,10 @@ export type Program = { kind: "Program"; decls: Decl[]; comments?: string[] };
 // right before the `}` that closes its block). Any declaration, field, member, view node or statement.
 export type Commented = { comments?: string[]; after?: string[] };
 
-export type Decl = ModelDecl | ComponentDecl | ApiDecl | AuthDecl | ServerFnDecl | UseDecl | TestDecl;
+export type Decl = ModelDecl | ComponentDecl | ApiDecl | AuthDecl | ServerFnDecl | UseDecl | TestDecl | SharedDecl;
+// `state cart = []`, `computed total = ...` or `fn add(p) { }` at the top level: shared by every
+// component (one value for the whole app).
+export type SharedDecl = { kind: "Shared"; name: string; member: StateDecl | ComputedDecl | FnDecl; loc: Loc };
 
 // `test "adds a task" { fill "Task" "Milk"  click "Add"  see "1 left" }`: run by `art test` in a
 // simulated browser. `name` is `test "<description>"`; steps are calls like `see("x")`.
@@ -38,7 +41,8 @@ export type Field = { name: string; type: TypeRef; default?: Expr; rules?: Field
 // persisted on the server. `login` requires a session; `private` also scopes rows to their `owner`;
 // `admin`: anyone reads, only users with role "admin" write.
 export type ApiAccess = "public" | "login" | "private" | "admin";
-export type ApiDecl = { kind: "Api"; name: string; model: string; access: ApiAccess; modelLoc: Loc; loc: Loc };
+// `readonly`: clients can only read; server fns write.
+export type ApiDecl = { kind: "Api"; name: string; model: string; access: ApiAccess; readonly?: boolean; modelLoc: Loc; loc: Loc };
 
 // `auth users`: email + password accounts on that api (signup, login, logout, me).
 // `auth users with google, github`: also sign-in through those providers (OAuth).
@@ -80,7 +84,8 @@ export type ComputedDecl = { kind: "Computed"; name: string; expr: Expr; loc: Lo
 export type FnDecl = { kind: "Fn"; name: string; params: string[]; defaults?: (Expr | null)[]; body: Stmt[]; loc: Loc };
 // `data users = api.users.list()`: async value, loaded on mount and reloaded when its api changes.
 // `live`: also reloads when another client writes (server-sent events).
-export type DataDecl = { kind: "Data"; name: string; expr: Expr; live?: boolean; loc: Loc };
+// `startsEmpty` (set by the checker): a server fn that returns a list; the data starts as [].
+export type DataDecl = { kind: "Data"; name: string; expr: Expr; live?: boolean; startsEmpty?: boolean; loc: Loc };
 // `ref canvas`: holds the element marked `ref=canvas` (null until the view is built).
 export type RefDecl = { kind: "Ref"; name: string; loc: Loc };
 // `mount { ... }` runs once after the view is in the page; `effect { ... }` re-runs when what it
@@ -115,7 +120,7 @@ export type Stmt =
   | { kind: "Let"; name: string; init: Expr; loc: Loc }
   | { kind: "If"; cond: Expr; then: Stmt[]; else: Stmt[] | null; loc: Loc }
   | { kind: "Return"; value: Expr | null; loc: Loc }
-  | { kind: "Try"; body: Stmt[]; param: string | null; handler: Stmt[]; finally?: Stmt[]; loc: Loc }
+  | { kind: "Try"; body: Stmt[]; param: string | null; handler: Stmt[]; finally?: Stmt[]; rethrow?: boolean; loc: Loc }
   | { kind: "While"; cond: Expr; body: Stmt[]; loc: Loc }
   | { kind: "Cleanup"; body: Stmt[]; loc: Loc }
   // `for x in xs { }` / `for x, i in xs { }`: runs the body for each item, in order.
@@ -143,6 +148,9 @@ export type Expr =
   | { kind: "Array"; items: Expr[]; loc: Loc }
   | { kind: "Object"; props: ObjProp[]; loc: Loc }
   | { kind: "Arrow"; params: string[]; body: Expr | Stmt[]; loc: Loc }
-  | { kind: "Spread"; arg: Expr; loc: Loc };
+  | { kind: "Spread"; arg: Expr; loc: Loc }
+  // `/^\d+$/i`, kept as written.
+  | { kind: "Regex"; source: string; loc: Loc };
 
-export type ObjProp = { key: string; value: Expr } | { spread: Expr };
+// `{ a: 1 }`, `{ ...rest }` and `{ [name]: 1 }` (a key computed from an expression).
+export type ObjProp = { key: string; value: Expr } | { spread: Expr } | { computed: Expr; value: Expr };
