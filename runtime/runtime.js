@@ -191,7 +191,8 @@ export function $on(n, kind, fn) {
   n.addEventListener(type, (e) => {
     if (kind === "enter" && e.key !== "Enter") return;
     if (kind === "submit") e.preventDefault();
-    batch(() => fn(e));
+    // An action that fails without a `try` (a rejected write) tells the user instead of failing silently.
+    batch(() => fn(e))?.catch?.((err) => { notify(err?.message ?? String(err), "danger"); console.error(err); });
   });
 }
 function untrack(fn) {
@@ -704,6 +705,8 @@ export function start(routes, mount = document.getElementById("app"), prefix = "
     style.textContent = CSS;
     document.head.insertBefore(style, document.head.firstChild); // first, so the app's CSS wins
   }
+  // A write that fails outside a `try` (`-> api.users.remove(u.id)`) tells the user.
+  window.addEventListener?.("unhandledrejection", (e) => notify(e.reason?.message ?? String(e.reason), "danger"));
   mount.textContent = "";
   try { const saved = localStorage.getItem("art-theme"); if (saved) { themeSig._v = saved; applyTheme(saved); } } catch { /* no storage */ }
   const table = routes.map((r) => ({ ...r, ...compileRoute(r.path) }));

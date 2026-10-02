@@ -211,3 +211,53 @@ component C {
                 (template_chars))))))
       (style
         (css)))))
+
+====================
+For loops in functions
+====================
+
+page P {
+  fn run() {
+    for r, i in rows {
+      r.n = i
+    }
+    for (let i = 0; i < 3; i++) {
+      total += i
+    }
+  }
+}
+
+---
+
+(source_file
+  (page
+    (type_identifier)
+    (body
+      (function
+        (identifier)
+        (parameters)
+        (block
+          (for_statement
+            (identifier)
+            (identifier)
+            (identifier)
+            (block
+              (expression_statement
+                (assignment
+                  (member
+                    (identifier)
+                    (property_identifier))
+                  (identifier)))))
+          (loop_statement
+            (identifier)
+            (number)
+            (binary
+              (identifier)
+              (number))
+            (update
+              (identifier))
+            (block
+              (expression_statement
+                (assignment
+                  (identifier)
+                  (identifier))))))))))

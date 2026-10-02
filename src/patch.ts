@@ -142,6 +142,11 @@ function resolve(p: Program, path: string, loc: Loc): Target {
   let walked = name;
   for (const seg of rest!.split("/").filter(Boolean)) {
     if (seg === "else") {
+      // `List/else/column` without naming the `if`: the only `if` at that level is meant.
+      if (!cur || cur.kind !== "IfView") {
+        const ifs = (cur ? childrenOf(cur) : list).filter((n) => n.kind === "IfView");
+        if (ifs.length === 1) cur = ifs[0];
+      }
       if (!cur || cur.kind !== "IfView") fail("TARGET_NOT_FOUND", "`else` can only follow an `if`", []);
       const ifNode: ViewNode & { kind: "IfView" } = cur as ViewNode & { kind: "IfView" };
       ifNode.else ??= [];

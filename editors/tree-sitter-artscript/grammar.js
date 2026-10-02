@@ -146,6 +146,8 @@ module.exports = grammar({
     _statement: ($) => choice(
       seq(choice($.let_statement, $.return_statement, $.expression_statement), $._terminator),
       $.if_statement,
+      $.for_statement,
+      $.loop_statement,
       $.try_statement,
       $.cleanup_statement,
     ),
@@ -156,6 +158,13 @@ module.exports = grammar({
       "if", field("condition", $._expression), field("then", choice($.block, $._statement)),
       optional(seq("else", field("else", choice($.if_statement, $.block)))),
     )),
+    for_statement: ($) => seq(
+      "for", field("item", $.identifier), optional(seq(",", field("index", $.identifier))), "in", field("list", $._expression), field("body", $.block),
+    ),
+    loop_statement: ($) => seq(
+      "for", "(", "let", field("name", $.identifier), "=", field("start", $._expression), ";",
+      field("condition", $._expression), ";", field("update", $._expression), ")", field("body", $.block),
+    ),
     try_statement: ($) => seq(
       "try", field("body", $.block),
       "catch", optional(choice(seq("(", field("error", $.identifier), ")"), field("error", $.identifier))),

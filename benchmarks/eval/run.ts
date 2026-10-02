@@ -5,10 +5,12 @@
 //   npm run eval -- --dry-run                     validates the harness without calling the API
 //   npm run eval -- --runs 3 --max-usd 10         full run with claude-opus-5-5
 //   npm run eval -- --model claude-sonnet-5-5 --tasks counter,todo --stacks artscript,react
+//   npm run eval -- --model claude-sonnet-5-5 --checkpoint final-sonnet    every finished run is saved
+//       as it ends (results/final-sonnet.jsonl); the same command again continues where it stopped
 //
 // Credentials: ANTHROPIC_API_KEY in the environment or in a .env file at the repo root.
 import Anthropic from "@anthropic-ai/sdk";
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { focusFor, TASKS, type Task } from "./tasks.ts";
@@ -51,6 +53,9 @@ const MAX_USD = Number(opt("max-usd", "10"));
 const CONCURRENCY = Number(opt("concurrency", "4"));
 const TASK_IDS = opt("tasks", TASKS.map((t) => t.id).join(",")).split(",");
 const STACK_IDS = opt("stacks", STACKS.join(",")).split(",") as Stack[];
+// Paid runs aren't lost if the process dies or the budget runs out: with --checkpoint <name> each
+// finished run is appended to results/<name>.jsonl, and a later run with the same name skips them.
+const CHECKPOINT = opt("checkpoint", "");
 const DRY = args.includes("--dry-run");
 // Behavior checks run each app in a simulated browser; --no-behavior only checks that it compiles.
 const BEHAVIOR = !args.includes("--no-behavior");
@@ -433,9 +438,23 @@ async function main() {
   }
   const client = new Anthropic({ fetch: nodeFetch, timeout: 120_000 }); // a stuck request fails (and is retried) instead of stalling the run
   const tasks = TASKS.filter((t) => TASK_IDS.includes(t.id));
+  const checkpoint = CHECKPOINT ? join(HERE, "results", `${CHECKPOINT}.jsonl`) : null;
+  // A run that never got its answer (API error, budget cut) isn't a result: it runs again.
+  const complete = (r: RunResult) => !/^(API \d+|budget exhausted)/.test(r.errors[0] ?? "");
+  const saved = new Map<string, RunResult>();
+  if (checkpoint && existsSync(checkpoint)) {
+    for (const line of readFileSync(checkpoint, "utf8").split("\n").filter(Boolean)) {
+      const r = JSON.parse(line) as RunResult & { model: string };
+      if (r.model === MODEL && complete(r)) saved.set(`${r.task}/${r.stack}#${r.run}`, r);
+    }
+    console.log(`checkpoint ${CHECKPOINT}: ${saved.size} runs already done`);
+  }
   const jobs = tasks.flatMap((t) => STACK_IDS.flatMap((s) => Array.from({ length: RUNS }, (_, r) => async () => {
+    const before = saved.get(`${t.id}/${s}#${r + 1}`);
+    if (before) return before;
     try {
       const res = await runOne(client, t, s, r + 1);
+      if (checkpoint && complete(res)) appendFileSync(checkpoint, JSON.stringify({ model: MODEL, ...res }) + "\n");
       console.log(`${res.ok ? "✓" : "✗"} ${t.id}/${s}#${r + 1}  attempts ${res.attempts}  $${res.usd.toFixed(4)}  (total $${spent.toFixed(2)})${res.ok ? "" : "  " + res.errors[0]}`);
       return res;
     } catch (e) {

@@ -92,6 +92,12 @@ export function generateMapped(program: Program, dev = false): { js: string; mar
       pages.push(`{ path: ${JSON.stringify(d.path ?? "/" + d.name.toLowerCase())}, comp: ${d.name}${chain.length ? `, layouts: [${chain.join(", ")}]` : ""}${d.requires ? `, requires: ${JSON.stringify(d.requires)}` : ""} }`);
     }
   }
+  // No `page` at all: the app is its root component (`App`, or the last one that takes no props).
+  if (!pages.length) {
+    const comps = program.decls.filter((d): d is ComponentDecl => d.kind === "Component" && !d.layout && d.params.every((p) => p.default));
+    const root = comps.find((c) => c.name === "App") ?? comps[comps.length - 1];
+    if (root) pages.push(`{ path: "/", comp: ${root.name} }`);
+  }
   out.push(`export const routes = [${pages.join(", ")}];`);
   out.push("export const start = (el, base) => $.start(routes, el, base);", "");
   return { js: out.join("\n"), marks };
@@ -563,6 +569,23 @@ class ComponentGen {
         // `let found = cart.find(...)`: mutating `found` must still notify `cart`.
         scope.vars.set(s.name, { kind: "let", sig: this.signalOf(s.init, scope) });
       } else if (s.kind === "Return") this.emit(s.value ? `return ${this.expr(s.value, scope)};` : "return;");
+      else if (s.kind === "Loop") {
+        const body = scope.child();
+        body.vars.set(s.name, { kind: "let" });
+        this.emit(`for (let ${s.name} = ${this.expr(s.init, scope)}; ${this.expr(s.cond, body)}; ${this.expr(s.update, body)}) {`);
+        this.nested(() => this.stmts(s.body, body));
+        this.emit("}");
+      }
+      else if (s.kind === "For") {
+        const body = scope.child();
+        // Changing an item in place (`for t in todos { t.done = true }`) notifies the list's state.
+        body.vars.set(s.item, { kind: "let", sig: this.signalOf(s.list, scope) });
+        if (s.index) body.vars.set(s.index, { kind: "let" });
+        const list = this.expr(s.list, scope);
+        this.emit(s.index ? `for (const [${s.index}, ${s.item}] of (${list}).entries()) {` : `for (const ${s.item} of ${list}) {`);
+        this.nested(() => this.stmts(s.body, body));
+        this.emit("}");
+      }
       else if (s.kind === "Cleanup") {
         this.emit("$.onDispose(() => {");
         this.nested(() => this.stmts(s.body, scope.child()));
@@ -733,6 +756,8 @@ function hasAwait(stmts: Stmt[]): boolean {
     if (s.kind === "Return") return s.value !== null && exprHasAwait(s.value);
     if (s.kind === "Try") return hasAwait(s.body) || hasAwait(s.handler);
     if (s.kind === "Cleanup") return false;
+    if (s.kind === "Loop") return hasAwait(s.body);
+    if (s.kind === "For") return exprHasAwait(s.list) || hasAwait(s.body);
     return exprHasAwait(s.cond) || hasAwait(s.then) || (s.else !== null && hasAwait(s.else));
   });
 }

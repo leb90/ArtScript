@@ -55,7 +55,7 @@ fn add(x) {                      // function; body = JS statements
 - Assigning to a `state` updates the UI: `count++`, `name = "x"`, `users.push(u)`, `user.name = "x"`, also through a fn parameter (`fn sell(p) { p.stock-- }`).
 - A component that assigns its prop (`items = items.filter(...)`) changes the parent's state: pass a state (`List items=items`).
 - No hooks, setters or manual dependencies.
-- Statements: expression, `let x = ...`, `if cond { } else { }`, `return`, `try { } catch (e) { }`.
+- Statements: expression, `let x = ...`, `if cond { } else { }`, `for x in xs { }`, `return`, `try { } catch (e) { }`.
 - For DOM libraries (charts, maps), timers and subscriptions:
   ```
   ref box                          // the element marked `ref=box` (set before mount runs)

@@ -42,7 +42,8 @@ export type ApiDecl = { kind: "Api"; name: string; model: string; access: ApiAcc
 
 // `auth users`: email + password accounts on that api (signup, login, logout, me).
 // `auth users with google, github`: also sign-in through those providers (OAuth).
-export type AuthDecl = { kind: "Auth"; name: string; api: string; providers?: string[]; loc: Loc };
+// `model`: written as `auth users: User`, which also declares the api (the parser adds it).
+export type AuthDecl = { kind: "Auth"; name: string; api: string; model?: string; providers?: string[]; loc: Loc };
 
 // `server fn name(params) { ... }`: runs on the server with `db`, `me` and `fail`; called as `server.name()`.
 // `every`: a scheduled job (`server job cleanup every "1h" { ... }`): runs on the server on that
@@ -115,7 +116,11 @@ export type Stmt =
   | { kind: "If"; cond: Expr; then: Stmt[]; else: Stmt[] | null; loc: Loc }
   | { kind: "Return"; value: Expr | null; loc: Loc }
   | { kind: "Try"; body: Stmt[]; param: string | null; handler: Stmt[]; loc: Loc }
-  | { kind: "Cleanup"; body: Stmt[]; loc: Loc };
+  | { kind: "Cleanup"; body: Stmt[]; loc: Loc }
+  // `for x in xs { }` / `for x, i in xs { }`: runs the body for each item, in order.
+  | { kind: "For"; item: string; index: string | null; list: Expr; body: Stmt[]; loc: Loc }
+  // `for (let i = 0; i < n; i++) { }`, as in JavaScript.
+  | { kind: "Loop"; name: string; init: Expr; cond: Expr; update: Expr; body: Stmt[]; loc: Loc };
 
 // ---------- Expressions (a JavaScript subset) ----------
 

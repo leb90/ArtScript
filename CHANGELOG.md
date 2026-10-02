@@ -19,6 +19,10 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 - Faster in-place updates: a callback over a state (`rows.forEach(r => r.done = true)`) notifies that state once instead of every state per item, and a list whose rows stayed in place skips reconciling ("update every 10th row" in js-framework-benchmark: 26.7 → 13 ms, 1.1× Solid).
 - A row of a `computed` changed in place (`for t in open { button "x" -> t.done = true }`) now updates the state it came from.
 - `table` renders inside a block of its own: a wide table scrolls sideways instead of stretching the page, and Chrome lays it out faster than as a direct child of a `column` or `card`. An empty `text ""` (an icon-font class) gets `aria-hidden="true"`.
+- `for x in xs { }` (and `for x, i in xs`) in functions and actions; JavaScript's `for (const x of xs)` and `for (let i = 0; i < n; i++)` are accepted too.
+- Accepted as models write them (from the pilot of the 1.0 measurement; `art fmt` writes the canonical form): lists and objects with one item per line and no commas, `fn save { }`, `let x = ...` in a component (a `computed`), `ref timer = null` (a `state`), `computed x = { ...statements }`, the content after a prop (`image alt="x" user.photo`), `title ... bold`, `auth users: User` (declares the api too), `auth users with password`, a page with the same name as a model, an app with no `page` (its root component is shown), and `else` in an `art patch` path without its `if`.
+- A call written where an element goes (`navigate("/")` in the view) is its own error, with where it belongs. A write that fails outside a `try` shows a toast instead of failing silently.
+- Fixed: an optional state narrowed by `if x == null { return }` didn't accept `x = null` afterwards.
 - `use "x" { a as b }` renames an import. `URL`, `history`, `Blob`, `FormData` and other browser globals are known to the checker.
 - `new` expressions (`new Chart(box, opts)`); `process` and `Buffer` in server functions; setting properties of a `ref` (`box.innerHTML = html`).
 - A button with `->` inside a `form` only runs its action (it no longer submits the form too).
@@ -39,7 +43,7 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 - An ArtScript implementation for js-framework-benchmark (`benchmarks/js-framework-benchmark`), passing its `isKeyed` check.
 - Dev tools in `art dev` (Alt+A): every mounted component with its props, states, computed and data, live; states can be edited, updates flash on the page, and `__art.snapshot()` gives the same to the console or an agent. Not in production builds.
 - A tree-sitter grammar (`editors/tree-sitter-artscript`) for highlighting in Zed, Neovim and Helix; CI checks that every `.art` file in the repository parses with it.
-- Cost eval: 11 more tasks (50 in total) with reference apps in the five stacks: pagination, a sortable table, a stopwatch, a layout with routes, the query string, a multi-step form, inline editing, and full-stack edits, server-side logic, server-side search with pages, and accounts with private data. `node benchmarks/eval/check-refs.ts <task>` checks a task's references alone.
+- Cost eval: 11 more tasks (50 in total) with reference apps in the five stacks: pagination, a sortable table, a stopwatch, a layout with routes, the query string, a multi-step form, inline editing, and full-stack edits, server-side logic, server-side search with pages, and accounts with private data. `node benchmarks/eval/check-refs.ts <task>` checks a task's references alone. `--checkpoint <name>` saves every finished run as it ends and continues from there.
 - `art init` adds a Cursor rule (`.cursor/rules/artscript.mdc`).
 - `art build --base /sub` for apps served under a subpath; same-page `#section` links scroll, and links to files that aren't routes load them.
 - Several files may `use` the same names; the compiler also bundles for the browser without shims.

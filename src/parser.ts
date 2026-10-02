@@ -147,6 +147,10 @@ class Parser {
     this.skipNl();
     while (this.tok.t !== "eof") {
       const d = this.noted(() => this.recover(1, () => this.decl()));
+      if (d?.kind === "Auth" && d.model) {
+        if (!decls.some((x) => x.kind === "Api" && x.name === d.api)) decls.push({ kind: "Api", name: d.api, model: d.model, access: "public", modelLoc: d.loc, loc: d.loc });
+        delete d.model;
+      }
       if (d) decls.push(d);
       this.skipNl();
     }
@@ -162,9 +166,13 @@ class Parser {
       if (this.is("auth")) {
         const loc = this.next().loc;
         const api = this.ident("the users api").v;
+        // `auth users: User` declares the api too (fmt writes `api users: User` and `auth users`).
+        const model = this.eat(":") ? this.ident("the users model") : null;
         const providers: string[] = [];
         if (this.eat("with")) do providers.push(this.ident("a sign-in provider (google, github)").v); while (this.eat(","));
-        return { kind: "Auth", name: "auth", api, ...(providers.length ? { providers } : {}), loc };
+        // `with password` / `with email`: what `auth` already does (models write it); not a provider.
+        for (const p of ["password", "email"]) if (providers.includes(p)) providers.splice(providers.indexOf(p), 1);
+        return { kind: "Auth", name: "auth", api, ...(model ? { model: model.v } : {}), ...(providers.length ? { providers } : {}), loc };
       }
       if (this.is("server")) return this.serverFn();
       if (this.is("component") || this.is("page") || this.is("layout")) return this.component();
@@ -281,6 +289,7 @@ class Parser {
   // `(a, b: Number, c = 1)`: TypeScript-style annotations are accepted and dropped (the checker
   // infers types); defaults are kept.
   fnParams(): { params: string[]; defaults: (Expr | null)[] } {
+    if (this.is("{")) return { params: [], defaults: [] }; // `fn save { }`: no parameters
     this.expect("(");
     const params: string[] = [], defaults: (Expr | null)[] = [];
     while (!this.is(")")) {
@@ -391,6 +400,8 @@ class Parser {
   memberAhead(): boolean {
     if (this.is("state") || this.is("computed") || this.is("fn") || this.is("data")) return true;
     if (this.is("ref")) return this.peek().t === "id";
+    // `let x = ...` in a component is a derived value: a `computed` (fmt writes it that way).
+    if (this.is("let") || this.is("const")) return this.peek().t === "id" && this.is("=", this.peek(2));
     if (this.is("style") && this.peek().t === "css") return true;
     return (this.is("mount") || this.is("effect")) && this.is("{", this.peek());
   }
@@ -402,7 +413,10 @@ class Parser {
       return { kind: kw.v === "mount" ? "Mount" : "Effect", name: kw.v, body: this.block(), loc: kw.loc };
     }
     const name = this.ident().v;
+    // `ref timer = null`: a variable, not an element: a `state` (fmt writes it that way).
+    if (kw.v === "ref" && this.is("=")) kw.v = "state";
     if (kw.v === "ref") return { kind: "Ref", name, loc: kw.loc };
+    if (kw.v === "let" || kw.v === "const") kw.v = "computed";
     if (kw.v === "state") {
       const type = this.eat(":") ? this.type() : null;
       this.expect("=");
@@ -410,7 +424,12 @@ class Parser {
     }
     if (kw.v === "computed" || kw.v === "data") {
       this.expect("=");
-      const expr = this.expr();
+      // `computed x = { if a { return 1 } return 2 }`: a block with statements is called in place.
+      let ahead = 1;
+      while (this.peek(ahead).t === "nl") ahead++;
+      const next = this.peek(ahead);
+      const block = this.is("{") && next.t === "id" && ["if", "let", "const", "return", "try", "for"].includes(next.v);
+      const expr: Expr = block ? { kind: "Call", callee: { kind: "Arrow", params: [], body: this.block(), loc: kw.loc }, args: [], optional: false, loc: kw.loc } : this.expr();
       if (kw.v === "data" && this.is("live")) {
         this.next();
         return { kind: "Data", name, expr, live: true, loc: kw.loc };
@@ -487,9 +506,23 @@ class Parser {
     const propAhead = () => this.tok.t === "id" && (this.is("=", t(1)) || (this.is(":", t(1)) && t(2)?.t === "id" && this.is("=", t(3))));
     const takesContent = !isComponent && tag.v !== "meta" && !(spec && spec.content === null);
 
+    // A call where an element goes (`navigate("/")`, `if me { load() }` in the view): statements
+    // belong in an action, a fn or a hook.
+    if (!spec && !isComponent && this.is("(") && this.tok.loc.col === tag.loc.col + tag.v.length) {
+      throw new CompileError(diag("STATEMENT_IN_VIEW", `'${tag.v}(...)' is a statement, and the view only holds elements`, tag.loc, {
+        expr: tag.v, expected: "a UI element, 'if' or 'for'", actual: "a call",
+        fixes: [`effect { ${tag.v}(...) }  // re-runs when the states it reads change`, `mount { ${tag.v}(...) }  // once`, `button "..." -> ${tag.v}(...)`],
+      }));
+    }
     if (takesContent && !atEnd() && !propAhead()) content = this.ternary();
     const readProps = () => {
       while (!atEnd()) {
+        // The content written after a prop (`image alt="Photo" user.photo.url`): fmt moves it first.
+        const n1 = this.peek();
+        if (takesContent && content === null && (this.tok.t === "str" || this.tok.t === "tpl" || (this.tok.t === "id" && n1.t === "op" && [".", "?.", "(", "["].includes(n1.v)))) {
+          content = this.ternary();
+          continue;
+        }
         const p = this.ident("a prop (name=value) or flag");
         // `on:keydown=save()` (an event handler) and `md:cols=3` (from a screen width up).
         if (this.is(":") && this.peek().t === "id") {
@@ -548,6 +581,28 @@ class Parser {
         els = this.is("if") ? [this.stmt()] : this.block();
       }
       return { kind: "If", cond, then, else: els, loc: t.loc };
+    }
+    if (this.is("for")) {
+      this.next();
+      // JavaScript's forms are accepted too: `for (const x of xs)`, `for (let i = 0; i < n; i++)`.
+      const paren = this.eat("(");
+      if (this.is("let") || this.is("const")) this.next();
+      const item = this.ident("a loop variable").v;
+      if (this.eat("=")) {
+        const init = this.expr();
+        this.expect(";");
+        const cond = this.expr();
+        this.expect(";");
+        const update = this.expr();
+        if (paren) this.expect(")");
+        return { kind: "Loop", name: item, init, cond, update, body: this.block(), loc: t.loc };
+      }
+      const index = this.eat(",") ? this.ident("an index variable").v : null;
+      if (!this.is("in") && !this.is("of")) this.fail("'in'");
+      this.next();
+      const list = this.expr();
+      if (paren) this.expect(")");
+      return { kind: "For", item, index, list, body: this.block(), loc: t.loc };
     }
     if (this.is("try")) {
       this.next();
@@ -726,7 +781,8 @@ class Parser {
       const items: Expr[] = [];
       while (!this.is("]")) {
         items.push(this.spreadOrExpr());
-        if (!this.eat(",")) break;
+        // One item per line without commas (models write lists of objects that way): fmt adds them.
+        if (!this.eat(",") && !(this.tok.t !== "eof" && this.tok.loc.line > this.toks[this.i - 1].loc.line)) break;
       }
       this.expect("]");
       return { kind: "Array", items, loc };
@@ -743,8 +799,9 @@ class Parser {
           if (this.eat(":")) { this.skipNl(); props.push({ key: k.v, value: this.expr() }); }
           else props.push({ key: k.v, value: { kind: "Ident", name: k.v, loc: k.loc } });
         }
+        const newLine = this.tok.t === "nl";
         this.skipNl();
-        if (!this.eat(",")) break;
+        if (!this.eat(",") && !newLine) break; // one property per line without commas is accepted
         this.skipNl();
       }
       this.skipNl();

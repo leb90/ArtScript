@@ -210,8 +210,10 @@ class Checker {
     const seen = new Set<string>();
     for (const d of this.program.decls) {
       if (d.kind === "Use") continue; // several files may use the same module
-      if (seen.has(d.name)) this.err("DUPLICATE_NAME", `'${d.name}' is already declared`, d.loc, { expr: d.name });
-      seen.add(d.name);
+      // A model is a type and a component is an element: `model Product` and `page Product` coexist.
+      const space = d.kind === "Model" ? "type " : "";
+      if (seen.has(space + d.name)) this.err("DUPLICATE_NAME", `'${d.name}' is already declared`, d.loc, { expr: d.name });
+      seen.add(space + d.name);
       if (d.kind === "Model") this.models.set(d.name, {});
     }
     for (const d of this.program.decls) {
@@ -257,7 +259,7 @@ class Checker {
       this.oauth = d.providers ?? [];
       const model = this.apis.get(d.api);
       if (!model) {
-        this.err("UNKNOWN_TYPE", `\`auth\` needs a users api: '${d.api}' doesn't exist`, d.loc, { expr: d.api, fixes: suggest(d.api, this.apis.keys()) });
+        this.err("UNKNOWN_TYPE", `\`auth\` needs a users api: '${d.api}' doesn't exist`, d.loc, { expr: d.api, fixes: [...suggest(d.api, this.apis.keys()), `api ${d.api}: User  // before \`auth ${d.api}\``] });
         continue;
       }
       const decl = this.program.decls.find((x): x is ModelDecl => x.kind === "Model" && x.name === model);
@@ -762,6 +764,20 @@ class Checker {
         // The caught error: `e.message` always exists; api errors also carry `status` and `details`.
         if (s.param) h.vars.set(s.param, { kind: "let", ty: { k: "obj", fields: { message: STR, status: NUM, details: ANY } } });
         this.stmts(s.handler, h);
+      } else if (s.kind === "Loop") {
+        const body = new Scope(scope);
+        body.vars.set(s.name, { kind: "let", ty: this.infer(s.init, scope) });
+        this.infer(s.cond, body);
+        this.infer(s.update, body);
+        this.stmts(s.body, body);
+      } else if (s.kind === "For") {
+        let lt = this.infer(s.list, scope);
+        if (lt.k === "opt") lt = lt.of;
+        if (lt.k !== "list" && lt.k !== "any") this.err("NOT_A_LIST", "`for` needs a list", s.list.loc, { expr: printExpr(s.list), expected: "T[]", actual: show(lt) });
+        const body = new Scope(scope);
+        body.vars.set(s.item, { kind: "let", ty: lt.k === "list" ? lt.of : ANY });
+        if (s.index) body.vars.set(s.index, { kind: "let", ty: NUM });
+        this.stmts(s.body, body);
       } else if (s.kind === "Cleanup") {
         if (!this.inHook) this.err("BAD_CLEANUP", "`cleanup` only goes inside `mount { }` or `effect { }`", s.loc, { expr: "cleanup", fixes: ["mount {\n  ...\n  cleanup { ... }\n}"] });
         this.stmts(s.body, new Scope(scope));
@@ -855,7 +871,10 @@ class Checker {
       return ANY;
     }
     const sym = scope.get(root.name);
-    const ty = this.infer(t, scope);
+    let ty = this.infer(t, scope);
+    // Narrowed here (`if !file { return }`), but what it accepts is its declared type (`file = null`).
+    const path = this.pathOf(t);
+    if (path !== null && scope.getNarrowed(path)) ty = opt(ty);
     if (!sym) return ty;
     const direct = t.kind === "Ident";
     // A computed can be assigned (it keeps that value until a dependency changes); a prop assigned
@@ -1029,6 +1048,9 @@ class Checker {
         else if (e.op !== "??=" && !(tt.k === "num" || tt.k === "any" || (e.op === "+=" && tt.k === "str"))) {
           this.err("TYPE_MISMATCH", `'${e.op}' needs a number`, e.loc, { expr: printExpr(e), expected: "Number", actual: show(tt) });
         }
+        // Assigned something that may be null: from here on it's no longer known to have a value.
+        const path = this.pathOf(e.target);
+        if (path !== null && (vt.k === "null" || vt.k === "opt") && scope.getNarrowed(path)) scope.narrowed.set(path, tt);
         return tt;
       }
       case "Array": {

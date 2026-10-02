@@ -37,6 +37,7 @@ export const CATALOG: Record<string, { code: string; desc: string }> = {
   AUTH_REQUIRED: { code: "E1040", desc: "`login` and `private` need an `auth` declaration." },
   // View
   UNKNOWN_ELEMENT: { code: "E2001", desc: "Unknown UI element or component." },
+  STATEMENT_IN_VIEW: { code: "E2005", desc: "A statement where an element goes; statements belong in an action, a fn, `mount` or `effect`." },
   UNKNOWN_PROP: { code: "E2002", desc: "Invalid prop for this element or component." },
   MISSING_PROP: { code: "E2003", desc: "A required prop is missing (component props, or `options` of select/radio/tabs)." },
   NO_ACTION: { code: "E2004", desc: "This element doesn't take an `->` action." },

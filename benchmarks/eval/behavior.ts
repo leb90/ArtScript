@@ -543,6 +543,9 @@ export function behaveMeasured(task: Task, stack: Stack, files: Files): Promise<
 export const behave = (task: Task, stack: Stack, files: Files) => behaveMeasured(task, stack, files).then((r) => r.errors);
 
 if (process.argv.includes("--worker")) {
+  // In a browser a rejected promise nobody awaits (a failed write without try/catch) is logged and
+  // the page keeps working; in Node it would end this process and read as "the app hung".
+  process.on("unhandledRejection", () => {});
   let input = "";
   for await (const chunk of process.stdin) input += chunk;
   const { task, stack, files } = JSON.parse(input);

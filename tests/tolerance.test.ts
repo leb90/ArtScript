@@ -148,3 +148,107 @@ test("every syntax error of a file is reported in one compile", () => {
   assert.deepEqual(r.diagnostics.map((d) => d.loc.line), [3, 8, 15]);
   assert.ok(r.diagnostics.every((d) => d.type === "UNEXPECTED_TOKEN"));
 });
+
+// ---------- from the pilot of the 1.0 measurement (2026-10-02): what three models wrote ----------
+
+test("lists and objects with one item per line and no commas", () => {
+  const src = 'page P "/" {\n  state rows = [\n    { id: 1, name: "a" }\n    { id: 2, name: "b" }\n  ]\n  fn add() {\n    rows.push({\n      id: 3\n      name: "c"\n    })\n  }\n\n  text rows.length\n}\n';
+  assert.deepEqual(types(src), []);
+  assert.match(printProgram(parse(src, "t")), /state rows = \[\{ id: 1, name: "a" \}, \{ id: 2, name: "b" \}\]/);
+  assert.match(printProgram(parse(src, "t")), /rows\.push\(\{ id: 3, name: "c" \}\)/);
+});
+
+test("for loops in functions: over a list, and JavaScript's forms", async () => {
+  const src = `page P "/" {
+  state rows = [{ id: 1, done: false }, { id: 2, done: false }]
+  state total = 0
+  fn finish() {
+    for r, i in rows {
+      r.done = i == 0
+    }
+    for (const r of rows) {
+      total += r.id
+    }
+    for (let i = 1; i <= 3; i++) {
+      total += i
+    }
+  }
+
+  button "go" -> finish()
+  for r in rows key r.id {
+    text \`\${r.id}:\${r.done}\`
+  }
+  text \`total \${total}\` id="total"
+}
+`;
+  assert.deepEqual(types(src), []);
+  const printed = printProgram(parse(src, "t"));
+  assert.match(printed, /for r, i in rows \{/);
+  assert.match(printed, /for r in rows \{\n      total \+= r\.id/);
+  assert.match(printed, /for \(let i = 1; i <= 3; i\+\+\) \{/);
+  assert.equal(printProgram(parse(printed, "t")), printed);
+  const dir = mkdtempSync(join(tmpdir(), "art-for-"));
+  writeFileSync(join(dir, "app.js"), compile([{ file: "app.art", src }]).js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    (await import(pathToFileURL(join(dir, "app.js")).href)).start(document.getElementById("app"));
+    document.querySelector("button")!.click();
+    assert.equal(document.getElementById("total")!.textContent, "total 9");
+    assert.match(document.body.textContent!, /1:true2:false/);
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+  // Haiku's own form gets the fix.
+  const bad = compile([{ file: "a.art", src: 'page P "/" {\n  fn f() {\n    for i = 1; i <= 3; i++ {\n    }\n  }\n}\n' }]);
+  assert.deepEqual(bad.diagnostics, []);
+});
+
+test("members as models write them: fn without (), let, ref with a value, a computed with a block", () => {
+  const src = 'page P "/" {\n  state n = 0\n  ref timer = null\n  let double = n * 2\n  computed label = {\n    if n > 1 { return "many" }\n    return "few"\n  }\n  fn reset {\n    n = 0\n    timer = null\n  }\n\n  title label bold\n  text double\n}\n';
+  assert.deepEqual(types(src), []);
+  const out = printProgram(parse(src, "t"));
+  assert.match(out, /state timer = null/);
+  assert.match(out, /computed double = n \* 2/);
+  assert.match(out, /fn reset\(\) \{/);
+  assert.match(out, /computed label = \(\(\) => \{/);
+  assert.deepEqual(types(out), []);
+});
+
+test("a model and a page may share a name; auth users: User declares the api; with password is the default", () => {
+  const src = 'model Product {\n  id: ID\n  name: String\n}\n\npage Product "/" {\n  state p: Product? = null\n\n  text (p?.name ?? "")\n}\n';
+  assert.deepEqual(types(src), []);
+  const auth = 'model User {\n  id: ID\n  email: Email\n  password: String\n}\n\nauth users: User with password\n\npage P "/" {\n  data me = auth.me()\n\n  text (me?.email ?? "")\n}\n';
+  assert.deepEqual(types(auth), []);
+  assert.match(printProgram(parse(auth, "t")), /api users: User\n\nauth users\n/);
+});
+
+test("the content after a prop; a statement in the view explains where it goes", () => {
+  const src = 'page P "/" {\n  state url = { a: "/x.png" }\n\n  image alt="Photo" url.a width=20\n}\n';
+  assert.deepEqual(types(src), []);
+  assert.match(printProgram(parse(src, "t")), /image url\.a alt="Photo" width=20/);
+  const r = compile([{ file: "a.art", src: 'page P "/" {\n  state me = 1\n\n  if me {\n    navigate("/")\n  }\n}\n' }]);
+  assert.equal(r.diagnostics[0].type, "STATEMENT_IN_VIEW");
+  assert.match(r.diagnostics[0].fixes![0], /^effect \{ navigate/);
+});
+
+test("an optional state narrowed by an early return still takes null", () => {
+  const src = 'page P "/" {\n  state picked: File? = null\n  state name = ""\n  fn upload() {\n    if picked == null { return }\n    name = picked.name\n    picked = null\n  }\n\n  file picked\n  button "Up" -> upload()\n}\n';
+  assert.deepEqual(types(src), []);
+  // And after that assignment it may be null again.
+  const after = src.replace("picked = null\n", "picked = null\n    name = picked.name\n");
+  assert.deepEqual(types(after), ["POSSIBLY_EMPTY"]);
+});
+
+test("an app without pages shows its root component", () => {
+  const js = compile([{ file: "a.art", src: 'component Row(n: Number) {\n  text n\n}\n\ncomponent App {\n  Row n=1\n}\n' }]).js!;
+  assert.match(js, /routes = \[\{ path: "\/", comp: App \}\]/);
+});
+
+test("art patch: a path may name `else` without its `if`", () => {
+  const src = 'component List(items: Number[]) {\n  if items.length == 0 {\n    text "Empty"\n  } else {\n    column {\n      for n in items {\n        text n\n      }\n    }\n  }\n}\n';
+  const r = applyPatch([{ file: "a.art", src }], "set List/else/column/for/text bold");
+  assert.deepEqual(r.diagnostics, []);
+  assert.match(r.files["a.art"], /text n bold/);
+});

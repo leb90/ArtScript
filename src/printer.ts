@@ -75,6 +75,8 @@ export function printStmt(s: Stmt): string {
     case "Return": return s.value ? `return ${printExpr(s.value)}` : "return";
     case "Try": return `try ${printBlockInline(s.body)} catch${s.param ? ` (${s.param})` : ""} ${printBlockInline(s.handler)}`;
     case "Cleanup": return `cleanup ${printBlockInline(s.body)}`;
+    case "Loop": return `for (let ${s.name} = ${printExpr(s.init)}; ${printExpr(s.cond)}; ${printExpr(s.update)}) ${printBlockInline(s.body)}`;
+    case "For": return `for ${s.item}${s.index ? `, ${s.index}` : ""} in ${printExpr(s.list)} ${printBlockInline(s.body)}`;
     case "If": {
       let out = `if ${printExpr(s.cond)} ${printBlockInline(s.then)}`;
       if (s.else) out += ` else ${s.else.length === 1 && s.else[0].kind === "If" ? printStmt(s.else[0]) : printBlockInline(s.else)}`;
@@ -183,6 +185,10 @@ function printStmt1(s: Stmt, depth: number, pad: string, out: string[]) {
       out.push(`${pad}}`);
     } else if (s.kind === "Cleanup") {
       out.push(`${pad}cleanup {`, ...printStmts(s.body, depth + 1), `${pad}}`);
+    } else if (s.kind === "Loop") {
+      out.push(`${pad}for (let ${s.name} = ${printExpr(s.init)}; ${printExpr(s.cond)}; ${printExpr(s.update)}) {`, ...printStmts(s.body, depth + 1), `${pad}}`);
+    } else if (s.kind === "For") {
+      out.push(`${pad}for ${s.item}${s.index ? `, ${s.index}` : ""} in ${printExpr(s.list)} {`, ...printStmts(s.body, depth + 1), `${pad}}`);
     } else if (s.kind === "Try") {
       out.push(`${pad}try {`, ...printStmts(s.body, depth + 1), `${pad}} catch${s.param ? ` (${s.param})` : ""} {`, ...printStmts(s.handler, depth + 1), `${pad}}`);
     } else out.push(pad + printStmt(s));

@@ -35,6 +35,8 @@
 (component_name) @type
 (prop name: (property_identifier) @attribute)
 (for_view item: (identifier) @variable.parameter)
+(for_statement item: (identifier) @variable.parameter)
+(for_statement index: (identifier) @variable.parameter)
 (for_view index: (identifier) @variable.parameter)
 
 ; Expressions

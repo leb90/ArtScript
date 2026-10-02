@@ -12,3 +12,4 @@ benchmarks/eval/.work/
 /resume.MD
 /ROADMAP.md
 site/
+benchmarks/eval/results/*.jsonl
