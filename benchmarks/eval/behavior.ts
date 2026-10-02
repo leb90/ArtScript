@@ -530,7 +530,7 @@ export function behaveMeasured(task: Task, stack: Stack, files: Files): Promise<
     let out = "", err = "";
     child.stdout.on("data", (d) => { out += d; });
     child.stderr.on("data", (d) => { err += d; });
-    const timer = setTimeout(() => child.kill(), 60_000);
+    const timer = setTimeout(() => child.kill("SIGKILL"), 60_000); // a hung app must not hold the run
     child.on("close", () => {
       clearTimeout(timer);
       try { resolve(JSON.parse(out.trim().split("\n").pop()!)); }

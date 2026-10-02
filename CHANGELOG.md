@@ -6,7 +6,9 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 
 - Fixed (a 0.2.1 regression): a dynamic `class=(expr)` was missing from prerendered and server-rendered HTML.
 - `h1`–`h6` and `p` (from `tag=`) have no default margin, like `title`; `novalidate` is in the static HTML; the build's size table shows the prerendered pages.
-- `art test`: `see`/`notSee` ignore what is `aria-hidden`.
+- A `title` looks the same whatever its `tag=` (`title "Orders" tag=h1`).
+- `server job`: when each job last ran is stored, so on a server that restarts or sleeps an `every "1d"` job still runs once a day (it used to wait a full interval after every start).
+- `art test`: `see`/`notSee` ignore what is `aria-hidden`; `link` finds links by their `aria-label` too. `globalThis` is known to the checker.
 
 ## 0.2.1 (2026-10-02)
 

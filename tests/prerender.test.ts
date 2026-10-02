@@ -72,7 +72,7 @@ page Missing "*" {
   execFileSync(process.execPath, ["src/cli.ts", "build", dir, "--prerender", "--site", "https://x.example"], { stdio: "pipe" });
   const home = readFileSync(join(dir, "dist", "index.html"), "utf8");
   assert.match(home, /<div class="a-column" id="box" style="gap:8px;--d: 40ms">/);
-  assert.match(home, /<h1 class="hero big">Hello<\/h1>/, "a dynamic class is in the static HTML");
+  assert.match(home, /<h1 class="a-title hero big">Hello<\/h1>/, "a dynamic class is in the static HTML");
   assert.match(home, /<form class="a-column" novalidate/);
   assert.match(home, /<link rel="icon" href="\/favicon.svg">/);
   assert.match(home, /property="og:image" content="https:\/\/x.example\/og.png"/);

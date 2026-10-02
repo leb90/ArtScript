@@ -584,16 +584,24 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
     await sendEmail(dataDir, { to: user.email, subject, text: `${action}: ${origin}${path}?token=${token}\n\nThe link works for one hour. If you didn't ask for it, ignore this email.` });
   };
 
-  // A job never overlaps itself; a failure is logged and the next run happens as scheduled.
-  const timers = Object.entries(jobs).map(([name, job]) => {
+  // A job never overlaps itself; a failure is logged and the next run happens as scheduled. When
+  // each one last ran is stored, so a server that restarts or sleeps (a host that stops idle apps)
+  // still runs an `every "1d"` job once a day: it's due as soon as its interval has passed.
+  sql.exec("CREATE TABLE IF NOT EXISTS _jobs (name TEXT PRIMARY KEY, last INTEGER NOT NULL)");
+  const timers = Object.entries(jobs).flatMap(([name, job]) => {
     let running = false;
-    const timer = setInterval(async () => {
-      if (running) return;
+    if (!sql.prepare("SELECT 1 FROM _jobs WHERE name = ?").get(name)) sql.prepare("INSERT INTO _jobs VALUES (?, ?)").run(name, Date.now());
+    const tick = async () => {
+      if (running || Date.now() - sql.prepare("SELECT last FROM _jobs WHERE name = ?").get(name).last < job.every) return;
       running = true;
+      sql.prepare("UPDATE _jobs SET last = ? WHERE name = ?").run(Date.now(), name);
       try { await job.run({ db, fail, email }); } catch (e) { console.error(`server job ${name}:`, e?.message ?? e); } finally { running = false; }
-    }, job.every);
+    };
+    const timer = setInterval(tick, Math.min(job.every, 60_000));
+    const first = setTimeout(tick, 1000); // overdue from before a restart
     timer.unref?.();
-    return timer;
+    first.unref?.();
+    return [timer, first];
   });
 
   // Api requests allowed per address per minute (ART_RATE_LIMIT, 0 = no limit); the counts of the
