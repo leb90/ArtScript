@@ -22,6 +22,7 @@ The production build: `index.html`, one minified `app.js` (the runtime and every
 - `--site https://example.com`: with `--prerender`, also `sitemap.xml` and `robots.txt`.
 - `--base /sub`: the app is served under that path.
 - `--sourcemap`: `app.js.map`, pointing back to the `.art` files.
+- `--demo`: a full-stack app as static files. The api, accounts and server fns run in the visitor's browser with the server's rules, and their data stays in that browser: a demo that costs nothing to host (any static host, no server). See [Deploying](/learn/deploy).
 
 ## Code
 

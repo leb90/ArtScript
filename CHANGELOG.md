@@ -2,6 +2,10 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## 0.2.3 (2026-10-02)
+
+- `art build --demo`: a full-stack app published as static files. The api, accounts and server fns are bundled in and run in the visitor's browser with the server's rules (validation, access, relations, `private`, `readonly`, jobs), keeping the data in that browser. For demos and examples on any static host, with no server to pay for; `art build` still makes the real one. Tests send the same requests to the server and to the demo backend and compare the answers.
+
 ## 0.2.2 (2026-10-02)
 
 - Fixed (a 0.2.1 regression): a dynamic `class=(expr)` was missing from prerendered and server-rendered HTML.

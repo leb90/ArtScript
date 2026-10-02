@@ -1,0 +1,7 @@
+# A static demo: the backend runs in the visitor's browser (art build --demo).
+[build]
+  command = "npx art build --demo"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "24"

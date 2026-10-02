@@ -17,6 +17,18 @@ Upload `dist/`. Routes are client-side, so unknown paths must serve the app:
 
 With `--prerender`, routes without params are real HTML files; serve `_app.html` (an empty shell) for the rest when the host allows choosing the fallback.
 
+## A full-stack app as a static demo: `art build --demo`
+
+```
+art build --demo
+```
+
+writes only static files: the app's api, accounts and server fns are bundled in and run **in the visitor's browser**, with the same rules as the server (validation, access, relations, `private`, `readonly`), and the data is kept in that browser's localStorage. Upload `dist/` to any static host (it includes Netlify's `_redirects` and a `404.html`), with no server and no database to pay for.
+
+It's for demos, prototypes and examples: every visitor has their own data (a "Demo · Reset" button erases it), nothing is shared between people, nothing is secret (the server fns' code is in the bundle) and emails aren't sent. The same source builds the real thing with `art build`.
+
+On Netlify, from a repository: build command `npx art build --demo`, publish directory `dist`, `NODE_VERSION=24`.
+
 ## Apps with apis: Node 24
 
 ```

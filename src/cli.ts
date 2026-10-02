@@ -17,6 +17,7 @@ import { printProgram } from "./printer.ts";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const RUNTIME = join(ROOT, "runtime", "runtime.js");
 const DEVTOOLS = join(ROOT, "runtime", "devtools.js");
+const DEMO = join(ROOT, "runtime", "demo.js");
 const SERVER_RUNTIME = join(ROOT, "runtime", "server.js");
 const SSR_RUNTIME = join(ROOT, "runtime", "ssr.js");
 // dist/Dockerfile for apps with a server: Node only (server.js is self-contained), data on a volume.
@@ -35,7 +36,7 @@ const HELP = `art ${PKG.version} — the ArtScript compiler
 
   art init <name> [--template t]                   create a new project
   art dev [path] [--port 3000]      dev server with live reload and dev tools (Alt+A in the page)
-  art build [path] [--out dist] [--sourcemap] [--base /sub] [--prerender [--site url]]
+  art build [path] [--out dist] [--sourcemap] [--base /sub] [--prerender [--site url]] [--demo]
                                     build for production (prerender: HTML per route; site: sitemap.xml)
   art check [path] [--ai]           typecheck; --ai = one JSON line per error
   art fmt [path] [--write]          canonical format (without --write it only prints)
@@ -139,15 +140,27 @@ function sizes(files: Record<string, string>): string {
 // With apis, `server` is the schema for the server runtime.
 // `dev` (art dev): the bundle includes the dev tools panel.
 let shellHead = ""; // <head> tags every page of the project gets (the favicon)
-async function buildFiles(target: string, minify: boolean, maps: "inline" | "linked" | false = minify ? false : "inline", base = "/", dev = false): Promise<{ files: Record<string, string>; server: ServerSchema | null } | { diagnostics: Diagnostic[] }> {
+// `demo` (art build --demo): the api, accounts and server fns are bundled in and run in the browser
+// (runtime/demo.js), so a full-stack app is published as static files.
+async function buildFiles(target: string, minify: boolean, maps: "inline" | "linked" | false = minify ? false : "inline", base = "/", dev = false, demo = false): Promise<{ files: Record<string, string>; server: ServerSchema | null } | { diagnostics: Diagnostic[] }> {
   const r = compile(sources(target), { dev });
   if (!r.js) return { diagnostics: r.diagnostics };
   const esbuild = await import("esbuild");
+  let demoEntry = "", demoFile = "";
+  if (demo && r.server) {
+    // Next to the project, so the `use` imports of server fns resolve as they do in `art dev`.
+    const { fns, ...schema } = r.server;
+    demoFile = resolve(projectRoot(target), ".art", `demo-fns-${Date.now()}.mjs`);
+    mkdirSync(dirname(demoFile), { recursive: true });
+    writeFileSync(demoFile, fns);
+    demoEntry = `import { installDemo as $installDemo } from ${JSON.stringify(DEMO)};\nimport { fns as $demoFns, jobs as $demoJobs } from ${JSON.stringify(demoFile)};\n$installDemo(${JSON.stringify(schema)}, $demoFns, $demoJobs, ${JSON.stringify(base.replace(/\/+$/, ""))});\n`;
+    r.server = null;
+  }
   try {
     const out = await esbuild.build({
       // The bundle starts the app itself, so index.html has no inline script (a strict CSP works).
       // The .art source map goes in as an input map, so esbuild's map points back to the .art files.
-      stdin: { contents: r.js.replace('"./runtime.js"', JSON.stringify(RUNTIME)).replace('"./devtools.js"', JSON.stringify(DEVTOOLS)) + `\nif (!globalThis.__artSSR) start(undefined, ${JSON.stringify(base)});\n` + (maps && r.map ? `//# sourceMappingURL=data:application/json;base64,${Buffer.from(r.map).toString("base64")}\n` : ""), resolveDir: resolve(projectRoot(target)), loader: "js", sourcefile: "app.art.js" },
+      stdin: { contents: demoEntry + r.js.replace('"./runtime.js"', JSON.stringify(RUNTIME)).replace('"./devtools.js"', JSON.stringify(DEVTOOLS)) + `\nif (!globalThis.__artSSR) start(undefined, ${JSON.stringify(base)});\n` + (maps && r.map ? `//# sourceMappingURL=data:application/json;base64,${Buffer.from(r.map).toString("base64")}\n` : ""), resolveDir: resolve(projectRoot(target)), loader: "js", sourcefile: "app.art.js" },
       // `import()` in a `use` module becomes its own chunk, loaded only when it runs.
       bundle: true, format: "esm", platform: "browser", write: false, minify, logLevel: "silent", sourcemap: maps || false,
       splitting: true, outdir: "/out", entryNames: "app", chunkNames: "chunks/[name]-[hash]",
@@ -164,8 +177,10 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
     const files: Record<string, string> = { "index.html": htmlShell("ArtScript", shellHead, "", !!css, base) };
     for (const f of out.outputFiles) files[relative("/out", f.path)] = f.text;
     if (css) files["app.css"] = css;
+    if (demoFile) rmSync(demoFile, { force: true });
     return { files, server: r.server };
   } catch (e: any) {
+    if (demoFile) rmSync(demoFile, { force: true });
     const loc = { file: target, line: 1, col: 1 };
     return { diagnostics: (e.errors ?? [{ text: String(e) }]).map((x: any) => ({ code: "E1050", type: "UNKNOWN_MODULE", msg: x.text, loc })) };
   }
@@ -206,7 +221,8 @@ switch (cmd) {
     const outDir = (flag("--out") as string) ?? join(projectRoot(target), "dist");
     // --base /sub: the app is served under that path (GitHub Pages project sites, a proxy prefix).
     const base = `/${((flag("--base") as string | undefined) ?? "").replace(/^\/+|\/+$/g, "")}/`.replace("//", "/");
-    const r = await buildFiles(target, true, flags.has("--sourcemap") ? "linked" : false, base);
+    const demo = flags.has("--demo");
+    const r = await buildFiles(target, true, flags.has("--sourcemap") ? "linked" : false, base, false, demo);
     if ("diagnostics" in r) { report(r.diagnostics, false); process.exit(1); }
     mkdirSync(outDir, { recursive: true });
     for (const [f, s] of Object.entries(r.files)) {
@@ -248,6 +264,12 @@ switch (cmd) {
     }
     const pub = join(projectRoot(target), "public");
     if (isDir(pub)) cpSync(pub, outDir, { recursive: true });
+    if (demo) {
+      // Static hosts: unknown paths get the app (Netlify reads _redirects, others serve 404.html).
+      if (!existsSync(join(outDir, "_redirects"))) writeFileSync(join(outDir, "_redirects"), `${base}* ${base}index.html 200\n`);
+      if (!existsSync(join(outDir, "404.html"))) writeFileSync(join(outDir, "404.html"), r.files["index.html"]);
+      console.log("demo: the api, accounts and server fns run in the visitor's browser (their data stays there); publish this folder on any static host");
+    }
     console.log(`build ok → ${relative(process.cwd(), outDir) || outDir}\n${sizes(r.files)}`);
     if (r.server) {
       // One self-contained file: the server runtime and the npm packages server fns use are bundled

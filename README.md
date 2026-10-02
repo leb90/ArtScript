@@ -141,6 +141,8 @@ claude mcp add artscript -- npx art mcp
 
 The website, [leb90.github.io/ArtScript](https://leb90.github.io/ArtScript/), is itself an ArtScript app ([website/](website)): guides, the spec, the benchmarks, a playground with the compiler running in the browser, and `llms.txt` plus every page as Markdown for AI agents. `npm run site` builds it into `site/`.
 
+`art build --demo` publishes a full-stack app as static files: the api, accounts and server fns run in the visitor's browser (their data stays there), so a demo costs nothing to host.
+
 Official components as source you can change (like shadcn/ui): `art add DataTable Pagination ConfirmButton SearchBox Stat EmptyState`.
 
 Editors: `art lsp` is a language server (live errors with the compiler's fixes, formatting, completion) for any editor with LSP; [editors/vscode](editors/vscode) is a VS Code extension with highlighting that uses it, and [editors/tree-sitter-artscript](editors/tree-sitter-artscript) is a tree-sitter grammar (highlighting in Zed, Neovim and Helix). In `art dev`, Alt+A opens the dev tools: mounted components with their states, live.
