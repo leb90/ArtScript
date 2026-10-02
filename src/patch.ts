@@ -465,7 +465,7 @@ function setParams(comp: ComponentDecl, items: string, loc: Loc) {
     params = parseParams(rest, PATCH_FILE, loc.line);
   } catch (e) {
     if (rest.includes(",")) throw e;
-    params = parseParams(rest.split(/\s+(?=[A-Za-z_]\w*\s*(?::|$|\s+[A-Za-z_]\w*\s*:))/).join(", "), PATCH_FILE, loc.line);
+    params = parseParams(rest.split(/(?<![:=,])\s+(?=[A-Za-z_]\w*\s*(?::|$|\s+[A-Za-z_]\w*\s*:))/).join(", "), PATCH_FILE, loc.line);
   }
   for (const np of params) {
     const i = comp.params.findIndex((p) => p.name === np.name);

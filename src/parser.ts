@@ -61,6 +61,7 @@ class Parser {
   toks: Token[];
   i = 0;
   errors: Diagnostic[] | null = null; // collecting (parseAll) instead of stopping at the first error
+  hoisted: Decl[] = []; // `server fn` written inside a component: it's a top-level declaration
   comments: Comment[];
   ci = 0; // comments before index ci are attached
   constructor(toks: Token[], comments: Comment[] = []) {
@@ -154,6 +155,7 @@ class Parser {
       if (d) decls.push(d);
       this.skipNl();
     }
+    decls.push(...this.hoisted);
     const rest = this.lead(Infinity);
     return { kind: "Program", decls, ...(rest ? { comments: rest } : {}) };
   }
@@ -177,6 +179,13 @@ class Parser {
       if (this.is("server")) return this.serverFn();
       if (this.is("component") || this.is("page") || this.is("layout")) return this.component();
       if (this.is("test") && this.peek().t === "str") return this.test();
+      // `state` outside a component: states live in one; a layout's state is shared by its pages.
+      if ((this.is("state") || this.is("computed") || this.is("let") || this.is("const")) && this.peek().t === "id") {
+        throw new CompileError(diag("UNEXPECTED_TOKEN", `\`${this.tok.v}\` goes inside a component, page or layout`, this.tok.loc, {
+          expected: "a declaration", actual: `'${this.tok.v}'`,
+          fixes: [`move it into the component that uses it`, `shared by several pages: put it in their layout (\`layout Main { state ${this.peek().v} = ... }\`)`],
+        }));
+      }
       return this.fail("'use', 'model', 'api', 'auth', 'server fn', 'component', 'page' or 'test'");
     }
   }
@@ -216,7 +225,14 @@ class Parser {
   api(): ApiDecl {
     const loc = this.next().loc;
     const name = this.ident("an api name").v;
-    this.expect(":");
+    if (!this.is(":")) {
+      const plural = name[0].toLowerCase() + name.slice(1) + "s";
+      throw new CompileError(diag("UNEXPECTED_TOKEN", "an api is `api <name>: <Model>`", this.tok.loc, {
+        expected: "':'", actual: this.tok.t === "nl" || this.tok.t === "eof" ? "a line break" : `'${this.tok.v}'`,
+        fixes: [/^[A-Z]/.test(name) ? `api ${plural}: ${name}${this.tok.t === "id" ? " " + this.tok.v : ""}  // then api.${plural}.list()` : `api ${name}: Model`],
+      }));
+    }
+    this.next();
     const model = this.ident("the api's model");
     let access: ApiAccess = "public";
     if (this.is("login") || this.is("private") || this.is("admin")) access = this.next().v as ApiAccess;
@@ -305,6 +321,7 @@ class Parser {
   // A prop value: a literal, name, call or `(expr)`, and (as LLMs write) a comparison or other
   // binary expression right after it: `muted=error == ""`, `disabled=n > 3`.
   propValue(): Expr {
+    if (this.arrowAhead()) return this.arrow(); // `onAdd=(a, b) => add(a, b)` without parentheses around it
     const first = this.unary();
     const t = this.tok;
     if (t.t !== "op" || BINARY_PREC[t.v] === undefined) return first;
@@ -330,6 +347,19 @@ class Parser {
         else this.ident("a return type");
       }
       return { name: "Fn", list: false, optional: this.eat("?"), loc };
+    }
+    // An inline object type (`{ id: String, qty: Number }[]`) is `Any`.
+    if (this.is("{")) {
+      const loc = this.tok.loc;
+      for (let depth = 0; ;) {
+        const t = this.next();
+        if (t.t === "eof") this.fail("'}'");
+        if (t.v === "{") depth++;
+        else if (t.v === "}" && --depth === 0) break;
+      }
+      const list = this.is("[") && this.is("]", this.peek());
+      if (list) this.i += 2;
+      return { name: "Any", list, optional: this.eat("?"), loc };
     }
     const t = this.ident("a type");
     if (t.v === "Function" || t.v === "void") t.v = t.v === "void" ? "Any" : "Fn";
@@ -387,7 +417,10 @@ class Parser {
       // A bad member or view line is reported and the next line of the component is parsed.
       const col = this.tok.loc.col;
       this.recover(col, () => {
-        if (this.memberAhead()) members.push(this.noted(() => this.member()));
+        if (this.is("server") && (this.is("fn", this.peek()) || this.is("job", this.peek()))) this.hoisted.push(this.serverFn());
+        // `view { ... }` around the view (other frameworks have it): its content is the view.
+        else if (this.is("view") && this.is("{", this.peek())) { this.next(); view.push(...this.viewBlock()); }
+        else if (this.memberAhead()) members.push(this.noted(() => this.member()));
         else view.push(this.noted(() => this.viewNode()));
       });
       this.skipSep();
@@ -401,7 +434,7 @@ class Parser {
     if (this.is("state") || this.is("computed") || this.is("fn") || this.is("data")) return true;
     if (this.is("ref")) return this.peek().t === "id";
     // `let x = ...` in a component is a derived value: a `computed` (fmt writes it that way).
-    if (this.is("let") || this.is("const")) return this.peek().t === "id" && this.is("=", this.peek(2));
+    if (this.is("let") || this.is("const")) return this.peek().t === "id" && (this.is("=", this.peek(2)) || this.is(":", this.peek(2)));
     if (this.is("style") && this.peek().t === "css") return true;
     return (this.is("mount") || this.is("effect")) && this.is("{", this.peek());
   }
@@ -417,10 +450,20 @@ class Parser {
     if (kw.v === "ref" && this.is("=")) kw.v = "state";
     if (kw.v === "ref") return { kind: "Ref", name, loc: kw.loc };
     if (kw.v === "let" || kw.v === "const") kw.v = "computed";
+    if (kw.v === "computed" && this.eat(":")) this.type(); // `let total: Number = ...`: annotation dropped
     if (kw.v === "state") {
       const type = this.eat(":") ? this.type() : null;
+      // `state picked: File?` / `state rows: Row[]` without a value start as null / [].
+      if (type && (type.optional || type.list) && !this.is("=")) {
+        return { kind: "State", name, type, init: type.list && !type.optional ? { kind: "Array", items: [], loc: kw.loc } : { kind: "Null", loc: kw.loc }, loc: kw.loc };
+      }
       this.expect("=");
       return { kind: "State", name, type, init: this.expr(), loc: kw.loc };
+    }
+    // `data products = [...]`: a literal isn't loaded from anywhere: a `state`.
+    if (kw.v === "data" && this.is("=") && (this.is("[", this.peek()) || this.is("{", this.peek()))) {
+      this.next();
+      return { kind: "State", name, type: null, init: this.expr(), loc: kw.loc };
     }
     if (kw.v === "computed" || kw.v === "data") {
       this.expect("=");
@@ -429,7 +472,7 @@ class Parser {
       while (this.peek(ahead).t === "nl") ahead++;
       const next = this.peek(ahead);
       const block = this.is("{") && next.t === "id" && ["if", "let", "const", "return", "try", "for"].includes(next.v);
-      const expr: Expr = block ? { kind: "Call", callee: { kind: "Arrow", params: [], body: this.block(), loc: kw.loc }, args: [], optional: false, loc: kw.loc } : this.expr();
+      const expr: Expr = block ? { kind: "Call", callee: { kind: "Arrow", params: [], body: returning(this.block()), loc: kw.loc }, args: [], optional: false, loc: kw.loc } : this.expr();
       if (kw.v === "data" && this.is("live")) {
         this.next();
         return { kind: "Data", name, expr, live: true, loc: kw.loc };
@@ -458,6 +501,13 @@ class Parser {
 
   viewNode(): ViewNode {
     const t = this.tok;
+    if ((this.is("let") || this.is("const")) && this.peek().t === "id" && this.is("=", this.peek(2))) {
+      const name = this.peek().v;
+      throw new CompileError(diag("STATEMENT_IN_VIEW", "`let` can't go inside the view", t.loc, {
+        expr: name, expected: "a UI element, 'if' or 'for'", actual: "'let'",
+        fixes: [`computed ${name} = ...  // with the states and fns, before the view`, "write the expression where it's used", "inside a `for`: a component that receives the item"],
+      }));
+    }
     if (this.is("if")) {
       this.next();
       const cond = this.expr();
@@ -540,6 +590,8 @@ class Parser {
     let action: Stmt[] | null = null;
     if (this.eat("->")) {
       action = this.is("{") ? this.block() : [this.stmt()];
+      // `-> save` names the function without calling it: it's called.
+      for (const s of action) if (s.kind === "ExprStmt" && (s.expr.kind === "Ident" || s.expr.kind === "Member")) s.expr = { kind: "Call", callee: s.expr, args: [], optional: false, loc: s.expr.loc };
       // LLMs often write props after the action (`-> dec() disabled=x`); accept it, fmt moves them first.
       readProps();
     }
@@ -782,7 +834,8 @@ class Parser {
       while (!this.is("]")) {
         items.push(this.spreadOrExpr());
         // One item per line without commas (models write lists of objects that way): fmt adds them.
-        if (!this.eat(",") && !(this.tok.t !== "eof" && this.tok.loc.line > this.toks[this.i - 1].loc.line)) break;
+        // (also side by side: `["a" "b"]`)
+        if (!this.eat(",") && !(this.tok.t !== "eof" && this.tok.loc.line > this.toks[this.i - 1].loc.line) && this.tok.t !== "str" && this.tok.t !== "num") break;
       }
       this.expect("]");
       return { kind: "Array", items, loc };
@@ -810,4 +863,16 @@ class Parser {
     }
     this.fail("an expression");
   }
+}
+
+// A block used as a value (`computed x = { if a { "one" } else { "two" } }`): its last expression
+// is what it returns.
+function returning(body: Stmt[]): Stmt[] {
+  const last = body[body.length - 1];
+  if (last?.kind === "ExprStmt") body[body.length - 1] = { kind: "Return", value: last.expr, loc: last.loc };
+  else if (last?.kind === "If") {
+    returning(last.then);
+    if (last.else) returning(last.else);
+  }
+  return body;
 }

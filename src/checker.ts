@@ -259,7 +259,9 @@ class Checker {
       this.oauth = d.providers ?? [];
       const model = this.apis.get(d.api);
       if (!model) {
-        this.err("UNKNOWN_TYPE", `\`auth\` needs a users api: '${d.api}' doesn't exist`, d.loc, { expr: d.api, fixes: [...suggest(d.api, this.apis.keys()), `api ${d.api}: User  // before \`auth ${d.api}\``] });
+        this.err("UNKNOWN_TYPE", `\`auth\` needs a users api: '${d.api}' doesn't exist`, d.loc, { expr: d.api, fixes: this.models.has(d.api)
+          ? [`api ${d.api[0].toLowerCase() + d.api.slice(1)}s: ${d.api}\nauth ${d.api[0].toLowerCase() + d.api.slice(1)}s`]
+          : [...suggest(d.api, this.apis.keys()), `api ${d.api}: User  // before \`auth ${d.api}\``] });
         continue;
       }
       const decl = this.program.decls.find((x): x is ModelDecl => x.kind === "Model" && x.name === model);
@@ -346,6 +348,12 @@ class Checker {
   // ---------- routes ----------
   // Page routes are "/static/:param" or "*"; each one once. A page's layout must exist.
   routes() {
+    // A `component` that pages or layouts name as their layout is one (models write it that way).
+    for (const d of this.program.decls) {
+      if (d.kind !== "Component" || !d.layoutName) continue;
+      const target = this.program.decls.find((x) => x.kind === "Component" && x.name === d.layoutName);
+      if (target?.kind === "Component" && !target.page && !target.params.length) target.layout = true;
+    }
     const seen = new Map<string, string>();
     const layouts = this.program.decls.filter((d): d is ComponentDecl => d.kind === "Component" && !!d.layout).map((d) => d.name);
     for (const d of this.program.decls) {
@@ -925,7 +933,8 @@ class Checker {
       }
     }
     if (opts.partial) return;
-    const missing = Object.entries(fields).filter(([k, t]) => !given.has(k) && t.k !== "opt" && !opts.skip?.has(k));
+    // A list left out starts empty.
+    const missing = Object.entries(fields).filter(([k, t]) => !given.has(k) && t.k !== "opt" && t.k !== "list" && !opts.skip?.has(k));
     if (missing.length) {
       this.err("MISSING_FIELD", `missing fields of ${model}: ${missing.map((m) => m[0]).join(", ")}`, e.loc, {
         expr: printExpr(e), expected: missing.map(([k, t]) => `${k}: ${show(t)}`).join(", "),

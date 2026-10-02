@@ -314,6 +314,8 @@ function makeTable(schema, db, dataDir, name, { model, access }, backup) {
     create(body, me) {
       const row = { ...body };
       for (const [f, v] of Object.entries(defaults)) if (row[f] === undefined) row[f] = structuredClone(v);
+      // A list left out starts empty.
+      for (const [f, t] of Object.entries(fields)) if (row[f] === undefined && t.endsWith("[]")) row[f] = [];
       if (key && (row[key] === undefined || row[key] === null)) row[key] = randomUUID();
       if (access === "private" && me && me !== ALL) row.owner = String(me[userKey]);
       check(row, me);

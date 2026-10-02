@@ -22,7 +22,7 @@ const MEDIA = ["controls", "autoplay", "loop", "muted"];
 export const ELEMENTS: Record<string, ElementSpec> = {
   text: { html: "span", content: "text", action: null, children: false, props: [], flags: ["bold", "muted", "small", "large", "danger", "primary", "success"] },
   title: { html: "h2", content: "text", action: null, children: false, props: [], flags: ["bold", "muted", "small", "large"] },
-  button: { html: "button", content: "text", action: "click", children: false, props: ["disabled"], flags: ["primary", "danger", "small"] },
+  button: { html: "button", content: "text", action: "click", children: true, props: ["disabled"], flags: ["primary", "danger", "small"] },
   input: { html: "input", content: "bind", action: "enter", children: false, props: ["placeholder", "type", "disabled", "label"], flags: ["required"], attrs: ["required"] },
   textarea: { html: "textarea", content: "bind", action: null, children: false, props: ["placeholder", "rows", "disabled", "label"], flags: ["required"], attrs: ["required"] },
   select: { html: "select", content: "bind", bind: "choice", action: "change", children: false, props: ["options", "placeholder", "disabled", "label"], flags: [] },

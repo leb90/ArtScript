@@ -99,6 +99,12 @@ export function lex(src: string, file: string, startLine = 1, startCol = 1, comm
       continue;
     }
 
+    // A plain string with `${...}` is meant as a template (fmt writes the backticks).
+    if ((c === '"' || c === "'") && new RegExp(`^${c}(?:[^${c}\\\\\\n\`]|\\\\.)*\\$\\{[^}\\n]+\\}(?:[^${c}\\\\\\n\`]|\\\\.)*${c}`).test(src.slice(i))) {
+      const end = src.indexOf(c, i + 1);
+      src = src.slice(0, i) + "`" + src.slice(i + 1, end) + "`" + src.slice(end + 1);
+      continue;
+    }
     if (c === '"' || c === "'") {
       adv();
       let s = "";

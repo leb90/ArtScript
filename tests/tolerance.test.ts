@@ -252,3 +252,84 @@ test("art patch: a path may name `else` without its `if`", () => {
   assert.deepEqual(r.diagnostics, []);
   assert.match(r.files["a.art"], /text n bold/);
 });
+
+// ---------- from the Haiku run of the 1.0 measurement ----------
+
+test("an action that names a function calls it; a prop takes an arrow without parentheses", async () => {
+  const src = `component Row(onAdd: Fn) {
+  button "row" -> onAdd(1, 2)
+}
+
+page P "/" {
+  state n = 0
+  fn inc {
+    n++
+  }
+
+  button "go" -> inc
+  Row onAdd=(a, b) => n += a + b
+  text \`n \${n}\` id="n"
+}
+`;
+  assert.deepEqual(types(src), []);
+  const printed = printProgram(parse(src, "t"));
+  assert.match(printed, /button "go" -> inc\(\)/);
+  assert.match(printed, /Row onAdd=\(\(a, b\) => n \+= a \+ b\)/);
+  const dir = mkdtempSync(join(tmpdir(), "art-call-"));
+  writeFileSync(join(dir, "app.js"), compile([{ file: "app.art", src }]).js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    (await import(pathToFileURL(join(dir, "app.js")).href)).start(document.getElementById("app"));
+    for (const b of document.querySelectorAll("button")) b.click();
+    assert.equal(document.getElementById("n")!.textContent, "n 4");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});
+
+test("states without a value, inline object types, data with a literal, a typed let, a view block", () => {
+  const src = 'page P "/" {\n  state picked: File?\n  state rows: Number[]\n  state cart: { id: String, qty: Number }[] = []\n  data products = [{ id: 1 }]\n  let total: Number = rows.length + cart.length + products.length\n\n  view {\n    text total\n    text (picked?.name ?? "")\n  }\n}\n';
+  assert.deepEqual(types(src), []);
+  const out = printProgram(parse(src, "t"));
+  assert.match(out, /state picked: File\? = null/);
+  assert.match(out, /state rows: Number\[\] = \[\]/);
+  assert.match(out, /state products = \[\{ id: 1 \}\]/);
+  assert.match(out, /computed total = /);
+  assert.doesNotMatch(out, /view \{/);
+});
+
+test("${} in a plain string is a template; literals side by side are a list; a block computed returns its last expression", () => {
+  const src = 'page P "/" {\n  state name = "Ana"\n  state kind = "a"\n  computed label = {\n    if name == "" {\n      "nobody"\n    } else {\n      name\n    }\n  }\n\n  title "Hi, ${name}!"\n  select kind options=["a" "b" "c"]\n  text label\n}\n';
+  assert.deepEqual(types(src), []);
+  const out = printProgram(parse(src, "t"));
+  assert.match(out, /title `Hi, \$\{name\}!`/);
+  assert.match(out, /options=\["a", "b", "c"\]/);
+  assert.match(out, /return "nobody"/);
+});
+
+test("server fn inside a page is hoisted; a component named as a layout is one; a button takes children", () => {
+  const src = 'model Vote {\n  id: ID\n  option: String\n  tags: String[]\n}\n\napi votes: Vote\n\ncomponent Shell {\n  state likes = 0\n\n  button -> likes++ {\n    icon "heart"\n  }\n  slot\n}\n\npage Poll "/" layout Shell {\n  data n = server.total()\n  server fn total() {\n    return db.votes.count()\n  }\n\n  button "Vote" -> api.votes.create({ option: "a" })\n  text (n ?? 0)\n}\n';
+  const r = compile([{ file: "a.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  assert.match(r.js!, /layouts: \[Shell\]/);
+  assert.match(r.server!.fns, /async total\(/);
+});
+
+test("errors that say where things go: top-level state, let in the view, api and auth given a model", () => {
+  const first = (src: string) => compile([{ file: "a.art", src }]).diagnostics[0];
+  assert.match(first('state likes = 0\n\npage P "/" {\n  text likes\n}\n').fixes![1], /layout Main \{ state likes/);
+  const inView = first('page P "/" {\n  state xs = [1]\n\n  for x in xs {\n    let y = x * 2\n    text y\n  }\n}\n');
+  assert.equal(inView.type, "STATEMENT_IN_VIEW");
+  assert.match(inView.fixes![0], /^computed y/);
+  assert.match(first('model Note {\n  id: ID\n}\n\napi Note private\n').fixes![0], /^api notes: Note private/);
+  assert.match(first('model User {\n  id: ID\n  email: Email\n  password: String\n}\n\nauth User\n').fixes![0], /^api users: User\nauth users/);
+});
+
+test("art patch: set with params separated by spaces after a colon", () => {
+  const src = 'component Row(item: Any) {\n  text item.name\n}\n';
+  const r = applyPatch([{ file: "a.art", src }], "set Row item: Any onRemove: Fn");
+  assert.deepEqual(r.diagnostics, []);
+  assert.match(r.files["a.art"], /component Row\(item: Any, onRemove: Fn\)/);
+});
