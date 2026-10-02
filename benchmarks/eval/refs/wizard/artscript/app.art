@@ -1,0 +1,47 @@
+page Signup "/" {
+  state step = 1
+  state name = ""
+  state plan = "Gratis"
+  state news = false
+  state error = ""
+  state done = false
+  fn next() {
+    if step == 1 && name == "" {
+      error = "Nombre requerido"
+      return
+    }
+    error = ""
+    step++
+  }
+
+  column gap=2 {
+    if done {
+      text `¡Listo, ${name}!` bold
+    } else {
+      text `Paso ${step} de 3` muted
+      if step == 1 {
+        input name placeholder="Nombre"
+        if error != "" {
+          text error danger
+        }
+        button "Siguiente" primary -> next()
+      } else if step == 2 {
+        select plan options=["Gratis", "Pro"]
+        checkbox news label="Recibir novedades"
+        row gap=2 {
+          button "Atrás" -> step--
+          button "Siguiente" primary -> next()
+        }
+      } else {
+        text `${name} eligió ${plan}`
+        if news {
+          text "Con novedades"
+        }
+        row gap=2 {
+          button "Atrás" -> step--
+          button "Confirmar" primary -> done = true
+        }
+      }
+    }
+  }
+}

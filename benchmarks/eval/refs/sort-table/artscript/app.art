@@ -1,0 +1,26 @@
+page Employees "/" {
+  state rows = [{ name: "Caro", age: 35 }, { name: "Ana", age: 30 }, { name: "Dani", age: 28 }, { name: "Beto", age: 25 }]
+  state filter = ""
+  computed shown = rows.filter(r => r.name.toLowerCase().includes(filter.toLowerCase()))
+
+  column gap=2 {
+    input filter placeholder="Filtrar"
+    row gap=2 {
+      button "Ordenar por nombre" -> rows = [...rows].sort((a, b) => a.name.localeCompare(b.name))
+      button "Ordenar por edad" -> rows = [...rows].sort((a, b) => a.age - b.age)
+    }
+    table {
+      tr {
+        th "Nombre"
+        th "Edad"
+      }
+      for r in shown key r.name {
+        tr {
+          td r.name
+          td r.age
+        }
+      }
+    }
+    text `Empleados: ${shown.length}`
+  }
+}

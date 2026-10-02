@@ -303,6 +303,183 @@ const CHECKS: Record<string, Check> = {
     await p.until(() => !has(p, "Beto") && p.count("Guardar") === 0, 'que "Cancelar" cierre sin agregar a Beto');
   },
 
+  async pagination(p) {
+    const items = () => p.text().match(/Ítem \d+/g) ?? [];
+    await p.until(() => items().length === 10 && items()[0] === "Ítem 1" && has(p, "Página 1 de 3") && p.button("Anterior").disabled && !p.button("Siguiente").disabled, 'los ítems 1 a 10, "Página 1 de 3" y "Anterior" deshabilitado');
+    await p.click("Siguiente");
+    await p.until(() => items().length === 10 && items()[0] === "Ítem 11" && has(p, "Página 2 de 3") && !p.button("Anterior").disabled, 'tras "Siguiente": los ítems 11 a 20 y "Página 2 de 3"');
+    await p.click("Siguiente");
+    await p.until(() => items().length === 3 && items()[2] === "Ítem 23" && has(p, "Página 3 de 3") && p.button("Siguiente").disabled, 'en la última página: los ítems 21 a 23 y "Siguiente" deshabilitado');
+    await p.click("Anterior");
+    await p.until(() => items()[0] === "Ítem 11" && has(p, "Página 2 de 3"), 'que "Anterior" vuelva a la página 2');
+  },
+
+  async "sort-table"(p) {
+    const names = () => (p.text().match(/Ana|Beto|Caro|Dani/g) ?? []).join(",");
+    await p.until(() => names() === "Caro,Ana,Dani,Beto" && has(p, "Empleados: 4") && document.querySelectorAll("table tr").length >= 4, "una tabla con Caro, Ana, Dani y Beto en ese orden y \"Empleados: 4\"");
+    await p.click("Ordenar por nombre");
+    await p.until(() => names() === "Ana,Beto,Caro,Dani", 'tras "Ordenar por nombre": Ana, Beto, Caro, Dani');
+    await p.click("Ordenar por edad");
+    await p.until(() => names() === "Beto,Dani,Ana,Caro", 'tras "Ordenar por edad": Beto (25), Dani (28), Ana (30), Caro (35)');
+    await p.fill("Filtrar", "A");
+    await p.until(() => names() === "Dani,Ana,Caro" && has(p, "Empleados: 3"), 'al filtrar "A": Dani, Ana y Caro (orden por edad) y "Empleados: 3"');
+    await p.fill("Filtrar", "");
+    await p.until(() => names() === "Beto,Dani,Ana,Caro" && has(p, "Empleados: 4"), "las 4 filas otra vez, todavía ordenadas por edad");
+  },
+
+  async stopwatch(p) {
+    const n = () => Number(/Tiempo: (\d+)/.exec(p.text())?.[1] ?? NaN);
+    await p.until(() => n() === 0, '"Tiempo: 0" al inicio');
+    await p.click("Iniciar");
+    await p.click("Iniciar");
+    await p.settle(1000);
+    await p.until(() => n() >= 6 && n() <= 13, `entre 6 y 13 después de 1 segundo andando (dos clics en "Iniciar" no lo aceleran); hay ${n()}`, 1);
+    await p.click("Pausar");
+    const paused = n();
+    await p.settle(350);
+    await p.until(() => n() === paused && paused > 0, '"Pausar" lo detiene conservando el valor', 1);
+    await p.click("Iniciar");
+    await p.until(() => n() > paused, 'que "Iniciar" lo haga seguir desde donde estaba');
+    await p.click("Reiniciar");
+    await p.settle(350);
+    await p.until(() => n() === 0, '"Reiniciar" vuelve a 0 y lo detiene', 1);
+  },
+
+  async "nav-layout"(p) {
+    await p.until(() => has(p, "Bienvenido") && has(p, "Likes: 0"), 'en "/" el título "Bienvenido" y "Likes: 0" en el menú');
+    await p.click("Me gusta");
+    await p.click("Me gusta");
+    await p.until(() => has(p, "Likes: 2"), '"Likes: 2" tras dos clics en "Me gusta"');
+    await p.link("Equipo");
+    await p.until(() => p.path() === "/equipo" && has(p, "Nuestro equipo") && !has(p, "Bienvenido") && has(p, "Likes: 2"), 'que "Equipo" lleve a /equipo, muestre "Nuestro equipo" y el menú conserve "Likes: 2"');
+    await p.link("Beto");
+    await p.until(() => p.path() === "/equipo/beto" && /Perfil de beto/i.test(p.text()) && has(p, "Likes: 2"), 'que "Beto" lleve a /equipo/beto y muestre "Perfil de beto"');
+    await p.link("Volver al equipo");
+    await p.until(() => p.path() === "/equipo" && has(p, "Nuestro equipo"), 'que "Volver al equipo" lleve a /equipo');
+    await p.link("Inicio");
+    await p.until(() => p.path() === "/" && has(p, "Bienvenido") && has(p, "Likes: 2"), 'que "Inicio" lleve a "/" con "Likes: 2"');
+    await p.open("/equipo/ana");
+    await p.until(() => /Perfil de ana/i.test(p.text()) && p.count("Me gusta") === 1, 'que abrir /equipo/ana muestre "Perfil de ana" y el menú');
+  },
+
+  async "query-search"(p) {
+    await p.until(() => has(p, "Mesa") && has(p, "Silla") && has(p, "Sillón") && has(p, "Lámpara") && has(p, "Resultados: 4"), 'los 4 productos y "Resultados: 4"');
+    await p.fill("Buscar", "sill");
+    await p.click("Buscar");
+    await p.until(() => window.location.search === "?q=sill" && has(p, "Silla") && has(p, "Sillón") && !has(p, "Mesa") && !has(p, "Lámpara") && has(p, "Resultados: 2"), `la URL con "?q=sill" (ahora: "${window.location.search}"), solo Silla y Sillón y "Resultados: 2"`);
+    await p.open("/?q=mesa");
+    await p.until(() => has(p, "Mesa") && !has(p, "Silla") && has(p, "Resultados: 1"), 'que abrir "/?q=mesa" muestre solo Mesa y "Resultados: 1"');
+  },
+
+  async wizard(p) {
+    await p.until(() => has(p, "Paso 1 de 3"), '"Paso 1 de 3"');
+    await p.click("Siguiente");
+    await p.until(() => has(p, "Nombre requerido") && has(p, "Paso 1 de 3"), '"Nombre requerido" sin avanzar con el nombre vacío');
+    await p.fill("Nombre", "Ana");
+    await p.click("Siguiente");
+    await p.until(() => has(p, "Paso 2 de 3") && p.count("Atrás") === 1, '"Paso 2 de 3" con "Atrás" y "Siguiente"');
+    await p.select(0, "Pro");
+    await p.check(0);
+    await p.click("Siguiente");
+    await p.until(() => has(p, "Paso 3 de 3") && has(p, "Ana eligió Pro") && has(p, "Con novedades"), 'el resumen "Ana eligió Pro" y "Con novedades"');
+    await p.click("Atrás");
+    await p.click("Atrás");
+    await p.until(() => has(p, "Paso 1 de 3") && p.input("Nombre").value === "Ana", 'que al volver al paso 1 el nombre siga siendo "Ana"');
+    await p.click("Siguiente");
+    await p.click("Siguiente");
+    await p.until(() => has(p, "Ana eligió Pro") && has(p, "Con novedades"), "que el plan y el checkbox se conserven al volver");
+    await p.click("Confirmar");
+    await p.until(() => has(p, "¡Listo, Ana!") && !has(p, "Paso"), '"¡Listo, Ana!" en lugar del formulario');
+  },
+
+  async "inline-edit"(p) {
+    await p.until(() => p.count("Editar") === 3 && has(p, "Comprar pan") && has(p, "Llamar a Ana") && has(p, "Pagar luz") && has(p, "Editadas: 0"), 'las 3 notas con "Editar" y "Editadas: 0"');
+    await p.click("Editar", 1);
+    await p.until(() => p.count("Guardar") === 1 && p.count("Cancelar") === 1 && p.count("Editar") === 2 && p.input("#0").value === "Llamar a Ana", "solo la segunda nota en edición, con un input con su texto");
+    await p.fill("#0", "Llamar a Beto");
+    await p.click("Guardar");
+    await p.until(() => has(p, "Llamar a Beto") && !has(p, "Llamar a Ana") && has(p, "Editadas: 1") && p.count("Editar") === 3, '"Llamar a Beto" guardado y "Editadas: 1"');
+    await p.click("Editar", 0);
+    await p.fill("#0", "zzz");
+    await p.click("Cancelar");
+    await p.until(() => has(p, "Comprar pan") && !has(p, "zzz") && has(p, "Editadas: 1") && p.count("Editar") === 3, 'que "Cancelar" deje "Comprar pan" y "Editadas: 1"');
+  },
+
+  async "fs-tasks"(p) {
+    await p.until(() => p.count("Agregar") === 1, 'el botón "Agregar"');
+    for (const t of ["Lavar", "Cocinar"]) { await p.fill("Tarea", t); await p.click("Agregar"); }
+    await p.until(() => has(p, "Lavar") && has(p, "Cocinar") && p.count("Hecha") === 2, '"Lavar" y "Cocinar" con su botón "Hecha"');
+    await p.click("Hecha", 0);
+    await p.until(() => has(p, "(hecha)") && p.count("Hecha") === 1, 'tras "Hecha": "(hecha)" junto a Lavar y un solo botón "Hecha"');
+    await p.click("Renombrar", 1);
+    await p.fill("Nuevo título", "Cocinar pasta");
+    await p.click("Guardar");
+    await p.until(() => has(p, "Cocinar pasta") && p.count("Guardar") === 0, '"Cocinar pasta" tras renombrar');
+    await p.select(0, "Hechas");
+    await p.until(() => has(p, "Lavar") && !has(p, "Cocinar pasta"), 'con el filtro "Hechas": solo Lavar');
+    await p.select(0, "Pendientes");
+    await p.until(() => !has(p, "Lavar") && has(p, "Cocinar pasta"), 'con el filtro "Pendientes": solo Cocinar pasta');
+    await p.open();
+    await p.until(() => has(p, "Lavar") && has(p, "(hecha)") && has(p, "Cocinar pasta"), "las tareas, la hecha y el nuevo título guardados en el servidor después de recargar");
+  },
+
+  async "fs-votes"(p) {
+    await p.until(() => has(p, "Perros: 0% (0 votos)") && has(p, "Gatos: 0% (0 votos)"), '"Perros: 0% (0 votos)" y "Gatos: 0% (0 votos)"');
+    await p.click("Votar Perros");
+    await p.click("Votar Perros");
+    await p.click("Votar Gatos");
+    await p.until(() => has(p, "Perros: 67% (2 votos)") && has(p, "Gatos: 33% (1 votos)"), '"Perros: 67% (2 votos)" y "Gatos: 33% (1 votos)"');
+    await p.open();
+    await p.until(() => has(p, "Perros: 67% (2 votos)") && has(p, "Gatos: 33% (1 votos)"), "los votos guardados en el servidor después de recargar");
+    await p.click("Reiniciar");
+    await p.until(() => has(p, "Perros: 0% (0 votos)") && has(p, "Gatos: 0% (0 votos)"), 'que "Reiniciar" borre los votos');
+  },
+
+  async "fs-catalog"(p) {
+    const items = () => (p.text().match(/Producto \d+/g) ?? []).join(",");
+    await p.until(() => has(p, "Total: 0") && p.count("Cargar ejemplos") === 1, '"Total: 0" y el botón "Cargar ejemplos"');
+    await p.click("Cargar ejemplos");
+    await p.until(() => items() === "Producto 1,Producto 2,Producto 3,Producto 4,Producto 5" && has(p, "Total: 12"), 'los productos 1 a 5 y "Total: 12"');
+    await p.click("Siguiente");
+    await p.until(() => items() === "Producto 6,Producto 7,Producto 8,Producto 9,Producto 10", "los productos 6 a 10 en la segunda página");
+    await p.click("Siguiente");
+    await p.until(() => items() === "Producto 11,Producto 12", "los productos 11 y 12 en la tercera página");
+    await p.fill("Buscar", "Producto 1");
+    await p.until(() => items() === "Producto 1,Producto 10,Producto 11,Producto 12" && has(p, "Total: 4"), 'al buscar "Producto 1": 1, 10, 11 y 12 desde la primera página y "Total: 4"');
+    await p.open();
+    await p.until(() => has(p, "Total: 12") && items().startsWith("Producto 1,Producto 2"), "los 12 productos guardados en el servidor después de recargar");
+    await p.click("Cargar ejemplos");
+    await p.settle(200);
+    await p.until(() => has(p, "Total: 12"), 'que "Cargar ejemplos" no duplique: "Total: 12"');
+  },
+
+  async "fs-notes"(p) {
+    const account = async (email: string, password: string, button: string) => {
+      await p.fill("Email", email);
+      await p.fill("Contraseña", password);
+      await p.click(button);
+    };
+    await p.until(() => p.count("Crear cuenta") === 1 && p.count("Entrar") === 1 && p.input("Contraseña").type === "password", '"Crear cuenta", "Entrar" y un input de contraseña de tipo password');
+    await account("ana@x.co", "secreto123", "Crear cuenta");
+    await p.until(() => has(p, "Hola, ana@x.co") && p.count("Salir") === 1, '"Hola, ana@x.co" y "Salir" tras crear la cuenta');
+    await p.fill("Nota", "Nota de Ana");
+    await p.click("Agregar");
+    await p.until(() => has(p, "Nota de Ana"), '"Nota de Ana" en la lista');
+    await p.click("Salir");
+    await p.until(() => p.count("Crear cuenta") === 1 && !has(p, "Nota de Ana"), 'el formulario de acceso tras "Salir"');
+    await account("beto@x.co", "clave45678", "Crear cuenta");
+    await p.until(() => has(p, "Hola, beto@x.co") && !has(p, "Nota de Ana"), "que Beto no vea la nota de Ana");
+    await p.fill("Nota", "Nota de Beto");
+    await p.click("Agregar");
+    await p.until(() => has(p, "Nota de Beto"), '"Nota de Beto" en la lista');
+    await p.click("Salir");
+    await p.until(() => p.count("Entrar") === 1, 'el formulario de acceso tras "Salir"');
+    await account("ana@x.co", "incorrecta1", "Entrar");
+    await p.until(() => has(p, "Datos incorrectos") && !has(p, "Hola,"), '"Datos incorrectos" con una contraseña incorrecta');
+    await account("ana@x.co", "secreto123", "Entrar");
+    await p.until(() => has(p, "Hola, ana@x.co") && has(p, "Nota de Ana") && !has(p, "Nota de Beto"), "que Ana entre y vea solo su nota");
+  },
+
   async "fs-shopping"(p) {
     await p.until(() => p.count("Agregar") === 1, 'el botón "Agregar"');
     for (const item of ["Leche", "Pan"]) { await p.fill("Producto", item); await p.click("Agregar"); }

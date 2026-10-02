@@ -1,0 +1,15 @@
+page Search "/" {
+  state text = query.q ?? ""
+  computed found = ["Mesa", "Silla", "Sillón", "Lámpara"].filter(p => p.toLowerCase().includes((query.q ?? "").toLowerCase()))
+
+  column gap=2 {
+    row gap=2 {
+      input text placeholder="Buscar"
+      button "Buscar" primary -> navigate(`/?q=${encodeURIComponent(text)}`)
+    }
+    for p in found {
+      text p
+    }
+    text `Resultados: ${found.length}`
+  }
+}

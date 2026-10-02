@@ -1,0 +1,54 @@
+model Task {
+  id: ID
+  title: String
+  done: Bool = false
+}
+
+api tasks: Task
+
+component TaskRow(task: Task) {
+  state renaming = false
+  state draft = ""
+  fn save() {
+    await api.tasks.update(task.id, { title: draft })
+    renaming = false
+  }
+
+  row gap=2 {
+    if renaming {
+      input draft placeholder="Nuevo título"
+      button "Guardar" primary -> save()
+    } else {
+      text task.done ? `${task.title} (hecha)` : task.title
+      if !task.done {
+        button "Hecha" small -> api.tasks.update(task.id, { done: true })
+      }
+      button "Renombrar" small -> {
+        draft = task.title
+        renaming = true
+      }
+    }
+  }
+}
+
+page Tasks "/" {
+  data tasks = api.tasks.list()
+  state title = ""
+  state filter = "Todas"
+  computed shown = tasks.filter(t => filter == "Todas" || filter == "Hechas" == t.done)
+  fn add() {
+    await api.tasks.create({ title })
+    title = ""
+  }
+
+  column gap=2 {
+    row gap=2 {
+      input title placeholder="Tarea"
+      button "Agregar" primary -> add()
+    }
+    select filter options=["Todas", "Pendientes", "Hechas"]
+    for t in shown key t.id {
+      TaskRow task=t
+    }
+  }
+}

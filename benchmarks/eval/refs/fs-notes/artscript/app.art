@@ -1,0 +1,68 @@
+model User {
+  id: ID
+  email: Email
+  password: String
+}
+
+model Note {
+  id: ID
+  owner: ID
+  text: String
+}
+
+api users: User
+
+api notes: Note private
+
+auth users
+
+page Notes "/" {
+  data me = auth.me()
+  data notes = api.notes.list()
+  state email = ""
+  state password = ""
+  state note = ""
+  state error = ""
+  fn enter(create) {
+    try {
+      if create {
+        await auth.signup({ email, password })
+      }
+      await auth.login(email, password)
+      error = ""
+      password = ""
+    } catch (e) {
+      error = "Datos incorrectos"
+    }
+  }
+  fn add() {
+    await api.notes.create({ text: note })
+    note = ""
+  }
+
+  column gap=2 {
+    if me {
+      row gap=2 {
+        text `Hola, ${me.email}`
+        button "Salir" small -> auth.logout()
+      }
+      row gap=2 {
+        input note placeholder="Nota"
+        button "Agregar" primary -> add()
+      }
+      for n in notes key n.id {
+        text n.text
+      }
+    } else {
+      input email placeholder="Email" type=email
+      input password placeholder="Contraseña" type=password
+      if error != "" {
+        text error danger
+      }
+      row gap=2 {
+        button "Crear cuenta" -> enter(true)
+        button "Entrar" primary -> enter(false)
+      }
+    }
+  }
+}

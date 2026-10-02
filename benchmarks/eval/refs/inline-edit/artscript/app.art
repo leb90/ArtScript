@@ -1,0 +1,33 @@
+component Note(note: Any, onSave: Fn) {
+  state editing = false
+  state draft = ""
+
+  row gap=2 {
+    if editing {
+      input draft
+      button "Guardar" primary -> {
+        onSave(draft)
+        editing = false
+      }
+      button "Cancelar" -> editing = false
+    } else {
+      text note.text
+      button "Editar" small -> {
+        draft = note.text
+        editing = true
+      }
+    }
+  }
+}
+
+page Notes "/" {
+  state notes = [{ id: 1, text: "Comprar pan" }, { id: 2, text: "Llamar a Ana" }, { id: 3, text: "Pagar luz" }]
+  state edited = 0
+
+  column gap=2 {
+    for n in notes key n.id {
+      Note note=n onSave=(t => { n.text = t; edited++ })
+    }
+    text `Editadas: ${edited}`
+  }
+}

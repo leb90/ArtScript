@@ -1,0 +1,34 @@
+model Product {
+  id: ID
+  name: String
+  n: Number
+}
+
+api products: Product
+
+server fn seed() {
+  if db.products.count() > 0 {
+    return
+  }
+  Array.from({ length: 12 }, (_, i) => i + 1).forEach(n => db.products.create({ name: `Producto ${n}`, n }))
+}
+
+page Catalog "/" {
+  state q = ""
+  state page = 0
+  data products = api.products.list({ search: q, sort: "n", limit: 5, offset: page * 5 })
+  data total = api.products.count({ search: q })
+
+  column gap=2 {
+    button "Cargar ejemplos" -> server.seed()
+    input q placeholder="Buscar" on:input=(page = 0)
+    for p in products key p.id {
+      text p.name
+    }
+    text `Total: ${total}`
+    row gap=2 {
+      button "Anterior" disabled=(page == 0) -> page--
+      button "Siguiente" disabled=((page + 1) * 5 >= total) -> page++
+    }
+  }
+}

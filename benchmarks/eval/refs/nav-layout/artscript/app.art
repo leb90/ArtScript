@@ -1,0 +1,32 @@
+layout Main {
+  state likes = 0
+
+  column gap=3 {
+    row gap=3 {
+      link "Inicio" to="/"
+      link "Equipo" to="/equipo"
+      button "Me gusta" -> likes++
+      text `Likes: ${likes}`
+    }
+    slot
+  }
+}
+
+page Home "/" {
+  title "Bienvenido"
+}
+
+page Team "/equipo" {
+  column gap=2 {
+    title "Nuestro equipo"
+    link "Ana" to="/equipo/ana"
+    link "Beto" to="/equipo/beto"
+  }
+}
+
+page Profile "/equipo/:name" {
+  column gap=2 {
+    text `Perfil de ${params.name}`
+    link "Volver al equipo" to="/equipo"
+  }
+}

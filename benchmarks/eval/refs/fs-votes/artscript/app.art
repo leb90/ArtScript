@@ -1,0 +1,32 @@
+model Vote {
+  id: ID
+  option: String
+}
+
+api votes: Vote
+
+server fn results() {
+  let all = db.votes.list()
+  let count = o => all.filter(v => v.option == o).length
+  let percent = o => all.length == 0 ? 0 : Math.round(count(o) * 100 / all.length)
+  return ["Perros", "Gatos"].map(o => ({ option: o, votes: count(o), percent: percent(o) }))
+}
+
+server fn reset() {
+  db.votes.list().forEach(v => db.votes.remove(v.id))
+}
+
+page Poll "/" {
+  data results = server.results()
+
+  column gap=2 {
+    row gap=2 {
+      button "Votar Perros" primary -> api.votes.create({ option: "Perros" })
+      button "Votar Gatos" primary -> api.votes.create({ option: "Gatos" })
+      button "Reiniciar" -> server.reset()
+    }
+    for r in results ?? [] {
+      text `${r.option}: ${r.percent}% (${r.votes} votos)`
+    }
+  }
+}

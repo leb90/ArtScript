@@ -1,0 +1,16 @@
+page Items "/" {
+  state page = 0
+  computed items = Array.from({ length: 23 }, (_, i) => `Ítem ${i + 1}`)
+  computed pages = Math.ceil(items.length / 10)
+
+  column gap=2 {
+    for item in items.slice(page * 10, page * 10 + 10) {
+      text item
+    }
+    text `Página ${page + 1} de ${pages}`
+    row gap=2 {
+      button "Anterior" disabled=(page == 0) -> page--
+      button "Siguiente" disabled=(page == pages - 1) -> page++
+    }
+  }
+}

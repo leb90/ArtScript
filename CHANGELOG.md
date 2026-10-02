@@ -39,6 +39,7 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 - An ArtScript implementation for js-framework-benchmark (`benchmarks/js-framework-benchmark`), passing its `isKeyed` check.
 - Dev tools in `art dev` (Alt+A): every mounted component with its props, states, computed and data, live; states can be edited, updates flash on the page, and `__art.snapshot()` gives the same to the console or an agent. Not in production builds.
 - A tree-sitter grammar (`editors/tree-sitter-artscript`) for highlighting in Zed, Neovim and Helix; CI checks that every `.art` file in the repository parses with it.
+- Cost eval: 11 more tasks (50 in total) with reference apps in the five stacks: pagination, a sortable table, a stopwatch, a layout with routes, the query string, a multi-step form, inline editing, and full-stack edits, server-side logic, server-side search with pages, and accounts with private data. `node benchmarks/eval/check-refs.ts <task>` checks a task's references alone.
 - `art init` adds a Cursor rule (`.cursor/rules/artscript.mdc`).
 - `art build --base /sub` for apps served under a subpath; same-page `#section` links scroll, and links to files that aren't routes load them.
 - Several files may `use` the same names; the compiler also bundles for the browser without shims.

@@ -88,6 +88,56 @@ export const TASKS: Task[] = [
     id: "contacts",
     prompt: "Creá una lista de contactos. Un botón 'Nuevo contacto' abre un diálogo (modal) con un input con placeholder 'Nombre', un selector (select) de tipo con las opciones 'Amigo' y 'Trabajo', y los botones 'Guardar' y 'Cancelar'. 'Guardar' agrega el contacto, que se muestra como 'Nombre (Tipo)', y cierra el diálogo; 'Cancelar' lo cierra sin agregar. Con el diálogo cerrado, su contenido no se ve.",
   },
+  // Added for the 1.0 measurement: lists, lifecycle, layouts, the query string, multi-step forms,
+  // per-row state, and full-stack updates, server logic, server-side queries and accounts.
+  {
+    id: "pagination",
+    prompt: "Mostrá una lista de 23 ítems llamados 'Ítem 1' a 'Ítem 23', de a 10 por página. Debajo, el texto 'Página X de 3' y los botones 'Anterior' y 'Siguiente', que quedan deshabilitados en la primera y en la última página respectivamente.",
+  },
+  {
+    id: "sort-table",
+    prompt: "Mostrá una tabla de empleados con las columnas 'Nombre' y 'Edad' y estas filas, en este orden inicial: Caro 35, Ana 30, Dani 28, Beto 25. Un botón 'Ordenar por nombre' ordena las filas alfabéticamente y un botón 'Ordenar por edad' las ordena de menor a mayor edad. Un input con placeholder 'Filtrar' deja solo las filas cuyo nombre contiene el texto (sin distinguir mayúsculas). Debajo, 'Empleados: N' con la cantidad de filas visibles.",
+  },
+  {
+    id: "stopwatch",
+    prompt: "Creá un cronómetro que muestra 'Tiempo: N' (empieza en 0). El botón 'Iniciar' hace que N aumente 1 cada 100 ms; 'Pausar' lo detiene conservando el valor; 'Reiniciar' lo detiene y vuelve a 0. Tocar 'Iniciar' dos veces no debe hacerlo avanzar más rápido.",
+  },
+  {
+    id: "nav-layout",
+    prompt: "Creá una app con rutas (URLs reales que cambian sin recargar la página) y un menú que se ve en todas las páginas, con los links 'Inicio' (a '/') y 'Equipo' (a '/equipo'), un botón 'Me gusta' y el texto 'Likes: N'; el contador vive en el menú y no se reinicia al navegar con los links. '/' muestra el título 'Bienvenido'. '/equipo' muestra el título 'Nuestro equipo' y los links 'Ana' y 'Beto', que llevan a '/equipo/ana' y '/equipo/beto'. '/equipo/<nombre>' muestra 'Perfil de <nombre>' y un link 'Volver al equipo'.",
+  },
+  {
+    id: "query-search",
+    prompt: "Creá una página de búsqueda en '/'. Los productos son fijos: Mesa, Silla, Sillón y Lámpara. Un input con placeholder 'Buscar' y un botón 'Buscar' que pone el texto en la URL como '?q=<texto>' sin recargar la página. La lista muestra solo los productos cuyo nombre contiene el valor de q de la URL (sin distinguir mayúsculas; sin q se muestran todos) y el texto 'Resultados: N'. Abrir directamente '/?q=mesa' muestra solo Mesa.",
+  },
+  {
+    id: "wizard",
+    prompt: "Creá un formulario de registro en 3 pasos que muestra 'Paso N de 3'. Paso 1: un input con placeholder 'Nombre' y el botón 'Siguiente'; con el nombre vacío muestra 'Nombre requerido' y no avanza. Paso 2: un selector (select) de plan con las opciones 'Gratis' y 'Pro', un checkbox 'Recibir novedades' y los botones 'Atrás' y 'Siguiente'. Paso 3: el resumen '<nombre> eligió <plan>' y, si marcó el checkbox, 'Con novedades'; botones 'Atrás' y 'Confirmar'. 'Confirmar' reemplaza todo por '¡Listo, <nombre>!'. Al volver atrás, los datos ingresados se conservan.",
+  },
+  {
+    id: "inline-edit",
+    prompt: "Mostrá una lista con 3 notas fijas: 'Comprar pan', 'Llamar a Ana' y 'Pagar luz'. Cada nota es un componente aparte con su texto y un botón 'Editar'. 'Editar' reemplaza el texto de esa nota por un input con el texto actual y los botones 'Guardar' y 'Cancelar' (las otras notas no cambian). 'Guardar' cambia el texto de la nota; 'Cancelar' deja el anterior. Abajo mostrá 'Editadas: N' con la cantidad de veces que se guardó un cambio.",
+  },
+  {
+    id: "fs-tasks",
+    fullstack: true,
+    prompt: "Creá un gestor de tareas full-stack. Un input con placeholder 'Tarea' y un botón 'Agregar' que crea la tarea en el servidor. Cada tarea muestra su título, un botón 'Hecha' que la marca como hecha en el servidor (entonces muestra '(hecha)' junto al título y ya no muestra ese botón) y un botón 'Renombrar' que reemplaza el título por un input con placeholder 'Nuevo título' y un botón 'Guardar' que guarda el nuevo título en el servidor. Un selector (select) con las opciones 'Todas', 'Pendientes' y 'Hechas' filtra la lista. Los datos viven en el servidor: al recargar la página siguen ahí.",
+  },
+  {
+    id: "fs-votes",
+    fullstack: true,
+    prompt: "Creá una encuesta full-stack con dos opciones. Los botones 'Votar Perros' y 'Votar Gatos' registran un voto en el servidor. Mostrá 'Perros: X% (N votos)' y 'Gatos: Y% (M votos)': los porcentajes los calcula el servidor, redondeados a enteros (sin votos, 0%). Un botón 'Reiniciar' borra todos los votos. Los datos viven en el servidor: al recargar la página siguen ahí.",
+  },
+  {
+    id: "fs-catalog",
+    fullstack: true,
+    prompt: "Creá un catálogo full-stack. Un botón 'Cargar ejemplos' crea en el servidor 12 productos llamados 'Producto 1' a 'Producto 12' (solo si todavía no hay ninguno). La lista muestra de a 5 productos, ordenados por su número, con el texto 'Total: N' (la cantidad de productos que coinciden con la búsqueda) y los botones 'Anterior' y 'Siguiente'. Un input con placeholder 'Buscar' filtra por nombre y vuelve a la primera página. La búsqueda y el paginado los resuelve el servidor: el cliente nunca recibe más de 5 productos. Los datos viven en el servidor: al recargar la página siguen ahí.",
+  },
+  {
+    id: "fs-notes",
+    fullstack: true,
+    prompt: "Creá una app full-stack de notas privadas con cuentas. Sin sesión: inputs con placeholder 'Email' y 'Contraseña' (de tipo password) y los botones 'Crear cuenta' y 'Entrar'; con una contraseña incorrecta, 'Entrar' muestra 'Datos incorrectos'. Con sesión: el texto 'Hola, <email>', un botón 'Salir', un input con placeholder 'Nota' y un botón 'Agregar' que guarda la nota en el servidor, y la lista de notas de ese usuario. Cada usuario ve solo sus propias notas (lo garantiza el servidor) y las contraseñas no se guardan en texto plano.",
+  },
 ];
 
 // Modifications on a larger project (benchmarks/eval/projects/shop), each in both context modes.

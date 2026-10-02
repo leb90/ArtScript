@@ -1,0 +1,26 @@
+page Stopwatch "/" {
+  state n = 0
+  state timer: Any = null
+  fn start() {
+    if timer {
+      return
+    }
+    timer = setInterval(() => n++, 100)
+  }
+  fn pause() {
+    clearInterval(timer)
+    timer = null
+  }
+
+  column gap=2 {
+    text `Tiempo: ${n}` bold
+    row gap=2 {
+      button "Iniciar" primary -> start()
+      button "Pausar" -> pause()
+      button "Reiniciar" -> {
+        pause()
+        n = 0
+      }
+    }
+  }
+}
