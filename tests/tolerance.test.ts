@@ -412,3 +412,11 @@ test("a toast goes away when the user acts again", async () => {
     await GlobalRegistrator.unregister();
   }
 });
+
+test("an object literal passed as a prop compiles to valid JavaScript", async () => {
+  const src = 'component Card(product: Any) {\n  text product.name\n}\n\npage P "/" {\n  Card product=({ id: 1, name: "Laptop" })\n}\n';
+  const js = compile([{ file: "a.art", src }]).js!;
+  const esbuild = await import("esbuild");
+  await esbuild.transform(js, { loader: "js" }); // throws on a syntax error
+  assert.match(js, /product: \(\) => \(\{/);
+});

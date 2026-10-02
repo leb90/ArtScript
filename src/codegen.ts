@@ -681,7 +681,8 @@ class ComponentGen {
         return this.mutation(e.target, `${x(e.target)} ${e.op} ${x(e.value)}`, scope);
       }
       case "Array": return `[${e.items.map(x).join(", ")}]`;
-      case "Object": return `{ ${e.props.map((p) => ("spread" in p ? `...${x(p.spread)}` : `${JSON.stringify(p.key)}: ${x(p.value)}`)).join(", ")} }`;
+      // In parentheses: as the body of a `() => ...` it would otherwise read as a block.
+      case "Object": return `({ ${e.props.map((p) => ("spread" in p ? `...${x(p.spread)}` : `${JSON.stringify(p.key)}: ${x(p.value)}`)).join(", ")} })`;
       case "Arrow": return this.arrow(e, scope);
       case "Spread": return `...${x(e.arg)}`;
     }
@@ -694,7 +695,7 @@ class ComponentGen {
     const asyncKw = (Array.isArray(e.body) ? hasAwait(e.body) : exprHasAwait(e.body)) ? "async " : "";
     if (!Array.isArray(e.body)) {
       const b = this.expr(e.body, s);
-      return `(${asyncKw}(${e.params.join(", ")}) => ${e.body.kind === "Object" ? `(${b})` : b})`;
+      return `(${asyncKw}(${e.params.join(", ")}) => ${b})`;
     }
     const sub = new ComponentGen(this.c);
     sub.n = this.n;
