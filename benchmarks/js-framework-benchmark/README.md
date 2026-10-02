@@ -13,7 +13,7 @@ npm install            # writes the package-lock.json the harness requires
 npm run build-prod     # art build src --out dist
 ```
 
-Until `@artscript/core` is on npm, build with this repository's compiler (`node <ArtScript>/src/cli.ts build src --out dist`), set `"frameworkVersion": "0.1.0"` instead of `frameworkVersionFromPackage` in `package.json`, and add a minimal `package-lock.json`: the harness only lists frameworks that have one.
+To measure a compiler that isn't published yet, build with this repository's (`node <ArtScript>/src/cli.ts build src --out dist`) and set `"frameworkVersion"` instead of `frameworkVersionFromPackage` in `package.json`.
 
 Then, from the clone's root (Node 20+; `server` and `webdriver-ts` installed with `npm ci`, `webdriver-ts` compiled with `npm run compile`):
 
