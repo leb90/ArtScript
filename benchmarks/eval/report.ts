@@ -20,7 +20,7 @@ type Usage = { input: number; output: number; cacheRead: number; cacheWrite: num
 type Run = { task: string; stack: string; ok: boolean; attempts: number; usage: Usage; usd: number; codeTokens: number | null; size?: { raw: number; brotli: number } };
 // Runs that never reached the model (API errors such as an exhausted credit balance) are not
 // results: they're left out of every number and counted separately.
-const notRun = (r: Run & { errors?: string[] }) => r.attempts === 0 && /^(API \d+|budget exhausted)/.test(r.errors?.[0] ?? "");
+const notRun = (r: Run & { errors?: string[] }) => (r.attempts === 0 && /^(API \d+|budget exhausted)/.test(r.errors?.[0] ?? "")) || r.errors?.[0] === "refusal";
 
 type ResultFile = { model: string; effort: string; runs: number; prices: { in: number; out: number; cacheRead: number; cacheWrite: number }; pricesDate: string; results: Run[] };
 
@@ -121,6 +121,18 @@ function comparable(results: Run[]): Run[] {
 
 function section(loaded: Loaded[]): string {
   const out: string[] = [START, "", "## Cost eval results", ""];
+  // Every task of each model in one table (the sections below split small apps from larger projects).
+  out.push("All tasks, USD per solved task (solved runs / runs):", "", `| Model | ${ORDER.map((k) => NAMES[k]).join(" | ")} | ArtScript vs React |`, `|---|${ORDER.map(() => "---").join("|")}|---|`);
+  for (const { data } of loaded) {
+    const rs = comparable(data.results);
+    const cell = (k: string) => {
+      const x = rs.filter((r) => r.stack === k), ok = x.filter((r) => r.ok).length;
+      return { n: x.length, ok, per: ok ? x.reduce((a, r) => a + r.usd, 0) / ok : Infinity };
+    };
+    const art = cell("artscript"), react = cell("react");
+    out.push(`| ${data.model} | ${ORDER.map((k) => { const c = cell(k); return c.n ? `${k === "artscript" ? `**${usd(c.per)}**` : usd(c.per)} (${c.ok}/${c.n})` : "—"; }).join(" | ")} | **${pct(art.per, react.per)}** |`);
+  }
+  out.push("");
   for (const { path, data: all, paths, reruns } of loaded) {
     // Larger-project tasks ("<task>@full" / "<task>@focus") get their own table below.
     all.results = comparable(all.results);
@@ -156,17 +168,19 @@ function section(loaded: Loaded[]): string {
     out.push(`Run ${date}: ${tasks.length} tasks × ${STACKS.length} stacks × ${f.runs} runs, total $${total.toFixed(2)}, prices as of ${f.pricesDate}.${rerun} Raw data: ${links}.`, "");
   }
   out.push("### Methodology and limitations", "",
+    "- **The 2026-10-02 measurement** (the numbers above): 50 tasks, three models, five stacks, two runs per task. Before it, a pilot ran ArtScript alone once per model (USD 2.34, files `2026-10-02T16-1*`); what the models tripped on was fixed in the compiler (accepting what they write, clearer errors, a `for` statement) and the measurement started from that version. Haiku then solved 76/100 ArtScript runs, against 86–89 in the other stacks; two more rounds of the same kind of fixes followed, and its ArtScript cells were run again each time (80/100, then 90/100, the one reported). React, Svelte, Vue and Solid ran once: their toolchains didn't change. Sonnet's and Opus's ArtScript cells ran once, between those rounds. Every answer of every run is in the raw data, and `--replay` re-checks them with the current compiler.",
     "- Each task is the same functional request for every stack: small apps created from scratch (some full-stack), small modifications, and modifications to larger generated projects (11, 42 and 102 components). Claude gets the task, returns files, and the harness validates them: ArtScript with its compiler, React and SolidJS with strict `tsc`, Svelte and Vue with their compilers. Errors are fed back, up to 3 attempts.",
     "- In modification tasks each stack may use its cheapest edit format: ArtScript an `art patch`, React and Svelte search/replace edit blocks (like a coding agent's Edit tool). Full files are also accepted. Runs before 2026-10-01 had no edit formats: every stack returned full files.",
     "- Cost is computed from the real `usage` the API returns: the ArtScript spec in the system prompt, retries and thinking tokens (billed as output) all count.",
-    "- ArtScript's system prompt includes its spec (1.2K–2.7K tokens depending on the run date), which is served from the prompt cache after the first request; the \"without prompt cache\" column prices those tokens at the full input rate.",
+    "- ArtScript's system prompt includes its spec (1.2K–3.2K tokens depending on the run date; 3.2K in the 2026-10-02 measurement), which is served from the prompt cache after the first request; the \"without prompt cache\" column prices those tokens at the full input rate.",
     "- Since 2026-10-01 every app is also **run and used like a person would**: it's mounted in a simulated browser (happy-dom) and a stack-agnostic check clicks, types and reads the screen (e.g. adds and completes todos, reloads the page to check data persisted on the server). A failed check is fed back to Claude like a compiler error. Earlier runs only checked that code compiled and typechecked.",
-    "- Full-stack tasks: React and Svelte also write their own `server.ts` (Node `http`, no dependencies); ArtScript uses `api`. Svelte is validated without TypeScript type checking of `.svelte` files, which favors it.",
+    "- Full-stack tasks: the other stacks also write their own `server.ts` (Node `http`, no dependencies, data in memory); ArtScript uses `api`, which also persists to SQLite. Svelte is validated without TypeScript type checking of `.svelte` files, which favors it.",
     "- Since 2026-10-01 18:47, ArtScript modification tasks get docs/SPEC-EDIT.md (~800 tokens) instead of the full spec; creation tasks keep the full spec. Earlier runs sent the full spec everywhere.",
-    "- Each run uses the ArtScript spec as of its date; older runs are not redone when the spec improves. The runs above used the Spanish version of the spec; it has since been translated to English (about 6% fewer tokens).",
+    "- Each run uses the ArtScript spec as of its date (in English since 2026-10-02).",
+    "- A model refusal (Opus, on the photo-upload task: twice in React, once in Vue) is not a result: it is left out, and re-run when the run is resumed.",
     "- Task prompts (and the feedback given to the model) are in Spanish; they are the fixed dataset these numbers were measured on.",
     "- App JS: each working app bundled with esbuild (minified, production mode) and compressed with brotli: the JavaScript a browser downloads. ArtScript's includes its runtime; React's includes React DOM; Svelte's includes its client runtime.",
-    "- 2–3 runs per task is an early signal, not a definitive benchmark. Reproduce it with `npm run eval`; `npm run eval -- --dry-run` checks the harness and every reference app offline, and `--replay <results.json>` re-checks stored answers with the current compiler.",
+    "- Two runs per task is a signal, not a definitive benchmark: the smaller the model, the more its results move between runs (Haiku's ArtScript cells went 76, 80, 90 out of 100 as the compiler improved, and part of that is noise). Reproduce it with `npm run eval`; `npm run eval -- --dry-run` checks the harness and every reference app offline, and `--replay <results.json>` re-checks stored answers with the current compiler.",
     "", END);
   return out.join("\n");
 }

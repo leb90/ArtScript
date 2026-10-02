@@ -27,7 +27,7 @@ page Home "/" {
           text `cost per working app vs React + TypeScript (${sonnet.name})` class="label"
         }
         card class="stat" gap=1 {
-          text "~3 KB" class="num"
+          text "~5 KB" class="num"
           text "of JavaScript per app (brotli), runtime included. React: ~59 KB" class="label"
         }
         card class="stat" gap=1 {
