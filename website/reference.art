@@ -1,7 +1,7 @@
 // These tables are read from the compiler itself (src/elements.ts and src/errors.ts), so they can't drift.
 use "./lib/content.ts" { ELEMENT_ROWS, ERRORS }
 
-page Elements "/reference/elements" {
+page Elements "/reference/elements" layout Docs {
   state q = ""
   computed rows = ELEMENT_ROWS.filter(e => q == "" || e.name.includes(q.toLowerCase()))
 
@@ -39,7 +39,7 @@ page Elements "/reference/elements" {
   }
 }
 
-page Errors "/reference/errors" {
+page Errors "/reference/errors" layout Docs {
   state q = ""
   computed rows = ERRORS.filter(e => q == "" || `${e.code} ${e.type} ${e.desc}`.toLowerCase().includes(q.toLowerCase()))
 

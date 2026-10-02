@@ -12,6 +12,8 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 - Keyed lists (`for p in xs key p.id`) that keep their DOM; responsive props (`md:cols=3`).
 - Assignable `computed`, two-way props, mutations through parameters update the screen, TS-style annotations and defaults accepted in params.
 - `test "..." { ... }` blocks run by `art test`; steps find inputs by placeholder or label.
+- Layouts inside layouts (`layout Docs layout Site`); a slot inside an `if` renders its page when it appears. Links to the current page get `aria-current="page"`.
+- `use "x" { a as b }` renames an import. `URL`, `history`, `Blob`, `FormData` and other browser globals are known to the checker.
 - `new` expressions (`new Chart(box, opts)`); `process` and `Buffer` in server functions; setting properties of a `ref` (`box.innerHTML = html`).
 - A button with `->` inside a `form` only runs its action (it no longer submits the form too).
 
@@ -26,6 +28,8 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 - Every syntax error of a file in one compile; source maps; `art lsp` (errors, format, completion, definition, hover, rename) and a VS Code extension.
 - `art mcp` (MCP server), `art add` (official components as source), `art init --template`, `art build --prerender --site`, self-contained `dist/server.js` with a Dockerfile.
 - `docs/SPEC-EDIT.md`, a ~800-token spec for changing code.
+- `art build` splits dynamic `import()` into chunks loaded on demand.
+- `art init` adds a Cursor rule (`.cursor/rules/artscript.mdc`).
 - `art build --base /sub` for apps served under a subpath; same-page `#section` links scroll, and links to files that aren't routes load them.
 - Several files may `use` the same names; the compiler also bundles for the browser without shims.
 - The website is an ArtScript app (`website/`), with `llms.txt`, `llms-full.txt` and every guide as Markdown.

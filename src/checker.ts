@@ -32,6 +32,8 @@ export const GLOBALS = new Set([
   "window", "document", "fetch", "localStorage", "sessionStorage", "crypto", "navigator", "location",
   "parseInt", "parseFloat", "isNaN", "alert", "confirm", "prompt", "setTimeout", "clearTimeout", "setInterval", "clearInterval",
   "encodeURIComponent", "decodeURIComponent", "structuredClone", "Infinity", "NaN",
+  "URL", "URLSearchParams", "history", "Blob", "FormData", "TextEncoder", "TextDecoder", "AbortController",
+  "requestAnimationFrame", "cancelAnimationFrame", "performance", "queueMicrotask", "RegExp", "Error", "BigInt", "Symbol",
 ]);
 
 export function show(t: Ty): string {
@@ -360,6 +362,24 @@ class Checker {
         this.err("UNKNOWN_TYPE", `no layout named '${d.layoutName}'`, d.loc, { expr: d.layoutName, fixes: suggest(d.layoutName, layouts) });
       }
     }
+    // A layout inside another: the outer one exists, and the chain doesn't loop.
+    const byName = new Map(this.program.decls.flatMap((d) => (d.kind === "Component" && d.layout ? [[d.name, d] as const] : [])));
+    for (const d of byName.values()) {
+      if (!d.layoutName) continue;
+      this.at = d.name;
+      if (!byName.has(d.layoutName)) {
+        this.err("UNKNOWN_TYPE", `no layout named '${d.layoutName}'`, d.loc, { expr: d.layoutName, fixes: suggest(d.layoutName, layouts.filter((n) => n !== d.name)) });
+        continue;
+      }
+      const seen = [d.name];
+      for (let n: string | undefined | null = d.layoutName; n; n = byName.get(n)?.layoutName) {
+        if (seen.includes(n)) {
+          this.err("LAYOUT_CYCLE", `layout ${d.name} ends up inside itself (${[...seen, n].join(" → ")})`, d.loc, { expr: `layout ${d.layoutName}`, fixes: [`remove \`layout ${d.layoutName}\` from layout ${d.name}`] });
+          break;
+        }
+        seen.push(n);
+      }
+    }
   }
 
   // ---------- imports ----------
@@ -388,7 +408,8 @@ class Checker {
       });
     }
     if (!info.exports) return; // CommonJS: names can't be known statically
-    for (const name of d.names) {
+    for (const local of d.names) {
+      const name = d.renames?.[local] ?? local;
       if (!info.exports.includes(name)) {
         this.err("UNKNOWN_EXPORT", `'${d.source}' doesn't export '${name}'`, d.loc, { expr: name, fixes: suggest(name, info.exports) });
       }

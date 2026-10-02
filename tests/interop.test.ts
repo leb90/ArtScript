@@ -68,3 +68,24 @@ test("art build bundles the runtime and every used module into one minified app.
   assert.match(app, /toFixed\(2\)/, "the local module is inside");
   assert.match(app, /export\{.*start.*\}/);
 });
+
+test("use: { name as local } renames an import", () => {
+  const src = 'use "./lib/money.ts" { toUSD as usd }\n\npage P {\n  text usd(1)\n}\n';
+  assert.equal(printProgram(parse(src, "t")), src);
+  assert.deepEqual(types(src), []);
+  assert.deepEqual(types('use "./lib/money.ts" { toUSD as usd }\npage P {\n  text toUSD(1)\n}'), ["UNDEFINED_NAME"]);
+  const [typo] = errs('use "./lib/money.ts" { toUsd as usd }');
+  assert.deepEqual([typo.type, typo.fixes], ["UNKNOWN_EXPORT", ["toUSD"]]);
+  const r = compile([{ file: "tests/fixtures/interop/x.art", src }]);
+  assert.match(r.js!, /import \{ toUSD as usd \} from/);
+});
+
+test("art build: import() in a use module becomes a chunk loaded on demand", () => {
+  const out = mkdtempSync(join(tmpdir(), "art-split-"));
+  execFileSync(process.execPath, ["src/cli.ts", "build", "tests/fixtures/split/app.art", "--out", out], { stdio: "pipe" });
+  const app = readFileSync(join(out, "app.js"), "utf8");
+  assert.doesNotMatch(app, /HEAVY-MODULE-TEXT/);
+  const chunk = /import\("\.\/(chunks\/[\w-]+\.js)"\)/.exec(app)?.[1];
+  assert.ok(chunk, "app.js imports the chunk");
+  assert.match(readFileSync(join(out, chunk!), "utf8"), /HEAVY-MODULE-TEXT/);
+});

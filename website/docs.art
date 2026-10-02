@@ -1,80 +1,85 @@
 // One page per guide, so each one is prerendered to its own HTML file.
-page Learn "/learn" {
+page Learn "/learn" layout Docs {
   meta title="Introduction · ArtScript" description="What ArtScript is, who it is for and how it keeps the cost of AI-built apps down."
   DocPage slug="introduction"
 }
 
-page QuickStart "/learn/quick-start" {
+page QuickStart "/learn/quick-start" layout Docs {
   meta title="Quick start · ArtScript" description="Create, run and build your first ArtScript app."
   DocPage slug="quick-start"
 }
 
-page Tutorial "/learn/tutorial" {
+page Tutorial "/learn/tutorial" layout Docs {
   meta title="Tutorial: a full-stack app · ArtScript" description="Build a reading list with a database, an api, accounts and tests, step by step."
   DocPage slug="tutorial"
 }
 
-page Components "/learn/components" {
+page Components "/learn/components" layout Docs {
   meta title="Components and state · ArtScript" description="state, computed, fn, props, children, events and the DOM in ArtScript."
   DocPage slug="components"
 }
 
-page Routing "/learn/routing" {
+page Routing "/learn/routing" layout Docs {
   meta title="Pages and routing · ArtScript" description="Pages, routes, params, layouts, navigation, meta tags and guards."
   DocPage slug="routing"
 }
 
-page Backend "/learn/backend" {
+page Backend "/learn/backend" layout Docs {
   meta title="Data and backend · ArtScript" description="Models, REST apis, queries, relations, files, server functions and jobs."
   DocPage slug="backend"
 }
 
-page Auth "/learn/auth" {
+page Auth "/learn/auth" layout Docs {
   meta title="Accounts and access · ArtScript" description="Sign-up, login, sessions, roles, private data, OAuth and password reset."
   DocPage slug="auth"
 }
 
-page Styling "/learn/styling" {
+page Styling "/learn/styling" layout Docs {
   meta title="Styling and themes · ArtScript" description="Layout props, the theme variables, scoped styles, dark mode and responsive props."
   DocPage slug="styling"
 }
 
-page Testing "/learn/testing" {
+page Testing "/learn/testing" layout Docs {
   meta title="Testing · ArtScript" description="test blocks that click, type and read the screen in a simulated browser."
   DocPage slug="testing"
 }
 
-page Libraries "/learn/libraries" {
+page Libraries "/learn/libraries" layout Docs {
   meta title="JavaScript libraries · ArtScript" description="Use any npm package or your own TypeScript with use, and DOM libraries with ref and mount."
   DocPage slug="libraries"
 }
 
-page Deploy "/learn/deploy" {
+page Recipes "/learn/recipes" layout Docs {
+  meta title="Recipes · ArtScript" description="Complete, tested answers: forms, search and pagination, uploads, live data, charts, secrets, admin areas and jobs."
+  DocPage slug="recipes"
+}
+
+page Deploy "/learn/deploy" layout Docs {
   meta title="Deploying · ArtScript" description="Static hosts, Node, Docker, Fly.io, Railway, Render and HTTPS proxies."
   DocPage slug="deploy"
 }
 
-page Agents "/ai/agents" {
+page Agents "/ai/agents" layout Docs {
   meta title="Working with AI agents · ArtScript" description="Set up Claude Code, Cursor or any agent to build and change ArtScript apps cheaply."
   DocPage slug="agents"
 }
 
-page Spec "/reference/spec" {
+page Spec "/reference/spec" layout Docs {
   meta title="Language spec · ArtScript" description="The whole ArtScript language in about 3K tokens: the document AI models read."
   DocPage slug="spec"
 }
 
-page EditSpec "/reference/edit" {
+page EditSpec "/reference/edit" layout Docs {
   meta title="Edit spec · ArtScript" description="About 800 tokens: enough for a model to change existing ArtScript code."
   DocPage slug="edit"
 }
 
-page Cli "/reference/cli" {
+page Cli "/reference/cli" layout Docs {
   meta title="CLI · ArtScript" description="Every art command: init, dev, build, check, fmt, patch, test, context, mcp and lsp."
   DocPage slug="cli"
 }
 
-page Security "/reference/security" {
+page Security "/reference/security" layout Docs {
   meta title="Security · ArtScript" description="What every ArtScript app gets by default, and the known limits."
   DocPage slug="security"
 }

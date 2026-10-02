@@ -6,7 +6,7 @@ Every command is `art <command>`. In a project created with `art init`, run them
 
 ### `art init <name> [--template t]`
 
-Creates a project: `src/app.art`, `public/`, the spec for your agent (`ARTSCRIPT.md`, `ARTSCRIPT-EDIT.md`), `AGENTS.md` and `CLAUDE.md`. Templates: `todo`, `blog`, `users`, `notes`, `catalog`, `crm`.
+Creates a project: `src/app.art`, `public/`, the spec for your agent (`ARTSCRIPT.md`, `ARTSCRIPT-EDIT.md`), `AGENTS.md`, `CLAUDE.md` and a Cursor rule (`.cursor/rules/artscript.mdc`). Templates: `todo`, `blog`, `users`, `notes`, `catalog`, `crm`.
 
 ### `art dev [path] [--port 3000]`
 
@@ -14,7 +14,7 @@ The development server: compiles on every save and reloads the page, serves the 
 
 ### `art build [path] [--out dist] [--sourcemap] [--base /sub] [--prerender [--site url]]`
 
-The production build: `index.html`, one minified `app.js` (the runtime and every `use` module bundled in) and `app.css`. With apis, also `server.js` (a single file with the server and its packages, no `node_modules`) and a `Dockerfile`.
+The production build: `index.html`, one minified `app.js` (the runtime and every `use` module bundled in) and `app.css`. A dynamic `import()` inside a `use` module becomes its own file in `chunks/`, downloaded only when it runs. With apis, also `server.js` (a single file with the server and its packages, no `node_modules`) and a `Dockerfile`.
 
 - `--prerender`: an HTML file per page without params, with its content and meta tags.
 - `--site https://example.com`: with `--prerender`, also `sitemap.xml` and `robots.txt`.

@@ -1,5 +1,5 @@
 // The real compiler runs in this page: what you type is checked and compiled on every keystroke.
-use "./lib/playground.ts" { compileApp, runApp, decode, shareUrl, onEditorKey }
+use "./lib/playground.ts" { loadCompiler, compileApp, runApp, decode, shareUrl, onEditorKey }
 
 use "./lib/content.ts" { EXAMPLES, exampleByName, prefersDark }
 
@@ -9,7 +9,8 @@ page Playground "/playground" {
   state example = query.example ?? "counter"
   state code = decode(query.code ?? "") ?? exampleByName(example).src
   state shared = false
-  computed result = compileApp(code)
+  state ready = false
+  computed result = compileApp(code, ready)
   computed dark = theme() == "dark" || theme() == "auto" && prefersDark()
   ref preview
   fn run(wait = 250) {
@@ -25,6 +26,10 @@ page Playground "/playground" {
     shared = true
     setTimeout(() => shared = false, 1500)
   }
+  mount {
+    await loadCompiler()
+    ready = true
+  }
   effect {
     run()
   }
@@ -39,7 +44,9 @@ page Playground "/playground" {
           button "Run" primary small -> run(0)
           button shared ? "Link copied" : "Share" small class="ghost" -> share()
         }
-        if result.problems.length == 0 {
+        if !ready {
+          text "Loading the compiler…" muted small
+        } else if result.problems.length == 0 {
           text `Compiled · ${(result.bytes / 1024).toFixed(1)} KB of JS` class="pg-ok" success
         } else {
           text `${result.problems.length} problem(s)` danger small

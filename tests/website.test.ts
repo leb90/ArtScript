@@ -51,3 +51,20 @@ test("compiler: new, process in server fns, ref properties, and the same use in 
   const two = ok({ "a.art": 'use "./tests/fixtures/interop/lib/money.ts" { toUSD }\n\npage A "/a" {\n  text toUSD(1)\n}\n', "b.art": 'use "./tests/fixtures/interop/lib/money.ts" { toUSD }\n\npage B "/b" {\n  text toUSD(2)\n}\n' });
   assert.equal(two.match(/import \{ toUSD \}/g)?.length, 1);
 });
+
+test("website: every recipe is a whole program that compiles, and they work", async () => {
+  const md = readFileSync("website/content/recipes.md", "utf8");
+  const recipes = [...md.matchAll(/```art\n([\s\S]*?)```/g)].map((m) => m[1]);
+  for (const src of recipes) {
+    // Only npm packages that aren't installed in this repository may be missing.
+    const errors = compile([{ file: "app.art", src }]).diagnostics.filter((d) => d.type !== "UNKNOWN_MODULE");
+    assert.deepEqual(errors.map((d) => `${d.type}: ${d.msg}`), [], src.split("\n")[0]);
+  }
+  const run = async (i: number, steps: string) => {
+    const r = await runTests([{ file: "app.art", src: `${recipes[i]}\ntest "recipe" {\n${steps}\n}\n` }]);
+    assert.deepEqual(r, [{ name: `test "recipe"`, ok: true }], recipes[i].split("\n")[0]);
+  };
+  await run(0, '  fill "Name" "A"\n  fill "Email" "a@b.co"\n  click "Join"\n  see "at least"\n  fill "Name" "Ana"\n  click "Join"\n  see "Thanks"');
+  await run(4, '  see "Comfortable"\n  check 0\n  see "Compact"');
+  await run(5, '  click "Billing"\n  see "Your plan"');
+});

@@ -10,7 +10,7 @@ use "canvas-confetti" as confetti
 use "./lib/money.ts" { toUSD }
 ```
 
-- `{ a, b }` imports named exports; `as name` imports the default export.
+- `{ a, b }` imports named exports (`{ a as b }` renames one); `as name` imports the default export.
 - Packages come from your project's `node_modules`: install them with `npm install` first.
 - Local paths are relative to the `.art` file. TypeScript works as is.
 - Imported names are available in every component and server function of the project, typed `Any`.

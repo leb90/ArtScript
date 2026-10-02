@@ -45,6 +45,7 @@ component Footer {
           link "Introduction" to="/learn"
           link "Quick start" to="/learn/quick-start"
           link "Tutorial" to="/learn/tutorial"
+          link "Recipes" to="/learn/recipes"
           link "Deploying" to="/learn/deploy"
         }
         column gap=2 align=start {
@@ -98,45 +99,50 @@ component Markdown(html: String) {
   column ref=box class="prose" on:click=onDocClick(event)
 }
 
-component Sidebar(path: String, open: Bool = false) {
-  column gap=0 class=(open ? "sidebar open" : "sidebar") {
-    for s in NAV {
-      text s.title class="group"
-      for it in s.items {
-        link it.title to=it.path class=(it.path == path ? "active" : "")
+// Every docs page renders inside this layout, itself inside Site: the sidebar stays mounted (and
+// keeps its scroll) between pages, and the router marks the current link with aria-current.
+layout Docs layout Site {
+  state open = false
+
+  grid class="container docs" {
+    column class="docs-nav" gap=0 {
+      button open ? "Hide menu" : "All pages" small class="ghost docs-toggle" -> open = !open
+      column gap=0 class=(open ? "sidebar open" : "sidebar") {
+        for s in NAV {
+          text s.title class="group"
+          for it in s.items {
+            link it.title to=it.path on:click=(open = false)
+          }
+        }
       }
     }
+    slot
   }
 }
 
-// The frame of every docs page: sidebar, title, content, previous/next and "on this page".
+// The content of a docs page: title, content, previous/next and "on this page".
 component DocShell(path: String, section: String, heading: String, slug: String = "") {
-  state open = false
   computed prev = prevPage(path)
   computed next = nextPage(path)
 
-  grid class="container docs" {
-    Sidebar path=path open=open
-    column class="doc-main" gap=0 {
-      button open ? "Hide menu" : "All pages" small class="ghost docs-toggle" -> open = !open
-      text section class="crumb"
-      title heading class="doc-title"
-      slot
-      row gap=4 class="pager" {
-        if prev {
-          link `← ${prev.title}` to=prev.path
-        }
-        if next {
-          link `${next.title} →` to=next.path class="next"
-        }
+  column class="doc-main" gap=0 {
+    text section class="crumb"
+    title heading class="doc-title"
+    slot
+    row gap=4 class="pager" {
+      if prev {
+        link `← ${prev.title}` to=prev.path
+      }
+      if next {
+        link `${next.title} →` to=next.path class="next"
       }
     }
-    if slug != "" {
-      column class="toc" gap=0 {
-        text "On this page" class="group"
-        for h in docHeadings(slug) {
-          link h.text href=`#${h.id}` class=(h.level == 3 ? "sub" : "")
-        }
+  }
+  if slug != "" {
+    column class="toc" gap=0 {
+      text "On this page" class="group"
+      for h in docHeadings(slug) {
+        link h.text href=`#${h.id}` class=(h.level == 3 ? "sub" : "")
       }
     }
   }

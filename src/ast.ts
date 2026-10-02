@@ -21,7 +21,8 @@ export type TestDecl = { kind: "Test"; name: string; description: string; body: 
 
 // `use "date-fns" { format }`, `use "canvas-confetti" as confetti`, `use "./lib/money.ts" { toUSD }`:
 // imports from npm packages or local JS/TS modules, visible in every component and server fn.
-export type UseDecl = { kind: "Use"; name: string; source: string; default: string | null; names: string[]; loc: Loc };
+// `names` are the local names; `renames` maps a local name to the export it comes from (`{ format as fmt }`).
+export type UseDecl = { kind: "Use"; name: string; source: string; default: string | null; names: string[]; renames?: Record<string, string>; loc: Loc };
 
 export type ModelDecl = { kind: "Model"; name: string; fields: Field[]; loc: Loc };
 // Rules checked by the server on create/update: `name: String min=2 max=50`, `email: Email unique`,
@@ -56,6 +57,7 @@ export type ComponentDecl = {
   layout?: boolean;
   name: string;
   // Pages: the route ("/products/:id", "*" for not found) and, optionally, the layout to use.
+  // Layouts may name the layout they render inside (`layout Docs layout Site`).
   path: string | null;
   layoutName?: string | null;
   // `requires login|admin`: the router only shows the page to signed-in users (or admins).

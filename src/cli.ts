@@ -127,8 +127,9 @@ function sizes(files: Record<string, string>): string {
     return [name, b.length, gzipSync(b).length, brotliCompressSync(b).length] as const;
   });
   const total = rows.reduce<[number, number, number]>((a, r) => [a[0] + r[1], a[1] + r[2], a[2] + r[3]], [0, 0, 0]);
-  const line = (n: string, r: number, g: number, br: number) => `  ${n.padEnd(12)} ${kb(r).padStart(10)} ${kb(g).padStart(10)} ${kb(br).padStart(10)}`;
-  const header = `  ${"file".padEnd(12)} ${"raw".padStart(10)} ${"gzip".padStart(10)} ${"brotli".padStart(10)}`;
+  const w = Math.max(12, ...rows.map((r) => r[0].length));
+  const line = (n: string, r: number, g: number, br: number) => `  ${n.padEnd(w)} ${kb(r).padStart(10)} ${kb(g).padStart(10)} ${kb(br).padStart(10)}`;
+  const header = `  ${"file".padEnd(w)} ${"raw".padStart(10)} ${"gzip".padStart(10)} ${"brotli".padStart(10)}`;
   return [header, ...rows.map((r) => line(...r)), line("total", ...total)].join("\n");
 }
 
@@ -144,7 +145,9 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
       // The bundle starts the app itself, so index.html has no inline script (a strict CSP works).
       // The .art source map goes in as an input map, so esbuild's map points back to the .art files.
       stdin: { contents: r.js.replace('"./runtime.js"', JSON.stringify(RUNTIME)) + `\nstart(undefined, ${JSON.stringify(base)});\n` + (maps && r.map ? `//# sourceMappingURL=data:application/json;base64,${Buffer.from(r.map).toString("base64")}\n` : ""), resolveDir: resolve(projectRoot(target)), loader: "js", sourcefile: "app.art.js" },
-      bundle: true, format: "esm", platform: "browser", write: false, minify, logLevel: "silent", outfile: "app.js", sourcemap: maps || false,
+      // `import()` in a `use` module becomes its own chunk, loaded only when it runs.
+      bundle: true, format: "esm", platform: "browser", write: false, minify, logLevel: "silent", sourcemap: maps || false,
+      splitting: true, outdir: "/out", entryNames: "app", chunkNames: "chunks/[name]-[hash]",
       define: { "process.env.NODE_ENV": minify ? '"production"' : '"development"' },
     });
     // Every .css file of the project (outside dist/public) becomes app.css, loaded after the
@@ -152,9 +155,8 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
     const root = projectRoot(target);
     const cssFiles = findFiles(root, ".css").filter((f) => !relative(root, f).startsWith("public"));
     const css = cssFiles.map((f) => `/* ${relative(root, f)} */\n${readFileSync(f, "utf8")}`).join("\n");
-    const js = out.outputFiles.find((f) => f.path.endsWith("app.js"))!.text;
-    const map = out.outputFiles.find((f) => f.path.endsWith("app.js.map"));
-    const files: Record<string, string> = { "index.html": htmlShell("ArtScript", "", "", !!css, base), "app.js": js, ...(map ? { "app.js.map": map.text } : {}) };
+    const files: Record<string, string> = { "index.html": htmlShell("ArtScript", "", "", !!css, base) };
+    for (const f of out.outputFiles) files[relative("/out", f.path)] = f.text;
     if (css) files["app.css"] = css;
     return { files, server: r.server };
   } catch (e: any) {
@@ -201,7 +203,10 @@ switch (cmd) {
     const r = await buildFiles(target, true, flags.has("--sourcemap") ? "linked" : false, base);
     if ("diagnostics" in r) { report(r.diagnostics, false); process.exit(1); }
     mkdirSync(outDir, { recursive: true });
-    for (const [f, s] of Object.entries(r.files)) writeFileSync(join(outDir, f), s);
+    for (const [f, s] of Object.entries(r.files)) {
+      mkdirSync(dirname(join(outDir, f)), { recursive: true });
+      writeFileSync(join(outDir, f), s);
+    }
     // --prerender: an HTML file per static route with its content (visible without JS, indexable).
     if (flags.has("--prerender")) {
       const { prerender } = await import(pathToFileURL(SSR_RUNTIME).href);

@@ -24,6 +24,7 @@ Read the spec before writing code; read the edit spec when only changing existin
 - [Styling and themes](https://leb90.github.io/ArtScript/md/styling.md)
 - [Testing](https://leb90.github.io/ArtScript/md/testing.md)
 - [JavaScript libraries](https://leb90.github.io/ArtScript/md/libraries.md)
+- [Recipes](https://leb90.github.io/ArtScript/md/recipes.md): complete, tested programs for forms, search and pagination, uploads, live data, charts, secrets, admin areas and jobs.
 
 ## Tools for agents
 

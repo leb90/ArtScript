@@ -73,7 +73,49 @@ layout Main {
 }
 ```
 
-When there's only one layout, every page uses it. With several, a page picks one: `page Admin "/admin" layout Dashboard`.
+When there's only one top-level layout, every page uses it. With several, a page picks one: `page Admin "/admin" layout Dashboard`.
+
+### Layouts inside layouts
+
+A layout can render inside another one. Here every page has the site header, and the docs pages also have a sidebar:
+
+```art
+layout Site {
+  column gap=0 {
+    row gap=4 pad=4 {
+      link "Home" to="/"
+      link "Docs" to="/docs"
+    }
+    slot
+  }
+}
+
+layout Docs layout Site {
+  row gap=6 align=start {
+    column gap=1 class="sidebar" {
+      link "Introduction" to="/docs"
+      link "Install" to="/docs/install"
+    }
+    slot
+  }
+}
+
+page Intro "/docs" layout Docs {
+  title "Introduction"
+}
+
+page Install "/docs/install" layout Docs {
+  title "Install"
+}
+```
+
+Going from one docs page to another keeps both layouts mounted (the sidebar keeps its scroll and state); going home removes `Docs` and keeps `Site`.
+
+Links to the current page get `aria-current="page"`, so the active item of a menu is one CSS rule:
+
+```css
+.sidebar a[aria-current="page"] { font-weight: 600; }
+```
 
 ## Titles and meta tags
 

@@ -594,7 +594,9 @@ export function start(routes, mount = document.getElementById("app"), prefix = "
   try { const saved = localStorage.getItem("art-theme"); if (saved) { themeSig._v = saved; applyTheme(saved); } } catch { /* no storage */ }
   const table = routes.map((r) => ({ ...r, ...compileRoute(r.path) }));
   const local = (at) => (base && (at === base || at.startsWith(base + "/")) ? at.slice(base.length) : at) || "/";
-  let layout, layoutDispose = null, slot = null, pageDispose = null;
+  // The mounted layouts, outermost first: { comp, slot, dispose }. A page's layouts are a chain
+  // (`layout Docs layout Site`); the ones it shares with the previous page stay mounted.
+  let stack = [], pageDispose = null;
 
   let rendered = "";
   render = () => {
@@ -631,19 +633,37 @@ export function start(routes, mount = document.getElementById("app"), prefix = "
     const props = { params: () => params, query: () => query };
     pageDispose?.();
     pageDispose = null;
-    if (route.layout !== layout || !route.layout) {
-      layoutDispose?.();
-      layoutDispose = null;
-      slot = null;
+    const chain = route.layouts ?? [];
+    let keep = 0;
+    while (keep < stack.length && keep < chain.length && stack[keep].comp === chain[keep]) keep++;
+    if (keep === 0) {
+      stack[0]?.dispose();
+      stack = [];
       mount.textContent = "";
-      layout = route.layout;
-      if (layout) layoutDispose = root(() => layout({ $slot: (parent) => { slot = region(parent); } }, mount));
-    }
-    if (slot) {
-      slot.clear();
-      slot.mount((frag) => slot.disposers.push(root(() => route.comp(props, frag))));
     } else {
-      pageDispose = root(() => route.comp(props, mount));
+      stack.length = keep;
+      stack[keep - 1].slot?.clear(); // the inner layouts and the page
+    }
+    // Renders into the innermost layout's slot (or the app's root). A slot inside an `if` may
+    // appear later, or again: it renders what it holds whenever it's created.
+    const fillSlot = (e) => e.slot?.mount((frag) => e.slot.disposers.push(root(() => e.fill(frag))));
+    const into = (render) => {
+      if (!stack.length) return root(() => render(mount));
+      const e = stack[stack.length - 1];
+      e.fill = render;
+      fillSlot(e);
+    };
+    for (let i = keep; i < chain.length; i++) {
+      const e = { comp: chain[i], slot: null, fill: null, dispose: null };
+      e.dispose = into((parent) => chain[i]({ $slot: (p) => { e.slot = region(p); if (e.fill) fillSlot(e); } }, parent));
+      stack.push(e);
+    }
+    pageDispose = into((parent) => route.comp(props, parent)) ?? null;
+    // Links to the current page get aria-current="page" (style them with `[aria-current=page]`).
+    const bare = (p) => p.replace(/(.)\/+$/, "$1"); // static hosts add a trailing slash
+    for (const a of mount.querySelectorAll?.("a[href]") ?? []) {
+      if (bare(new URL(a.href, location.href).pathname) === bare(location.pathname)) a.setAttribute("aria-current", "page");
+      else a.removeAttribute("aria-current");
     }
     const target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
     if (target) target.scrollIntoView?.();

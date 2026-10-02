@@ -11,5 +11,5 @@ mkdir -p site/md
 cp docs/SPEC.md docs/SPEC-EDIT.md docs/DEPLOY.md SECURITY.md website/content/*.md site/md/
 C=website/content
 cat docs/SPEC.md docs/SPEC-EDIT.md $C/introduction.md $C/quick-start.md $C/tutorial.md $C/components.md $C/routing.md \
-  $C/backend.md $C/auth.md $C/styling.md $C/testing.md $C/libraries.md $C/agents.md $C/cli.md docs/DEPLOY.md SECURITY.md > site/llms-full.txt
+  $C/backend.md $C/auth.md $C/styling.md $C/testing.md $C/libraries.md $C/recipes.md $C/agents.md $C/cli.md docs/DEPLOY.md SECURITY.md > site/llms-full.txt
 echo "site → $(pwd)/site"

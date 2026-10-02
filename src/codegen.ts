@@ -46,10 +46,20 @@ function importLines(program: Program, onlyFor?: string): string[] {
     const names = d.names.filter(used);
     for (const n of [def, ...names]) if (n) seen.add(n);
     if (!def && !names.length) continue;
-    const what = [def, names.length ? `{ ${names.join(", ")} }` : null].filter(Boolean).join(", ");
+    const what = [def, names.length ? `{ ${names.map((n) => (d.renames?.[n] ? `${d.renames[n]} as ${n}` : n)).join(", ")} }` : null].filter(Boolean).join(", ");
     out.push(`import ${what} from ${JSON.stringify(specifier(d.source, d.loc.file))};`);
   }
   return out;
+}
+
+// A page's layouts, outermost first. Without an explicit one, a page uses the only top-level layout
+// (one that isn't inside another), if there is exactly one.
+function layoutChain(program: Program, name: string | null | undefined): string[] {
+  const layouts = program.decls.filter((x): x is ComponentDecl => x.kind === "Component" && !!x.layout);
+  const roots = layouts.filter((l) => !l.layoutName);
+  const chain: string[] = [];
+  for (let n = name ?? (roots.length === 1 ? roots[0].name : null); n && !chain.includes(n); n = layouts.find((l) => l.name === n)?.layoutName ?? null) chain.unshift(n);
+  return chain;
 }
 
 export function generate(program: Program): string {
@@ -75,10 +85,8 @@ export function generateMapped(program: Program): { js: string; marks: (Loc | un
     out.push(g.gen(), "");
     marks.push(d.loc, ...g.marks, d.loc, undefined); // `function X(...) {`, its lines, `}`, blank
     if (d.page) {
-      // Without an explicit layout, a page uses the only layout there is (if exactly one).
-      const layouts = program.decls.filter((x) => x.kind === "Component" && x.layout);
-      const layout = d.layoutName ?? (layouts.length === 1 ? layouts[0].name : null);
-      pages.push(`{ path: ${JSON.stringify(d.path ?? "/" + d.name.toLowerCase())}, comp: ${d.name}${layout ? `, layout: ${layout}` : ""}${d.requires ? `, requires: ${JSON.stringify(d.requires)}` : ""} }`);
+      const chain = layoutChain(program, d.layoutName);
+      pages.push(`{ path: ${JSON.stringify(d.path ?? "/" + d.name.toLowerCase())}, comp: ${d.name}${chain.length ? `, layouts: [${chain.join(", ")}]` : ""}${d.requires ? `, requires: ${JSON.stringify(d.requires)}` : ""} }`);
     }
   }
   out.push(`export const routes = [${pages.join(", ")}];`);

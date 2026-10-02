@@ -18,6 +18,7 @@ import testing from "../content/testing.md" with { type: "text" };
 import libraries from "../content/libraries.md" with { type: "text" };
 import agents from "../content/agents.md" with { type: "text" };
 import cli from "../content/cli.md" with { type: "text" };
+import recipes from "../content/recipes.md" with { type: "text" };
 import exCounter from "../../examples/counter/app.art" with { type: "text" };
 import exTodo from "../../examples/todo/app.art" with { type: "text" };
 import exBlog from "../../examples/blog/app.art" with { type: "text" };
@@ -71,6 +72,7 @@ export const DOCS: Doc[] = [
   doc("styling", "/learn/styling", "Styling and themes", "Learn", "website/content/styling.md", styling),
   doc("testing", "/learn/testing", "Testing", "Learn", "website/content/testing.md", testing),
   doc("libraries", "/learn/libraries", "JavaScript libraries", "Learn", "website/content/libraries.md", libraries),
+  doc("recipes", "/learn/recipes", "Recipes", "Learn", "website/content/recipes.md", recipes),
   doc("deploy", "/learn/deploy", "Deploying", "Learn", "docs/DEPLOY.md", deploy),
   doc("agents", "/ai/agents", "Working with AI agents", "For AI", "website/content/agents.md", agents),
   doc("spec", "/reference/spec", "Language spec", "Reference", "docs/SPEC.md", spec),

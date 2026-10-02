@@ -221,10 +221,14 @@ class Parser {
     const source = this.next().v;
     const def = this.eat("as") ? this.ident("a name for the default export").v : null;
     const names: string[] = [];
+    const renames: Record<string, string> = {};
     if (this.eat("{")) {
       this.skipNl();
       while (!this.is("}")) {
-        names.push(this.ident("an exported name").v);
+        const exported = this.ident("an exported name").v;
+        const local = this.eat("as") ? this.ident("a local name").v : exported;
+        if (local !== exported) renames[local] = exported;
+        names.push(local);
         this.skipNl();
         if (!this.eat(",")) break;
         this.skipNl();
@@ -232,7 +236,7 @@ class Parser {
       this.expect("}");
     }
     if (!def && !names.length) this.fail("`as name` or `{ names }` after the module");
-    return { kind: "Use", name: `use ${source}`, source, default: def, names, loc };
+    return { kind: "Use", name: `use ${source}`, source, default: def, names, ...(Object.keys(renames).length ? { renames } : {}), loc };
   }
 
   // Steps are written like commands (`see "Total: 3"`, `click "Add" 1`): a name and literal
@@ -346,7 +350,8 @@ class Parser {
     let layoutName: string | null = null;
     const params: Param[] = [];
     if (page && this.tok.t === "str") path = this.next().v;
-    if (page && this.eat("layout")) layoutName = this.ident("a layout name").v;
+    // `page X "/x" layout Main`, and `layout Docs layout Site` (a layout inside another).
+    if ((page || layout) && this.eat("layout")) layoutName = this.ident("a layout name").v;
     let requires: "login" | "admin" | undefined;
     if (page && this.eat("requires")) {
       if (!this.is("login") && !this.is("admin")) this.fail("`login` or `admin`");

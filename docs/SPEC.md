@@ -28,12 +28,12 @@ page Users "/users" {
 - Changing a stored model needs no migration code; a new required field needs a default (or `?`); a renamed one: `title: String was="name"`.
 - `page Product "/products/:id"`: a component with a route; inside it `params.id` (String) and `query.tab` (from `?tab=`). `page NotFound "*"` catches unknown paths. Without a route: `/lowercase-name`.
 - `meta title="..." description="..." image="/og.png"` in a page sets its title, description and Open Graph tags.
-- `layout Main { ... slot ... }` wraps pages and stays mounted while they change (the only layout applies to every page; `page X "/x" layout Main` picks one). `link "x" to="/path"` and `navigate("/path")` change pages without reloading. `notify("Saved", "success")` shows a short message (`info`, `success`, `danger`). `page Admin "/admin" requires admin` (or `requires login`) only shows to them (others go to `/login` or `/`). `setTheme("dark" | "light" | "auto")`, `theme()`.
+- `layout Main { ... slot ... }` wraps pages and stays mounted while they change (the only top-level layout applies to every page; `page X "/x" layout Main` picks one; `layout Docs layout Main` goes inside Main). Links to the current page get `aria-current="page"`. `link "x" to="/path"` and `navigate("/path")` change pages without reloading. `notify("Saved", "success")` shows a short message (`info`, `success`, `danger`). `page Admin "/admin" requires admin` (or `requires login`) only shows to them (others go to `/login` or `/`). `setTheme("dark" | "light" | "auto")`, `theme()`.
 
 ## Imports: `use`
 
 ```
-use "date-fns" { format, addDays }      // npm package (install it with npm first)
+use "date-fns" { format, addDays as plus } // npm package (install it with npm first)
 use "canvas-confetti" as confetti       // default export
 use "./lib/money.ts" { toUSD }          // your own JS/TS module: the way out for anything not built in
 ```

@@ -25,7 +25,7 @@ Agents that crawl the web can start from [llms.txt](/llms.txt) or read everythin
 - prefer a small `art patch` to rewriting files;
 - write `test` blocks and run `npx art test`.
 
-If your agent uses another file (`.cursorrules`, `.github/copilot-instructions.md`), copy the same text there.
+Cursor also gets `.cursor/rules/artscript.mdc`, a rule attached to every `.art` file. If your agent uses another file (`.github/copilot-instructions.md`, `.windsurfrules`), copy the same text there.
 
 ## MCP
 

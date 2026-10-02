@@ -1,0 +1,8 @@
+use "./lib/lazy.ts" { loadHeavy }
+
+page Home "/" {
+  state msg = ""
+
+  button "Load" -> msg = await loadHeavy()
+  text msg
+}

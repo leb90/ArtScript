@@ -1,13 +1,19 @@
 // The playground: the real ArtScript compiler, bundled into this page, and the compiled app running
 // in an iframe beside the editor.
-import { compile } from "../../src/compile.ts";
-import runtimeSrc from "../../runtime/runtime.js" with { type: "text" };
+let engine: typeof import("./engine.ts") | null = null;
+
+// The compiler is a separate chunk: only this page downloads it.
+export async function loadCompiler() {
+  engine ??= await import("./engine.ts");
+}
 
 export type Problem = { line: number; col: number; type: string; msg: string; fixes: string };
 export type Result = { problems: Problem[]; js: string | null; server: boolean; bytes: number };
 
-export function compileApp(src: string): Result {
-  const r = compile([{ file: "app.art", src }]);
+// `ready` is there so the caller recompiles once the compiler has loaded.
+export function compileApp(src: string, ready: boolean): Result {
+  if (!ready || !engine) return { problems: [], js: null, server: false, bytes: 0 };
+  const r = engine.compile([{ file: "app.art", src }]);
   return {
     problems: r.diagnostics.map((d) => ({ line: d.loc.line, col: d.loc.col, type: d.type, msg: d.msg, fixes: (d.fixes ?? []).join("  |  ") })),
     js: r.js ?? null,
@@ -24,7 +30,7 @@ export function runApp(box: HTMLElement, js: string, dark: boolean, wait = 250) 
   clearTimeout(timer);
   timer = setTimeout(() => {
     if (typeof document === "undefined" || !box.isConnected) return; // prerendering, or the page is gone
-    runtimeUrl ||= URL.createObjectURL(new Blob([runtimeSrc], { type: "text/javascript" }));
+    runtimeUrl ||= URL.createObjectURL(new Blob([engine!.runtimeSrc], { type: "text/javascript" }));
     const app = URL.createObjectURL(new Blob([js.replace('"./runtime.js"', JSON.stringify(runtimeUrl))], { type: "text/javascript" }));
     const frame = document.createElement("iframe");
     frame.title = "Your app";
