@@ -183,7 +183,8 @@ function makeTable(schema, db, dataDir, name, { model, access }, backup) {
   let changedHook = () => {};
   const peek = (id) => parse(db.prepare(`SELECT data FROM ${T} WHERE id = ?`).get(String(id)));
   // Auth passwords never leave the server.
-  const out = (row, deep = true) => {
+  // `include`: deeper relations to expand, as paths below this row ("author.company").
+  const out = (row, deep = true, include = []) => {
     if (!row) return row ?? null;
     let r = row;
     if (isAuth) { const { password, ...rest } = r; r = rest; }
@@ -191,7 +192,8 @@ function makeTable(schema, db, dataDir, name, { model, access }, backup) {
       for (const [f, { api, list }] of Object.entries(refs)) {
         const t = tables[api];
         if (!t || r[f] === null || r[f] === undefined) continue;
-        const one = (id) => t.out(t.peek(id), false);
+        const below = include.filter((p) => p.startsWith(f + ".")).map((p) => p.slice(f.length + 1));
+        const one = (id) => t.out(t.peek(id), below.length > 0, below);
         r = { ...r, [f]: list ? r[f].map(one).filter(Boolean) : one(r[f]) };
       }
     }
@@ -299,7 +301,8 @@ function makeTable(schema, db, dataDir, name, { model, access }, backup) {
     name, model, access, key, isAuth, out, byEmail, find,
     list(me, q) {
       const { where, order, limit, offset, args } = query(q, me);
-      return db.prepare(`SELECT data FROM ${T} ${where} ${order} LIMIT ? OFFSET ?`).all(...args, limit, offset).map((r) => out(parse(r)));
+      const include = Array.isArray(q?.include) ? q.include.map(String) : [];
+      return db.prepare(`SELECT data FROM ${T} ${where} ${order} LIMIT ? OFFSET ?`).all(...args, limit, offset).map((r) => out(parse(r), true, include));
     },
     count(me, q) {
       const { where, args } = query({ where: q?.where, search: q?.search }, me);

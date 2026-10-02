@@ -54,6 +54,9 @@ test("relations: canonical format; writes take the row or its id; cascade only o
   assert.deepEqual(types(page('  button "x" -> api.posts.create({ title: "t", author: authors[0].id, tags: ["a"] })')), []);
   assert.deepEqual(types(page('  data mine = api.posts.list({ where: { author: "1" } })\n  text mine[0].author.name')), []);
   assert.deepEqual(types(page('  button "x" -> api.posts.create({ title: "t", author: 3, tags: [] })')), ["TYPE_MISMATCH"]);
+  assert.deepEqual(types(page('  data cs = api.comments.list({ include: ["post.author"] })')), []);
+  const [bad] = check(parse(page('  data cs = api.comments.list({ include: ["post.autor"] })'), "t"));
+  assert.deepEqual([bad.type, bad.fixes], ["UNKNOWN_FIELD", ["author"]]);
   assert.deepEqual(types("model A {\n  id: ID\n  n: Number cascade\n}\napi as: A"), ["TYPE_MISMATCH"]);
 });
 
@@ -96,6 +99,9 @@ test("relations: stored as ids, read as rows, deletes blocked or cascaded", asyn
   // Comments are `cascade`: deleting the post deletes its comments.
   await call("POST", "comments", { post: post.body.id, text: "first" });
   assert.equal((await call("GET", "comments")).body[0].post.title, "Hi");
+  assert.equal((await call("GET", "comments")).body[0].post.author, ana.id, "one level by default: the post's author is its id");
+  const deep = (await call("GET", `comments?q=${encodeURIComponent(JSON.stringify({ include: ["post.author"] }))}`)).body;
+  assert.equal(deep[0].post.author.name, "Ana");
   assert.equal((await call("DELETE", `posts/${post.body.id}`)).status, 204);
   assert.deepEqual((await call("GET", "comments")).body, []);
   assert.equal((await call("DELETE", `authors/${ana.id}`)).status, 204);

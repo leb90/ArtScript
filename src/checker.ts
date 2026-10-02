@@ -1091,7 +1091,7 @@ class Checker {
     const q = args[0];
     if (!q) return;
     if (q.kind !== "Object") { this.expectTy(q, tys[0], { k: "obj", fields: {} }); return; }
-    const keys = method === "list" ? ["where", "search", "sort", "limit", "offset"] : ["where", "search"];
+    const keys = method === "list" ? ["where", "search", "sort", "limit", "offset", "include"] : ["where", "search"];
     const fields = Object.keys(this.models.get(t.model) ?? {});
     for (const p of q.props) {
       if ("spread" in p) continue;
@@ -1103,6 +1103,22 @@ class Checker {
       if (p.key === "where") {
         if (p.value.kind === "Object") this.modelLiteral(p.value, t.model, { partial: true });
         else this.expectTy(p.value, ty, { k: "obj", fields: {} });
+      } else if (p.key === "include") {
+        // `include: ["post.author"]`: every step of each path is a relation.
+        this.expectTy(p.value, ty, list(STR));
+        if (p.value.kind === "Array") for (const it of p.value.items) {
+          if (it.kind !== "Str") continue;
+          let model = t.model;
+          for (const step of it.value.split(".")) {
+            const next = this.refTarget(model, step);
+            if (!next) {
+              const rels = (this.program.decls.find((d): d is ModelDecl => d.kind === "Model" && d.name === model)?.fields ?? []).filter((f) => this.refTarget(model, f.name)).map((f) => f.name);
+              this.err("UNKNOWN_FIELD", `'${step}' isn't a relation of ${model}`, it.loc, { expr: it.value, expected: rels.join("|") || "no relations", fixes: suggest(step, rels) });
+              break;
+            }
+            model = next;
+          }
+        }
       } else if (p.key === "sort") {
         this.expectTy(p.value, ty, STR);
         // A literal sort is checked now: "field" ascending, "-field" descending.

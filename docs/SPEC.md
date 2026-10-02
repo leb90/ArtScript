@@ -75,7 +75,7 @@ api users: User                    // REST at /api/users: validated against the 
 ```
 
 - The model needs an `ID` field (if `create` omits it, the server assigns it).
-- Relations: `author: User` (or `tags: Tag[]`) in a stored model stores the id; writes take the row or its id, reads return the row (`post.author.name`), `where: { author: id }` filters. Deleting a referenced row fails unless the field is `cascade` (`post: Post cascade`).
+- Relations: `author: User` (or `tags: Tag[]`) in a stored model stores the id; writes take the row or its id, reads return the row (`post.author.name`; deeper with `list({ include: ["post.author"] })`), `where: { author: id }` filters. Deleting a referenced row fails unless the field is `cascade` (`post: Post cascade`).
 - Typed client in any component: `api.users.list(query?)`, `count(query?)`, `get(id)`, `create(obj)`, `update(id, changes)`, `remove(id)`.
 - Query: `list({ where: { active: true }, search: "pan", sort: "-price", limit: 20, offset: 40 })` (`-` = descending; `search` matches text fields); `count({ where, search })`. Inside `data` they re-run when the states they use change (`offset: page * 20`).
 - `data users = api.users.list()` loads on mount and **reloads by itself** after any write, login or logout. A list starts as `[]`, a count as `0`, `get` as `null` (`T?`). `users.loading` (until the first response), `users.error` (message or `null`), `users.reload()`. `... live` also reloads when someone else writes.
