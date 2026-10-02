@@ -2,7 +2,7 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
-## Unreleased (next: 0.2)
+## 0.2.0 (2026-10-02)
 
 ### Language
 - `use` for npm packages and your own JS/TS modules, checked at compile time.
