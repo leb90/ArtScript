@@ -4,7 +4,7 @@
 
 ## What's ready
 
-- Free names on npm (checked 2026-09-30): `artscript` and `create-artscript`.
+- The package is `artscript-lang`: npm rejects `artscript` as too similar to `rescript` (2026-10-02). The command is still `art`.
 - `npm run build` compiles `src/*.ts` → `lib/*.js` + `.d.ts` types. Node doesn't run TypeScript inside `node_modules`, so the package ships JS.
 - `bin: art → lib/cli.js`, `files` (lib, runtime, templates, docs/SPEC.md), `exports`, `engines: node >=24`, MIT license, repository and metadata.
 - `prepack` builds automatically; `prepublishOnly` runs tests + typecheck.

@@ -10,6 +10,6 @@
     "check": "art check"
   },
   "devDependencies": {
-    "artscript": "__ARTSCRIPT__"
+    "artscript-lang": "__ARTSCRIPT__"
   }
 }
