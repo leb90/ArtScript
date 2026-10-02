@@ -4,7 +4,7 @@ import { CompileError, diag } from "./errors.ts";
 export type TplPart = { src: string; line: number; col: number };
 
 export type Token = {
-  t: "id" | "num" | "str" | "tpl" | "op" | "nl" | "eof";
+  t: "id" | "num" | "str" | "tpl" | "op" | "nl" | "eof" | "css";
   v: string;
   loc: Loc;
   quasis?: string[]; // only for `tpl`
@@ -76,6 +76,17 @@ export function lex(src: string, file: string, startLine = 1, startCol = 1, comm
     if (/[A-Za-z_$]/.test(c)) {
       let j = i;
       while (j < src.length && /[A-Za-z0-9_$]/.test(src[j])) j++;
+      // `style {` at the start of a line: a CSS block, taken as raw text (a `css` token).
+      const prev = out[out.length - 1];
+      const brace = /^[ \t]*\{/.exec(src.slice(j));
+      if (src.slice(i, j) === "style" && (!prev || prev.t === "nl" || prev.v === "{") && brace) {
+        let k = j + brace[0].length, depth = 1;
+        for (; k < src.length && depth; k++) depth += src[k] === "{" ? 1 : src[k] === "}" ? -1 : 0;
+        out.push({ t: "id", v: "style", loc: start });
+        out.push({ t: "css", v: src.slice(j + brace[0].length, k - 1), loc: start });
+        adv(k - i);
+        continue;
+      }
       out.push({ t: "id", v: src.slice(i, j), loc: start });
       adv(j - i);
       continue;

@@ -5,6 +5,7 @@ import { printDecl, printType } from "./printer.ts";
 import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
 import { slotNames, twoWayProps } from "./checker.ts";
 import { ICONS } from "./icons.ts";
+import { scopeCss } from "./css.ts";
 
 // Props each component assigns (bound two-way), for the program being generated.
 let twoWay = new Map<string, Set<string>>();
@@ -234,7 +235,7 @@ class ComponentGen {
     }
     // `data` compiles to a signal, so it reads and mutates like a state.
     for (const m of c.members) {
-      if (m.kind !== "Mount" && m.kind !== "Effect") scope.vars.set(m.name, { kind: m.kind === "Computed" ? "computed" : m.kind === "Fn" ? "fn" : m.kind === "Ref" ? "let" : m.kind === "Data" ? "data" : "state" });
+      if (m.kind !== "Mount" && m.kind !== "Effect" && m.kind !== "Style") scope.vars.set(m.name, { kind: m.kind === "Computed" ? "computed" : m.kind === "Fn" ? "fn" : m.kind === "Ref" ? "let" : m.kind === "Data" ? "data" : "state" });
     }
     for (const p of c.params) {
       const def = p.default ? `(() => ${this.expr(p.default, scope)})` : "(() => undefined)";
@@ -243,6 +244,7 @@ class ComponentGen {
     for (const m of c.members) {
       this.at = m.loc;
       if (m.kind === "Mount" || m.kind === "Effect") continue; // after the view, so refs are set
+      if (m.kind === "Style") { this.emit(`$.$scopedCss(${JSON.stringify(c.name)}, ${JSON.stringify(scopeCss(m.css, c.name))});`); continue; }
       if (m.kind === "Ref") this.emit(`let ${m.name} = null;`);
       else if (m.kind === "State") this.emit(`const ${m.name} = $.signal(${this.expr(m.init, scope)});`);
       else if (m.kind === "Computed") this.emit(`const ${m.name} = $.computed(() => ${this.expr(m.expr, scope)});`);
@@ -370,6 +372,7 @@ class ComponentGen {
     }
     const v = this.v();
     this.emit(`const ${v} = $.$el(${parent}, "${spec.html}"${classes ? `, "${classes}"` : ""});`);
+    if (this.c.members.some((m) => m.kind === "Style")) this.emit(`${v}.setAttribute("data-s", ${JSON.stringify(this.c.name)});`);
     if (spec.type) this.emit(`${v}.type = "${spec.type}";`);
     if (el.tag === "spinner") this.emit(`${v}.setAttribute("role", "status");`);
     if (label && spec.type === "checkbox") this.labelText(parent, label, scope);

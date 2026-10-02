@@ -68,7 +68,9 @@ export type ComponentDecl = {
 
 export type Param = { name: string; type: TypeRef; default: Expr | null; loc: Loc };
 
-export type Member = StateDecl | ComputedDecl | FnDecl | DataDecl | RefDecl | HookDecl;
+export type Member = StateDecl | ComputedDecl | FnDecl | DataDecl | RefDecl | HookDecl | StyleDecl;
+// `style { .box { ... } }`: CSS that only applies to this component's elements.
+export type StyleDecl = { kind: "Style"; name: "style"; css: string; loc: Loc };
 export type StateDecl = { kind: "State"; name: string; type: TypeRef | null; init: Expr; loc: Loc };
 export type ComputedDecl = { kind: "Computed"; name: string; expr: Expr; loc: Loc };
 // `defaults[i]`: default value of params[i] (`fn sort(asc = true)`), when any param has one.

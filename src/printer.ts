@@ -108,6 +108,15 @@ export function printRules(r: Field["rules"]): string {
   return (r.min !== undefined ? ` min=${r.min}` : "") + (r.max !== undefined ? ` max=${r.max}` : "") + (r.match !== undefined ? ` match=${JSON.stringify(r.match)}` : "") + (r.unique ? " unique" : "") + (r.cascade ? " cascade" : "") + (r.was !== undefined ? ` was=${JSON.stringify(r.was)}` : "") + (r.accept !== undefined ? ` accept=${JSON.stringify(r.accept)}` : "");
 }
 
+// A style block's CSS, re-indented: its own relative indentation is kept.
+function cssLines(css: string, pad: string): string[] {
+  const lines = css.split("\n").filter((l, i, all) => l.trim() || (i > 0 && i < all.length - 1));
+  while (lines.length && !lines[0].trim()) lines.shift();
+  while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+  const indent = Math.min(...lines.filter((l) => l.trim()).map((l) => l.match(/^\s*/)![0].length));
+  return lines.map((l) => (l.trim() ? pad + l.slice(indent).trimEnd() : ""));
+}
+
 export function printParams(f: { params: string[]; defaults?: (Expr | null)[] }): string {
   return f.params.map((p, i) => (f.defaults?.[i] ? `${p} = ${printExpr(f.defaults[i]!)}` : p)).join(", ");
 }
@@ -139,6 +148,7 @@ export function printDecl(d: Decl): string {
     else if (m.kind === "Ref") lines.push(`${IND}ref ${m.name}`);
     else if (m.kind === "Mount" || m.kind === "Effect") lines.push(`${IND}${m.name} {`, ...printStmts(m.body, 2), `${IND}}`);
     else if (m.kind === "Fn") lines.push(`${IND}fn ${m.name}(${printParams(m)}) {`, ...printStmts(m.body, 2), `${IND}}`);
+    else if (m.kind === "Style") lines.push(`${IND}style {`, ...cssLines(m.css, IND.repeat(2)), `${IND}}`);
     out.push(...withComments(m, IND, lines));
   }
   if (d.members.length && d.view.length) out.push("");

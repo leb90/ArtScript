@@ -386,11 +386,13 @@ class Parser {
   memberAhead(): boolean {
     if (this.is("state") || this.is("computed") || this.is("fn") || this.is("data")) return true;
     if (this.is("ref")) return this.peek().t === "id";
+    if (this.is("style") && this.peek().t === "css") return true;
     return (this.is("mount") || this.is("effect")) && this.is("{", this.peek());
   }
 
   member(): Member {
     const kw = this.next();
+    if (kw.v === "style") return { kind: "Style", name: "style", css: this.next().v, loc: kw.loc };
     if (kw.v === "mount" || kw.v === "effect") {
       return { kind: kw.v === "mount" ? "Mount" : "Effect", name: kw.v, body: this.block(), loc: kw.loc };
     }

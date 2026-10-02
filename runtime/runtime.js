@@ -130,6 +130,16 @@ export function $attr(n, name, fn) {
     else n.setAttribute(name, v === true ? "" : v);
   });
 }
+// A component's `style { }` (already scoped by the compiler), added once per page.
+const scoped = new Set();
+export function $scopedCss(name, css) {
+  if (scoped.has(name)) return;
+  scoped.add(name);
+  const s = document.createElement("style");
+  s.textContent = css;
+  document.head.appendChild(s);
+}
+
 // Adds a class whose rule is generated on demand (responsive props), once per page.
 let sheet = null;
 const rules = new Set();

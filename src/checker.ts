@@ -486,9 +486,9 @@ class Checker {
     }
     // Declare everything first (allows forward references), then infer types in order.
     const kindOf = { State: "state", Computed: "computed", Data: "data", Fn: "fn", Ref: "ref" } as const;
-    for (const m of c.members) if (m.kind !== "Mount" && m.kind !== "Effect") declare(m.name, { kind: kindOf[m.kind], ty: m.kind === "Fn" ? fn(ANY) : ANY }, m.loc);
+    for (const m of c.members) if (m.kind !== "Mount" && m.kind !== "Effect" && m.kind !== "Style") declare(m.name, { kind: kindOf[m.kind], ty: m.kind === "Fn" ? fn(ANY) : ANY }, m.loc);
     for (const m of c.members) {
-      if (m.kind === "Ref") continue;
+      if (m.kind === "Ref" || m.kind === "Style") continue;
       if (m.kind === "Mount" || m.kind === "Effect") {
         this.inHook = true;
         this.stmts(m.body, new Scope(scope));
