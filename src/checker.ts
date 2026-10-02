@@ -347,6 +347,7 @@ class Checker {
     for (const d of this.program.decls) {
       if (d.kind !== "Component" || !d.page) continue;
       this.at = d.name;
+      if (d.requires && !this.authModel) this.err("AUTH_REQUIRED", `'requires ${d.requires}' needs accounts: \`auth <api>\` is missing`, d.loc, { expr: `requires ${d.requires}`, fixes: ["auth users"] });
       const path = d.path ?? "/" + d.name.toLowerCase();
       if (path !== "*" && !/^\/[\w\-./:]*$/.test(path)) {
         this.err("BAD_ROUTE", `invalid route '${path}'`, d.loc, { expr: path, expected: '"/path", "/path/:param" or "*"' });
@@ -450,6 +451,8 @@ class Checker {
     this.withImports(scope);
     scope.vars.set("navigate", { kind: "global", ty: fn({ k: "void" }) });
     scope.vars.set("notify", { kind: "global", ty: { k: "fn", ret: { k: "void" }, params: [STR, STR] } }); // notify("Saved", "success"?)
+    scope.vars.set("setTheme", { kind: "global", ty: { k: "fn", ret: { k: "void" }, params: [STR] } }); // "dark" | "light" | "auto"
+    scope.vars.set("theme", { kind: "global", ty: fn(STR) });
     // Pages get their route params (typed from the path) and the query string.
     if (c.page) {
       const keys = [...(c.path ?? "").matchAll(/:(\w+)/g)].map((m) => m[1]);

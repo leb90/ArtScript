@@ -58,6 +58,8 @@ export type ComponentDecl = {
   // Pages: the route ("/products/:id", "*" for not found) and, optionally, the layout to use.
   path: string | null;
   layoutName?: string | null;
+  // `requires login|admin`: the router only shows the page to signed-in users (or admins).
+  requires?: "login" | "admin";
   params: Param[];
   members: Member[];
   view: ViewNode[];

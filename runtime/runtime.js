@@ -493,7 +493,7 @@ export function $data(fn, initial) {
 
 // ---------- App ----------
 // Theme: override the --a-* variables in your own CSS (`:root { --a-primary: #e11d48 }`).
-const CSS = `:root{--a-primary:#2563eb;--a-danger:#dc2626;--a-success:#16a34a;--a-bg:#fafafa;--a-fg:#1a1a1a;--a-surface:#fff;--a-border:#e5e5e5;--a-input:#d4d4d4;--a-muted:#737373;--a-radius:8px;--a-font:system-ui,sans-serif}@media(prefers-color-scheme:dark){:root{--a-bg:#111;--a-fg:#eee;--a-surface:#1a1a1a;--a-border:#333;--a-input:#444;--a-muted:#999}}*{box-sizing:border-box}body{margin:0;font:16px/1.5 var(--a-font);color:var(--a-fg);background:var(--a-bg)}#app{padding:24px;max-width:960px;margin:0 auto}.a-row{display:flex;align-items:center}.a-column{display:flex;flex-direction:column}.a-grid{display:grid}.a-wrap{flex-wrap:wrap}.a-card{display:flex;flex-direction:column;padding:16px;border:1px solid var(--a-border);border-radius:calc(var(--a-radius) * 1.5);background:var(--a-surface)}button{font:inherit;padding:6px 14px;border-radius:var(--a-radius);border:1px solid var(--a-input);background:var(--a-surface);color:inherit;cursor:pointer}button.a-primary{background:var(--a-primary);border-color:var(--a-primary);color:#fff}button.a-danger{color:var(--a-danger);border-color:var(--a-danger)}button.a-small{padding:2px 8px;font-size:.875em}span.a-danger{color:var(--a-danger)}span.a-primary{color:var(--a-primary)}span.a-success{color:var(--a-success)}input,textarea,select{font:inherit;color:inherit}input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{padding:6px 10px;border:1px solid var(--a-input);border-radius:var(--a-radius);background:inherit}.a-bold{font-weight:600}.a-muted{color:var(--a-muted)}.a-small{font-size:.875em}.a-large{font-size:1.25em}h2{margin:0}a{color:var(--a-primary)}.a-field{display:flex;flex-direction:column;gap:4px}.a-check{display:flex;flex-direction:row;align-items:center;gap:8px}.a-radio{display:flex;flex-direction:column;gap:4px}.a-tabs{display:flex;gap:4px;border-bottom:1px solid var(--a-border)}.a-tabs button{border:0;border-radius:var(--a-radius) var(--a-radius) 0 0;background:none}.a-tabs .a-active{box-shadow:inset 0 -2px var(--a-primary);font-weight:600}.a-modal{border:0;border-radius:calc(var(--a-radius) * 1.5);padding:20px;min-width:min(420px,90vw);background:var(--a-surface);color:inherit}.a-modal::backdrop{background:#0006}.a-badge{display:inline-block;padding:0 8px;border-radius:999px;font-size:.75em;background:var(--a-border)}.a-badge.a-primary{background:color-mix(in srgb,var(--a-primary) 15%,transparent);color:var(--a-primary)}.a-badge.a-success{background:color-mix(in srgb,var(--a-success) 15%,transparent);color:var(--a-success)}.a-badge.a-danger{background:color-mix(in srgb,var(--a-danger) 15%,transparent);color:var(--a-danger)}.a-spinner{display:inline-block;width:1em;height:1em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:a-spin .7s linear infinite}@keyframes a-spin{to{transform:rotate(360deg)}}hr{border:0;border-top:1px solid var(--a-border);margin:8px 0;width:100%}.a-toasts{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:100}.a-toast{padding:10px 16px;border-radius:var(--a-radius);background:var(--a-fg);color:var(--a-bg);box-shadow:0 4px 12px #0003}.a-toast.a-success{background:var(--a-success);color:#fff}.a-toast.a-danger{background:var(--a-danger);color:#fff}.a-list{margin:0;padding-left:20px}.a-icon{display:inline-flex;vertical-align:middle;line-height:0}.a-table{border-collapse:collapse;width:100%}.a-table th,.a-table td{text-align:left;padding:8px;border-bottom:1px solid var(--a-border)}video,img{max-width:100%}`;
+const CSS = `:root{--a-primary:#2563eb;--a-danger:#dc2626;--a-success:#16a34a;--a-bg:#fafafa;--a-fg:#1a1a1a;--a-surface:#fff;--a-border:#e5e5e5;--a-input:#d4d4d4;--a-muted:#737373;--a-radius:8px;--a-font:system-ui,sans-serif}@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--a-bg:#111;--a-fg:#eee;--a-surface:#1a1a1a;--a-border:#333;--a-input:#444;--a-muted:#999;color-scheme:dark}}:root[data-theme=dark]{--a-bg:#111;--a-fg:#eee;--a-surface:#1a1a1a;--a-border:#333;--a-input:#444;--a-muted:#999;color-scheme:dark}*{box-sizing:border-box}body{margin:0;font:16px/1.5 var(--a-font);color:var(--a-fg);background:var(--a-bg)}#app{padding:24px;max-width:960px;margin:0 auto}.a-row{display:flex;align-items:center}.a-column{display:flex;flex-direction:column}.a-grid{display:grid}.a-wrap{flex-wrap:wrap}.a-card{display:flex;flex-direction:column;padding:16px;border:1px solid var(--a-border);border-radius:calc(var(--a-radius) * 1.5);background:var(--a-surface)}button{font:inherit;padding:6px 14px;border-radius:var(--a-radius);border:1px solid var(--a-input);background:var(--a-surface);color:inherit;cursor:pointer}button.a-primary{background:var(--a-primary);border-color:var(--a-primary);color:#fff}button.a-danger{color:var(--a-danger);border-color:var(--a-danger)}button.a-small{padding:2px 8px;font-size:.875em}span.a-danger{color:var(--a-danger)}span.a-primary{color:var(--a-primary)}span.a-success{color:var(--a-success)}input,textarea,select{font:inherit;color:inherit}input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{padding:6px 10px;border:1px solid var(--a-input);border-radius:var(--a-radius);background:inherit}.a-bold{font-weight:600}.a-muted{color:var(--a-muted)}.a-small{font-size:.875em}.a-large{font-size:1.25em}h2{margin:0}a{color:var(--a-primary)}.a-field{display:flex;flex-direction:column;gap:4px}.a-check{display:flex;flex-direction:row;align-items:center;gap:8px}.a-radio{display:flex;flex-direction:column;gap:4px}.a-tabs{display:flex;gap:4px;border-bottom:1px solid var(--a-border)}.a-tabs button{border:0;border-radius:var(--a-radius) var(--a-radius) 0 0;background:none}.a-tabs .a-active{box-shadow:inset 0 -2px var(--a-primary);font-weight:600}.a-modal{border:0;border-radius:calc(var(--a-radius) * 1.5);padding:20px;min-width:min(420px,90vw);background:var(--a-surface);color:inherit}.a-modal::backdrop{background:#0006}.a-badge{display:inline-block;padding:0 8px;border-radius:999px;font-size:.75em;background:var(--a-border)}.a-badge.a-primary{background:color-mix(in srgb,var(--a-primary) 15%,transparent);color:var(--a-primary)}.a-badge.a-success{background:color-mix(in srgb,var(--a-success) 15%,transparent);color:var(--a-success)}.a-badge.a-danger{background:color-mix(in srgb,var(--a-danger) 15%,transparent);color:var(--a-danger)}.a-spinner{display:inline-block;width:1em;height:1em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:a-spin .7s linear infinite}@keyframes a-spin{to{transform:rotate(360deg)}}hr{border:0;border-top:1px solid var(--a-border);margin:8px 0;width:100%}.a-toasts{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:100}.a-toast{padding:10px 16px;border-radius:var(--a-radius);background:var(--a-fg);color:var(--a-bg);box-shadow:0 4px 12px #0003}.a-toast.a-success{background:var(--a-success);color:#fff}.a-toast.a-danger{background:var(--a-danger);color:#fff}.a-list{margin:0;padding-left:20px}.a-icon{display:inline-flex;vertical-align:middle;line-height:0}.a-table{border-collapse:collapse;width:100%}.a-table th,.a-table td{text-align:left;padding:8px;border-bottom:1px solid var(--a-border)}video,img{max-width:100%}`;
 
 // `meta title=... description=... image=...`: the page's title, description and Open Graph tags.
 function metaTag(attr, key) {
@@ -510,6 +510,20 @@ export function $meta(props) {
   if (props.description) effect(() => { const d = str(props.description()); metaTag("name", "description").setAttribute("content", d); metaTag("property", "og:description").setAttribute("content", d); });
   if (props.image) effect(() => metaTag("property", "og:image").setAttribute("content", str(props.image())));
 }
+
+// `setTheme("dark" | "light" | "auto")`: remembered in this browser; "auto" follows the system.
+// `theme()` reads it (reactive).
+const themeSig = new Signal("auto");
+const applyTheme = (mode) => {
+  if (mode === "auto") delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = mode;
+};
+export function setTheme(mode) {
+  themeSig.v = mode;
+  applyTheme(mode);
+  try { localStorage.setItem("art-theme", mode); } catch { /* private mode */ }
+}
+export const theme = () => themeSig.v;
 
 // `notify("Saved")` / `notify("Couldn't save", "danger")`: a message at the bottom of the screen
 // for 4 seconds (kinds: info, success, danger). Announced to screen readers.
@@ -560,6 +574,7 @@ export function start(routes, mount = document.getElementById("app")) {
     document.head.insertBefore(style, document.head.firstChild); // first, so the app's CSS wins
   }
   mount.textContent = "";
+  try { const saved = localStorage.getItem("art-theme"); if (saved) { themeSig._v = saved; applyTheme(saved); } } catch { /* no storage */ }
   const table = routes.map((r) => ({ ...r, ...compileRoute(r.path) }));
   let layout, layoutDispose = null, slot = null, pageDispose = null;
 
@@ -575,6 +590,22 @@ export function start(routes, mount = document.getElementById("app")) {
       break;
     }
     route ??= table.find((r) => r.path === "*") ?? table[0];
+    // `requires login|admin`: ask who's signed in first; without access, go to /login (when the app
+    // has it) or home. The api protects the data; this keeps the page from showing.
+    if (route.requires) {
+      const want = route;
+      request("GET", "_auth/me").then((me) => {
+        if (location.pathname !== path) return; // navigated away meanwhile
+        const ok = me && (want.requires === "login" || me.role === "admin");
+        if (ok) show(want, params, query);
+        else navigate(!me && table.some((r) => r.path === "/login") ? "/login" : "/");
+      }, () => navigate("/"));
+      return;
+    }
+    show(route, params, query);
+  };
+
+  const show = (route, params, query) => {
     const props = { params: () => params, query: () => query };
     pageDispose?.();
     pageDispose = null;

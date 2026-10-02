@@ -55,7 +55,7 @@ export function generate(program: Program): string {
 // The JS and, per JS line, the .art location it comes from (undefined for glue code).
 export function generateMapped(program: Program): { js: string; marks: (Loc | undefined)[] } {
   const marks: (Loc | undefined)[] = [];
-  const out: string[] = ['import * as $ from "./runtime.js";', ...importLines(program), "const navigate = $.navigate, notify = $.notify;", ""];
+  const out: string[] = ['import * as $ from "./runtime.js";', ...importLines(program), "const navigate = $.navigate, notify = $.notify, setTheme = $.setTheme, theme = $.theme;", ""];
   const apis = program.decls.filter((d) => d.kind === "Api");
   // Typed REST client: one entry per `api` declaration.
   if (apis.length) out.push(`const api = { ${apis.map((a) => `${a.name}: $.$api(${JSON.stringify(a.name)})`).join(", ")} };`, "");
@@ -74,7 +74,7 @@ export function generateMapped(program: Program): { js: string; marks: (Loc | un
       // Without an explicit layout, a page uses the only layout there is (if exactly one).
       const layouts = program.decls.filter((x) => x.kind === "Component" && x.layout);
       const layout = d.layoutName ?? (layouts.length === 1 ? layouts[0].name : null);
-      pages.push(`{ path: ${JSON.stringify(d.path ?? "/" + d.name.toLowerCase())}, comp: ${d.name}${layout ? `, layout: ${layout}` : ""} }`);
+      pages.push(`{ path: ${JSON.stringify(d.path ?? "/" + d.name.toLowerCase())}, comp: ${d.name}${layout ? `, layout: ${layout}` : ""}${d.requires ? `, requires: ${JSON.stringify(d.requires)}` : ""} }`);
     }
   }
   out.push(`export const routes = [${pages.join(", ")}];`);

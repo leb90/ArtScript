@@ -174,3 +174,28 @@ test("icon: a known name, only used icons in the app, accessible", async () => {
     await GlobalRegistrator.unregister();
   }
 });
+
+test("setTheme/theme: dark, light or auto, remembered in the browser", async () => {
+  const src = 'page P {\n  text `mode: ${theme()}` id="mode"\n  button "dark" -> setTheme("dark")\n  button "auto" -> setTheme("auto")\n}\n';
+  assert.deepEqual(types(src), []);
+  const r = compile([{ file: "app.art", src }]);
+  const dir = mkdtempSync(join(tmpdir(), "art-theme-"));
+  writeFileSync(join(dir, "app.js"), r.js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    const app = await import(pathToFileURL(join(dir, "app.js")).href);
+    app.start(document.getElementById("app"));
+    const click = (l: string) => [...document.querySelectorAll("button")].find((b) => b.textContent === l)!.click();
+    assert.equal(document.getElementById("mode")!.textContent, "mode: auto");
+    click("dark");
+    assert.equal(document.documentElement.dataset.theme, "dark");
+    assert.equal(document.getElementById("mode")!.textContent, "mode: dark");
+    assert.equal(localStorage.getItem("art-theme"), "dark");
+    click("auto");
+    assert.equal(document.documentElement.dataset.theme, undefined);
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});

@@ -347,6 +347,11 @@ class Parser {
     const params: Param[] = [];
     if (page && this.tok.t === "str") path = this.next().v;
     if (page && this.eat("layout")) layoutName = this.ident("a layout name").v;
+    let requires: "login" | "admin" | undefined;
+    if (page && this.eat("requires")) {
+      if (!this.is("login") && !this.is("admin")) this.fail("`login` or `admin`");
+      requires = this.next().v as "login" | "admin";
+    }
     if (!page && this.eat("(")) {
       while (!this.is(")")) {
         const p = this.ident("a prop name");
@@ -375,7 +380,7 @@ class Parser {
     }
     this.closing(view.length ? view : members);
     this.expect("}");
-    return { kind: "Component", page, ...(layout ? { layout: true } : {}), name, path, ...(layoutName ? { layoutName } : {}), params, members, view, loc: kw.loc };
+    return { kind: "Component", page, ...(layout ? { layout: true } : {}), name, path, ...(layoutName ? { layoutName } : {}), ...(requires ? { requires } : {}), params, members, view, loc: kw.loc };
   }
 
   memberAhead(): boolean {
