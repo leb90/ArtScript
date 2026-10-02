@@ -194,3 +194,75 @@ export async function prerender(bundleUrl, path) {
     }
   }
 }
+
+// ---------- server rendering, per request ----------
+// `serve()` renders each page request here: the app runs on this DOM with its api calls answered
+// by the server itself (with the visitor's cookies), so `data` arrives already loaded. Renders run
+// one at a time (the DOM lives in globals); the app module is imported once and started per request.
+
+let appModule = null;
+let queue = Promise.resolve();
+
+// `apiFetch(path, init)`: the server's own api. Returns { html, head, title, seed, redirect }.
+export function renderRequest(bundleUrl, url, base, apiFetch, timeout = 2000) {
+  const job = queue.then(() => renderOnce(bundleUrl, url, base, apiFetch, timeout));
+  queue = job.catch(() => {});
+  return job;
+}
+
+async function renderOnce(bundleUrl, url, base, apiFetch, timeout) {
+  document = new Document();
+  const app = new Element("div");
+  app.setAttribute("id", "app");
+  document.body.appendChild(app);
+  const loc = new URL(url, "http://localhost");
+  const start = loc.pathname + loc.search;
+  const seed = {};
+  const pending = new Set();
+  const fetch = (input, init = {}) => {
+    const key = String(input);
+    const method = (init.method ?? "GET").toUpperCase();
+    const p = apiFetch(key, init).then(async (res) => {
+      const text = await res.text();
+      if (method === "GET") seed[key] = [res.status, text ? JSON.parse(text) : null];
+      return new Response(text || null, { status: res.status, headers: { "content-type": "application/json" } });
+    });
+    pending.add(p);
+    p.finally(() => pending.delete(p)).catch(() => {});
+    return p;
+  };
+  const go = (_s, _t, to) => { loc.href = new URL(String(to), loc).href; };
+  const globals = {
+    document, location: loc, fetch, __artSSR: true,
+    window: { addEventListener() {}, removeEventListener() {}, scrollTo() {}, location: loc },
+    history: { pushState: go, replaceState: go },
+    Event: class { constructor(type) { this.type = type; } },
+  };
+  const saved = {};
+  for (const [k, v] of Object.entries(globals)) {
+    saved[k] = Object.getOwnPropertyDescriptor(globalThis, k);
+    Object.defineProperty(globalThis, k, { value: v, configurable: true, writable: true });
+  }
+  let dispose = null;
+  try {
+    appModule ??= await import(`${bundleUrl}?ssr`);
+    dispose = appModule.start(app, base);
+    // Wait until the requests the page made (and the ones their answers caused) are answered.
+    const end = Date.now() + timeout;
+    for (let idle = 0; idle < 3; ) {
+      if (Date.now() > end) throw new Error(`server rendering ${start} took more than ${timeout} ms`);
+      await new Promise((ok) => setTimeout(ok, 0));
+      if (pending.size) { idle = 0; await Promise.race([Promise.allSettled([...pending]), new Promise((ok) => setTimeout(ok, 50))]); }
+      else idle++;
+    }
+    const inner = (el) => el.childNodes.map((c) => c.html()).join("");
+    const now = loc.pathname + loc.search;
+    return { html: inner(app), head: inner(document.head), title: document.title, seed, redirect: now !== start ? now : null };
+  } finally {
+    try { dispose?.(); } catch { /* the next render starts clean anyway */ }
+    for (const [k, d] of Object.entries(saved)) {
+      if (d) Object.defineProperty(globalThis, k, d);
+      else delete globalThis[k];
+    }
+  }
+}

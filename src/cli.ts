@@ -144,7 +144,7 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
     const out = await esbuild.build({
       // The bundle starts the app itself, so index.html has no inline script (a strict CSP works).
       // The .art source map goes in as an input map, so esbuild's map points back to the .art files.
-      stdin: { contents: r.js.replace('"./runtime.js"', JSON.stringify(RUNTIME)) + `\nstart(undefined, ${JSON.stringify(base)});\n` + (maps && r.map ? `//# sourceMappingURL=data:application/json;base64,${Buffer.from(r.map).toString("base64")}\n` : ""), resolveDir: resolve(projectRoot(target)), loader: "js", sourcefile: "app.art.js" },
+      stdin: { contents: r.js.replace('"./runtime.js"', JSON.stringify(RUNTIME)) + `\nif (!globalThis.__artSSR) start(undefined, ${JSON.stringify(base)});\n` + (maps && r.map ? `//# sourceMappingURL=data:application/json;base64,${Buffer.from(r.map).toString("base64")}\n` : ""), resolveDir: resolve(projectRoot(target)), loader: "js", sourcefile: "app.art.js" },
       // `import()` in a `use` module becomes its own chunk, loaded only when it runs.
       bundle: true, format: "esm", platform: "browser", write: false, minify, logLevel: "silent", sourcemap: maps || false,
       splitting: true, outdir: "/out", entryNames: "app", chunkNames: "chunks/[name]-[hash]",

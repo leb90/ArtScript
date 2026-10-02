@@ -139,7 +139,17 @@ export function $attr(n, name, fn) {
 }
 // A component's `style { }` (already scoped by the compiler), added once per page.
 const scoped = new Set();
+// Server rendering reuses this module for many documents: the CSS bookkeeping is per document.
+let cssDoc = null;
+const sameDoc = () => {
+  if (cssDoc === document) return;
+  cssDoc = document;
+  scoped.clear();
+  rules.clear();
+  sheet = null;
+};
 export function $scopedCss(name, css) {
+  sameDoc();
   if (scoped.has(name)) return;
   scoped.add(name);
   const s = document.createElement("style");
@@ -152,6 +162,7 @@ let sheet = null;
 const rules = new Set();
 export function $css(n, cls, rule) {
   n.classList.add(cls);
+  sameDoc();
   if (rules.has(cls)) return;
   rules.add(cls);
   sheet ??= document.head.appendChild(document.createElement("style"));
@@ -408,7 +419,8 @@ export function $mount(fn) {
     if (!alive) return;
     const prev = owner;
     owner = o;
-    try { fn(); } finally { owner = prev; }
+    // On the server, code meant for a real browser (a chart library...) just doesn't render.
+    try { fn(); } catch (e) { if (!globalThis.__artSSR) throw e; } finally { owner = prev; }
   });
 }
 
@@ -459,11 +471,26 @@ async function uploads(v) {
 }
 
 // `quiet` reads resolve to null instead of failing when the resource is missing or needs a login.
+let seeded = null;
+const readSeed = () => {
+  try { return JSON.parse(document.getElementById("art-data")?.textContent || "{}"); } catch { return {}; }
+};
 async function request(method, path, body, quiet = method === "GET") {
   if (body !== undefined && method !== "GET") body = await uploads(body);
   // Writes are always JSON (the server requires it, as CSRF protection), even without a body.
   const init = method === "GET" ? { method } : { method, headers: { "content-type": "application/json" }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) };
-  const res = await fetch(`${apiBase}/api/${path}`, { credentials: "same-origin", ...init });
+  const url = `${apiBase}/api/${path}`;
+  // A server-rendered page carries the GET responses it was rendered with: used once, no refetch.
+  if (method === "GET") {
+    seeded ??= readSeed();
+    if (url in seeded) {
+      const [status, data] = seeded[url];
+      delete seeded[url];
+      if (status < 300) return data;
+      if (quiet && (status === 404 || status === 401)) return null;
+    }
+  }
+  const res = await fetch(url, { credentials: "same-origin", ...init });
   const data = res.status === 204 ? null : await res.json();
   if (res.ok) return data;
   if (quiet && (res.status === 404 || res.status === 401)) return null;
@@ -518,7 +545,7 @@ export function $server() {
 // changed, and every `data` reloads (they reload after this client's writes anyway). Reconnects.
 let live = false;
 export function $live() {
-  if (live || typeof fetch === "undefined") return;
+  if (live || typeof fetch === "undefined" || globalThis.__artSSR) return;
   live = true;
   const connect = async (wait) => {
     try {
@@ -749,4 +776,10 @@ export function start(routes, mount = document.getElementById("app"), prefix = "
     navigate(url.pathname + url.search + url.hash);
   });
   render();
+  // Unmounts the app (server rendering renders many requests with one module).
+  return () => {
+    pageDispose?.();
+    stack[0]?.dispose();
+    render = () => {};
+  };
 }

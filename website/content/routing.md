@@ -145,6 +145,12 @@ page Admin "/admin" requires admin {
 
 Guards keep a page from showing. The data is protected by the api itself (`login`, `private`, `admin`): see [Accounts and access](/learn/auth).
 
+## Server rendering
+
+An app with an `api` is served by `dist/server.js`, which renders every page on the server for each request: the HTML arrives with the page's `data` already loaded, its title and meta tags, and as the visitor (their session decides what `auth.me()` and `private` apis return). Search engines and AI crawlers read real content on every page, including `/products/:id`, and people see it before the JavaScript loads.
+
+The responses the page was rendered with go in the HTML, so the browser doesn't ask for them again. A `requires login` page answers with a redirect to `/login` right from the server. Nothing changes in your code; `ART_SSR=off` turns it off.
+
 ## Prerendering and SEO
 
 ```sh

@@ -1,0 +1,44 @@
+model User {
+  id: ID
+  email: Email unique
+  password: String min=8
+}
+
+api users: User
+
+auth users
+
+model Product {
+  id: ID
+  name: String
+}
+
+api products: Product
+
+page Home "/" {
+  data products = api.products.list()
+
+  title "Shop"
+  for p in products key p.id {
+    link p.name to=`/products/${p.id}`
+  }
+}
+
+page ProductPage "/products/:id" {
+  data product = api.products.get(params.id)
+
+  meta title="A product" description="One product."
+  if product {
+    title product.name
+  } else {
+    text "Loading"
+  }
+}
+
+page Admin "/admin" requires login {
+  title "Secret area"
+}
+
+page Login "/login" {
+  title "Sign in"
+}

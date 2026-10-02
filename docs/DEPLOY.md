@@ -88,6 +88,7 @@ app.example.com {
 | `PORT` | Port to listen on (3000). |
 | `ART_DATA_DIR` | Data directory (database, uploads, outbox). |
 | `ART_LOG=json` | One JSON log line per request. |
+| `ART_SSR=off` | Don't render pages on the server (they're rendered per request by default, with their data). |
 | `ART_CSP` | Replaces the Content-Security-Policy, or `off`. |
 | `ART_MAX_JSON`, `ART_MAX_UPLOAD` | Body limits in bytes (1 MB, 10 MB). |
 | `ART_RATE_LIMIT` | Api requests per address per minute (600; 0 = off). |

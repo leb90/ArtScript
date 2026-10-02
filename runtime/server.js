@@ -7,7 +7,8 @@ import { appendFileSync, createReadStream, existsSync, mkdirSync, readFileSync, 
 import { createServer } from "node:http";
 import { basename, extname, join, resolve, sep } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { renderRequest } from "./ssr.js";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const COOKIE = "art_session";
@@ -827,6 +828,33 @@ export function serve(schema, fns, rootUrl, port = Number(process.env.PORT ?? 30
   const api = createApi(schema, dataDir, fns, jobs);
   // ART_LOG=json: one JSON line per request (time, method, path, status, ms) for log collectors.
   const log = process.env.ART_LOG === "json";
+  // Server rendering: the built app (app.js) and the HTML shell it goes into.
+  const shellFile = existsSync(join(root, "_app.html")) ? join(root, "_app.html") : join(root, "index.html");
+  const ssr = process.env.ART_SSR !== "off" && existsSync(join(root, "app.js")) && existsSync(shellFile);
+  const shell = ssr ? readFileSync(shellFile, "utf8") : "";
+  const base = /src="([^"]*)app\.js"/.exec(shell)?.[1] ?? "/";
+  const nodeFetch = globalThis.fetch;
+  let warned = false;
+  const renderPage = async (req) => {
+    // The page's api calls go to this same server, as the visitor (cookies, address).
+    const origin = `http://127.0.0.1:${server.address().port}`;
+    const headers = { cookie: req.headers.cookie ?? "", "x-forwarded-for": (req.headers["x-forwarded-for"]?.split(",")[0].trim() ?? req.socket?.remoteAddress ?? ""), ...(req.headers["x-forwarded-proto"] ? { "x-forwarded-proto": req.headers["x-forwarded-proto"] } : {}) };
+    const apiFetch = (url, init) => nodeFetch(new URL(url, origin), { ...init, headers: { ...init.headers, ...headers } });
+    try {
+      const out = await renderRequest(pathToFileURL(join(root, "app.js")).href, req.url ?? "/", base, apiFetch);
+      if (out.redirect) return { redirect: out.redirect };
+      const seed = JSON.stringify(out.seed).replace(/</g, "\\u003c");
+      const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+      const html = shell
+        .replace(/<title>[^<]*<\/title>/, out.title ? `<title>${esc(out.title)}</title>` : "$&")
+        .replace("</head>", `${out.head}</head>`)
+        .replace('<div id="app"></div>', `<div id="app">${out.html}</div><script type="application/json" id="art-data">${seed}</script>`);
+      return { html };
+    } catch (e) {
+      if (!warned) { warned = true; console.error(`server rendering failed, serving the app shell instead: ${e.message}`); }
+      return null;
+    }
+  };
   const server = createServer(async (req, res) => {
     if (log) {
       const t0 = performance.now();
@@ -836,6 +864,16 @@ export function serve(schema, fns, rootUrl, port = Number(process.env.PORT ?? 30
     const path = decodeURIComponent(new URL(req.url ?? "/", "http://localhost").pathname);
     let file = resolve(root, "." + path);
     const blocked = (!file.startsWith(root + sep) && file !== root) || file.startsWith(dataDir + sep) || PRIVATE.has(basename(file));
+    // Pages are rendered here with their data (ART_SSR=off: the browser does it).
+    const isFile = !blocked && existsSync(file) && !statSync(file).isDirectory();
+    if (ssr && !isFile && !extname(path) && (req.method === "GET" || req.method === "HEAD")) {
+      const page = await renderPage(req);
+      if (page) {
+        if (page.redirect) res.writeHead(302, { location: page.redirect, ...securityHeaders(req) }).end();
+        else res.writeHead(200, { "content-type": TYPES[".html"], "cache-control": "private, no-store", ...securityHeaders(req) }).end(page.html);
+        return;
+      }
+    }
     // A prerendered route (`art build --prerender`) has its own index.html; other unknown paths
     // fall back to the app's index.html (client-side routing).
     if (!blocked && existsSync(file) && statSync(file).isDirectory() && existsSync(join(file, "index.html"))) file = join(file, "index.html");

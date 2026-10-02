@@ -31,6 +31,7 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 - Every syntax error of a file in one compile; source maps; `art lsp` (errors, format, completion, definition, hover, rename) and a VS Code extension.
 - `art mcp` (MCP server), `art add` (official components as source), `art init --template`, `art build --prerender --site`, self-contained `dist/server.js` with a Dockerfile.
 - `docs/SPEC-EDIT.md`, a ~800-token spec for changing code.
+- Server rendering per request: `dist/server.js` renders every page with its `data` loaded, as the visitor, embeds those responses so the browser doesn't fetch them again, and answers `requires login` with a redirect. `ART_SSR=off` turns it off.
 - `art build` splits dynamic `import()` into chunks loaded on demand.
 - An ArtScript implementation for js-framework-benchmark (`benchmarks/js-framework-benchmark`), passing its `isKeyed` check.
 - `art init` adds a Cursor rule (`.cursor/rules/artscript.mdc`).
