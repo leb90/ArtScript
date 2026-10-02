@@ -12,6 +12,8 @@ Creates a project: `src/app.art`, `public/`, the spec for your agent (`ARTSCRIPT
 
 The development server: compiles on every save and reloads the page, serves the api with a local database in `.art/data/`, and prints emails instead of sending them.
 
+Dev tools: press Alt+A in the page (or click the "art" badge at the bottom right) for a panel with every mounted component and its props, states, computed and data, live. Click a state's value to change it; what each update writes to the page flashes. From the console, or for an agent driving the browser, `__art.snapshot()` returns the same as plain objects. None of this is in the production build.
+
 ### `art build [path] [--out dist] [--sourcemap] [--base /sub] [--prerender [--site url]]`
 
 The production build: `index.html`, one minified `app.js` (the runtime and every `use` module bundled in) and `app.css`. A dynamic `import()` inside a `use` module becomes its own file in `chunks/`, downloaded only when it runs. With apis, also `server.js` (a single file with the server and its packages, no `node_modules`) and a `Dockerfile`.
@@ -55,7 +57,7 @@ An MCP server over stdio with `art_spec`, `art_check`, `art_context` and `art_pa
 
 ### `art lsp`
 
-A language server over stdio: live errors with the compiler's fixes, formatting and completion, for any editor with LSP. The VS Code extension in `editors/vscode` uses it.
+A language server over stdio: live errors with the compiler's fixes, formatting and completion, for any editor with LSP. The VS Code extension in `editors/vscode` uses it. For highlighting in Zed, Neovim and Helix there is a tree-sitter grammar in `editors/tree-sitter-artscript`.
 
 ### `art ast <file>`
 

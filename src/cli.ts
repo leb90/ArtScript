@@ -16,6 +16,7 @@ import { printProgram } from "./printer.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const RUNTIME = join(ROOT, "runtime", "runtime.js");
+const DEVTOOLS = join(ROOT, "runtime", "devtools.js");
 const SERVER_RUNTIME = join(ROOT, "runtime", "server.js");
 const SSR_RUNTIME = join(ROOT, "runtime", "ssr.js");
 // dist/Dockerfile for apps with a server: Node only (server.js is self-contained), data on a volume.
@@ -33,7 +34,7 @@ const PKG = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
 const HELP = `art ${PKG.version} — the ArtScript compiler
 
   art init <name> [--template t]                   create a new project
-  art dev [path] [--port 3000]      dev server with live reload
+  art dev [path] [--port 3000]      dev server with live reload and dev tools (Alt+A in the page)
   art build [path] [--out dist] [--sourcemap] [--base /sub] [--prerender [--site url]]
                                     build for production (prerender: HTML per route; site: sitemap.xml)
   art check [path] [--ai]           typecheck; --ai = one JSON line per error
@@ -136,15 +137,16 @@ function sizes(files: Record<string, string>): string {
 // Compiles in memory: { "index.html", "app.js" } or the diagnostics. app.js is one bundle with the
 // runtime and every `use` module (npm packages resolve from the project's node_modules).
 // With apis, `server` is the schema for the server runtime.
-async function buildFiles(target: string, minify: boolean, maps: "inline" | "linked" | false = minify ? false : "inline", base = "/"): Promise<{ files: Record<string, string>; server: ServerSchema | null } | { diagnostics: Diagnostic[] }> {
-  const r = compile(sources(target));
+// `dev` (art dev): the bundle includes the dev tools panel.
+async function buildFiles(target: string, minify: boolean, maps: "inline" | "linked" | false = minify ? false : "inline", base = "/", dev = false): Promise<{ files: Record<string, string>; server: ServerSchema | null } | { diagnostics: Diagnostic[] }> {
+  const r = compile(sources(target), { dev });
   if (!r.js) return { diagnostics: r.diagnostics };
   const esbuild = await import("esbuild");
   try {
     const out = await esbuild.build({
       // The bundle starts the app itself, so index.html has no inline script (a strict CSP works).
       // The .art source map goes in as an input map, so esbuild's map points back to the .art files.
-      stdin: { contents: r.js.replace('"./runtime.js"', JSON.stringify(RUNTIME)) + `\nif (!globalThis.__artSSR) start(undefined, ${JSON.stringify(base)});\n` + (maps && r.map ? `//# sourceMappingURL=data:application/json;base64,${Buffer.from(r.map).toString("base64")}\n` : ""), resolveDir: resolve(projectRoot(target)), loader: "js", sourcefile: "app.art.js" },
+      stdin: { contents: r.js.replace('"./runtime.js"', JSON.stringify(RUNTIME)).replace('"./devtools.js"', JSON.stringify(DEVTOOLS)) + `\nif (!globalThis.__artSSR) start(undefined, ${JSON.stringify(base)});\n` + (maps && r.map ? `//# sourceMappingURL=data:application/json;base64,${Buffer.from(r.map).toString("base64")}\n` : ""), resolveDir: resolve(projectRoot(target)), loader: "js", sourcefile: "app.art.js" },
       // `import()` in a `use` module becomes its own chunk, loaded only when it runs.
       bundle: true, format: "esm", platform: "browser", write: false, minify, logLevel: "silent", sourcemap: maps || false,
       splitting: true, outdir: "/out", entryNames: "app", chunkNames: "chunks/[name]-[hash]",
@@ -378,7 +380,7 @@ switch (cmd) {
     let api: (((req: unknown, res: unknown) => Promise<boolean>) & { stop?: () => void }) | null = null;
     let apiSchema = "";
     const rebuild = async (): Promise<boolean> => {
-      const r = await buildFiles(target, false);
+      const r = await buildFiles(target, false, "inline", "/", true);
       if ("diagnostics" in r) {
         lastError = r.diagnostics.map(formatHuman).join("\n\n");
         console.log(lastError);

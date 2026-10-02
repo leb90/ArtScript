@@ -23,11 +23,13 @@ export function parseProject(sources: Source[]): { program: Program; diagnostics
   return { program, diagnostics };
 }
 
-export function compile(sources: Source[]): Result {
+// `dev`: the components report their props, states, computed and data to the dev tools
+// (runtime/devtools.js); only `art dev` asks for it.
+export function compile(sources: Source[], options: { dev?: boolean } = {}): Result {
   const { program, diagnostics } = parseProject(sources);
   if (diagnostics.length) return { program, diagnostics, js: null, server: null };
   const errs = check(program);
   if (errs.length) return { program, diagnostics: errs, js: null, server: null };
-  const { js, marks } = generateMapped(program);
+  const { js, marks } = generateMapped(program, options.dev);
   return { program, diagnostics: [], js, server: serverSchema(program), map: sourceMap(marks, sources) };
 }

@@ -16,6 +16,9 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 - Accessibility: `role` on any element (`column role="main"`); a field without `label=` gets its `placeholder` as its accessible name. The website scores 100 in Lighthouse accessibility, SEO, best practices and agentic browsing.
 - `link` takes children (a clickable card: `link to="/p/1" { card { ... } }`); `table` rows go in a `<tbody>`; an element's text next to its children updates without removing them; `link on:click=...` with no text parses.
 - Faster updates: bindings write the DOM only when their value changed, and keyed lists move only the rows outside the longest unchanged run (a swap moves two rows, not all of them).
+- Faster in-place updates: a callback over a state (`rows.forEach(r => r.done = true)`) notifies that state once instead of every state per item, and a list whose rows stayed in place skips reconciling ("update every 10th row" in js-framework-benchmark: 26.7 → 13 ms, 1.1× Solid).
+- A row of a `computed` changed in place (`for t in open { button "x" -> t.done = true }`) now updates the state it came from.
+- `table` renders inside a block of its own: a wide table scrolls sideways instead of stretching the page, and Chrome lays it out faster than as a direct child of a `column` or `card`. An empty `text ""` (an icon-font class) gets `aria-hidden="true"`.
 - `use "x" { a as b }` renames an import. `URL`, `history`, `Blob`, `FormData` and other browser globals are known to the checker.
 - `new` expressions (`new Chart(box, opts)`); `process` and `Buffer` in server functions; setting properties of a `ref` (`box.innerHTML = html`).
 - A button with `->` inside a `form` only runs its action (it no longer submits the form too).
@@ -34,6 +37,8 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 - Server rendering per request: `dist/server.js` renders every page with its `data` loaded, as the visitor, embeds those responses so the browser doesn't fetch them again, and answers `requires login` with a redirect. `ART_SSR=off` turns it off.
 - `art build` splits dynamic `import()` into chunks loaded on demand.
 - An ArtScript implementation for js-framework-benchmark (`benchmarks/js-framework-benchmark`), passing its `isKeyed` check.
+- Dev tools in `art dev` (Alt+A): every mounted component with its props, states, computed and data, live; states can be edited, updates flash on the page, and `__art.snapshot()` gives the same to the console or an agent. Not in production builds.
+- A tree-sitter grammar (`editors/tree-sitter-artscript`) for highlighting in Zed, Neovim and Helix; CI checks that every `.art` file in the repository parses with it.
 - `art init` adds a Cursor rule (`.cursor/rules/artscript.mdc`).
 - `art build --base /sub` for apps served under a subpath; same-page `#section` links scroll, and links to files that aren't routes load them.
 - Several files may `use` the same names; the compiler also bundles for the browser without shims.

@@ -141,7 +141,7 @@ The website, [leb90.github.io/ArtScript](https://leb90.github.io/ArtScript/), is
 
 Official components as source you can change (like shadcn/ui): `art add DataTable Pagination ConfirmButton SearchBox Stat EmptyState`.
 
-Editors: `art lsp` is a language server (live errors with the compiler's fixes, formatting, completion) for any editor with LSP; [editors/vscode](editors/vscode) is a VS Code extension with highlighting that uses it.
+Editors: `art lsp` is a language server (live errors with the compiler's fixes, formatting, completion) for any editor with LSP; [editors/vscode](editors/vscode) is a VS Code extension with highlighting that uses it, and [editors/tree-sitter-artscript](editors/tree-sitter-artscript) is a tree-sitter grammar (highlighting in Zed, Neovim and Helix). In `art dev`, Alt+A opens the dev tools: mounted components with their states, live.
 
 Other commands: `npm run art -- <command>` (for example `npm run art -- check examples/todo --ai`). Full list: `npm run art -- help`.
 
