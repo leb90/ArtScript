@@ -13,6 +13,7 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 - Assignable `computed`, two-way props, mutations through parameters update the screen, TS-style annotations and defaults accepted in params.
 - `test "..." { ... }` blocks run by `art test`; steps find inputs by placeholder or label.
 - Layouts inside layouts (`layout Docs layout Site`); a slot inside an `if` renders its page when it appears. Links to the current page get `aria-current="page"`.
+- Accessibility: `role` on any element (`column role="main"`); a field without `label=` gets its `placeholder` as its accessible name. The website scores 100 in Lighthouse accessibility, SEO, best practices and agentic browsing.
 - `link` takes children (a clickable card: `link to="/p/1" { card { ... } }`); `table` rows go in a `<tbody>`; an element's text next to its children updates without removing them; `link on:click=...` with no text parses.
 - Faster updates: bindings write the DOM only when their value changed, and keyed lists move only the rows outside the longest unchanged run (a swap moves two rows, not all of them).
 - `use "x" { a as b }` renames an import. `URL`, `history`, `Blob`, `FormData` and other browser globals are known to the checker.

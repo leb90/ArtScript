@@ -36,11 +36,11 @@ page Playground "/playground" {
 
   meta title="Playground · ArtScript" description="Write ArtScript and see the app run: the real compiler, in your browser."
   column class="pg" gap=0 {
-    textarea code class="pg-editor" on:keydown=onEditorKey(event, () => run(0))
+    textarea code placeholder="Write ArtScript here" class="pg-editor" on:keydown=onEditorKey(event, () => run(0))
     column class="pg-side" gap=0 {
       row class="pg-bar" gap=2 justify=between wrap {
         row gap=2 {
-          select example options=EXAMPLES.filter(e => e.runs).map(e => ({ value: e.name, label: e.title })) -> load()
+          select example placeholder="Example" options=EXAMPLES.filter(e => e.runs).map(e => ({ value: e.name, label: e.title })) -> load()
           button "Run" primary small -> run(0)
           button shared ? "Link copied" : "Share" small class="ghost" -> share()
         }

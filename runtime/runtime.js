@@ -132,7 +132,7 @@ export function $attr(n, name, fn) {
     if (URL_ATTRS.has(name)) v = unsafeUrl(v) ? "#" : withBase(v);
     if (v === last) return;
     last = v;
-    if (name in n) n[name] = v ?? "";
+    if (name in n && name !== "role") n[name] = v ?? "";
     else if (v == null || v === false) n.removeAttribute(name);
     else n.setAttribute(name, v === true ? "" : v);
   });

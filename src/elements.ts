@@ -15,7 +15,7 @@ export type ElementSpec = {
 };
 
 const LAYOUT = ["gap", "pad", "align", "justify"];
-const COMMON = ["class", "style", "id", "ref"];
+const COMMON = ["class", "style", "id", "ref", "role"];
 const MEDIA = ["controls", "autoplay", "loop", "muted"];
 
 export const ELEMENTS: Record<string, ElementSpec> = {

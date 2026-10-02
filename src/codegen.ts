@@ -388,6 +388,9 @@ class ComponentGen {
     if (el.tag === "spinner") this.emit(`${v}.setAttribute("role", "status");`);
     if (label && spec.type === "checkbox") this.labelText(parent, label, scope);
     if (label && spec.bind === "choice" && el.tag !== "select") this.emit(`$.$attr(${v}, "aria-label", () => ${this.expr(label, scope)});`);
+    // A field without a visible label is named by its placeholder (for screen readers and agents).
+    const placeholder = el.props.find((p) => p.name === "placeholder")?.value;
+    if (!label && placeholder && ["input", "textarea", "select"].includes(el.tag)) this.attr(v, "aria-label", placeholder, scope);
 
     const typeProp = el.props.find((p) => p.name === "type")?.value;
     const inputType = spec.type ?? (typeProp?.kind === "Ident" ? typeProp.name : typeProp?.kind === "Str" ? typeProp.value : null);
@@ -519,6 +522,8 @@ class ComponentGen {
 
   attr(v: string, name: string, val: Expr, scope: Scope, wrap = (s: string) => s) {
     const lit = literal(val);
+    // ARIA attributes are set as attributes (not every browser reflects them as properties).
+    if (lit !== null && (name === "role" || name.startsWith("aria-"))) return this.emit(`${v}.setAttribute(${JSON.stringify(name)}, ${JSON.stringify(String(lit))});`);
     // A root-relative URL gets the app's base path (`art build --base`).
     if (lit !== null) this.emit(`${v}.${name} = ${wrap(typeof lit === "string" && /^\/(?!\/)/.test(lit) && ["href", "src", "poster"].includes(name) ? `$.withBase(${JSON.stringify(lit)})` : JSON.stringify(lit))};`);
     else this.emit(`$.$attr(${v}, "${name}", () => ${wrap(this.expr(val, scope))});`);

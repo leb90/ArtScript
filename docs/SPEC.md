@@ -130,7 +130,7 @@ column gap=4 align=center {
 | `list` > `item` | item: text | item: click | | item: muted |
 | `table` > `tr` > `th` `td` | th/td: text | tr: click | | td: muted |
 
-- All take `class style id`. `style { .box { ... } }` in a component: CSS only for its elements. `.css` files in the project are bundled; theme: `:root { --a-primary: #e11d48; --a-radius: 4px; --a-font: Inter }` (also `--a-bg --a-fg --a-surface --a-border --a-muted --a-danger --a-success`).
+- All take `class style id role` (`column role="main" { slot }`); a field without `label=` is named by its `placeholder`. `style { .box { ... } }` in a component: CSS only for its elements. `.css` files in the project are bundled; theme: `:root { --a-primary: #e11d48; --a-radius: 4px; --a-font: Inter }` (also `--a-bg --a-fg --a-surface --a-border --a-muted --a-danger --a-success`).
 - Conditional flag: `text t.title muted=t.done`.
 - `gap=4` and `pad=4`: 1 unit = 4px. `align=start|center|end|stretch`. `justify=start|center|end|between|around`. `cols=3`.
 - `type=text|number|email|password|checkbox|date`. With `type=checkbox`, `input` binds a Bool.

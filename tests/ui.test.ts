@@ -367,3 +367,12 @@ test("keyed lists: in-place changes always show (fields, nested lists, through p
     await GlobalRegistrator.unregister();
   }
 });
+
+test("a11y: role on any element; a field without a label is named by its placeholder", () => {
+  const src = 'page P {\n  state q = ""\n  state s = ""\n\n  column role="main" {\n    input q placeholder="Search"\n    input s label="Name" placeholder="Ana"\n  }\n}\n';
+  assert.deepEqual(types(src), []);
+  const js = compile([{ file: "a.art", src }]).js!;
+  assert.match(js, /setAttribute\("role", "main"\)/);
+  assert.equal(js.match(/aria-label/g)?.length, 1, "only the field without a label");
+  assert.match(js, /setAttribute\("aria-label", "Search"\)/);
+});

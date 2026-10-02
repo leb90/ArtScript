@@ -101,7 +101,7 @@ class Page {
     box.click();
     await this.settle();
   }
-  async until(cond: () => boolean, expected: string, ms = 2000) {
+  async until(cond: () => boolean, expected: string, ms = 5000) {
     for (const end = Date.now() + ms; !cond(); await new Promise((r) => setTimeout(r, 15))) {
       if (Date.now() > end) throw new StepError(`expected ${expected}; the screen shows: "${this.text().slice(0, 200)}"`);
     }

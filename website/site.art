@@ -31,7 +31,9 @@ layout Site {
         }
       }
     }
-    slot
+    column role="main" gap=0 {
+      slot
+    }
     Footer
   }
 }
