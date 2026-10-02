@@ -1,0 +1,213 @@
+====================
+State, computed, data, ref
+====================
+
+page P {
+  ref box
+  state users: User[] = []
+  computed total = users.length * 2
+  data me = auth.me()
+  data rows = api.users.list({ limit: 20 }) live
+}
+
+---
+
+(source_file
+  (page
+    (type_identifier)
+    (body
+      (ref
+        (identifier))
+      (state
+        (identifier)
+        (type
+          (type_identifier))
+        (array))
+      (computed
+        (identifier)
+        (binary
+          (member
+            (identifier)
+            (property_identifier))
+          (number)))
+      (data
+        (identifier)
+        (call
+          (member
+            (identifier)
+            (property_identifier))
+          (arguments)))
+      (data
+        (identifier)
+        (call
+          (member
+            (member
+              (identifier)
+              (property_identifier))
+            (property_identifier))
+          (arguments
+            (object
+              (pair
+                (property_identifier)
+                (number)))))))))
+
+====================
+Functions and statements
+====================
+
+page P {
+  fn save(x) {
+    if x == "" { return }
+    try {
+      await api.users.update(x.id, { name: x, ...rest })
+    } catch (e) {
+      notify(e.message, "danger")
+    }
+    let y = xs
+      .filter(v => v > 1)
+      .map((v, i) => ({ v, i }))
+    open = !open
+  }
+}
+
+---
+
+(source_file
+  (page
+    (type_identifier)
+    (body
+      (function
+        (identifier)
+        (parameters
+          (parameter
+            (identifier)))
+        (block
+          (if_statement
+            (binary
+              (identifier)
+              (string))
+            (block
+              (return_statement)))
+          (try_statement
+            (block
+              (expression_statement
+                (unary
+                  (call
+                    (member
+                      (member
+                        (identifier)
+                        (property_identifier))
+                      (property_identifier))
+                    (arguments
+                      (member
+                        (identifier)
+                        (property_identifier))
+                      (object
+                        (pair
+                          (property_identifier)
+                          (identifier))
+                        (spread
+                          (identifier))))))))
+            (identifier)
+            (block
+              (expression_statement
+                (call
+                  (identifier)
+                  (arguments
+                    (member
+                      (identifier)
+                      (property_identifier))
+                    (string
+                      (string_content)))))))
+          (let_statement
+            (identifier)
+            (call
+              (member
+                (call
+                  (member
+                    (identifier)
+                    (property_identifier))
+                  (arguments
+                    (arrow_function
+                      (identifier)
+                      (binary
+                        (identifier)
+                        (number)))))
+                (property_identifier))
+              (arguments
+                (arrow_function
+                  (arrow_parameter
+                    (identifier))
+                  (arrow_parameter
+                    (identifier))
+                  (parenthesized
+                    (object
+                      (shorthand_property
+                        (identifier))
+                      (shorthand_property
+                        (identifier))))))))
+          (expression_statement
+            (assignment
+              (identifier)
+              (unary
+                (identifier)))))))))
+
+====================
+Mount, effect, cleanup and style
+====================
+
+component C {
+  mount {
+    let chart = new Chart(box, { data: [1, 2] })
+    cleanup { chart.destroy() }
+  }
+  effect {
+    document.title = `${n} items`
+  }
+  style {
+    .card { color: red }
+  }
+}
+
+---
+
+(source_file
+  (component
+    (type_identifier)
+    (body
+      (mount
+        (block
+          (let_statement
+            (identifier)
+            (unary
+              (call
+                (identifier)
+                (arguments
+                  (identifier)
+                  (object
+                    (pair
+                      (property_identifier)
+                      (array
+                        (number)
+                        (number))))))))
+          (cleanup_statement
+            (block
+              (expression_statement
+                (call
+                  (member
+                    (identifier)
+                    (property_identifier))
+                  (arguments)))))))
+      (effect
+        (block
+          (expression_statement
+            (assignment
+              (member
+                (identifier)
+                (property_identifier))
+              (template
+                (substitution
+                  (identifier))
+                (template_chars))))))
+      (style
+        (css)))))

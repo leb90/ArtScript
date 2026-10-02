@@ -1,0 +1,20 @@
+{
+  "grammars": [
+    {
+      "name": "artscript",
+      "camelcase": "ArtScript",
+      "scope": "source.art",
+      "path": ".",
+      "file-types": ["art"],
+      "highlights": "queries/highlights.scm",
+      "injections": "queries/injections.scm",
+      "injection-regex": "^(art|artscript)$"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "Tree-sitter grammar for ArtScript (.art)",
+    "links": { "repository": "https://github.com/leb90/ArtScript" }
+  }
+}

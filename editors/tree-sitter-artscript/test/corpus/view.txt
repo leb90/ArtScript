@@ -1,0 +1,242 @@
+====================
+Content, props, flags and action
+====================
+
+page P {
+  text `Hi ${user.name}` bold muted=user.done
+  input name placeholder="Name" -> save(name)
+  button "Delete" danger -> { remove(user); open = false } disabled=!big
+}
+
+---
+
+(source_file
+  (page
+    (type_identifier)
+    (body
+      (element
+        (tag)
+        (template
+          (template_chars)
+          (substitution
+            (member
+              (identifier)
+              (property_identifier))))
+        (prop
+          (property_identifier))
+        (prop
+          (property_identifier)
+          (member
+            (identifier)
+            (property_identifier))))
+      (element
+        (tag)
+        (identifier)
+        (prop
+          (property_identifier)
+          (string
+            (string_content)))
+        (action
+          (expression_statement
+            (call
+              (identifier)
+              (arguments
+                (identifier))))))
+      (element
+        (tag)
+        (string
+          (string_content))
+        (prop
+          (property_identifier))
+        (action
+          (block
+            (expression_statement
+              (call
+                (identifier)
+                (arguments
+                  (identifier))))
+            (expression_statement
+              (assignment
+                (identifier)
+                (false)))))
+        (prop
+          (property_identifier)
+          (unary
+            (identifier)))))))
+
+====================
+Elements without content take flags
+====================
+
+page P {
+  row wrap gap=2 md:pad=4 on:mouseenter=(open = true) {
+    spinner
+    divider
+  }
+}
+
+---
+
+(source_file
+  (page
+    (type_identifier)
+    (body
+      (element
+        (tag)
+        (prop
+          (property_identifier))
+        (prop
+          (property_identifier)
+          (number))
+        (prop
+          (property_identifier)
+          (property_identifier)
+          (number))
+        (prop
+          (property_identifier)
+          (property_identifier)
+          (parenthesized
+            (assignment
+              (identifier)
+              (true))))
+        (children
+          (element
+            (tag))
+          (element
+            (tag)))))))
+
+====================
+If, else if and for with a key
+====================
+
+page P {
+  if rows.loading {
+    spinner
+  } else if rows.length == 0 {
+    text "Empty"
+  } else {
+    for r, i in rows key r.id {
+      td r.id class="col"
+    }
+  }
+}
+
+---
+
+(source_file
+  (page
+    (type_identifier)
+    (body
+      (if_view
+        (member
+          (identifier)
+          (property_identifier))
+        (children
+          (element
+            (tag)))
+        (if_view
+          (binary
+            (member
+              (identifier)
+              (property_identifier))
+            (number))
+          (children
+            (element
+              (tag)
+              (string
+                (string_content))))
+          (children
+            (for_view
+              (identifier)
+              (identifier)
+              (identifier)
+              (member
+                (identifier)
+                (property_identifier))
+              (children
+                (element
+                  (tag)
+                  (member
+                    (identifier)
+                    (property_identifier))
+                  (prop
+                    (property_identifier)
+                    (string
+                      (string_content))))))))))))
+
+====================
+Components, children and slots
+====================
+
+layout Main {
+  Modal open=open onClose=(x => open = false) {
+    header {
+      title "x"
+    }
+    slot
+  }
+  slot header
+}
+
+---
+
+(source_file
+  (layout
+    (type_identifier)
+    (body
+      (element
+        (component_name)
+        (prop
+          (property_identifier)
+          (identifier))
+        (prop
+          (property_identifier)
+          (parenthesized
+            (arrow_function
+              (identifier)
+              (assignment
+                (identifier)
+                (false)))))
+        (children
+          (element
+            (tag)
+            (children
+              (element
+                (tag)
+                (string
+                  (string_content)))))
+          (element
+            (tag))))
+      (element
+        (tag)
+        (identifier)))))
+
+====================
+Comments and a continued line
+====================
+
+page P {
+  // a comment
+  text count > 3 /* inline */
+    ? "many"
+    : "few"
+}
+
+---
+
+(source_file
+  (page
+    (type_identifier)
+    (body
+      (comment)
+      (element
+        (tag)
+        (ternary
+          (binary
+            (identifier)
+            (number))
+          (comment)
+          (string
+            (string_content))
+          (string
+            (string_content)))))))

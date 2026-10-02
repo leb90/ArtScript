@@ -1,0 +1,17 @@
+{
+  "name": "tree-sitter-artscript",
+  "version": "0.1.0",
+  "description": "Tree-sitter grammar for ArtScript (.art)",
+  "private": true,
+  "license": "MIT",
+  "repository": "https://github.com/leb90/ArtScript",
+  "main": "grammar.js",
+  "scripts": {
+    "generate": "tree-sitter generate",
+    "test": "tree-sitter test",
+    "parse-examples": "tree-sitter parse --quiet --stat ../../examples/*/app.art ../../website/*.art ../../templates/starters/*.art ../../templates/default/src/*.art ../../benchmarks/js-framework-benchmark/src/app.art"
+  },
+  "devDependencies": {
+    "tree-sitter-cli": "^0.25.0"
+  }
+}

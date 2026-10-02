@@ -18,3 +18,18 @@ jobs:
       - run: npm run eval -- --dry-run
       - run: npm run eval -- --dry-run --stacks vue,solid
       - run: npm run site
+  # The tree-sitter grammar: the committed parser matches grammar.js, and every .art file parses.
+  grammar:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: editors/tree-sitter-artscript
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npx tree-sitter generate && git diff --exit-code src
+      - run: npx tree-sitter test
+      - run: npm run parse-examples

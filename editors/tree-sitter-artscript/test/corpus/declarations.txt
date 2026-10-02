@@ -1,0 +1,268 @@
+====================
+Model with rules and defaults
+====================
+
+model User {
+  id: ID
+  name: String min=2 max=50
+  email: Email unique
+  bio: String?
+  tags: String[]
+  stock: Number = 0
+  title: String was="name"
+}
+
+---
+
+(source_file
+  (model
+    (type_identifier)
+    (field
+      (property_identifier)
+      (type
+        (type_identifier)))
+    (field
+      (property_identifier)
+      (type
+        (type_identifier))
+      (rule
+        (identifier)
+        (number))
+      (rule
+        (identifier)
+        (number)))
+    (field
+      (property_identifier)
+      (type
+        (type_identifier))
+      (rule
+        (identifier)))
+    (field
+      (property_identifier)
+      (type
+        (type_identifier)))
+    (field
+      (property_identifier)
+      (type
+        (type_identifier)))
+    (field
+      (property_identifier)
+      (type
+        (type_identifier))
+      (number))
+    (field
+      (property_identifier)
+      (type
+        (type_identifier))
+      (rule
+        (identifier)
+        (string
+          (string_content))))))
+
+====================
+Api, auth and use
+====================
+
+use "date-fns" { format, addDays as plus }
+use "canvas-confetti" as confetti
+
+api users: User login
+auth users with google, github
+
+---
+
+(source_file
+  (use
+    (string
+      (string_content))
+    (import_name
+      (identifier))
+    (import_name
+      (identifier)
+      (identifier)))
+  (use
+    (string
+      (string_content))
+    (identifier))
+  (api
+    (identifier)
+    (type_identifier))
+  (auth
+    (identifier)
+    (identifier)
+    (identifier)))
+
+====================
+Server fn and job
+====================
+
+server fn total(a, b: Number, c = 1) {
+  if !me { fail("no", 401) }
+  return db.users.count()
+}
+
+server job cleanup every "1h" {
+  db.users.list().forEach(u => db.users.remove(u.id))
+}
+
+---
+
+(source_file
+  (server_function
+    (identifier)
+    (parameters
+      (parameter
+        (identifier))
+      (parameter
+        (identifier)
+        (type
+          (type_identifier)))
+      (parameter
+        (identifier)
+        (number)))
+    (block
+      (if_statement
+        (unary
+          (identifier))
+        (block
+          (expression_statement
+            (call
+              (identifier)
+              (arguments
+                (string
+                  (string_content))
+                (number))))))
+      (return_statement
+        (call
+          (member
+            (member
+              (identifier)
+              (property_identifier))
+            (property_identifier))
+          (arguments)))))
+  (server_job
+    (identifier)
+    (string
+      (string_content))
+    (block
+      (expression_statement
+        (call
+          (member
+            (call
+              (member
+                (member
+                  (identifier)
+                  (property_identifier))
+                (property_identifier))
+              (arguments))
+            (property_identifier))
+          (arguments
+            (arrow_function
+              (identifier)
+              (call
+                (member
+                  (member
+                    (identifier)
+                    (property_identifier))
+                  (property_identifier))
+                (arguments
+                  (member
+                    (identifier)
+                    (property_identifier)))))))))))
+
+====================
+Page, layout and component headers
+====================
+
+page Admin "/admin" layout Main requires admin {
+  title "Admin"
+}
+
+layout Docs layout Site {
+  slot
+}
+
+component UserCard(user: User, onDelete: Fn(User), big: Bool = false) {
+  text user.name
+}
+
+---
+
+(source_file
+  (page
+    (type_identifier)
+    (string
+      (string_content))
+    (type_identifier)
+    (body
+      (element
+        (tag)
+        (string
+          (string_content)))))
+  (layout
+    (type_identifier)
+    (type_identifier)
+    (body
+      (element
+        (tag))))
+  (component
+    (type_identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (type
+          (type_identifier)))
+      (parameter
+        (identifier)
+        (type
+          (type_identifier)
+          (type
+            (type_identifier))))
+      (parameter
+        (identifier)
+        (type
+          (type_identifier))
+        (false)))
+    (body
+      (element
+        (tag)
+        (member
+          (identifier)
+          (property_identifier))))))
+
+====================
+Test steps
+====================
+
+test "adds a task" {
+  open "/"
+  fill "Name" "Ana"
+  click "Add" 1
+  see("Ana")
+}
+
+---
+
+(source_file
+  (test
+    (string
+      (string_content))
+    (step
+      (identifier)
+      (string
+        (string_content)))
+    (step
+      (identifier)
+      (string
+        (string_content))
+      (string
+        (string_content)))
+    (step
+      (identifier)
+      (string
+        (string_content))
+      (number))
+    (step
+      (identifier)
+      (string
+        (string_content)))))

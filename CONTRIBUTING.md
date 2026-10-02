@@ -19,7 +19,7 @@ npm run eval -- --dry-run   # the cost eval's harness and every reference app, o
 - `runtime/` is plain JavaScript that ships to browsers and servers: no dependencies, keep it small.
 - UI elements are defined once, in `src/elements.ts`.
 - New errors go in the catalog (`src/errors.ts`) with `expected`, `actual` and `fixes` when possible: models fix their code from them.
-- A syntax change updates `docs/SPEC.md` (and `docs/SPEC-EDIT.md` if it matters for edits), the printer and the tests. The spec is paid for in every request: keep additions short.
+- A syntax change updates `docs/SPEC.md` (and `docs/SPEC-EDIT.md` if it matters for edits), the printer, the tests and the tree-sitter grammar (`editors/tree-sitter-artscript`: edit `grammar.js`, then `npm run generate && npm test`). The spec is paid for in every request: keep additions short.
 - Commits, comments and docs are in English.
 
 ## Proposing language changes
