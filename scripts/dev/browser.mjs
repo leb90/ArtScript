@@ -4,7 +4,8 @@
 // steps.json: { "width"?: 1440, "height"?: 900, "dark"?: true, "steps": [
 //   { "go": url, "wait"?: ms }, { "click": selector, "wait"?: ms }, { "eval": js },
 //   { "shot": file.png, "y"?: scrollY }, { "wait": ms } ] }
-// Prints eval results and page exceptions. CHROME env var overrides the Chrome binary.
+// Prints eval results and page exceptions. CHROME env var overrides the Chrome binary; CDP_PORT
+// (default 9333) lets several runs work at the same time.
 import { spawn } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -13,10 +14,11 @@ import { join } from "node:path";
 const steps = JSON.parse(readFileSync(process.argv[2], "utf8"));
 const W = steps.width ?? 1440, H = steps.height ?? 900;
 const CHROME = process.env.CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-const chrome = spawn(CHROME, ["--headless=new", "--disable-gpu", "--hide-scrollbars", "--remote-debugging-port=9333", `--window-size=${W},${H}`, `--user-data-dir=${join(tmpdir(), "art-cdp-profile")}`, "about:blank"], { stdio: "ignore" });
+const PORT = process.env.CDP_PORT ?? "9333";
+const chrome = spawn(CHROME, ["--headless=new", "--disable-gpu", "--hide-scrollbars", `--remote-debugging-port=${PORT}`, `--window-size=${W},${H}`, `--user-data-dir=${join(tmpdir(), `art-cdp-profile-${PORT}`)}`, "about:blank"], { stdio: "ignore" });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let targets;
-for (let i = 0; i < 50 && !targets; i++) { try { targets = await (await fetch("http://127.0.0.1:9333/json")).json(); } catch { await sleep(100); } }
+for (let i = 0; i < 50 && !targets; i++) { try { targets = await (await fetch(`http://127.0.0.1:${PORT}/json`)).json(); } catch { await sleep(100); } }
 const ws = new WebSocket(targets.find((t) => t.type === "page").webSocketDebuggerUrl);
 await new Promise((r) => (ws.onopen = r));
 let id = 0;

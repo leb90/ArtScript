@@ -72,12 +72,24 @@ class Raw extends Node {
 const REFLECTED = ["id", "href", "src", "alt", "type", "placeholder", "name", "rows", "accept", "width", "height", "poster", "title", "role"];
 const BOOLEAN = ["disabled", "checked", "multiple", "required", "controls", "autoplay", "loop", "muted", "open", "selected", "hidden"];
 
+// `el.style`: properties (`style.gap = "8px"`) plus an inline style written as text (`cssText`).
+class Style {
+  get cssText() {
+    return [...Object.entries(this).filter(([k, v]) => k !== "$text" && v !== "" && v != null).map(([k, v]) => `${k.startsWith("--") ? k : kebab(k)}:${v}`), ...(this.$text ? [this.$text] : [])].join(";");
+  }
+  set cssText(v) {
+    for (const k of Object.keys(this)) delete this[k];
+    this.$text = String(v ?? "").replace(/^[;\s]+|[;\s]+$/g, "");
+  }
+  setProperty(k, v) { this[k] = v; }
+}
+
 class Element extends Node {
   constructor(tag) {
     super();
     this.tagName = tag.toUpperCase();
     this.attrs = new Map();
-    this.style = {};
+    this.$style = new Style();
     this.value = "";
     this.selectedIndex = -1;
     const el = this;
@@ -113,10 +125,12 @@ class Element extends Node {
   getBoundingClientRect() { return { left: 0, right: 0, top: 0, bottom: 0 }; }
   showModal() { this.open = true; }
   close() { this.open = false; }
+  get style() { return this.$style; }
+  set style(v) { this.$style.cssText = v; }
   html() {
     const tag = this.tagName.toLowerCase();
     const attrs = [...this.attrs];
-    const css = Object.entries(this.style).filter(([, v]) => v !== "" && v != null).map(([k, v]) => `${kebab(k)}:${v}`).join(";");
+    const css = this.$style.cssText;
     if (css) attrs.push(["style", css]);
     if ((tag === "input" || tag === "textarea") && this.value !== "" && tag === "input") attrs.push(["value", this.value]);
     const open = `<${tag}${attrs.map(([k, v]) => (v === "" && BOOLEAN.includes(k) ? ` ${k}` : ` ${k}="${escAttr(v)}"`)).join("")}>`;
@@ -173,6 +187,8 @@ export async function prerender(bundleUrl, path) {
   const globals = {
     document,
     window: { addEventListener() {}, removeEventListener() {}, scrollTo() {}, location: url },
+    // Code in `mount`/`effect` meant for a real browser (an observer, a media query) doesn't stop the build.
+    __artStatic: true,
     location: url,
     history: { pushState() {}, replaceState() {} },
     fetch: () => new Promise(() => {}),

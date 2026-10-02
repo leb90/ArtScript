@@ -34,6 +34,7 @@
 (tag) @tag
 (component_name) @type
 (prop name: (property_identifier) @attribute)
+(attribute_name) @attribute
 (for_view item: (identifier) @variable.parameter)
 (for_statement item: (identifier) @variable.parameter)
 (for_statement index: (identifier) @variable.parameter)

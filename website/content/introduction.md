@@ -41,7 +41,7 @@ The [benchmarks](#cost-eval-results) measure this with Claude Opus, Sonnet and H
 ## What you get
 
 - **UI**: forms, lists, tables, tabs, modals, media, icons, layouts with responsive props, dark mode, scoped styles.
-- **Reactivity**: `state`, `computed` and `effect` on signals, with direct DOM updates (no virtual DOM). Apps ship about 3 KB of JavaScript, runtime included.
+- **Reactivity**: `state`, `computed` and `effect` on signals, with direct DOM updates (no virtual DOM). Apps ship about 5 KB of JavaScript, runtime included.
 - **Pages**: routes with params, layouts, client-side navigation, meta tags, guards and prerendered HTML.
 - **Backend**: models, REST apis with validation, SQLite storage, queries, relations, file uploads, live updates, server functions and scheduled jobs.
 - **Accounts**: sign-up and login with sessions, roles, per-user data, Google and GitHub sign-in, password reset and email verification.

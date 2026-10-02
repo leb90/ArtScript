@@ -3445,6 +3445,10 @@
             "named": false
           },
           {
+            "type": "attribute_name",
+            "named": true
+          },
+          {
             "type": "property_identifier",
             "named": true
           }
@@ -5002,6 +5006,10 @@
   {
     "type": "as",
     "named": false
+  },
+  {
+    "type": "attribute_name",
+    "named": true
   },
   {
     "type": "auth",

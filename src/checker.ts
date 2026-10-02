@@ -1,6 +1,6 @@
 // Type checker: small type system, null safety and errors with fixes.
 import type { ComponentDecl, Element, Expr, Field, Loc, ModelDecl, Program, ServerFnDecl, Stmt, TestDecl, TypeRef, UseDecl, ViewNode } from "./ast.ts";
-import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, RESPONSIVE_PROPS } from "./elements.ts";
+import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, RESPONSIVE_PROPS, TAGS } from "./elements.ts";
 import { ICONS } from "./icons.ts";
 import { CATALOG, diag, suggest, type Diagnostic } from "./errors.ts";
 import { inspectModule, isLocal, packageName } from "./modules.ts";
@@ -656,6 +656,16 @@ class Checker {
         } else if (p.value?.kind !== "Num") {
           this.err("TYPE_MISMATCH", `'${p.name}' needs a number`, p.loc, { expr: p.name, expected: "Number literal", fixes: [`${p.name}=2`] });
         }
+        continue;
+      }
+      // ARIA and data attributes go on any element, with any value (a flag is "true").
+      if (/^(aria|data)-/.test(p.name)) {
+        if (p.value) this.infer(p.value, scope);
+        continue;
+      }
+      if (p.name === "tag" && spec.props.includes("tag")) {
+        const t = p.value?.kind === "Ident" ? p.value.name : p.value?.kind === "Str" ? p.value.value : "";
+        if (!TAGS.includes(t)) this.err("TYPE_MISMATCH", `'tag' is one of the HTML elements for text and containers`, p.loc, { expr: p.name, expected: TAGS.join("|"), actual: t || "an expression", fixes: suggest(t, TAGS).map((x) => `tag=${x}`) });
         continue;
       }
       if (p.name === "ref" && p.value) {

@@ -2,7 +2,7 @@
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -45,4 +45,33 @@ test("prerender: static routes get their HTML and tags; the live app takes over 
   } finally {
     await GlobalRegistrator.unregister();
   }
+});
+
+test("prerender: styles written as text, browser-only code in mount, 404.html, favicon and an absolute og:image", () => {
+  const dir = mkdtempSync(join(tmpdir(), "art-pre2-"));
+  mkdirSync(join(dir, "public"));
+  writeFileSync(join(dir, "public", "favicon.svg"), "<svg xmlns='http://www.w3.org/2000/svg'/>");
+  writeFileSync(join(dir, "app.art"), `page Home "/" {
+  meta title="Home" image="/og.png"
+  mount {
+    document.documentElement.style.setProperty("--x", "1")
+    window.matchMedia("(min-width: 1px)").addEventListener("change", () => null)
+  }
+
+  column gap=2 style="--d: 40ms" id="box" {
+    title "Hello" tag=h1
+  }
+}
+
+page Missing "*" {
+  text "Nothing here"
+}
+`);
+  execFileSync(process.execPath, ["src/cli.ts", "build", dir, "--prerender", "--site", "https://x.example"], { stdio: "pipe" });
+  const home = readFileSync(join(dir, "dist", "index.html"), "utf8");
+  assert.match(home, /<div class="a-column" id="box" style="gap:8px;--d: 40ms">/);
+  assert.match(home, /<h1>Hello<\/h1>/);
+  assert.match(home, /<link rel="icon" href="\/favicon.svg">/);
+  assert.match(home, /property="og:image" content="https:\/\/x.example\/og.png"/);
+  assert.match(readFileSync(join(dir, "dist", "404.html"), "utf8"), /Nothing here/);
 });

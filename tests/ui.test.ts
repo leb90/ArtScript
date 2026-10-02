@@ -432,3 +432,48 @@ test("a11y: role on any element; a field without a label is named by its placeho
   assert.equal(js.match(/aria-label/g)?.length, 1, "only the field without a label");
   assert.match(js, /setAttribute\("aria-label", "Search"\)/);
 });
+
+test("attributes and HTML tags: aria-*, data-*, tag=, style next to layout props, an icon's class", async () => {
+  const src = `page P "/" {
+  state open = false
+
+  column tag=nav gap=2 style="--d: 40ms" aria-label="Main" data-step=2 id="nav" {
+    title "Plans" tag=h1
+    text "Body" tag=p
+    button "Menu" aria-expanded=open aria-controls="panel" -> open = !open
+    icon "check" class="mark" aria-hidden
+    row style=(open ? "color: red" : "") gap=1 id="row"
+  }
+}
+`;
+  assert.deepEqual(types(src), []);
+  assert.equal(printProgram(parse(src, "t")), src);
+  assert.deepEqual(types(src.replace("tag=h1", "tag=marquee")), ["TYPE_MISMATCH"]);
+  const dir = mkdtempSync(join(tmpdir(), "art-attrs-"));
+  writeFileSync(join(dir, "app.js"), compile([{ file: "app.art", src }]).js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    (await import(pathToFileURL(join(dir, "app.js")).href)).start(document.getElementById("app"));
+    const nav = document.getElementById("nav")!;
+    assert.equal(nav.tagName, "NAV");
+    assert.equal(nav.style.gap, "8px", "style= keeps the gap");
+    assert.equal(nav.style.getPropertyValue("--d"), "40ms");
+    assert.equal(nav.getAttribute("aria-label"), "Main");
+    assert.equal(nav.getAttribute("data-step"), "2");
+    assert.equal(document.querySelector("h1")!.textContent, "Plans");
+    assert.equal(document.querySelector("p")!.textContent, "Body");
+    const button = document.querySelector("button")!;
+    assert.equal(button.getAttribute("aria-expanded"), "false");
+    button.click();
+    assert.equal(button.getAttribute("aria-expanded"), "true");
+    assert.equal(document.getElementById("row")!.style.color, "red");
+    assert.equal(document.getElementById("row")!.style.gap, "4px");
+    const icon = document.querySelector(".mark")!;
+    assert.ok(icon.classList.contains("a-icon"));
+    assert.equal(icon.getAttribute("aria-hidden"), "true");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});

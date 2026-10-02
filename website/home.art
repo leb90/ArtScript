@@ -10,9 +10,9 @@ page Home "/" {
   column gap=0 {
     column class="hero" {
       column class="container" align=center gap=0 {
-        link "Version 0.1 · Measured against React, Svelte, Vue and SolidJS →" to="/benchmarks" class="eyebrow"
+        link "Version 0.2 · Measured against React, Svelte, Vue and SolidJS →" to="/benchmarks" class="eyebrow"
         title "The web framework built for AI" class="hero-title"
-        text "ArtScript is a full-stack language for web apps, designed so that models like Claude write them with fewer tokens, fewer retries and fewer dollars. Your agent writes a third of the code, the compiler catches its mistakes, and the app ships about 3 KB of JavaScript." class="lead"
+        text "ArtScript is a full-stack language for web apps, designed so that models like Claude write them with fewer tokens, fewer retries and fewer dollars. Your agent writes a third of the code, the compiler catches its mistakes, and the app ships about 5 KB of JavaScript." class="lead"
         row gap=3 wrap justify=center class="cta" {
           link "Get started" to="/learn/quick-start" class="btn primary"
           link "Open the playground" to="/playground" class="btn"

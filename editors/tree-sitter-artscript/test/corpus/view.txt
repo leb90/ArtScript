@@ -240,3 +240,38 @@ page P {
             (string_content))
           (string
             (string_content)))))))
+
+====================
+ARIA and data attributes, tag
+====================
+
+page P {
+  button "Menu" aria-expanded=open data-step=2 aria-hidden
+  title "Plans" tag=h1
+}
+
+---
+
+(source_file
+  (page
+    (type_identifier)
+    (body
+      (element
+        (tag)
+        (string
+          (string_content))
+        (prop
+          (attribute_name)
+          (identifier))
+        (prop
+          (attribute_name)
+          (number))
+        (prop
+          (attribute_name)))
+      (element
+        (tag)
+        (string
+          (string_content))
+        (prop
+          (property_identifier)
+          (identifier))))))

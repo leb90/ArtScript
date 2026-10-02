@@ -2,6 +2,15 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## Unreleased (next: 0.2.1)
+
+From building three apps with the published package (a shop, a backoffice, a landing page):
+
+- `aria-*` and `data-*` on any element (`button "Menu" aria-expanded=open`), and `tag=` on texts and containers for the HTML element (`title "Plans" tag=h1`, `column tag=nav`). `form ... novalidate`.
+- The runtime's base styles and the rules of responsive props are in a cascade layer (`@layer art`): any rule of your own CSS wins, whatever its specificity (before, `.footer-grid { grid-template-columns: ... }` lost to `md:cols=4`, and `:root { --a-bg: ... }` to the dark theme).
+- Fixed: `style="..."` together with `gap`/`pad` crashed (and replaced the element's styles; it now adds to them); prerender wrote a string `style` as garbage; browser-only code in `mount` (an observer, `matchMedia`) aborted `art build --prerender`; a `class` on `icon` dropped its own class; links to a section of the current page (`/#plans`) were marked `aria-current`.
+- `art build --prerender` writes `404.html` (the `"*"` page), links `public/favicon.*` from every page, and with `--site` makes `og:image` absolute.
+
 ## 0.2.0 (2026-10-02)
 
 ### Language

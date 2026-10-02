@@ -134,13 +134,17 @@ export function $text(n, fn) {
 const URL_ATTRS = new Set(["href", "src", "action", "formAction", "poster"]);
 const unsafeUrl = (v) => typeof v === "string" && /^\s*(javascript|vbscript|data:text\/html)/i.test(v.replace(/[\u0000-\u001f]/g, ""));
 export function $attr(n, name, fn) {
-  let last = {};
+  let last = {}, base;
   effect(() => {
     let v = fn();
     if (URL_ATTRS.has(name)) v = unsafeUrl(v) ? "#" : withBase(v);
     if (v === last) return;
     last = v;
-    if (name in n && name !== "role") n[name] = v ?? "";
+    // `style=` adds to the element's own styles (gap, pad...) instead of replacing them; ARIA states
+    // are written out ("true"/"false").
+    if (name === "style") n.style.cssText = (base ??= n.style.cssText) + ";" + (v ?? "");
+    else if (name.startsWith("aria-")) v == null ? n.removeAttribute(name) : n.setAttribute(name, String(v));
+    else if (name in n && name !== "role") n[name] = v ?? "";
     else if (v == null || v === false) n.removeAttribute(name);
     else n.setAttribute(name, v === true ? "" : v);
   });
@@ -174,7 +178,7 @@ export function $css(n, cls, rule) {
   if (rules.has(cls)) return;
   rules.add(cls);
   sheet ??= document.head.appendChild(document.createElement("style"));
-  sheet.textContent += rule;
+  sheet.textContent += `@layer art{${rule}}`;
 }
 export function $class(n, cls, fn) {
   let last;
@@ -444,7 +448,7 @@ export function $mount(fn) {
     const prev = owner;
     owner = o;
     // On the server, code meant for a real browser (a chart library...) just doesn't render.
-    try { fn(); } catch (e) { if (!globalThis.__artSSR) throw e; } finally { owner = prev; }
+    try { fn(); } catch (e) { if (!globalThis.__artSSR && !globalThis.__artStatic) throw e; } finally { owner = prev; }
   });
 }
 
@@ -620,7 +624,7 @@ export function $data(fn, initial) {
 
 // ---------- App ----------
 // Theme: override the --a-* variables in your own CSS (`:root { --a-primary: #e11d48 }`).
-const CSS = `:root{--a-primary:#2563eb;--a-danger:#dc2626;--a-success:#16a34a;--a-bg:#fafafa;--a-fg:#1a1a1a;--a-surface:#fff;--a-border:#e5e5e5;--a-input:#d4d4d4;--a-muted:#737373;--a-radius:8px;--a-font:system-ui,sans-serif}@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--a-bg:#111;--a-fg:#eee;--a-surface:#1a1a1a;--a-border:#333;--a-input:#444;--a-muted:#999;color-scheme:dark}}:root[data-theme=dark]{--a-bg:#111;--a-fg:#eee;--a-surface:#1a1a1a;--a-border:#333;--a-input:#444;--a-muted:#999;color-scheme:dark}*{box-sizing:border-box}body{margin:0;font:16px/1.5 var(--a-font);color:var(--a-fg);background:var(--a-bg)}#app{padding:24px;max-width:960px;margin:0 auto}.a-row{display:flex;align-items:center}.a-column{display:flex;flex-direction:column}.a-grid{display:grid}.a-wrap{flex-wrap:wrap}.a-card{display:flex;flex-direction:column;padding:16px;border:1px solid var(--a-border);border-radius:calc(var(--a-radius) * 1.5);background:var(--a-surface)}button{font:inherit;padding:6px 14px;border-radius:var(--a-radius);border:1px solid var(--a-input);background:var(--a-surface);color:inherit;cursor:pointer}button.a-primary{background:var(--a-primary);border-color:var(--a-primary);color:#fff}button.a-danger{color:var(--a-danger);border-color:var(--a-danger)}button.a-small{padding:2px 8px;font-size:.875em}span.a-danger,h2.a-danger{color:var(--a-danger)}span.a-primary,h2.a-primary{color:var(--a-primary)}span.a-success,h2.a-success{color:var(--a-success)}input,textarea,select{font:inherit;color:inherit}input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{padding:6px 10px;border:1px solid var(--a-input);border-radius:var(--a-radius);background:inherit}.a-bold{font-weight:600}.a-muted{color:var(--a-muted)}.a-small{font-size:.875em}.a-large{font-size:1.25em}h2{margin:0}a{color:var(--a-primary)}.a-field{display:flex;flex-direction:column;gap:4px}.a-check{display:flex;flex-direction:row;align-items:center;gap:8px}.a-radio{display:flex;flex-direction:column;gap:4px}.a-tabs{display:flex;gap:4px;border-bottom:1px solid var(--a-border)}.a-tabs button{border:0;border-radius:var(--a-radius) var(--a-radius) 0 0;background:none}.a-tabs .a-active{box-shadow:inset 0 -2px var(--a-primary);font-weight:600}.a-modal{border:0;border-radius:calc(var(--a-radius) * 1.5);padding:20px;min-width:min(420px,90vw);background:var(--a-surface);color:inherit}.a-modal::backdrop{background:#0006}.a-badge{display:inline-block;padding:0 8px;border-radius:999px;font-size:.75em;background:var(--a-border)}.a-badge.a-primary{background:color-mix(in srgb,var(--a-primary) 15%,transparent);color:var(--a-primary)}.a-badge.a-success{background:color-mix(in srgb,var(--a-success) 15%,transparent);color:var(--a-success)}.a-badge.a-danger{background:color-mix(in srgb,var(--a-danger) 15%,transparent);color:var(--a-danger)}.a-spinner{display:inline-block;width:1em;height:1em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:a-spin .7s linear infinite}@keyframes a-spin{to{transform:rotate(360deg)}}hr{border:0;border-top:1px solid var(--a-border);margin:8px 0;width:100%}.a-toasts{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:100}.a-toast{padding:10px 16px;border-radius:var(--a-radius);background:var(--a-fg);color:var(--a-bg);box-shadow:0 4px 12px #0003}.a-toast.a-success{background:var(--a-success);color:#fff}.a-toast.a-danger{background:var(--a-danger);color:#fff}.a-list{margin:0;padding-left:20px}.a-icon{display:inline-flex;vertical-align:middle;line-height:0}.a-scroll{overflow-x:auto}.a-table{border-collapse:collapse;width:100%}.a-table th,.a-table td{text-align:left;padding:8px;border-bottom:1px solid var(--a-border)}video,img{max-width:100%}`;
+const CSS = `:root{--a-primary:#2563eb;--a-danger:#dc2626;--a-success:#16a34a;--a-bg:#fafafa;--a-fg:#1a1a1a;--a-surface:#fff;--a-border:#e5e5e5;--a-input:#d4d4d4;--a-muted:#737373;--a-radius:8px;--a-font:system-ui,sans-serif}@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--a-bg:#111;--a-fg:#eee;--a-surface:#1a1a1a;--a-border:#333;--a-input:#444;--a-muted:#999;color-scheme:dark}}:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{--a-bg:#111;--a-fg:#eee;--a-surface:#1a1a1a;--a-border:#333;--a-input:#444;--a-muted:#999;color-scheme:dark}*{box-sizing:border-box}body{margin:0;font:16px/1.5 var(--a-font);color:var(--a-fg);background:var(--a-bg)}#app{padding:24px;max-width:960px;margin:0 auto}.a-row{display:flex;align-items:center}.a-column{display:flex;flex-direction:column}.a-grid{display:grid}.a-wrap{flex-wrap:wrap}.a-card{display:flex;flex-direction:column;padding:16px;border:1px solid var(--a-border);border-radius:calc(var(--a-radius) * 1.5);background:var(--a-surface)}button{font:inherit;padding:6px 14px;border-radius:var(--a-radius);border:1px solid var(--a-input);background:var(--a-surface);color:inherit;cursor:pointer}button.a-primary{background:var(--a-primary);border-color:var(--a-primary);color:#fff}button.a-danger{color:var(--a-danger);border-color:var(--a-danger)}button.a-small{padding:2px 8px;font-size:.875em}span.a-danger,h2.a-danger{color:var(--a-danger)}span.a-primary,h2.a-primary{color:var(--a-primary)}span.a-success,h2.a-success{color:var(--a-success)}input,textarea,select{font:inherit;color:inherit}input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{padding:6px 10px;border:1px solid var(--a-input);border-radius:var(--a-radius);background:inherit}.a-bold{font-weight:600}.a-muted{color:var(--a-muted)}.a-small{font-size:.875em}.a-large{font-size:1.25em}h2{margin:0}a{color:var(--a-primary)}.a-field{display:flex;flex-direction:column;gap:4px}.a-check{display:flex;flex-direction:row;align-items:center;gap:8px}.a-radio{display:flex;flex-direction:column;gap:4px}.a-tabs{display:flex;gap:4px;border-bottom:1px solid var(--a-border)}.a-tabs button{border:0;border-radius:var(--a-radius) var(--a-radius) 0 0;background:none}.a-tabs .a-active{box-shadow:inset 0 -2px var(--a-primary);font-weight:600}.a-modal{border:0;border-radius:calc(var(--a-radius) * 1.5);padding:20px;min-width:min(420px,90vw);background:var(--a-surface);color:inherit}.a-modal::backdrop{background:#0006}.a-badge{display:inline-block;padding:0 8px;border-radius:999px;font-size:.75em;background:var(--a-border)}.a-badge.a-primary{background:color-mix(in srgb,var(--a-primary) 15%,transparent);color:var(--a-primary)}.a-badge.a-success{background:color-mix(in srgb,var(--a-success) 15%,transparent);color:var(--a-success)}.a-badge.a-danger{background:color-mix(in srgb,var(--a-danger) 15%,transparent);color:var(--a-danger)}.a-spinner{display:inline-block;width:1em;height:1em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:a-spin .7s linear infinite}@keyframes a-spin{to{transform:rotate(360deg)}}hr{border:0;border-top:1px solid var(--a-border);margin:8px 0;width:100%}.a-toasts{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:100}.a-toast{padding:10px 16px;border-radius:var(--a-radius);background:var(--a-fg);color:var(--a-bg);box-shadow:0 4px 12px #0003}.a-toast.a-success{background:var(--a-success);color:#fff}.a-toast.a-danger{background:var(--a-danger);color:#fff}.a-list{margin:0;padding-left:20px}.a-icon{display:inline-flex;vertical-align:middle;line-height:0}.a-scroll{overflow-x:auto}.a-table{border-collapse:collapse;width:100%}.a-table th,.a-table td{text-align:left;padding:8px;border-bottom:1px solid var(--a-border)}video,img{max-width:100%}`;
 
 // `meta title=... description=... image=...`: the page's title, description and Open Graph tags.
 function metaTag(attr, key) {
@@ -706,7 +710,8 @@ export function start(routes, mount = document.getElementById("app"), prefix = "
   if (!document.getElementById("art-css")) {
     const style = document.createElement("style");
     style.id = "art-css";
-    style.textContent = CSS;
+    // In a cascade layer: any rule of the app's own CSS wins, whatever its specificity.
+    style.textContent = `@layer art{${CSS}}`;
     document.head.insertBefore(style, document.head.firstChild); // first, so the app's CSS wins
   }
   // A write that fails outside a `try` (`-> api.users.remove(u.id)`) tells the user.
@@ -783,7 +788,9 @@ export function start(routes, mount = document.getElementById("app"), prefix = "
     // Links to the current page get aria-current="page" (style them with `[aria-current=page]`).
     const bare = (p) => p.replace(/(.)\/+$/, "$1"); // static hosts add a trailing slash
     for (const a of mount.querySelectorAll?.("a[href]") ?? []) {
-      if (bare(new URL(a.href, location.href).pathname) === bare(location.pathname)) a.setAttribute("aria-current", "page");
+      const to = new URL(a.href, location.href);
+      // (a link to a section, `/#plans`, isn't the page)
+      if (!to.hash && bare(to.pathname) === bare(location.pathname)) a.setAttribute("aria-current", "page");
       else a.removeAttribute("aria-current");
     }
     const target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));

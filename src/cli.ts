@@ -138,6 +138,7 @@ function sizes(files: Record<string, string>): string {
 // runtime and every `use` module (npm packages resolve from the project's node_modules).
 // With apis, `server` is the schema for the server runtime.
 // `dev` (art dev): the bundle includes the dev tools panel.
+let shellHead = ""; // <head> tags every page of the project gets (the favicon)
 async function buildFiles(target: string, minify: boolean, maps: "inline" | "linked" | false = minify ? false : "inline", base = "/", dev = false): Promise<{ files: Record<string, string>; server: ServerSchema | null } | { diagnostics: Diagnostic[] }> {
   const r = compile(sources(target), { dev });
   if (!r.js) return { diagnostics: r.diagnostics };
@@ -157,7 +158,10 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
     const root = projectRoot(target);
     const cssFiles = findFiles(root, ".css").filter((f) => !relative(root, f).startsWith("public"));
     const css = cssFiles.map((f) => `/* ${relative(root, f)} */\n${readFileSync(f, "utf8")}`).join("\n");
-    const files: Record<string, string> = { "index.html": htmlShell("ArtScript", "", "", !!css, base) };
+    // A favicon in public/ is linked from every page.
+    const icon = ["favicon.svg", "favicon.png", "favicon.ico"].find((f) => existsSync(join(root, "public", f)));
+    shellHead = icon ? `<link rel="icon" href="${base}${icon}">` : "";
+    const files: Record<string, string> = { "index.html": htmlShell("ArtScript", shellHead, "", !!css, base) };
     for (const f of out.outputFiles) files[relative("/out", f.path)] = f.text;
     if (css) files["app.css"] = css;
     return { files, server: r.server };
@@ -216,15 +220,23 @@ switch (cmd) {
       const paths = program.decls.flatMap((d) => (d.kind === "Component" && d.page && !/[:*]/.test(d.path ?? "") ? [d.path ?? "/" + d.name.toLowerCase()] : []));
       // Routes that aren't prerendered (`/posts/:id`) are served this empty shell, not the home page.
       writeFileSync(join(outDir, "_app.html"), r.files["index.html"]);
-      for (const path of paths) {
+      // --site https://example.com: sitemap.xml with those routes, robots.txt pointing to it, and
+      // an absolute og:image (crawlers need the full URL).
+      const site = (flag("--site") as string | undefined)?.replace(/\/+$/, "");
+      const render = async (path: string) => {
         const page = await prerender(pathToFileURL(join(outDir, "app.js")).href, base.slice(0, -1) + path);
+        const head = site ? page.head.replace(/(property="og:image" content=")(\/[^"]*)/, `$1${site}$2`) : page.head;
+        return htmlShell(page.title || "ArtScript", shellHead + head, page.html, "app.css" in r.files, base);
+      };
+      for (const path of paths) {
         const file = path === "/" ? join(outDir, "index.html") : join(outDir, path, "index.html");
         mkdirSync(dirname(file), { recursive: true });
-        writeFileSync(file, htmlShell(page.title || "ArtScript", page.head, page.html, "app.css" in r.files, base));
+        writeFileSync(file, await render(path));
       }
+      // 404.html, which static hosts serve for unknown paths: the `"*"` page when there is one
+      // (the app then takes over and shows the right page for routes with params).
+      writeFileSync(join(outDir, "404.html"), program.decls.some((d) => d.kind === "Component" && d.path === "*") ? await render("/404") : r.files["index.html"]);
       console.log(`prerendered: ${paths.join(" ")}`);
-      // --site https://example.com: sitemap.xml with those routes, and robots.txt pointing to it.
-      const site = (flag("--site") as string | undefined)?.replace(/\/+$/, "");
       if (site) {
         const urls = paths.map((p) => `  <url><loc>${site}${p}</loc></url>`).join("\n");
         writeFileSync(join(outDir, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);

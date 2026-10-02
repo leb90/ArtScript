@@ -410,7 +410,9 @@ class ComponentGen {
       parent = w;
     }
     const v = this.v();
-    this.emit(`const ${v} = $.$el(${parent}, "${spec.html}"${classes ? `, "${classes}"` : ""});`);
+    const tagProp = el.props.find((p) => p.name === "tag")?.value;
+    const html = tagProp?.kind === "Ident" ? tagProp.name : tagProp?.kind === "Str" ? tagProp.value : spec.html;
+    this.emit(`const ${v} = $.$el(${parent}, "${html}"${classes ? `, "${classes}"` : ""});`);
     if (this.c.members.some((m) => m.kind === "Style")) this.emit(`${v}.setAttribute("data-s", ${JSON.stringify(this.c.name)});`);
     if (spec.type) this.emit(`${v}.type = "${spec.type}";`);
     if (el.tag === "spinner") this.emit(`${v}.setAttribute("role", "status");`);
@@ -426,11 +428,12 @@ class ComponentGen {
 
     for (const p of el.props) {
       if (!p.value) {
-        if (isAttr(p.name)) this.emit(`${v}.${p.name} = true;`);
+        if (/^(aria|data)-/.test(p.name)) this.emit(`${v}.setAttribute(${JSON.stringify(p.name)}, "true");`);
+        else if (isAttr(p.name)) this.emit(`${v}.${p.name === "novalidate" ? "noValidate" : p.name} = true;`);
         continue;
       }
       const val = p.value;
-      if (p.name === "label" || p.name === "options") continue;
+      if (p.name === "label" || p.name === "options" || p.name === "tag" || p.name === "style") continue; // style: below, after the layout props
       if (p.name === "ref") {
         this.emit(`${printExprName(val)} = ${v};`);
         continue;
@@ -508,6 +511,8 @@ class ComponentGen {
       const [bp, name] = p.name.split(":");
       if (name && bp !== "on" && p.value?.kind === "Num") this.responsive(v, bp, name, p.value.value);
     }
+    const style = el.props.find((p) => p.name === "style")?.value;
+    if (style) this.attr(v, "style", style, scope);
 
     if (el.action && spec.action) {
       this.emit(`$.$on(${v}, "${spec.action}", ${hasAwait(el.action) ? "async " : ""}() => {`);
@@ -537,11 +542,16 @@ class ComponentGen {
   icon(el: Element, parent: string, scope: Scope) {
     const name = el.content?.kind === "Str" ? el.content.value : "";
     const v = this.v();
-    const flags = el.props.filter((p) => !p.value && p.name !== "size" && p.name !== "label").map((p) => ` a-${p.name}`).join("");
+    const flags = el.props.filter((p) => !p.value && p.name !== "size" && p.name !== "label" && !/^(aria|data)-/.test(p.name)).map((p) => ` a-${p.name}`).join("");
     const size = el.props.find((p) => p.name === "size")?.value;
     const label = el.props.find((p) => p.name === "label")?.value;
     this.emit(`const ${v} = $.$icon(${parent}, ${JSON.stringify(ICONS[name] ?? "")}, ${size ? this.expr(size, scope) : 20}, ${label ? this.expr(label, scope) : "null"}, ${JSON.stringify("a-icon" + flags)});`);
-    for (const p of el.props) if (p.value && (p.name === "class" || p.name === "id" || p.name === "style")) this.attr(v, p.name === "class" ? "className" : p.name, p.value, scope);
+    for (const p of el.props) {
+      if (!p.value && /^(aria|data)-/.test(p.name)) this.emit(`${v}.setAttribute(${JSON.stringify(p.name)}, "true");`);
+      if (!p.value) continue;
+      if (p.name === "class") this.attr(v, "className", p.value, scope, (s) => `${JSON.stringify("a-icon" + flags + " ")} + ${s}`);
+      else if (p.name === "id" || p.name === "style" || p.name === "role" || /^(aria|data)-/.test(p.name)) this.attr(v, p.name, p.value, scope);
+    }
   }
 
   labelText(parent: string, val: Expr, scope: Scope) {
@@ -553,7 +563,9 @@ class ComponentGen {
   attr(v: string, name: string, val: Expr, scope: Scope, wrap = (s: string) => s) {
     const lit = literal(val);
     // ARIA attributes are set as attributes (not every browser reflects them as properties).
-    if (lit !== null && (name === "role" || name.startsWith("aria-"))) return this.emit(`${v}.setAttribute(${JSON.stringify(name)}, ${JSON.stringify(String(lit))});`);
+    if (lit !== null && (name === "role" || name.startsWith("aria-") || name.startsWith("data-"))) return this.emit(`${v}.setAttribute(${JSON.stringify(name)}, ${JSON.stringify(String(lit))});`);
+    // Added to the element's own styles (`gap`, `pad`...), not instead of them.
+    if (lit !== null && name === "style") return this.emit(`${v}.style.cssText += ${JSON.stringify(";" + lit)};`);
     // A root-relative URL gets the app's base path (`art build --base`).
     if (lit !== null) this.emit(`${v}.${name} = ${wrap(typeof lit === "string" && /^\/(?!\/)/.test(lit) && ["href", "src", "poster"].includes(name) ? `$.withBase(${JSON.stringify(lit)})` : JSON.stringify(lit))};`);
     else this.emit(`$.$attr(${v}, "${name}", () => ${wrap(this.expr(val, scope))});`);

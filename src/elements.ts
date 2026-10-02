@@ -17,6 +17,9 @@ export type ElementSpec = {
 
 const LAYOUT = ["gap", "pad", "align", "justify"];
 const COMMON = ["class", "style", "id", "ref", "role"];
+// `tag=nav`: the HTML element of a text or a container (`title "Plans" tag=h1`, `column tag=main`).
+export const TAGS = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "span", "div", "nav", "header", "footer", "main", "section", "article", "aside", "label", "figure", "figcaption", "blockquote", "strong", "em", "small"];
+export const TAG_ELEMENTS = ["text", "title", "row", "column", "grid", "card"];
 const MEDIA = ["controls", "autoplay", "loop", "muted"];
 
 export const ELEMENTS: Record<string, ElementSpec> = {
@@ -43,7 +46,7 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   column: { html: "div", cls: "a-column", content: null, action: null, children: true, props: LAYOUT, flags: [] },
   grid: { html: "div", cls: "a-grid", content: null, action: null, children: true, props: [...LAYOUT, "cols"], flags: [] },
   card: { html: "div", cls: "a-card", content: null, action: null, children: true, props: LAYOUT, flags: [] },
-  form: { html: "form", cls: "a-column", content: null, action: "submit", children: true, props: LAYOUT, flags: [] },
+  form: { html: "form", cls: "a-column", content: null, action: "submit", children: true, props: LAYOUT, flags: ["novalidate"], attrs: ["novalidate"] },
   list: { html: "ul", cls: "a-list", content: null, action: null, children: true, props: [], flags: [] },
   item: { html: "li", content: "text", action: "click", children: true, props: [], flags: ["muted"] },
   table: { html: "table", cls: "a-table", wrap: "a-scroll", content: null, action: null, children: true, props: [], flags: [] },
@@ -52,7 +55,7 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   td: { html: "td", content: "text", action: null, children: true, props: [], flags: ["muted"] },
 };
 
-for (const spec of Object.values(ELEMENTS)) spec.props = [...spec.props, ...COMMON];
+for (const [name, spec] of Object.entries(ELEMENTS)) spec.props = [...spec.props, ...COMMON, ...(TAG_ELEMENTS.includes(name) ? ["tag"] : [])];
 
 // Props whose value is a keyword (written without quotes: `align=center`).
 export const ENUM_PROPS: Record<string, string[]> = {

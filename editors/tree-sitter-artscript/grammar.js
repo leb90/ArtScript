@@ -130,12 +130,15 @@ module.exports = grammar({
       optional(seq($.action, repeat($.prop))),
       choice($.children, $._terminator),
     ),
+    attribute_name: (_) => token(prec(2, /(aria|data)(-[A-Za-z0-9_]+)+/)),
     component_name: (_) => token(prec(1, /[A-Z][A-Za-z0-9_$]*/)),
     // `name=value`, a flag (`primary`), `on:click=...` and `md:cols=3`.
     // Right after the tag, a bare name is the element's content (`text count`), not a flag.
     prop: ($) => choice(
       prec(-1, field("name", propertyName($))),
       seq(field("name", seq(propertyName($), optional(seq(token.immediate(":"), propertyName($))))), "=", field("value", $._value)),
+      // `aria-expanded=open`, `data-step=2`, `aria-hidden`
+      seq(field("name", $.attribute_name), optional(seq("=", field("value", $._value)))),
     ),
     action: ($) => seq("->", choice($.block, $.let_statement, $.return_statement, $.expression_statement, $.if_statement)),
     children: ($) => prec.dynamic(1, seq("{", repeat($._view_node), "}")),

@@ -596,6 +596,11 @@ class Parser {
           continue;
         }
         const p = this.ident("a prop (name=value) or flag");
+        // `aria-expanded=open`, `data-step=2`: attribute names with dashes.
+        while ((p.v === "aria" || p.v === "data" || p.v.startsWith("aria-") || p.v.startsWith("data-")) && this.is("-") && this.tok.loc.line === p.loc.line && this.tok.loc.col === p.loc.col + p.v.length && this.peek().t === "id") {
+          this.next();
+          p.v += "-" + this.next().v;
+        }
         // `on:keydown=save()` (an event handler) and `md:cols=3` (from a screen width up).
         if (this.is(":") && this.peek().t === "id") {
           this.next();
