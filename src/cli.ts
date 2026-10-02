@@ -231,7 +231,9 @@ switch (cmd) {
       for (const path of paths) {
         const file = path === "/" ? join(outDir, "index.html") : join(outDir, path, "index.html");
         mkdirSync(dirname(file), { recursive: true });
-        writeFileSync(file, await render(path));
+        const html = await render(path);
+        writeFileSync(file, html);
+        r.files[relative(outDir, file)] = html; // the size table shows the pages as they are served
       }
       // 404.html, which static hosts serve for unknown paths: the `"*"` page when there is one
       // (the app then takes over and shows the right page for routes with params).

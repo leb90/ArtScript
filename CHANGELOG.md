@@ -2,6 +2,12 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## Unreleased (next: 0.2.2)
+
+- Fixed (a 0.2.1 regression): a dynamic `class=(expr)` was missing from prerendered and server-rendered HTML.
+- `h1`–`h6` and `p` (from `tag=`) have no default margin, like `title`; `novalidate` is in the static HTML; the build's size table shows the prerendered pages.
+- `art test`: `see`/`notSee` ignore what is `aria-hidden`.
+
 ## 0.2.1 (2026-10-02)
 
 From building three apps with the published package (a shop, a backoffice, a landing page):

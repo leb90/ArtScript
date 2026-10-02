@@ -16,7 +16,8 @@ const norm = (s: string) => s.replace(/\s+/g, " ").trim();
 const visible = (el: Element | null): boolean => {
   for (let e = el; e; e = e.parentElement) {
     if (e.tagName === "DIALOG" && !(e as HTMLDialogElement).open) return false;
-    if ((e as HTMLElement).hidden || (e as HTMLElement).style?.display === "none") return false;
+    // `aria-hidden` too: what a screen reader skips, a test doesn't see (a closed panel, decoration).
+    if ((e as HTMLElement).hidden || (e as HTMLElement).style?.display === "none" || e.getAttribute("aria-hidden") === "true") return false;
   }
   return true;
 };

@@ -94,7 +94,8 @@ class Element extends Node {
     this.selectedIndex = -1;
     const el = this;
     this.classList = {
-      add(c) { const s = new Set(el.className.split(" ").filter(Boolean)); s.add(c); el.className = [...s].join(" "); },
+      add(...cs) { const s = new Set(el.className.split(" ").filter(Boolean)); for (const c of cs) s.add(c); el.className = [...s].join(" "); },
+      remove(...cs) { const s = new Set(el.className.split(" ").filter(Boolean)); for (const c of cs) s.delete(c); el.className = [...s].join(" "); },
       toggle(c, on) { const s = new Set(el.className.split(" ").filter(Boolean)); if (on) s.add(c); else s.delete(c); el.className = [...s].join(" "); },
     };
   }

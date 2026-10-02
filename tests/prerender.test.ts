@@ -52,6 +52,7 @@ test("prerender: styles written as text, browser-only code in mount, 404.html, f
   mkdirSync(join(dir, "public"));
   writeFileSync(join(dir, "public", "favicon.svg"), "<svg xmlns='http://www.w3.org/2000/svg'/>");
   writeFileSync(join(dir, "app.art"), `page Home "/" {
+  state big = true
   meta title="Home" image="/og.png"
   mount {
     document.documentElement.style.setProperty("--x", "1")
@@ -59,8 +60,9 @@ test("prerender: styles written as text, browser-only code in mount, 404.html, f
   }
 
   column gap=2 style="--d: 40ms" id="box" {
-    title "Hello" tag=h1
+    title "Hello" tag=h1 class=(big ? "hero big" : "hero")
   }
+  form novalidate
 }
 
 page Missing "*" {
@@ -70,7 +72,8 @@ page Missing "*" {
   execFileSync(process.execPath, ["src/cli.ts", "build", dir, "--prerender", "--site", "https://x.example"], { stdio: "pipe" });
   const home = readFileSync(join(dir, "dist", "index.html"), "utf8");
   assert.match(home, /<div class="a-column" id="box" style="gap:8px;--d: 40ms">/);
-  assert.match(home, /<h1>Hello<\/h1>/);
+  assert.match(home, /<h1 class="hero big">Hello<\/h1>/, "a dynamic class is in the static HTML");
+  assert.match(home, /<form class="a-column" novalidate/);
   assert.match(home, /<link rel="icon" href="\/favicon.svg">/);
   assert.match(home, /property="og:image" content="https:\/\/x.example\/og.png"/);
   assert.match(readFileSync(join(dir, "dist", "404.html"), "utf8"), /Nothing here/);

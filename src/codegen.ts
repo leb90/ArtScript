@@ -447,7 +447,8 @@ class ComponentGen {
     for (const p of [...el.props.filter((q) => q.name === "class"), ...el.props.filter((q) => q.name !== "class")]) {
       if (!p.value) {
         if (/^(aria|data)-/.test(p.name)) this.emit(`${v}.setAttribute(${JSON.stringify(p.name)}, "true");`);
-        else if (isAttr(p.name)) this.emit(`${v}.${p.name === "novalidate" ? "noValidate" : p.name} = true;`);
+        else if (p.name === "novalidate") this.emit(`${v}.setAttribute("novalidate", "");`);
+        else if (isAttr(p.name)) this.emit(`${v}.${p.name} = true;`);
         continue;
       }
       const val = p.value;
