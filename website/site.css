@@ -1,51 +1,51 @@
 /* The ArtScript website theme. ArtScript elements read the --a-* variables; the rest are the site's. */
 :root {
-  --a-primary: #7c3aed;
+  --a-primary: #111111;
   --a-radius: 10px;
   --a-font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --a-bg: #ffffff;
-  --a-fg: #16131f;
+  --a-fg: #111111;
   --a-surface: #ffffff;
-  --a-border: #e7e4ee;
-  --a-muted: #6b6578;
-  --brand: #7c3aed;
-  --brand-2: #db2777;
-  --brand-soft: #f3efff;
-  --soft: #f8f7fb;
-  --code-bg: #15121d;
-  --code-fg: #e9e6f2;
-  --header: rgba(255, 255, 255, 0.82);
+  --a-border: #e6e6e6;
+  --a-muted: #6b6b6b;
+  --brand: #111111;
+  --brand-2: #4a4a4a;
+  --brand-soft: #f2f2f2;
+  --soft: #f7f7f7;
+  --code-bg: #121212;
+  --code-fg: #ededed;
+  --header: rgba(255, 255, 255, 0.84);
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-  --shadow: 0 1px 2px rgba(22, 19, 31, 0.04), 0 8px 24px rgba(22, 19, 31, 0.06);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --a-bg: #0d0b12;
-    --a-fg: #ece9f4;
-    --a-surface: #15121d;
-    --a-border: #2a2535;
-    --a-muted: #9d96ad;
-    --brand: #a78bfa;
-    --brand-2: #f472b6;
-    --brand-soft: #1f1830;
-    --soft: #121019;
-    --code-bg: #0a0810;
-    --header: rgba(13, 11, 18, 0.8);
+    --a-bg: #0b0b0b;
+    --a-fg: #f2f2f2;
+    --a-surface: #141414;
+    --a-border: #262626;
+    --a-muted: #9a9a9a;
+    --brand: #ffffff;
+    --brand-2: #b3b3b3;
+    --brand-soft: #1c1c1c;
+    --soft: #111111;
+    --code-bg: #0a0a0a;
+    --header: rgba(11, 11, 11, 0.8);
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
   }
 }
 :root[data-theme="dark"] {
-  --a-bg: #0d0b12;
-  --a-fg: #ece9f4;
-  --a-surface: #15121d;
-  --a-border: #2a2535;
-  --a-muted: #9d96ad;
-  --brand: #a78bfa;
-  --brand-2: #f472b6;
-  --brand-soft: #1f1830;
-  --soft: #121019;
-  --code-bg: #0a0810;
-  --header: rgba(13, 11, 18, 0.8);
+  --a-bg: #0b0b0b;
+  --a-fg: #f2f2f2;
+  --a-surface: #141414;
+  --a-border: #262626;
+  --a-muted: #9a9a9a;
+  --brand: #ffffff;
+  --brand-2: #b3b3b3;
+  --brand-soft: #1c1c1c;
+  --soft: #111111;
+  --code-bg: #0a0a0a;
+  --header: rgba(11, 11, 11, 0.8);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
@@ -61,7 +61,7 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 .site-header { position: sticky; top: 0; z-index: 20; background: var(--header); backdrop-filter: saturate(180%) blur(12px); -webkit-backdrop-filter: saturate(180%) blur(12px); border-bottom: 1px solid var(--a-border); }
 .site-header .bar { height: 64px; }
 .logo { font-weight: 800; font-size: 19px; color: var(--a-fg); text-decoration: none; letter-spacing: -0.03em; display: inline-flex; align-items: center; gap: 10px; }
-.logo::before { content: ""; width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(135deg, var(--brand), var(--brand-2)); box-shadow: inset 0 0 0 5px rgba(255, 255, 255, 0.22); }
+.logo::before { content: ""; width: 28px; height: 28px; border-radius: 8px; background: #111 url("/favicon.png") center / 100% no-repeat; }
 .nav a { color: var(--a-muted); text-decoration: none; font-weight: 500; font-size: 15px; padding: 6px 10px; border-radius: 8px; }
 .nav a:hover { color: var(--a-fg); background: var(--soft); }
 .ghost { background: transparent !important; border: 1px solid var(--a-border) !important; color: var(--a-fg) !important; }
@@ -76,15 +76,16 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 
 /* ---------- home ---------- */
 .hero { padding: 96px 0 56px; text-align: center; position: relative; overflow: hidden; }
-.hero::before { content: ""; position: absolute; inset: -40% -10% auto; height: 520px; background: radial-gradient(closest-side, color-mix(in srgb, var(--brand) 22%, transparent), transparent), radial-gradient(closest-side at 70% 40%, color-mix(in srgb, var(--brand-2) 16%, transparent), transparent); z-index: -1; }
+.hero::before { content: ""; position: absolute; inset: -40% -10% auto; height: 520px; background: radial-gradient(closest-side, color-mix(in srgb, var(--brand) 9%, transparent), transparent), radial-gradient(closest-side at 70% 40%, color-mix(in srgb, var(--brand-2) 7%, transparent), transparent); z-index: -1; }
 .eyebrow { display: inline-block; font-size: 13px; font-weight: 600; color: var(--brand); background: var(--brand-soft); border: 1px solid color-mix(in srgb, var(--brand) 25%, transparent); border-radius: 999px; padding: 5px 14px; text-decoration: none; }
 .hero-title { font-size: clamp(40px, 7vw, 76px) !important; line-height: 1.02; font-weight: 800; margin: 22px auto 0; max-width: 900px; letter-spacing: -0.045em; }
-.grad { background: linear-gradient(120deg, var(--brand), var(--brand-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.grad { color: var(--brand); }
 .lead { font-size: clamp(17px, 2.2vw, 21px); color: var(--a-muted); max-width: 720px; margin: 22px auto 0; line-height: 1.55; display: block; }
 .cta { margin-top: 34px; }
 .btn { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 16px; padding: 12px 22px; border-radius: 12px; text-decoration: none; border: 1px solid var(--a-border); color: var(--a-fg); background: var(--a-surface); box-shadow: var(--shadow); }
 .btn:hover { border-color: var(--brand); }
-.btn.primary { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; border: 0; }
+.btn.primary { background: var(--brand); color: var(--a-bg); border: 0; }
+.btn.primary:hover { background: var(--brand-2); }
 .install { margin: 28px auto 0; display: inline-flex; align-items: center; gap: 12px; font: 14px var(--mono); background: var(--soft); border: 1px solid var(--a-border); border-radius: 12px; padding: 10px 10px 10px 16px; }
 .install .prompt { color: var(--brand); }
 
@@ -187,7 +188,7 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 .bar-row { display: grid !important; grid-template-columns: 120px minmax(0, 1fr) 90px; align-items: center; gap: 14px; }
 .bar-track { height: 30px; background: var(--soft); border-radius: 8px; overflow: hidden; display: block; }
 .bar-fill { display: block; height: 100%; border-radius: 8px; background: color-mix(in srgb, var(--a-muted) 45%, transparent); }
-.bar-fill.ours { background: linear-gradient(90deg, var(--brand), var(--brand-2)); }
+.bar-fill.ours { background: var(--brand); }
 .bar-usd { font: 14px var(--mono); text-align: right; }
 .big-pct { font-size: 56px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
 

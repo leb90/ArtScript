@@ -173,7 +173,7 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
     const css = cssFiles.map((f) => `/* ${relative(root, f)} */\n${readFileSync(f, "utf8")}`).join("\n");
     // A favicon in public/ is linked from every page.
     const icon = ["favicon.svg", "favicon.png", "favicon.ico"].find((f) => existsSync(join(root, "public", f)));
-    shellHead = icon ? `<link rel="icon" href="${base}${icon}">` : "";
+    shellHead = (icon ? `<link rel="icon" href="${base}${icon}">` : "") + (existsSync(join(root, "public", "apple-touch-icon.png")) ? `<link rel="apple-touch-icon" href="${base}apple-touch-icon.png">` : "");
     const files: Record<string, string> = { "index.html": htmlShell("ArtScript", shellHead, "", !!css, base) };
     for (const f of out.outputFiles) files[relative("/out", f.path)] = f.text;
     if (css) files["app.css"] = css;
