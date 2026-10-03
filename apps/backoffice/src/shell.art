@@ -113,6 +113,25 @@ page Login "/login" layout Plain {
       navigate(next)
     }
   }
+  // The static demo (art build --demo) has no accounts to protect: it signs the visitor in to a
+  // demo account and loads the sample data, so the dashboard is full on the first visit.
+  state demoTried = false
+  fn demoSignIn() {
+    busy = true
+    try {
+      await auth.login("demo@northwind.example", "northwind-demo")
+    } catch (e) {
+      await auth.signup({ name: "Demo user", email: "demo@northwind.example", password: "northwind-demo" })
+      await server.seed()
+    }
+    navigate(next)
+  }
+  effect {
+    if globalThis.__artDemo && !demoTried && !me.loading && !me {
+      demoTried = true
+      demoSignIn()
+    }
+  }
 
   meta title="Log in · Northwind Backoffice"
   card class="login-card" gap=4 {
