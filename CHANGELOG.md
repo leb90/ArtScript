@@ -2,8 +2,9 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
-## Unreleased
+## 0.2.4 (2026-10-03)
 
+- The runtime's styles ship in `app.css` (first, in their cascade layer) instead of a `<style>` added by JavaScript: the first paint has them, and an app with a strict `style-src 'self'` policy works when it uses no responsive props or `style { }` blocks (those still add rules at runtime). js-framework-benchmark's CSP check passes.
 - `link ... target="_blank"`; `meta image=` gets the app's base path.
 
 ## 0.2.3 (2026-10-02)

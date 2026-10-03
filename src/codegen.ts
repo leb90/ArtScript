@@ -226,10 +226,10 @@ export function serverEntry(schema: ServerSchema): string {
 }
 
 // `head`/`body`: a prerendered page's extra <head> tags and the HTML inside #app.
-// `css`: the project has its own styles (app.css), linked last so they override the runtime's.
+// `css`: link app.css (the runtime's styles and the project's; its id tells the runtime not to add them again).
 export function htmlShell(title = "ArtScript", head = "", body = "", css = false, base = "/"): string {
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${head}${css ? `<link rel="stylesheet" href="${base}app.css">` : ""}</head><body><div id="app">${body}</div><script type="module" src="${base}app.js"></script></body></html>\n`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${head}${css ? `<link rel="stylesheet" id="art-css" href="${base}app.css">` : ""}</head><body><div id="app">${body}</div><script type="module" src="${base}app.js"></script></body></html>\n`;
 }
 
 // Top-level `state`, `computed` and `fn`: module-level, visible in every component.

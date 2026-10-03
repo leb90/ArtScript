@@ -12,6 +12,8 @@ import { declContexts, projectMap } from "./context.ts";
 import { formatAI, formatHuman, type Diagnostic } from "./errors.ts";
 import { parse } from "./parser.ts";
 import { applyPatch } from "./patch.ts";
+// @ts-ignore: the runtime is plain JavaScript
+import { CSS } from "../runtime/runtime.js";
 import { printProgram } from "./printer.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -166,17 +168,17 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
       splitting: true, outdir: "/out", entryNames: "app", chunkNames: "chunks/[name]-[hash]",
       define: { "process.env.NODE_ENV": minify ? '"production"' : '"development"' },
     });
-    // Every .css file of the project (outside dist/public) becomes app.css, loaded after the
-    // runtime's styles so it can override them (and the --a-* theme variables).
+    // app.css: the runtime's styles (in their cascade layer, so what follows always wins) and every
+    // .css file of the project (outside dist/public). A file, not inline styles: a strict CSP works.
     const root = projectRoot(target);
     const cssFiles = findFiles(root, ".css").filter((f) => !relative(root, f).startsWith("public"));
-    const css = cssFiles.map((f) => `/* ${relative(root, f)} */\n${readFileSync(f, "utf8")}`).join("\n");
+    const css = [`@layer art{${CSS}}`, ...cssFiles.map((f) => `/* ${relative(root, f)} */\n${readFileSync(f, "utf8")}`)].join("\n");
     // A favicon in public/ is linked from every page.
     const icon = ["favicon.svg", "favicon.png", "favicon.ico"].find((f) => existsSync(join(root, "public", f)));
     shellHead = (icon ? `<link rel="icon" href="${base}${icon}">` : "") + (existsSync(join(root, "public", "apple-touch-icon.png")) ? `<link rel="apple-touch-icon" href="${base}apple-touch-icon.png">` : "");
-    const files: Record<string, string> = { "index.html": htmlShell("ArtScript", shellHead, "", !!css, base) };
+    const files: Record<string, string> = { "index.html": htmlShell("ArtScript", shellHead, "", true, base) };
     for (const f of out.outputFiles) files[relative("/out", f.path)] = f.text;
-    if (css) files["app.css"] = css;
+    files["app.css"] = css;
     if (demoFile) rmSync(demoFile, { force: true });
     return { files, server: r.server };
   } catch (e: any) {
@@ -242,7 +244,7 @@ switch (cmd) {
       const render = async (path: string) => {
         const page = await prerender(pathToFileURL(join(outDir, "app.js")).href, base.slice(0, -1) + path);
         const head = site ? page.head.replace(/(property="og:image" content=")(\/[^"]*)/, `$1${site}$2`) : page.head;
-        return htmlShell(page.title || "ArtScript", shellHead + head, page.html, "app.css" in r.files, base);
+        return htmlShell(page.title || "ArtScript", shellHead + head, page.html, true, base);
       };
       for (const path of paths) {
         const file = path === "/" ? join(outDir, "index.html") : join(outDir, path, "index.html");

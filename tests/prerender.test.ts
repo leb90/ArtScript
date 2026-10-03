@@ -35,13 +35,14 @@ test("prerender: static routes get their HTML and tags; the live app takes over 
   GlobalRegistrator.register({ url: "http://localhost/" });
   try {
     const [, head, body] = /<head>(.*)<\/head><body>(.*)<script/.exec(home)!;
-    document.head.innerHTML = head;
+    document.head.innerHTML = head.replace(/ href="[^"]*app\.css"/, ""); // (happy-dom would fetch it)
     document.body.innerHTML = body;
     await import(pathToFileURL(join(dist, "app.js")).href);
     await new Promise((ok) => setTimeout(ok, 20));
     const text = document.getElementById("app")!.textContent!;
     assert.equal(text.match(/Hello, ArtScript/g)!.length, 1);
-    assert.equal(document.querySelectorAll("style#art-css").length, 1);
+    assert.equal(document.querySelectorAll("#art-css").length, 1, "the styles come as app.css, linked once");
+    assert.equal(document.querySelectorAll("style#art-css").length, 0, "no inline style element (a strict CSP works)");
   } finally {
     await GlobalRegistrator.unregister();
   }

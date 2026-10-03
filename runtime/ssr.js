@@ -178,6 +178,10 @@ let document;
 // uses, imports the bundle (it starts itself), waits for mounts, and returns the HTML of #app, the
 // page's <head> additions (title, meta, the runtime's CSS) and its title. Requests never resolve,
 // so `data` stays in its loading state.
+const inner = (el) => el.childNodes.map((c) => c.html()).join("");
+// The <head> the app added, minus the runtime's styles: the page links them as app.css.
+const headOf = (doc) => doc.head.childNodes.filter((c) => c.attrs?.get("id") !== "art-css").map((c) => c.html()).join("");
+
 export async function prerender(bundleUrl, path) {
   document = new Document();
   const app = new Element("div");
@@ -202,8 +206,7 @@ export async function prerender(bundleUrl, path) {
   try {
     await import(`${bundleUrl}?prerender=${encodeURIComponent(path)}`);
     for (let i = 0; i < 3; i++) await new Promise((ok) => setTimeout(ok, 0));
-    const inner = (el) => el.childNodes.map((c) => c.html()).join("");
-    return { html: inner(app), head: inner(document.head), title: document.title };
+    return { html: inner(app), head: headOf(document), title: document.title };
   } finally {
     for (const [k, d] of Object.entries(saved)) {
       if (d) Object.defineProperty(globalThis, k, d);
@@ -272,9 +275,8 @@ async function renderOnce(bundleUrl, url, base, apiFetch, timeout) {
       if (pending.size) { idle = 0; await Promise.race([Promise.allSettled([...pending]), new Promise((ok) => setTimeout(ok, 50))]); }
       else idle++;
     }
-    const inner = (el) => el.childNodes.map((c) => c.html()).join("");
     const now = loc.pathname + loc.search;
-    return { html: inner(app), head: inner(document.head), title: document.title, seed, redirect: now !== start ? now : null };
+    return { html: inner(app), head: headOf(document), title: document.title, seed, redirect: now !== start ? now : null };
   } finally {
     try { dispose?.(); } catch { /* the next render starts clean anyway */ }
     for (const [k, d] of Object.entries(saved)) {
