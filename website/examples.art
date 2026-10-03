@@ -15,11 +15,14 @@ page Examples "/examples" {
       text "Built with the published package and only the spec. They are static demos: the api, accounts and server fns run in your browser (art build --demo), so your data stays with you. The source is in apps/ in the repository." class="page-lead"
       grid cols=1 md:cols=3 gap=5 {
         for d in DEMOS key d.path {
-          card class="example" gap=3 {
+          card class="example demo" gap=3 {
+            link href=`/demos/${d.path}/` target="_blank" class="demo-shot" {
+              image `/demos/${d.path}.jpg` alt=`${d.title}: a screenshot of the demo`
+            }
             text d.title bold large
             text d.summary muted
-            row gap=2 wrap {
-              link "Open the demo" href=`/demos/${d.path}/` target="_blank" class="pill"
+            row gap=2 wrap align=center {
+              link "Open the demo →" href=`/demos/${d.path}/` target="_blank" class="btn primary small"
               link "Source" href=`${REPO}/tree/main/apps/${d.app}` class="pill"
             }
           }

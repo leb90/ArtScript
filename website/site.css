@@ -225,3 +225,12 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 .compare .code pre { max-height: 760px; }
 .pg-bar button, .pg-bar select { height: 34px; }
 .docs-toggle { align-self: flex-start; margin-bottom: 12px; }
+
+/* Demo cards: a screenshot that opens the demo. */
+.example.demo { padding: 0 !important; overflow: hidden; }
+.demo > :not(.demo-shot) { margin-left: 20px; margin-right: 20px; }
+.demo > .a-row { margin-bottom: 20px; margin-top: auto; }
+.demo-shot { display: block; aspect-ratio: 16 / 10; overflow: hidden; border-bottom: 1px solid var(--a-border); background: var(--a-bg); }
+.demo-shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; transition: transform .4s ease; }
+.demo:hover .demo-shot img { transform: scale(1.03); }
+.btn.small { font-size: 14px; padding: 8px 14px; border-radius: 10px; }
