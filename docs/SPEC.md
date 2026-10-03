@@ -122,7 +122,7 @@ column gap=4 align=center {
 | `modal` | Bool state (open) | — | gap pad align justify | |
 | `image` | src | — | alt width height | |
 | `video` `audio` | src | — | video: width height poster | controls autoplay loop muted |
-| `link` | text | — | to href | muted |
+| `link` | text | — | to href target | muted |
 | `badge` | text | — | | primary success danger |
 | `icon` | Lucide name (`"check" "trash" "edit" "search" "user" "home"`...) | — | size label | muted primary success danger |
 | `spinner` `divider` | — | — | | |

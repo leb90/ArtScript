@@ -53,7 +53,14 @@ import { headings, markdown, REPO } from "./markdown.ts";
 import { withBase } from "../../runtime/runtime.js";
 
 export { REPO };
-export const SITE = "https://leb90.github.io/ArtScript";
+export const SITE = "https://artscript.dev";
+
+// The example apps in apps/, published as static demos under /demos.
+export const DEMOS = [
+  { path: "shop", app: "shop", title: "Fernwood, a shop", summary: "Catalog, cart, accounts, a checkout priced and stock-checked by a server fn, order history and an admin." },
+  { path: "backoffice", app: "backoffice", title: "Northwind, a backoffice", summary: "A dashboard with Chart.js over server-side aggregates, and orders, customers and products with server-side search, sort and pages." },
+  { path: "brisa", app: "landing", title: "Brisa, a landing page", summary: "A prerendered landing page with CSS animations, light and dark, a pricing toggle and an FAQ." },
+];
 export const lines = (s: string) => s.trimEnd().split("\n").length;
 
 // ---------- docs ----------

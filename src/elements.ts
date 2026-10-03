@@ -37,7 +37,8 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   image: { html: "img", content: "src", action: null, children: false, props: ["alt", "width", "height"], flags: [] },
   video: { html: "video", content: "src", action: null, children: false, props: ["width", "height", "poster"], flags: MEDIA, attrs: MEDIA },
   audio: { html: "audio", content: "src", action: null, children: false, props: [], flags: MEDIA, attrs: MEDIA },
-  link: { html: "a", content: "text", action: null, children: true, props: ["to", "href"], flags: ["muted"] },
+  // `target="_blank"` opens a new tab (and the router leaves the link to the browser).
+  link: { html: "a", content: "text", action: null, children: true, props: ["to", "href", "target"], flags: ["muted"] },
   badge: { html: "span", cls: "a-badge", content: "text", action: null, children: false, props: [], flags: ["primary", "success", "danger"] },
   icon: { html: "span", cls: "a-icon", content: "text", action: null, children: false, props: ["size", "label"], flags: ["muted", "primary", "success", "danger"] },
   spinner: { html: "span", cls: "a-spinner", content: null, action: null, children: false, props: [], flags: [] },

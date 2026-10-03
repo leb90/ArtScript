@@ -21,6 +21,7 @@ jobs:
         with:
           node-version: 24
       - run: npm ci
+      - run: cd apps/backoffice && npm ci
       - run: npm run site
       - uses: actions/upload-pages-artifact@v3
         with:

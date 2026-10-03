@@ -1,4 +1,4 @@
-use "./lib/content.ts" { EXAMPLES, REPO, lines }
+use "./lib/content.ts" { DEMOS, EXAMPLES, REPO, lines }
 
 page Examples "/examples" {
   state open = "counter"
@@ -9,6 +9,22 @@ page Examples "/examples" {
       text "Examples" class="crumb"
       title "Complete apps, short files" class="page-title"
       text "Each example is one .art file from the repository. The client-side ones run in the playground; the full-stack ones run with art dev, which also serves their api and database." class="page-lead"
+    }
+    column gap=3 {
+      title "Three apps you can use right now" class="section-title"
+      text "Built with the published package and only the spec. They are static demos: the api, accounts and server fns run in your browser (art build --demo), so your data stays with you. The source is in apps/ in the repository." class="page-lead"
+      grid cols=1 md:cols=3 gap=5 {
+        for d in DEMOS key d.path {
+          card class="example" gap=3 {
+            text d.title bold large
+            text d.summary muted
+            row gap=2 wrap {
+              link "Open the demo" href=`/demos/${d.path}/` target="_blank" class="pill"
+              link "Source" href=`${REPO}/tree/main/apps/${d.app}` class="pill"
+            }
+          }
+        }
+      }
     }
     grid cols=1 md:cols=2 gap=5 {
       for ex in EXAMPLES key ex.name {

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "art dev",
     "start": "art dev",
-    "build": "art build --prerender --site https://brisa.example",
+    "build": "art build --prerender --site https://artscript.dev/demos/brisa",
     "test": "art test",
     "check": "art check"
   },

@@ -4,7 +4,7 @@
   "description": "Create an ArtScript app: npm create artscript@latest my-app",
   "license": "MIT",
   "author": "Leandro Bisceglie",
-  "homepage": "https://leb90.github.io/ArtScript/",
+  "homepage": "https://artscript.dev/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/leb90/ArtScript.git",

@@ -139,7 +139,7 @@ Agents can use ArtScript's tools directly through MCP (`art_spec`, `art_check`, 
 claude mcp add artscript -- npx art mcp
 ```
 
-The website, [leb90.github.io/ArtScript](https://leb90.github.io/ArtScript/), is itself an ArtScript app ([website/](website)): guides, the spec, the benchmarks, a playground with the compiler running in the browser, and `llms.txt` plus every page as Markdown for AI agents. `npm run site` builds it into `site/`.
+The website, [artscript.dev](https://artscript.dev/), is itself an ArtScript app ([website/](website)): guides, the spec, the benchmarks, a playground with the compiler running in the browser, and `llms.txt` plus every page as Markdown for AI agents. `npm run site` builds it into `site/`.
 
 `art build --demo` publishes a full-stack app as static files: the api, accounts and server fns run in the visitor's browser (their data stays there), so a demo costs nothing to host.
 

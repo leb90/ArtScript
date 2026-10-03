@@ -645,7 +645,7 @@ function metaTag(attr, key) {
 export function $meta(props) {
   if (props.title) effect(() => { const t = str(props.title()); document.title = t; metaTag("property", "og:title").setAttribute("content", t); });
   if (props.description) effect(() => { const d = str(props.description()); metaTag("name", "description").setAttribute("content", d); metaTag("property", "og:description").setAttribute("content", d); });
-  if (props.image) effect(() => metaTag("property", "og:image").setAttribute("content", str(props.image())));
+  if (props.image) effect(() => metaTag("property", "og:image").setAttribute("content", withBase(str(props.image()))));
 }
 
 // `setTheme("dark" | "light" | "auto")`: remembered in this browser; "auto" follows the system.
@@ -723,6 +723,10 @@ export function start(routes, mount = document.getElementById("app"), prefix = "
   // A write that fails outside a `try` (`-> api.users.remove(u.id)`) tells the user.
   window.addEventListener?.("unhandledrejection", (e) => notify(e.reason?.message ?? String(e.reason), "danger"));
   mount.textContent = "";
+  // A static host that can only serve one 404 page sends unknown paths here as `?__art_path=`
+  // (see `art build`'s 404.html): the app shows that path.
+  const back = new URLSearchParams(location.search).get("__art_path");
+  if (back && back.startsWith("/")) history.replaceState(null, "", withBase(back));
   try { const saved = localStorage.getItem("art-theme"); if (saved) { themeSig._v = saved; applyTheme(saved); } } catch { /* no storage */ }
   const table = routes.map((r) => ({ ...r, ...compileRoute(r.path) }));
   const local = (at) => (base && (at === base || at.startsWith(base + "/")) ? at.slice(base.length) : at) || "/";

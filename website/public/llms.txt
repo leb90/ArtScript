@@ -6,25 +6,25 @@ Read the spec before writing code; read the edit spec when only changing existin
 
 ## Docs
 
-- [Spec](https://leb90.github.io/ArtScript/md/SPEC.md): the whole language in ~3K tokens (declarations, members, backend, view, tests, rules).
-- [Edit spec](https://leb90.github.io/ArtScript/md/SPEC-EDIT.md): ~800 tokens, enough to change existing code.
-- [Working with AI agents](https://leb90.github.io/ArtScript/md/agents.md): MCP, the instructions file and the build-check-patch loop.
-- [Quick start](https://leb90.github.io/ArtScript/md/quick-start.md): create, run and build an app.
-- [Tutorial](https://leb90.github.io/ArtScript/md/tutorial.md): a full-stack app step by step.
-- [CLI](https://leb90.github.io/ArtScript/md/cli.md): every `art` command.
-- [Deploying](https://leb90.github.io/ArtScript/md/DEPLOY.md): static hosts, Node, Docker, Fly.io, Railway, Render.
-- [Security](https://leb90.github.io/ArtScript/md/SECURITY.md): what apps get by default.
+- [Spec](https://artscript.dev/md/SPEC.md): the whole language in ~3K tokens (declarations, members, backend, view, tests, rules).
+- [Edit spec](https://artscript.dev/md/SPEC-EDIT.md): ~800 tokens, enough to change existing code.
+- [Working with AI agents](https://artscript.dev/md/agents.md): MCP, the instructions file and the build-check-patch loop.
+- [Quick start](https://artscript.dev/md/quick-start.md): create, run and build an app.
+- [Tutorial](https://artscript.dev/md/tutorial.md): a full-stack app step by step.
+- [CLI](https://artscript.dev/md/cli.md): every `art` command.
+- [Deploying](https://artscript.dev/md/DEPLOY.md): static hosts, Node, Docker, Fly.io, Railway, Render.
+- [Security](https://artscript.dev/md/SECURITY.md): what apps get by default.
 
 ## Guides
 
-- [Components and state](https://leb90.github.io/ArtScript/md/components.md)
-- [Pages and routing](https://leb90.github.io/ArtScript/md/routing.md)
-- [Data and backend](https://leb90.github.io/ArtScript/md/backend.md)
-- [Accounts and access](https://leb90.github.io/ArtScript/md/auth.md)
-- [Styling and themes](https://leb90.github.io/ArtScript/md/styling.md)
-- [Testing](https://leb90.github.io/ArtScript/md/testing.md)
-- [JavaScript libraries](https://leb90.github.io/ArtScript/md/libraries.md)
-- [Recipes](https://leb90.github.io/ArtScript/md/recipes.md): complete, tested programs for forms, search and pagination, uploads, live data, charts, secrets, admin areas and jobs.
+- [Components and state](https://artscript.dev/md/components.md)
+- [Pages and routing](https://artscript.dev/md/routing.md)
+- [Data and backend](https://artscript.dev/md/backend.md)
+- [Accounts and access](https://artscript.dev/md/auth.md)
+- [Styling and themes](https://artscript.dev/md/styling.md)
+- [Testing](https://artscript.dev/md/testing.md)
+- [JavaScript libraries](https://artscript.dev/md/libraries.md)
+- [Recipes](https://artscript.dev/md/recipes.md): complete, tested programs for forms, search and pagination, uploads, live data, charts, secrets, admin areas and jobs.
 
 ## Tools for agents
 
@@ -35,6 +35,6 @@ Read the spec before writing code; read the edit spec when only changing existin
 
 ## Optional
 
-- [Everything in one file](https://leb90.github.io/ArtScript/llms-full.txt): the spec, the edit spec and every guide.
-- [Benchmarks](https://leb90.github.io/ArtScript/benchmarks): measured cost against React, Svelte, Vue and SolidJS.
+- [Everything in one file](https://artscript.dev/llms-full.txt): the spec, the edit spec and every guide.
+- [Benchmarks](https://artscript.dev/benchmarks): measured cost against React, Svelte, Vue and SolidJS.
 - [Source code](https://github.com/leb90/ArtScript)
