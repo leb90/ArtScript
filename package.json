@@ -62,7 +62,7 @@
     "site": "sh website/build.sh",
     "art": "node src/cli.ts",
     "prepack": "npm run build",
-    "prepublishOnly": "npm test && npm run typecheck"
+    "prepublishOnly": "node scripts/check-release.mjs && npm test && npm run typecheck"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.130.0",
