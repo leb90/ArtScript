@@ -28,6 +28,10 @@ test("use: local modules and npm packages are verified, with fixes", () => {
   assert.deepEqual([missing.type, missing.fixes], ["UNKNOWN_MODULE", ["npm install date-fns-that-does-not-exist"]]);
   const [path] = errs('use "./lib/nope.ts" { x }');
   assert.equal(path.type, "UNKNOWN_MODULE");
+  // The module exists but imports a package that isn't installed: the error names that package.
+  const [inner] = errs('use "./lib/needs-missing.ts" { y }');
+  assert.deepEqual([inner.type, inner.fixes], ["UNKNOWN_MODULE", ["npm install pkg-that-is-not-installed"]]);
+  assert.match(inner.msg, /imports 'pkg-that-is-not-installed'/);
   // npm package from node_modules: named exports are checked too.
   assert.deepEqual(types('use "solid-js" { createSignal }'), []);
   assert.deepEqual(errs('use "solid-js" { createSignall }')[0].fixes, ["createSignal"]);

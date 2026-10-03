@@ -9,7 +9,8 @@ const dirname = (p: string) => (path ? path.dirname(p) : p.replace(/\/[^/]*$/, "
 const resolve = (...ps: string[]) => (path ? path.resolve(...ps) : ps.join("/"));
 
 // `exports: null` means they can't be known statically (CommonJS): names aren't checked.
-export type ModuleInfo = { found: false; reason: string } | { found: true; exports: string[] | null; hasDefault: boolean };
+// `missing` is set when the module exists but one of its own imports doesn't resolve.
+export type ModuleInfo = { found: false; reason: string; missing?: { source: string; file: string } } | { found: true; exports: string[] | null; hasDefault: boolean };
 
 let esbuild: typeof import("esbuild") | null | undefined;
 function loadEsbuild() {
@@ -60,8 +61,12 @@ export function inspectModule(source: string, fromFile: string): ModuleInfo | nu
     // A module with no static named exports is (almost always) CommonJS: names can't be checked.
     info = { found: true, exports: names.length ? names : null, hasDefault };
   } catch (e: any) {
-    const text = e?.errors?.[0]?.text ?? String(e);
+    const err = e?.errors?.[0];
+    const text = err?.text ?? String(e);
     info = { found: false, reason: text };
+    // The failure is inside the module (a file other than our stdin): report what it couldn't import.
+    const inner = err?.location?.file && /Could not resolve "([^"]+)"/.exec(text);
+    if (inner) info.missing = { source: inner[1], file: err.location.file };
   }
   cache.set(key, info);
   return info;

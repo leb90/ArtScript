@@ -426,6 +426,13 @@ class Checker {
     const info = inspectModule(d.source, d.loc.file);
     if (!info) return; // no bundler available to inspect modules
     if (!info.found) {
+      if (info.missing) {
+        // The module exists; something it imports doesn't resolve (a package not installed, a wrong path).
+        const { source, file } = info.missing;
+        const fixes = isLocal(source) ? [`check the path '${source}' in ${file}`] : [`npm install ${packageName(source)}`];
+        this.err("UNKNOWN_MODULE", `module '${d.source}' imports '${source}', which can't be found (in ${file})`, d.loc, { expr: d.source, fixes });
+        return;
+      }
       const fixes = isLocal(d.source) ? [`check the path (relative to ${d.loc.file})`] : [`npm install ${packageName(d.source)}`];
       this.err("UNKNOWN_MODULE", `module '${d.source}' not found`, d.loc, { expr: d.source, fixes });
       return;

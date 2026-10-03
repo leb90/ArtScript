@@ -12,5 +12,6 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["src", "tests", "benchmarks/**/*.ts"]
+  "include": ["src", "tests", "benchmarks/**/*.ts"],
+  "exclude": ["tests/fixtures/interop/lib/needs-missing.ts"]
 }
