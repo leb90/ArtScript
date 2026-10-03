@@ -235,3 +235,40 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 .demo-shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; transition: transform .4s ease; }
 .demo:hover .demo-shot img { transform: scale(1.03); }
 .btn.small { font-size: 14px; padding: 8px 14px; border-radius: 10px; }
+
+/* ---------- motion ----------
+   Subtle and brief: things arrive from a little below and sharpen; nothing moves after that.
+   The `motion` class is set by JavaScript, so without it (and without JS) everything is simply
+   visible. --t0 is the time already elapsed when the live app replaced the static page, so the
+   entrance picks up where it was instead of starting over. */
+:root { --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1); --t0: 0ms; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); filter: blur(6px); } to { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes drift { to { background-position: 0 -40px; } }
+@keyframes breathe { to { transform: scale(1.08) translateY(10px); opacity: 0.8; } }
+.hero .eyebrow, .hero-title, .hero .lead, .hero .cta { animation: rise 0.9s var(--ease-out) both; animation-delay: calc(var(--t0) + var(--d, 0ms)); }
+.hero-title { --d: 90ms; }
+.hero .lead { --d: 180ms; }
+.hero .cta { --d: 270ms; }
+.hero::before { animation: breathe 9s ease-in-out infinite alternate; }
+/* A faint dot grid that drifts, fading out towards the edges. */
+.hero::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: radial-gradient(color-mix(in srgb, var(--a-fg) 14%, transparent) 1px, transparent 1.2px); background-size: 24px 24px; -webkit-mask-image: radial-gradient(ellipse 60% 70% at 50% 35%, #000 20%, transparent 75%); mask-image: radial-gradient(ellipse 60% 70% at 50% 35%, #000 20%, transparent 75%); animation: drift 30s linear infinite; }
+.motion .reveal { opacity: 0; transform: translateY(16px); filter: blur(4px); transition: opacity 0.8s var(--ease-out), transform 0.8s var(--ease-out), filter 0.8s var(--ease-out); transition-delay: calc(var(--i, 0) * 70ms); }
+.motion .reveal.in { opacity: 1; transform: none; filter: blur(0); transition-delay: 0s; transition-duration: 0.3s; } /* once in, hovers answer quickly */
+/* Hover: a small lift, a slide for the arrow. */
+.btn { transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out), border-color 0.2s, background 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1); }
+.btn:active { transform: translateY(0); transition-duration: 0.08s; }
+.feature, .stat, .example { transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out), border-color 0.3s; }
+.feature:hover, .stat:hover, .example:hover { transform: translateY(-3px); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04), 0 16px 36px rgba(0, 0, 0, 0.09); border-color: color-mix(in srgb, var(--a-fg) 18%, var(--a-border)); }
+.eyebrow { transition: transform 0.25s var(--ease-out), background 0.2s; }
+.eyebrow:hover { transform: translateY(-1px); }
+.nav a { position: relative; transition: color 0.2s; }
+.logo::before { transition: transform 0.4s var(--ease-out); }
+.logo:hover::before { transform: rotate(-8deg) scale(1.06); }
+.pill { transition: transform 0.2s var(--ease-out), border-color 0.2s, background 0.2s; }
+.pill:hover { transform: translateY(-1px); }
+@media (prefers-reduced-motion: reduce) {
+  .hero .eyebrow, .hero-title, .hero .lead, .hero .cta, .hero::before, .hero::after { animation: none; }
+  .motion .reveal { opacity: 1; transform: none; filter: none; transition: none; }
+  .btn, .feature, .stat, .example, .eyebrow, .pill, .logo::before { transition: none; }
+}

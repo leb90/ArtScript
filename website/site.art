@@ -2,11 +2,14 @@ use "./lib/content.ts" { NAV, REPO, setupHead, prefersDark, docBySlug, docHeadin
 
 use "./lib/markdown.ts" { codeBlock, onDocClick, copyText }
 
+use "./lib/motion.ts" { setupMotion }
+
 layout Site {
   state menu = false
   computed dark = theme() == "dark" || theme() == "auto" && prefersDark()
   mount {
     setupHead()
+    setupMotion()
   }
 
   column gap=0 {

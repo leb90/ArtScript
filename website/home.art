@@ -22,19 +22,19 @@ page Home "/" {
     }
     column class="container" {
       grid cols=1 sm:cols=2 lg:cols=4 gap=4 {
-        card class="stat" gap=1 {
+        card class="stat reveal" gap=1 {
           text `−${sonnet.headline}%` class="num grad"
           text `cost per working app vs React + TypeScript (${sonnet.name})` class="label"
         }
-        card class="stat" gap=1 {
+        card class="stat reveal" gap=1 {
           text "~5 KB" class="num"
           text "of JavaScript per app (brotli), runtime included. React: ~59 KB" class="label"
         }
-        card class="stat" gap=1 {
+        card class="stat reveal" gap=1 {
           text `${Math.round(specTokens / 100) / 10}K` class="num"
           text "tokens: the whole language spec your agent reads" class="label"
         }
-        card class="stat" gap=1 {
+        card class="stat reveal" gap=1 {
           text "1 line" class="num"
           text "for a validated REST api with storage: api users: User" class="label"
         }
@@ -42,12 +42,12 @@ page Home "/" {
     }
     column class="section" {
       column class="container" gap=0 {
-        title "Same app. A fraction of the code." class="section-title"
-        text "A full-stack users list (form, validation, a REST api and storage) exactly as the eval measured it in each stack. The labels are in Spanish, like the eval's dataset." class="section-lead"
+        title "Same app. A fraction of the code." class="section-title reveal"
+        text "A full-stack users list (form, validation, a REST api and storage) exactly as the eval measured it in each stack. The labels are in Spanish, like the eval's dataset." class="section-lead reveal"
         row justify=center {
           tabs other options=["React", "Svelte", "Vue", "SolidJS"]
         }
-        grid cols=1 md:cols=2 gap=5 class="compare" {
+        grid cols=1 md:cols=2 gap=5 class="compare reveal" {
           column gap=2 class="compare-col" {
             row justify=between {
               text "ArtScript · app.art" class="compare-head"
@@ -67,8 +67,8 @@ page Home "/" {
     }
     column class="section alt" {
       column class="container" gap=0 {
-        title "Everything an app needs, nothing an agent has to guess" class="section-title"
-        text "The language is small enough to fit in a prompt and complete enough to ship real products." class="section-lead"
+        title "Everything an app needs, nothing an agent has to guess" class="section-title reveal"
+        text "The language is small enough to fit in a prompt and complete enough to ship real products." class="section-lead reveal"
         grid cols=1 md:cols=2 lg:cols=3 gap=5 {
           Feature heading="A third of the code" body="One line per element, no hooks, no imports, no boilerplate. The same app takes about a third of the tokens of React, so every request an agent makes costs less." {
             icon "zap" size=22
@@ -105,7 +105,7 @@ page Home "/" {
         grid cols=1 lg:cols=2 gap=8 align=center {
           column gap=4 align=start {
             text "For AI agents" class="crumb"
-            title "Errors that tell the model how to fix them" class="section-title" style="text-align:left"
+            title "Errors that tell the model how to fix them" class="section-title reveal" style="text-align:left"
             text "A typo in a field name is caught at compile time. The model gets one JSON line with what was expected and the fix, so the retry costs a few tokens instead of a debugging session." class="page-lead"
             text "Agents also get an MCP server, a compact project map and a patch format, so they read and write only what changes." class="page-lead"
             row gap=3 wrap {
@@ -122,8 +122,8 @@ page Home "/" {
     }
     column class="section alt" {
       column class="container" gap=6 {
-        title "Measured, not claimed" class="section-title"
-        text `${sonnet.name} built the same apps in every stack. Each app was run and used in a simulated browser; the cost counts the spec, retries and thinking tokens.` class="section-lead"
+        title "Measured, not claimed" class="section-title reveal"
+        text `${sonnet.name} built the same apps in every stack. Each app was run and used in a simulated browser; the cost counts the spec, retries and thinking tokens.` class="section-lead reveal"
         card class="model" gap=4 {
           row justify=between wrap gap=3 {
             text "USD per working app" bold
@@ -146,9 +146,9 @@ page Home "/" {
     }
     column class="section" {
       column class="container" {
-        card class="built" gap=4 align=start {
+        card class="built reveal" gap=4 align=start {
           text "Dogfooding" class="crumb"
-          title "This website is written in ArtScript" class="section-title" style="text-align:left"
+          title "This website is written in ArtScript" class="section-title reveal" style="text-align:left"
           text `Every page you are reading, the docs, the benchmarks charts and the playground are ${artFiles.length} .art files with ${artLines} lines, compiled by ArtScript and prerendered to static HTML. The guides are Markdown files from the repository, so people and AI agents read the same source.` class="page-lead"
           row gap=3 wrap {
             link "Read this site's source" to="/source" class="btn primary"
@@ -159,8 +159,8 @@ page Home "/" {
     }
     column class="section" style="padding-top:0" {
       column class="container" align=center gap=4 {
-        title "Start building" class="section-title"
-        text "Create an app, open it in your editor and ask your agent for the first feature." class="section-lead"
+        title "Start building" class="section-title reveal"
+        text "Create an app, open it in your editor and ask your agent for the first feature." class="section-lead reveal"
         Code src="npm create artscript@latest my-app\ncd my-app && npm install\nnpm run dev" lang="sh"
         link "Read the quick start →" to="/learn/quick-start" class="btn primary"
       }
@@ -169,7 +169,7 @@ page Home "/" {
 }
 
 component Feature(heading: String, body: String) {
-  card class="feature" gap=3 {
+  card class="feature reveal" gap=3 {
     column class="feature-icon" align=center justify=center {
       slot
     }
