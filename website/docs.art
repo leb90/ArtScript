@@ -83,3 +83,8 @@ page Security "/reference/security" layout Docs {
   meta title="Security · ArtScript" description="What every ArtScript app gets by default, and the known limits."
   DocPage slug="security"
 }
+
+page Status "/status" layout Docs {
+  meta title="Status · ArtScript" description="What is measured, what is proven in use, and what isn't yet."
+  DocPage slug="status"
+}

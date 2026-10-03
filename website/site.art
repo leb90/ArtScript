@@ -72,6 +72,7 @@ component Footer {
           link "GitHub" href=REPO
           link "Benchmarks" to="/benchmarks"
           link "Security" to="/reference/security"
+          link "Status" to="/status"
           link "This site's source" to="/source"
         }
       }

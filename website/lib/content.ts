@@ -6,6 +6,7 @@ import spec from "../../docs/SPEC.md" with { type: "text" };
 import editSpec from "../../docs/SPEC-EDIT.md" with { type: "text" };
 import deploy from "../../docs/DEPLOY.md" with { type: "text" };
 import security from "../../SECURITY.md" with { type: "text" };
+import status from "../../docs/STATUS.md" with { type: "text" };
 import introduction from "../content/introduction.md" with { type: "text" };
 import quickStart from "../content/quick-start.md" with { type: "text" };
 import tutorial from "../content/tutorial.md" with { type: "text" };
@@ -86,6 +87,7 @@ export const DOCS: Doc[] = [
   doc("edit", "/reference/edit", "Edit spec", "Reference", "docs/SPEC-EDIT.md", editSpec),
   doc("cli", "/reference/cli", "CLI", "Reference", "website/content/cli.md", cli),
   doc("security", "/reference/security", "Security", "Reference", "SECURITY.md", security),
+  doc("status", "/status", "Status", "Project", "docs/STATUS.md", status),
 ];
 
 export type NavItem = { title: string; path: string };
@@ -96,7 +98,7 @@ export const NAV: NavSection[] = [
   { title: "Learn", items: DOCS.filter((d) => d.section === "Learn").map((d) => item(d.title, d.path)) },
   { title: "For AI", items: [item("Overview", "/ai"), item("Working with AI agents", "/ai/agents"), item("Edit spec", "/reference/edit")] },
   { title: "Reference", items: [item("Language spec", "/reference/spec"), item("UI elements", "/reference/elements"), item("Errors", "/reference/errors"), item("CLI", "/reference/cli"), item("Security", "/reference/security")] },
-  { title: "Project", items: [item("Examples", "/examples"), item("Benchmarks", "/benchmarks"), item("Playground", "/playground"), item("This site's source", "/source")] },
+  { title: "Project", items: [item("Status", "/status"), item("Examples", "/examples"), item("Benchmarks", "/benchmarks"), item("Playground", "/playground"), item("This site's source", "/source")] },
 ];
 
 export const docBySlug = (s: string): Doc => DOCS.find((d) => d.slug === s) ?? DOCS[0];

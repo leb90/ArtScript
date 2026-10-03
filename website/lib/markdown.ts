@@ -68,6 +68,7 @@ const SITE_LINKS: Record<string, string> = {
   "docs/DEPLOY.md": "/learn/deploy",
   "DEPLOY.md": "/learn/deploy",
   "SECURITY.md": "/reference/security",
+  "docs/STATUS.md": "/status",
   "#cost-eval-results": "/benchmarks",
 };
 
