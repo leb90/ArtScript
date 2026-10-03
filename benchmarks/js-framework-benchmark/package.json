@@ -6,13 +6,15 @@
   "type": "module",
   "js-framework-benchmark": {
     "frameworkVersionFromPackage": "@artscript/core",
-    "frameworkHomeURL": "https://github.com/leb90/ArtScript"
+    "frameworkHomeURL": "https://artscript.dev",
+    "language": "ArtScript"
   },
   "scripts": {
     "dev": "art dev src",
     "build-prod": "art build src --out dist"
   },
   "devDependencies": {
-    "@artscript/core": "^0.2.0"
-  }
+    "@artscript/core": "0.2.4"
+  },
+  "license": "MIT"
 }
