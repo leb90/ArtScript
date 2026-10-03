@@ -1,4 +1,4 @@
-use "./lib/content.ts" { specText, editText, specTokens, editTokens, AGENTS_MD }
+use "./lib/content.ts" { specText, editText, specTokens, editTokens, AGENTS_MD, AI_PROMPT }
 
 use "./lib/markdown.ts" { copyText }
 
@@ -11,6 +11,14 @@ page Ai "/ai" layout Docs {
     column gap=6 class="prose" {
       text "ArtScript is designed around one number: what it costs a model to build an app and to keep changing it. This page is what you give your agent, and what it can read by itself." class="page-lead"
       grid cols=1 md:cols=2 gap=4 {
+        card class="feature" gap=2 {
+          text "One prompt" class="h3" bold
+          text "Paste it into Claude Code, Cursor, Codex or any agent: it creates the project, registers the MCP server, points the model at the spec and sets the check-fix loop. Then add what you want built." class="body"
+          row gap=2 wrap {
+            button "Copy the prompt" small class="pill" on:click=copyText(AI_PROMPT, event.currentTarget)
+            link "Read it" href="#prompt" class="pill"
+          }
+        }
         card class="feature" gap=2 {
           text "llms.txt" class="h3" bold
           text "The entry point for AI crawlers and agents: what ArtScript is and where each document is." class="body"
@@ -65,6 +73,9 @@ page Ai "/ai" layout Docs {
           }
         }
       }
+      title "The prompt" id="prompt"
+      text "Everything an agent needs to start, in one paste. It is the same loop the instructions file describes, for agents that don't have the project yet."
+      Code src=AI_PROMPT lang="markdown"
       title "The instructions file"
       text "art init writes this AGENTS.md (and the same CLAUDE.md) into every new project, next to ARTSCRIPT.md and ARTSCRIPT-EDIT.md. Agents that read instruction files follow it without being told."
       Code src=AGENTS_MD lang="markdown"

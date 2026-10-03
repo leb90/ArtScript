@@ -120,6 +120,25 @@ export const tokens = (s: string) => Math.round(s.length / 4 / 100) * 100;
 export const specTokens = tokens(spec);
 export const editTokens = tokens(editSpec);
 export const specText = spec;
+
+// The one prompt to paste into any agent: it sets up a project and tells the model where the
+// language is described and how to work (the same loop AGENTS.md describes).
+export const AI_PROMPT = `Build this with ArtScript (https://artscript.dev), a full-stack web language designed for AI agents.
+
+Setup (skip what already exists):
+1. \`npm create artscript@latest my-app && cd my-app && npm install\`
+2. If you support MCP, register the server: \`claude mcp add artscript -- npx art mcp\` (Claude Code) or add {"command":"npx","args":["art","mcp"]} to your MCP config. It gives you art_spec, art_check, art_context and art_patch as tools.
+
+Before writing any .art code, read the language spec once: ARTSCRIPT.md in the project (or https://artscript.dev/md/SPEC.md, ~3K tokens). To change existing code, ARTSCRIPT-EDIT.md (~800 tokens) is enough.
+
+How to work:
+- Expressions are JavaScript; only the structure (page, component, model, api, state, computed, data, fn, the view) is ArtScript's own.
+- After every change run \`npx art check --ai\`: one JSON line per error, each with expected, actual and fixes. Apply the fix; don't guess.
+- Read \`npx art context <Component>\` instead of whole files; prefer a small \`npx art patch\` over rewriting files.
+- Write test "..." { } blocks for the main flows and run \`npx art test\`.
+- Format with \`npx art fmt --write\`, run with \`npm run dev\`, ship with \`npx art build\`.
+
+Now: `;
 export const AGENTS_MD = agentsTemplate;
 export const editText = editSpec;
 
@@ -142,7 +161,9 @@ export const RESULTS: ModelResult[] = evalSection.split("\n### ").slice(1)
       const c = all[i].slice(1, -1).split("|").map((x) => x.trim().replace(/\*\*/g, ""));
       rows.push({ stack: c[0], solved: c[1], usd: parseFloat(c[2].slice(1)), vsReact: c[3], ours: c[0] === "ArtScript" });
     }
-    const headline = (/ArtScript cost \*\*(\d+)% less\*\* per solved task than React \+ TS/.exec(block) ?? [])[1] ?? "";
+    // The headline is the all-tasks figure from the summary table, not the first scenario's.
+    const summary = new RegExp(`^\\| ${id} \\|.*\\*\\*−(\\d+)%\\*\\* \\|$`, "m").exec(evalSection);
+    const headline = summary?.[1] ?? (/ArtScript cost \*\*(\d+)% less\*\* per solved task than React \+ TS/.exec(block) ?? [])[1] ?? "";
     return { id, name: MODEL_NAMES[id] ?? id, headline, rows };
   })
   .filter((m) => m.rows.length);
