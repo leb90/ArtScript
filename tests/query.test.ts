@@ -161,3 +161,26 @@ test("e2e: admin adds products, pagination, search and sort", async () => {
     globalThis.fetch = realFetch;
   }
 });
+
+test("server: every scalar field is indexed, so where/sort/unique use the index; dropped fields lose theirs", async () => {
+  const dataDir = mkdtempSync(join(tmpdir(), "art-q-"));
+  const { DatabaseSync } = await import("node:sqlite");
+  const names = () => new DatabaseSync(join(dataDir, "art.db")).prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'api_ps' ORDER BY name").all().map((r: any) => r.name);
+  await start("model P {\n  id: ID\n  name: String unique\n  price: Number\n  tags: String[]\n  photo: File?\n}\napi ps: P\n", dataDir);
+  assert.deepEqual(names(), ["idx_ps_id", "idx_ps_name", "idx_ps_owner", "idx_ps_price", "sqlite_autoindex_api_ps_1"]);
+  const db = new DatabaseSync(join(dataDir, "art.db"));
+  const plan = (sql: string) => db.prepare("EXPLAIN QUERY PLAN " + sql).all().map((r: any) => r.detail).join(" ");
+  assert.match(plan(`SELECT data FROM "api_ps" WHERE json_extract(data, '$.name') = ?`), /USING INDEX idx_ps_name/);
+  assert.match(plan(`SELECT data FROM "api_ps" ORDER BY json_extract(data, '$.price') DESC, rowid LIMIT 20`), /USING INDEX idx_ps_price/);
+  db.close();
+  // The field `price` is removed: its index goes; `name` stays.
+  await start("model P {\n  id: ID\n  name: String unique\n}\napi ps: P\n", dataDir);
+  assert.deepEqual(names(), ["idx_ps_id", "idx_ps_name", "idx_ps_owner", "sqlite_autoindex_api_ps_1"]);
+});
+
+test("server: the session cookie is Secure when the request came over HTTPS", async () => {
+  const { base } = await start("model U {\n  id: ID\n  email: Email\n  password: String\n}\nauth users: U\n");
+  const signup = (proto?: string) => fetch(`${base}/api/_auth/signup`, { method: "POST", headers: { "content-type": "application/json", ...(proto ? { "x-forwarded-proto": proto } : {}) }, body: JSON.stringify({ email: `${proto ?? "plain"}@x.co`, password: "secret123" }) });
+  assert.doesNotMatch((await signup()).headers.get("set-cookie") ?? "", /Secure/);
+  assert.match((await signup("https")).headers.get("set-cookie") ?? "", /; Secure$/);
+});

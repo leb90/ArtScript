@@ -7,7 +7,7 @@ Please report vulnerabilities privately through GitHub's **Report a vulnerabilit
 ## What ArtScript apps get by default
 
 - **Passwords**: scrypt hashes, never returned by the api; minimum 8 characters.
-- **Sessions**: random tokens in `HttpOnly; SameSite=Lax` cookies, 30 days, expired on the server too; `auth.logoutAll()`; a new password ends the user's other sessions.
+- **Sessions**: random tokens in `HttpOnly; SameSite=Lax` cookies (`Secure` over HTTPS), 30 days, expired on the server too; `auth.logoutAll()`; a new password ends the user's other sessions.
 - **Rate limit**: 600 api requests per address per minute (`ART_RATE_LIMIT`), then `429`.
 - **Login**: 10 failed attempts per email and address in 15 minutes, then `429`.
 - **Password reset and email verification**: single-use links valid for one hour, stored as SHA-256 hashes; a reset request answers the same whether the account exists or not (5 per email per hour), and a reset ends every session of the account. New accounts are always unverified.

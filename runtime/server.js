@@ -159,6 +159,20 @@ function migrate(db, name, model, schema, defaults, backup) {
   db.prepare("INSERT OR REPLACE INTO _schema VALUES (?, ?)").run(name, current);
 }
 
+// One expression index per scalar field (and one on owner), so `where`, `sort`, `unique` and
+// private scopes don't scan the table; SQLite uses them when the query repeats the expression.
+// Indexes of fields that no longer exist are dropped.
+function index(db, name, fields) {
+  const T = `"api_${name}"`;
+  const prefix = `idx_${name}_`;
+  const want = new Set(Object.keys(fields).filter((f) => !/\[\]|^File/.test(fields[f]) && f !== "password"));
+  for (const { name: idx } of db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = ? AND name LIKE ?").all(`api_${name}`, `${prefix}%`)) {
+    if (!want.has(idx.slice(prefix.length)) && idx !== `${prefix}owner`) db.exec(`DROP INDEX "${idx}"`);
+  }
+  db.exec(`CREATE INDEX IF NOT EXISTS "${prefix}owner" ON ${T}(owner)`);
+  for (const f of want) db.exec(`CREATE INDEX IF NOT EXISTS "${prefix}${f}" ON ${T}(json_extract(data, '$.${f}'))`);
+}
+
 function makeTable(schema, db, dataDir, name, { model, access, readonly }, backup) {
   const fields = schema.models[model] ?? {};
   const key = idField(fields);
@@ -168,6 +182,7 @@ function makeTable(schema, db, dataDir, name, { model, access, readonly }, backu
   db.exec(`CREATE TABLE IF NOT EXISTS ${T} (id TEXT PRIMARY KEY, owner TEXT, data TEXT NOT NULL)`);
   const defaults = schema.defaults?.[model] ?? {};
   migrate(db, name, model, schema, defaults, backup);
+  index(db, name, fields);
   const legacy = join(dataDir, `${name}.json`);
   if (existsSync(legacy)) {
     for (const row of JSON.parse(readFileSync(legacy, "utf8"))) db.prepare(`INSERT OR IGNORE INTO ${T} VALUES (?, ?, ?)`).run(String(row[key]), row.owner ?? null, JSON.stringify(row));
@@ -556,10 +571,12 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
     }
     try { return users.find(row.user, ALL); } catch { return null; }
   };
-  const startSession = (user) => {
+  // Over HTTPS (the proxy says so) the cookie is marked Secure: browsers never send it in clear.
+  const secure = (req) => (req.headers["x-forwarded-proto"] === "https" || req.socket?.encrypted ? "; Secure" : "");
+  const startSession = (req, user) => {
     const token = randomBytes(24).toString("hex");
     sql.prepare("INSERT INTO _sessions VALUES (?, ?, ?)").run(token, String(user[users.key]), Date.now() + SESSION_DAYS * 86_400_000);
-    return { "set-cookie": `${COOKIE}=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_DAYS * 86_400}` };
+    return { "set-cookie": `${COOKIE}=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_DAYS * 86_400}${secure(req)}` };
   };
   // Server fns get unscoped, synchronous tables; `me` is the logged-in user without password.
   const email = (to, subject, text) => sendEmail(dataDir, { to, subject, text });
@@ -700,7 +717,7 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
             ...(verifies ? { verified: true } : {}),
           }, ALL);
         } else if (verifies && !user.verified) users.update(user[users.key], { verified: true }, ALL);
-        const session = startSession(user);
+        const session = startSession(req, user);
         res.writeHead(302, { location: "/", "set-cookie": [session["set-cookie"], `${stateCookie}=; Path=/api/_auth/oauth; Max-Age=0`] }).end();
         return true;
       }
@@ -724,7 +741,7 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
           const fields = { ...body, ...(hasRoles ? { role: users.hasAdmin() ? "user" : "admin" } : {}), ...(verifies ? { verified: false } : {}) };
           const user = users.create(fields, ALL);
           if (verifies) await mailToken(req, user, "verify", "Confirm your email", "/verify-email", "Confirm your email address");
-          return send(res, 201, user, startSession(user)), true;
+          return send(res, 201, user, startSession(req, user)), true;
         }
         // Password reset: the same answer whether the account exists or not (no enumeration).
         if (a[1] === "reset-request") {
@@ -758,7 +775,7 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
           throw new HttpError(401, "LOGIN_FAILED", "wrong email or password");
         }
         failedLogins.delete(key);
-        return send(res, 200, users.out(user), startSession(user)), true;
+        return send(res, 200, users.out(user), startSession(req, user)), true;
       }
 
       // ---------- server functions ----------

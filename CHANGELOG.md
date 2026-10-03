@@ -2,6 +2,13 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## Unreleased
+
+- Every scalar field of a model gets an index (and `owner` for private apis), created on start and dropped when the field goes. `where`, `sort`, `unique` checks and private scopes no longer scan the table: measured on 64,000 rows, an insert with a `unique` field went from 3.3 ms (growing with the table) to 0.3 ms (constant); `where` and `sort` answer in 2 ms. `search` still scans (it is a LIKE).
+- The session cookie is `Secure` when the request came over HTTPS (`x-forwarded-proto: https` from the proxy, or TLS on the server itself).
+- `use "./x.ts"` where `x.ts` imports a package that isn't installed: the error names the package and the fix is `npm install <package>`, instead of "module './x.ts' not found".
+- New projects get a Claude Code skill (`.claude/skills/artscript/SKILL.md`) next to `AGENTS.md`, `CLAUDE.md` and the Cursor rule.
+
 ## 0.2.4 (2026-10-03)
 
 - The runtime's styles ship in `app.css` (first, in their cascade layer) instead of a `<style>` added by JavaScript: the first paint has them, and an app with a strict `style-src 'self'` policy works when it uses no responsive props or `style { }` blocks (those still add rules at runtime). js-framework-benchmark's CSP check passes.
