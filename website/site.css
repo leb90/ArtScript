@@ -76,7 +76,18 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 
 /* ---------- home ---------- */
 .hero { padding: 96px 0 56px; text-align: center; position: relative; overflow: hidden; }
-.hero::before { content: ""; position: absolute; inset: -40% -10% auto; height: 520px; background: radial-gradient(closest-side, color-mix(in srgb, var(--brand) 9%, transparent), transparent), radial-gradient(closest-side at 70% 40%, color-mix(in srgb, var(--brand-2) 7%, transparent), transparent); z-index: -1; }
+/* The hero's background: three soft lights that drift (a monochrome mesh), a sweeping sheen, and a
+   fine grid that fades towards the edges. All of it is a few gradients: no images, no scripts. */
+@property --sheen { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.hero::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(closest-side, color-mix(in srgb, var(--a-fg) 11%, transparent), transparent 72%) 0% 0% / 70% 90% no-repeat,
+    radial-gradient(closest-side, color-mix(in srgb, var(--a-fg) 8%, transparent), transparent 72%) 100% 10% / 60% 80% no-repeat,
+    radial-gradient(closest-side, color-mix(in srgb, var(--a-fg) 7%, transparent), transparent 72%) 50% 100% / 80% 70% no-repeat,
+    conic-gradient(from var(--sheen) at 50% 40%, transparent 0deg, color-mix(in srgb, var(--a-fg) 4%, transparent) 30deg, transparent 60deg, transparent 360deg);
+  animation: mesh 26s ease-in-out infinite alternate, sheen 40s linear infinite;
+}
 .eyebrow { display: inline-block; font-size: 13px; font-weight: 600; color: var(--brand); background: var(--brand-soft); border: 1px solid color-mix(in srgb, var(--brand) 25%, transparent); border-radius: 999px; padding: 5px 14px; text-decoration: none; }
 .hero-title { font-size: clamp(40px, 7vw, 76px) !important; line-height: 1.02; font-weight: 800; margin: 22px auto 0; max-width: 900px; letter-spacing: -0.045em; }
 .grad { color: var(--brand); }
@@ -243,15 +254,19 @@ h1, h2, h3 { letter-spacing: -0.02em; }
    entrance picks up where it was instead of starting over. */
 :root { --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1); --t0: 0ms; }
 @keyframes rise { from { opacity: 0; transform: translateY(14px); filter: blur(6px); } to { opacity: 1; transform: none; filter: blur(0); } }
-@keyframes drift { to { background-position: 0 -40px; } }
-@keyframes breathe { to { transform: scale(1.08) translateY(10px); opacity: 0.8; } }
+@keyframes drift { to { background-position: 0 -48px; } }
+@keyframes mesh {
+  0% { background-position: 0% 0%, 100% 10%, 50% 100%, 0 0; }
+  50% { background-position: 30% 20%, 70% 40%, 20% 80%, 0 0; }
+  100% { background-position: 10% 60%, 90% 0%, 80% 70%, 0 0; }
+}
+@keyframes sheen { to { --sheen: 360deg; } }
 .hero .eyebrow, .hero-title, .hero .lead, .hero .cta { animation: rise 0.9s var(--ease-out) both; animation-delay: calc(var(--t0) + var(--d, 0ms)); }
 .hero-title { --d: 90ms; }
 .hero .lead { --d: 180ms; }
 .hero .cta { --d: 270ms; }
-.hero::before { animation: breathe 9s ease-in-out infinite alternate; }
 /* A faint dot grid that drifts, fading out towards the edges. */
-.hero::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: radial-gradient(color-mix(in srgb, var(--a-fg) 14%, transparent) 1px, transparent 1.2px); background-size: 24px 24px; -webkit-mask-image: radial-gradient(ellipse 60% 70% at 50% 35%, #000 20%, transparent 75%); mask-image: radial-gradient(ellipse 60% 70% at 50% 35%, #000 20%, transparent 75%); animation: drift 30s linear infinite; }
+.hero::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: linear-gradient(color-mix(in srgb, var(--a-fg) 7%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--a-fg) 7%, transparent) 1px, transparent 1px); background-size: 48px 48px; -webkit-mask-image: radial-gradient(ellipse 70% 80% at 50% 30%, #000 10%, transparent 72%); mask-image: radial-gradient(ellipse 70% 80% at 50% 30%, #000 10%, transparent 72%); animation: drift 40s linear infinite; }
 .motion .reveal { opacity: 0; transform: translateY(16px); filter: blur(4px); transition: opacity 0.8s var(--ease-out), transform 0.8s var(--ease-out), filter 0.8s var(--ease-out); transition-delay: calc(var(--i, 0) * 70ms); }
 .motion .reveal.in { opacity: 1; transform: none; filter: blur(0); transition-delay: 0s; transition-duration: 0.3s; } /* once in, hovers answer quickly */
 /* Hover: a small lift, a slide for the arrow. */

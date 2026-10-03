@@ -122,7 +122,11 @@ page Login "/login" layout Plain {
       await auth.login("demo@northwind.example", "northwind-demo")
     } catch (e) {
       await auth.signup({ name: "Demo user", email: "demo@northwind.example", password: "northwind-demo" })
+    }
+    try {
       await server.seed()
+    } catch (e) {
+      null
     }
     navigate(next)
   }
