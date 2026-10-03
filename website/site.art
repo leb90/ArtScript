@@ -79,7 +79,11 @@ component Footer {
       divider
       row justify=between wrap gap=3 {
         text `This website is built with ArtScript: ${artFiles.length} .art files, ${artLines} lines.` class="made"
-        text "MIT License" class="made"
+        row gap=2 wrap class="made" {
+          text "Made by"
+          link "Leandro Bisceglie" href="https://github.com/leb90"
+          text "· MIT License"
+        }
       }
     }
   }

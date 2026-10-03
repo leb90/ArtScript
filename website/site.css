@@ -89,7 +89,7 @@ h1, h2, h3 { letter-spacing: -0.02em; }
   animation: mesh 26s ease-in-out infinite alternate, sheen 40s linear infinite;
 }
 .eyebrow { display: inline-block; font-size: 13px; font-weight: 600; color: var(--brand); background: var(--brand-soft); border: 1px solid color-mix(in srgb, var(--brand) 25%, transparent); border-radius: 999px; padding: 5px 14px; text-decoration: none; }
-.hero-title { font-size: clamp(40px, 7vw, 76px) !important; line-height: 1.02; font-weight: 800; margin: 22px auto 0; max-width: 900px; letter-spacing: -0.045em; }
+.hero-title { font-size: clamp(34px, 5.6vw, 64px) !important; line-height: 1.05; font-weight: 800; margin: 22px auto 0; max-width: 960px; letter-spacing: -0.045em; }
 .grad { color: var(--brand); }
 .lead { font-size: clamp(17px, 2.2vw, 21px); color: var(--a-muted); max-width: 720px; margin: 22px auto 0; line-height: 1.55; display: block; }
 .cta { margin-top: 34px; }

@@ -23,7 +23,7 @@ What is measured, what is proven in use, and what isn't yet. Updated with every 
 - **Small models.** With Haiku 4.5, one task in ten needed a human. Use Sonnet or Opus for real work.
 - **Database:** SQLite only, one process. Every field is indexed (measured: inserts and `where`/`sort` queries stay at 0.3 ms and 2 ms with 64,000 rows; `search` scans the table). Enough for small and medium apps; no Postgres yet.
 - **Known gaps:** prerendered pages are replaced, not hydrated, when the app loads (a brief flash); server functions aren't transactional; with `api users: User login`, any signed-in user can list every account (being decided); no OAuth or email in the static demo mode.
-- **One maintainer.** Issues are answered, but not within hours.
+- **One maintainer** ([Leandro Bisceglie](https://github.com/leb90)). Issues are answered, but not within hours.
 
 ## How to help
 

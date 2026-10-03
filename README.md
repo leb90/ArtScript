@@ -1,6 +1,12 @@
 # ArtScript
 
-An AI-native web language that compiles to JavaScript. Goal: let an AI build and modify web apps for **less money** (fewer tokens, less context, fewer retries) than with React/TypeScript.
+**Paste one prompt; your agent builds the app for half the cost.** Measured: over 50 tasks, Claude built and changed the same apps in ArtScript for 50% less than in React + TypeScript (Sonnet 5.5), 45% less (Opus 5.5) and 40% less (Haiku 4.5), with the same results. ArtScript is a full-stack web language that compiles to small, dependency-free JavaScript plus a Node server; the website, the docs and the demos at [artscript.dev](https://artscript.dev) are built with it.
+
+```
+npm create artscript@latest my-app
+```
+
+Or copy [the prompt](https://artscript.dev/ai#prompt) into Claude Code, Cursor or Codex and let it do the rest.
 
 ```
 page Counter "/" {
@@ -16,7 +22,9 @@ page Counter "/" {
 }
 ```
 
-Status: **v0.1, MVP foundation**.
+Status: **0.2.5**, usable for prototypes and small or medium apps built with an AI agent; the syntax may still change before 1.0. What is measured, proven and not yet: [artscript.dev/status](https://artscript.dev/status). Listed in [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark).
+
+Made by [Leandro Bisceglie](https://github.com/leb90). Issues and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 **Measured result (2026-10-02):** Claude built and modified the same 50 tasks (small apps, full-stack apps, and changes to projects of 11, 42 and 102 components) in ArtScript, React + TypeScript, Svelte 5, Vue 3 and SolidJS, twice per task; every app was run and used in a simulated browser to check it works. Per working result, counting the spec, retries and thinking tokens, ArtScript cost **50% less than React with Claude Sonnet 5.5, 45% less with Opus 5.5 and 40% less with Haiku 4.5**, and less than every other stack with the three models. Sonnet and Opus solved 100/100 in ArtScript; Haiku solved 90/100 (86–89 in the other stacks), after three rounds of compiler fixes that its first runs (76/100, then 80/100) led to. The apps ship about 5–7 KB of JavaScript (brotli) versus ~59 KB for React, ~20 KB for Svelte, ~24 KB for Vue and ~6 KB for Solid. See [Cost eval results](#cost-eval-results) for the tables, the raw data and the method.
 
@@ -523,4 +531,4 @@ Run 2026-10-02: 26 tasks × 5 stacks × 2 runs, total $8.74, prices as of 2026-0
 
 ## License
 
-MIT
+MIT © [Leandro Bisceglie](https://github.com/leb90)

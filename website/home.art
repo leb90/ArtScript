@@ -13,8 +13,8 @@ page Home "/" {
     column class="hero" {
       column class="container" align=center gap=0 {
         link "Version 0.2 · Measured against React, Svelte, Vue and SolidJS →" to="/benchmarks" class="eyebrow"
-        title "The web framework built for AI" class="hero-title"
-        text "ArtScript is a full-stack language for web apps, designed so that models like Claude write them with fewer tokens, fewer retries and fewer dollars. Your agent writes a third of the code, the compiler catches its mistakes, and the app ships about 5 KB of JavaScript." class="lead"
+        title "Paste one prompt. Your agent builds the app for half the cost." class="hero-title"
+        text "ArtScript is a full-stack web language designed for AI agents: measured over 50 tasks, Claude builds and changes the same apps for 50% less than in React. Your agent writes a third of the code, the compiler catches its mistakes, and the app ships about 5 KB of JavaScript." class="lead"
         row gap=3 wrap justify=center class="cta" {
           link "Get started" to="/learn/quick-start" class="btn primary"
           button "Copy prompt for your AI" class="btn" on:click=copyText(AI_PROMPT, event.currentTarget)
