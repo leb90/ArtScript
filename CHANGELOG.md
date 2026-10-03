@@ -2,6 +2,10 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## 0.2.6 (2026-10-03)
+
+- README on npm: the current status (it still said "v0.1, MVP foundation"), the one-prompt start and the author. No code changes.
+
 ## 0.2.5 (2026-10-03)
 
 - Every scalar field of a model gets an index (and `owner` for private apis), created on start and dropped when the field goes. `where`, `sort`, `unique` checks and private scopes no longer scan the table: measured on 64,000 rows, an insert with a `unique` field went from 3.3 ms (growing with the table) to 0.3 ms (constant); `where` and `sort` answer in 2 ms. `search` still scans (it is a LIKE).
