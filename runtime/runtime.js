@@ -106,12 +106,12 @@ function flush() {
 // An owner is what a scope disposes: a holder whose entries (functions, or objects with
 // `dispose()`) are linked through `$next`, so a scope costs one small object, not an array.
 // Disposal runs last-registered first.
-export function onDispose(f) {
-  if (!owner) return;
+function link(o, f) {
   if (f.$next !== undefined) { const g = f; f = () => (typeof g === "function" ? g() : g.dispose()); } // already in a list
-  f.$next = owner.head;
-  owner.head = f;
+  f.$next = o.head;
+  o.head = f;
 }
+export function onDispose(f) { if (owner) link(owner, f); }
 function disposeAll(o) {
   let f = o.head;
   o.head = null;
@@ -381,7 +381,7 @@ function region(parent) {
   const anchor = document.createComment("");
   parent.appendChild(anchor);
   const r = {
-    nodes: [], disposers: [],
+    nodes: [], disposers: { head: null },
     clear() {
       disposeAll(r.disposers);
       for (const n of r.nodes.splice(0)) remove(n);
@@ -406,7 +406,7 @@ export function $if(parent, cond, a, b) {
     last = c;
     r.clear();
     const f = c ? a : b;
-    if (f) r.mount((frag) => r.disposers.push(root(() => f(frag))));
+    if (f) r.mount((frag) => link(r.disposers, root(() => f(frag))));
   });
 }
 
@@ -875,7 +875,7 @@ export function start(routes, mount = document.getElementById("app"), prefix = "
     }
     // Renders into the innermost layout's slot (or the app's root). A slot inside an `if` may
     // appear later, or again: it renders what it holds whenever it's created.
-    const fillSlot = (e) => e.slot?.mount((frag) => e.slot.disposers.push(root(() => e.fill(frag))));
+    const fillSlot = (e) => e.slot?.mount((frag) => link(e.slot.disposers, root(() => e.fill(frag))));
     const into = (render) => {
       if (!stack.length) return root(() => render(mount));
       const e = stack[stack.length - 1];

@@ -404,7 +404,15 @@ class ComponentGen {
   // which is what makes a long list cheap. Rows with anything else (an `if`, a nested list, a
   // component, an icon) keep the node-by-node code; the lines from `head` are left as they are.
   template(head: number, frag: string) {
-    const body = this.lines.slice(head).map((l) => l.trim());
+    // Statements, with the lines a multi-line one spans (a `->` action's body, a nested arrow).
+    const raw = this.lines.slice(head);
+    const indent = (l: string) => l.length - l.trimStart().length;
+    const base = raw.length ? indent(raw[0]) : 0;
+    const body: string[] = [];
+    for (const l of raw) {
+      if (body.length && (indent(l) > base || l.trimStart().startsWith("}"))) body[body.length - 1] += "\n" + l; // keeps its indentation
+      else body.push(l.trim());
+    }
     type TNode = { tag: string; attrs: Record<string, string>; children: (TNode | string)[]; ref: string; parent: TNode | null; dyn: boolean };
     const nodes = new Map<string, TNode>(); // element var → node
     const roots: TNode[] = [];
@@ -448,7 +456,7 @@ class ComponentGen {
         n.children.push("");
         textRefs.set(t, n);
         kept.push(`$.$text(${t}, ${m[2]}`);
-      } else if ((m = /^\$\.\$(text|attr|on|bind)\((e\d+), /.exec(line))) {
+      } else if ((m = /^\$\.\$(text|attr|on|bind)\((e\d+), /.exec(line)) && !/^\$\.\$text\(e\d+\.appendChild/.test(line)) {
         const n = nodes.get(m[2]);
         if (!n) return;
         if (m[1] === "text") n.dyn = true;
@@ -482,8 +490,10 @@ class ComponentGen {
     else roots.forEach((r, i) => visit(r, i === 0 ? `${clone}.firstChild` : `${roots[i - 1].ref}.nextSibling`));
     const out = [...first, ...walk, ...kept, `${frag}.appendChild(${clone});`];
     const mark = this.marks[head - 1];
-    this.lines.splice(head, body.length, ...out.map((l) => "  ".repeat(this.ind + 1) + l));
-    this.marks.splice(head, body.length, ...out.map(() => mark));
+    const pad = "  ".repeat(this.ind + 1);
+    const lines = out.flatMap((l) => l.split("\n").map((x, i) => (i ? x : pad + x)));
+    this.lines.splice(head, raw.length, ...lines);
+    this.marks.splice(head, raw.length, ...lines.map(() => mark));
     // The template itself, once, before the list.
     this.lines.splice(head - 1, 0, "  ".repeat(this.ind) + `const ${t} = $.$tpl(${JSON.stringify(roots.map(desc))});`);
     this.marks.splice(head - 1, 0, mark);

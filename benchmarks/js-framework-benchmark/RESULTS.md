@@ -22,6 +22,25 @@ ArtScript 0.2.4 is in the [official js-framework-benchmark results](https://krau
 
 In short: between Svelte and Vue, 1.14× Solid, 1.45× faster than React by the same score; the only operation where it ties the fastest is clearing rows, and the slowest relative to Solid is creating 10,000 rows (1.20×). Memory is the weakest column (3.4 MB vs Solid's 2.7).
 
+## Local run after 0.2.7's runtime work (2026-10-07)
+
+Same harness, same machine, ArtScript and Solid measured one after the other in the same run (10 runs per benchmark). Median milliseconds; memory in MB after creating 1,000 rows. The machine was not idle during "update every 10th row" (both inflated); the other rows are comparable.
+
+| Benchmark | **ArtScript 0.2.7** | Solid 1.9.3 | Ratio |
+|---|---|---|---|
+| create 1,000 rows | **24.6** | 21.9 | 1.12 |
+| replace 1,000 rows | **27.4** | 28.1 | 0.98 |
+| update every 10th row (x16) | **21.4** | 18.1 | 1.18 |
+| select row | **6.7** | 7.2 | 0.93 |
+| swap rows | **16.3** | 14.9 | 1.09 |
+| remove row | **13.5** | 13.3 | 1.02 |
+| create 10,000 rows | **246.7** | 235.8 | 1.05 (official 0.2.4: 1.20) |
+| append 1,000 rows (x2) | **29.1** | 27.8 | 1.05 |
+| clear rows (x8) | **12.5** | 14.0 | 0.89 |
+| memory after 1,000 rows | **2.7** | 2.7 | 1.00 (official 0.2.4: 1.26) |
+
+What changed: rows are cloned from a template built once (`$tpl`/`$clone` in the runtime, emitted by the compiler for a `for` whose body is static structure plus bindings), click handlers are delegated to the document, effects keep their sources in a field instead of a Set, scopes link their disposables instead of holding arrays, and new rows go into the page in one insertion. A heap snapshot of the page after 1,000 rows went from +1,485 KB over Solid to the same size.
+
 ## Local results
 
 A local run of js-framework-benchmark's own harness (commit `f2df01a`, 2026-09-20), **not the official results**: Chrome 154 headless, Apple M4, 10 runs per benchmark (the official runs use 15), 2026-10-02. ArtScript 0.2 (unreleased) against the implementations in that repository: vanillajs, Solid 1.9.3, Svelte 5.42.1, Vue 3.5.39 and React 19.2.0 (hooks). All keyed; ArtScript passes the harness's `isKeyed` check.

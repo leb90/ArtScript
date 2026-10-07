@@ -525,3 +525,15 @@ page Home "/" {
     await GlobalRegistrator.unregister();
   }
 });
+
+test("codegen: a list's rows come from a template; a row with an if or a component keeps node-by-node code", () => {
+  const js = (body: string) => compile([{ file: "t.art", src: `page P {\n  state xs = [{ id: 1, name: "a" }]\n  state sel = 0\n  for x in xs key x.id {\n${body}\n  }\n}` }]).js!;
+  const plain = js(`    card class=(x.id == sel ? "on" : "") {\n      text x.name bold\n      button "Pick" small -> sel = x.id\n    }`);
+  assert.match(plain, /const t\d+ = \$\.\$tpl\(\[\["div",\{"class":"a-card"\},\["span",\{"class":"a-bold"\}\],\["button",\{"class":"a-small","type":"button"\}, ?"Pick"\]\]\]\);/);
+  assert.match(plain, /const e\d+ = \$\.\$clone\(t\d+\);\n\s+const e\d+ = e\d+\.firstChild;\n\s+const e\d+ = e\d+\.nextSibling;/);
+  assert.match(plain, /f\d+\.appendChild\(e\d+\);/);
+  assert.doesNotMatch(plain, /\$\.\$el\(f\d+/);
+  const withIf = js(`    card {\n      if x.id == sel {\n        text "picked"\n      }\n    }`);
+  assert.doesNotMatch(withIf, /\$tpl\(/);
+  assert.match(withIf, /\$\.\$el\(f\d+, "div", "a-card"\)/);
+});
