@@ -39,8 +39,11 @@ page Benchmarks "/benchmarks" {
     }
     card class="callout" gap=2 {
       text "Runtime speed" bold
-      text "In a local run of js-framework-benchmark's own harness, ArtScript is in the group of Solid, Svelte and Vue on every operation (fastest of them at selecting a row, about 1.1× Solid at updating every 10th row) and still behind at creating 10,000 rows (1.15× Solid). Apps ship about 6 KB compressed."
-      link "The full table and how to reproduce it" href="https://github.com/leb90/ArtScript/blob/main/benchmarks/js-framework-benchmark/RESULTS.md"
+      text "In the official js-framework-benchmark results (Chrome 154, October 2026), ArtScript scores 1.32 (1.00 is the fastest keyed implementation): between Svelte (1.24) and Vue (1.33), 1.14× Solid and well ahead of React (1.91), with 7.5 KB compressed. It ties the fastest at clearing rows and is slowest relative to Solid at creating 10,000 rows (1.20×)."
+      row gap=2 wrap {
+        link "The official table" href="https://krausest.github.io/js-framework-benchmark/2026/chrome154.html" class="pill"
+        link "Per-operation numbers and how to reproduce" href="https://github.com/leb90/ArtScript/blob/main/benchmarks/js-framework-benchmark/RESULTS.md" class="pill"
+      }
     }
     column gap=3 {
       title "How it was measured" class="doc-title"
