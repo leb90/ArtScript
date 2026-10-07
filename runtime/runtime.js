@@ -103,8 +103,20 @@ function flush() {
   } finally { flushing = false; }
 }
 
-export function onDispose(f) { if (owner) owner.push(f); }
-const disposeAll = (o) => { for (const f of o.splice(0)) typeof f === "function" ? f() : f.dispose(); };
+// An owner is what a scope disposes: a holder whose entries (functions, or objects with
+// `dispose()`) are linked through `$next`, so a scope costs one small object, not an array.
+// Disposal runs last-registered first.
+export function onDispose(f) {
+  if (!owner) return;
+  if (f.$next !== undefined) { const g = f; f = () => (typeof g === "function" ? g() : g.dispose()); } // already in a list
+  f.$next = owner.head;
+  owner.head = f;
+}
+function disposeAll(o) {
+  let f = o.head;
+  o.head = null;
+  while (f) { const n = f.$next; f.$next = undefined; typeof f === "function" ? f() : f.dispose(); f = n; }
+}
 // Every live `state` and `data`, so a mutation through an untracked alias (a fn or arrow parameter:
 // `fn add(p) { p.stock-- }`) can still update the screen: `$all` notifies them all.
 const states = new Set();
@@ -127,7 +139,7 @@ export function effect(fn) {
 }
 // Creates an isolated scope; returns the function that disposes it.
 export function root(fn) {
-  const o = [], po = owner, pl = listener;
+  const o = { head: null }, po = owner, pl = listener;
   owner = o;
   listener = null;
   try { fn(); } finally { owner = po; listener = pl; }
@@ -143,6 +155,24 @@ export function $ref(get, sig, set) { get.sig = sig; get.set = set; return get; 
 // ---------- DOM ----------
 const str = (v) => (v == null ? "" : String(v));
 const remove = (n) => n.parentNode && n.parentNode.removeChild(n);
+
+// A row's static structure, built once from the compiler's description (`[tag, attrs, ...children]`,
+// a string is a text node) and cloned per row: clones share their attributes in the browser and
+// cost one call instead of one per node.
+export function $tpl(desc) {
+  const build = (d) => {
+    if (typeof d === "string") return document.createTextNode(d);
+    const n = document.createElement(d[0]);
+    if (d[1]) for (const k in d[1]) n.setAttribute(k, d[1][k]);
+    for (let i = 2; i < d.length; i++) n.appendChild(build(d[i]));
+    return n;
+  };
+  if (desc.length === 1) return build(desc[0]);
+  const f = document.createDocumentFragment();
+  for (const d of desc) f.appendChild(build(d));
+  return f;
+}
+export const $clone = (t) => t.cloneNode(true);
 
 export function $el(parent, tag, cls) {
   const n = document.createElement(tag);
@@ -172,7 +202,7 @@ export function $attr(n, name, fn) {
     // `class=(expr)` replaces what it set before, not the classes other props added.
     else if (name === "className") {
       if (base === undefined && !n.className) base = null; // nothing else sets classes: assign
-      if (base === null) n.className = str(v);
+      if (base === null) { if (n.className !== str(v)) n.className = str(v); }
       else {
         if (base) n.classList.remove(...base);
         base = str(v).split(/\s+/).filter(Boolean);
@@ -236,23 +266,23 @@ function delegate() {
       const h = t.$click;
       if (!h) continue;
       Object.defineProperty(e, "currentTarget", { value: t, configurable: true });
-      h(e);
+      batch(() => h(e))?.catch?.(failed);
       if (e.cancelBubble) return;
     }
   });
 }
+// An action that fails without a `try` (a rejected write) tells the user instead of failing silently.
+const failed = (err) => { notify(err?.message ?? String(err), "danger"); console.error(err); };
 export function $on(n, kind, fn) {
   const type = kind === "enter" ? "keydown" : kind;
   // A button with its own `->` inside a form only runs that action; one without it submits.
-  if (kind === "click" && n.tagName === "BUTTON") n.type = "button";
-  const handler = (e) => {
+  if (kind === "click" && n.tagName === "BUTTON" && n.type !== "button") n.type = "button";
+  if (kind === "click" && delegated) { n.$click = fn; return; }
+  n.addEventListener(type, (e) => {
     if (kind === "enter" && e.key !== "Enter") return;
     if (kind === "submit") e.preventDefault();
-    // An action that fails without a `try` (a rejected write) tells the user instead of failing silently.
-    batch(() => fn(e))?.catch?.((err) => { notify(err?.message ?? String(err), "danger"); console.error(err); });
-  };
-  if (kind === "click" && delegated) n.$click = handler;
-  else n.addEventListener(type, handler);
+    batch(() => fn(e))?.catch?.(failed);
+  });
 }
 function untrack(fn) {
   const prev = listener;
@@ -459,7 +489,7 @@ export function $for(parent, list, render, key = (it) => it) {
       const k = key(it, p + j);
       const r = old.get(k)?.shift();
       if (r) return keep(r, it, p + j);
-      const n = { key: k, item: new Signal(it), index: withIndex ? new Signal(p + j) : null, snap: flat(it), start: null, end: null, frag: null, fresh: true };
+      const n = { key: k, item: new Signal(it), index: withIndex ? new Signal(p + j) : null, snap: flat(it), start: null, end: null, frag: null, fresh: true, dispose: null };
       n.dispose = root(() => render(scratch, n.item, n.index));
       const first = scratch.firstChild;
       // A row that is a single element (`tr`, `card`...) is its own marker: no comments around it.
@@ -521,8 +551,8 @@ export function $mount(fn) {
 
 // `effect { ... }`: re-runs when what it reads changes; its `cleanup { }` runs before each re-run.
 export function $effect(fn) {
-  const cleanups = [];
-  const clean = () => { for (const f of cleanups.splice(0)) f(); };
+  const cleanups = { head: null };
+  const clean = () => disposeAll(cleanups);
   $mount(() => {
     effect(() => {
       untrack(clean); // what a cleanup reads isn't a dependency of the effect

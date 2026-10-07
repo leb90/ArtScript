@@ -51,11 +51,13 @@ class FText extends FNode {
     super();
     this.data = d;
   }
+  cloneNode() { return new FText(this.data); }
   get textContent() { return this.data; }
   set textContent(v: string) { this.data = v; }
 }
 
 class FComment extends FNode {
+  cloneNode() { return new FComment(); }
   get textContent() { return ""; }
   set textContent(_v: string) {}
 }
@@ -86,8 +88,21 @@ export class FElement extends FNode {
     super();
     this.tagName = tag;
   }
-  setAttribute(k: string, v: string) { this.attrs[k] = v; }
+  setAttribute(k: string, v: string) {
+    if (k === "class") this.className = v;
+    else if (k in this && typeof (this as any)[k] === "string") (this as any)[k] = v;
+    else if (k in this && typeof (this as any)[k] === "boolean") (this as any)[k] = true;
+    else this.attrs[k] = v;
+  }
   removeAttribute(k: string) { delete this.attrs[k]; }
+  cloneNode(deep: boolean): FElement {
+    const e = new FElement(this.tagName);
+    for (const k of ["className", "value", "checked", "type", "placeholder", "disabled", "href", "src", "alt", "id"] as const) (e as any)[k] = this[k];
+    e.attrs = { ...this.attrs };
+    e.style = { ...this.style };
+    if (deep) for (const c of this.childNodes) e.appendChild((c as any).cloneNode(true));
+    return e;
+  }
   addEventListener(t: string, f: (e: unknown) => void) { (this.listeners[t] ??= []).push(f); }
   dispatch(t: string, extra: Record<string, unknown> = {}) {
     for (const f of this.listeners[t] ?? []) f({ type: t, preventDefault() {}, ...extra });
@@ -107,7 +122,7 @@ export function installDom() {
     createElement: (t: string) => new FElement(t),
     createTextNode: (d: string) => new FText(d),
     createComment: () => new FComment(),
-    createDocumentFragment: () => Object.assign(new FNode(), { isFrag: true }),
+    createDocumentFragment: () => Object.assign(new FNode(), { isFrag: true, cloneNode(this: any, deep: boolean) { const f = Object.assign(new FNode(), { isFrag: true, cloneNode: this.cloneNode }); if (deep) for (const c of this.childNodes) f.appendChild((c as any).cloneNode(true)); return f; } }),
     getElementById: () => null,
   };
 }

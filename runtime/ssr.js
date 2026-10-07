@@ -49,22 +49,27 @@ Object.defineProperty(Node.prototype, "nodeType", { get() { return this instance
 
 class Text extends Node {
   constructor(data) { super(); this.data = data; }
+  cloneNode() { return new Text(this.data); }
   get textContent() { return this.data; }
   set textContent(v) { this.data = String(v); }
   html() { return esc(this.data); }
 }
 
 class Comment extends Node {
+  cloneNode() { return new Comment(); }
   get textContent() { return ""; }
   set textContent(_v) {}
   html() { return ""; } // anchors are for the live app, which renders again
 }
 
-class Fragment extends Node {}
+class Fragment extends Node {
+  cloneNode(deep) { const f = new Fragment(); if (deep) for (const c of this.childNodes) f.appendChild(c.cloneNode(true)); return f; }
+}
 
 // Markup set with innerHTML (icons): written out as is.
 class Raw extends Node {
   constructor(html) { super(); this.raw = html; }
+  cloneNode() { return new Raw(this.raw); }
   get textContent() { return ""; }
   html() { return this.raw; }
 }
@@ -86,6 +91,13 @@ class Style {
 }
 
 class Element extends Node {
+  cloneNode(deep) {
+    const e = new Element(this.tagName);
+    for (const [k, v] of this.attrs) e.attrs.set(k, v);
+    e.$style.cssText = this.$style.cssText;
+    if (deep) for (const c of this.childNodes) e.appendChild(c.cloneNode(true));
+    return e;
+  }
   constructor(tag) {
     super();
     this.tagName = tag.toUpperCase();

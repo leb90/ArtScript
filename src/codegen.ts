@@ -351,7 +351,9 @@ class ComponentGen {
         }
         // The item and index are signals: kept rows update in place instead of re-rendering.
         this.emit(`$.$for(${parent}, () => ${this.expr(node.list, scope)}, (${params}) => {`);
+        const head = this.lines.length;
         this.nested(() => this.view(node.body, f, s));
+        this.template(head, f);
         this.emit(`}${key});`);
       } else if (node.tag === "meta") {
         const props = node.props.filter((p) => p.value).map((p) => `${p.name}: () => ${this.expr(p.value!, scope)}`);
@@ -395,6 +397,96 @@ class ComponentGen {
         } else this.emit(`${node.tag}({ ${props.join(", ")} }, ${parent});`);
       } else this.element(node, parent, scope);
     }
+  }
+
+  // A row whose body is static structure plus bindings is cloned from a template built once
+  // (`$tpl`) instead of created node by node: in the browser the clones share their attributes,
+  // which is what makes a long list cheap. Rows with anything else (an `if`, a nested list, a
+  // component, an icon) keep the node-by-node code; the lines from `head` are left as they are.
+  template(head: number, frag: string) {
+    const body = this.lines.slice(head).map((l) => l.trim());
+    type TNode = { tag: string; attrs: Record<string, string>; children: (TNode | string)[]; ref: string; parent: TNode | null; dyn: boolean };
+    const nodes = new Map<string, TNode>(); // element var → node
+    const roots: TNode[] = [];
+    const kept: string[] = []; // the statements that stay, in order
+    const textRefs = new Map<string, TNode>(); // text node var → its node
+    const texts = new Map<TNode, number>(); // text node → index of its "" child
+    const lit = (s: string): string | null => { try { const v = JSON.parse(s); return typeof v === "string" ? v : null; } catch { return null; } };
+    const concat = (s: string): string | null => {
+      const parts = s.split(" + ").map(lit);
+      return parts.every((p) => p !== null) ? parts.join("") : null;
+    };
+    const ATTR_PROPS: Record<string, string> = { className: "class", id: "id", title: "title", placeholder: "placeholder", href: "href", src: "src", alt: "alt", target: "target", rel: "rel", type: "type", role: "role", name: "name", htmlFor: "for" };
+    const BOOL_PROPS = new Set(["disabled", "required", "multiple", "readOnly", "hidden", "autofocus"]);
+    let m: RegExpExecArray | null;
+    for (const line of body) {
+      if ((m = /^const (e\d+) = \$\.\$el\((\w+), "([\w-]+)"(?:, "([^"]*)")?\);$/.exec(line))) {
+        const [, ref, parent, tag, cls] = m;
+        const p = parent === frag ? null : nodes.get(parent);
+        if (parent !== frag && !p) return;
+        const n: TNode = { tag, attrs: cls ? { class: cls } : {}, children: [], ref, parent: p ?? null, dyn: false };
+        if (p) p.children.push(n); else roots.push(n);
+        nodes.set(ref, n);
+      } else if ((m = /^(e\d+)\.textContent = (".*");$/.exec(line))) {
+        const n = nodes.get(m[1]), v = lit(m[2]);
+        if (!n || v === null) return;
+        n.children.push(v);
+      } else if ((m = /^(e\d+)\.setAttribute\((".*?"), (".*")\);$/.exec(line))) {
+        const n = nodes.get(m[1]), k = lit(m[2]), v = lit(m[3]);
+        if (!n || k === null || v === null) return;
+        n.attrs[k] = v;
+      } else if ((m = /^(e\d+)\.(\w+) = (.+);$/.exec(line)) && (ATTR_PROPS[m[2]] || BOOL_PROPS.has(m[2]))) {
+        const n = nodes.get(m[1]);
+        if (!n) return;
+        if (BOOL_PROPS.has(m[2])) { if (m[3] !== "true") return; n.attrs[m[2].toLowerCase()] = ""; }
+        else { const v = concat(m[3]); if (v === null) kept.push(line); else n.attrs[ATTR_PROPS[m[2]]] = v; }
+      } else if ((m = /^\$\.\$text\((e\d+)\.appendChild\(document\.createTextNode\(""\)\), (.*)$/.exec(line))) {
+        const n = nodes.get(m[1]);
+        if (!n) return;
+        const t = this.v("t");
+        texts.set(n, n.children.length);
+        n.children.push("");
+        textRefs.set(t, n);
+        kept.push(`$.$text(${t}, ${m[2]}`);
+      } else if ((m = /^\$\.\$(text|attr|on|bind)\((e\d+), /.exec(line))) {
+        const n = nodes.get(m[2]);
+        if (!n) return;
+        if (m[1] === "text") n.dyn = true;
+        // A button with a click handler is `type=button` (see `$on`): in the template, so no row writes it.
+        if (m[1] === "on" && n.tag === "button" && line.startsWith(`$.$on(${m[2]}, "click"`)) n.attrs.type = "button";
+        kept.push(line);
+      } else if (/^(e\d+)\.style\.cssText \+= /.test(line) || /^\w+ = e\d+;$/.test(line)) kept.push(line);
+      else return; // something the template can't hold: the row stays as it is
+    }
+    if (!roots.length || [...nodes.values()].some((n) => n.dyn && n.children.length)) return;
+    // The description, and the walk that gives each node its variable in the clone.
+    const desc = (n: TNode | string): unknown => (typeof n === "string" ? n : [n.tag, Object.keys(n.attrs).length ? n.attrs : null, ...n.children.map(desc)]);
+    const t = this.v("t");
+    const walk: string[] = [];
+    const visit = (n: TNode, expr: string) => {
+      walk.push(`const ${n.ref} = ${expr};`);
+      let prev: string | null = null;
+      n.children.forEach((c, i) => {
+        const at = prev === null ? `${n.ref}.firstChild` : `${prev}.nextSibling`;
+        if (typeof c === "string") {
+          const ref = [...textRefs].find(([, node]) => node === n && texts.get(n) === i)?.[0];
+          if (ref) { walk.push(`const ${ref} = ${at};`); prev = ref; }
+          else if (i < n.children.length - 1) { const tmp = this.v("t"); walk.push(`const ${tmp} = ${at};`); prev = tmp; }
+        } else { visit(c, at); prev = c.ref; }
+      });
+    };
+    const single = roots.length === 1;
+    const clone = single ? roots[0].ref : this.v("r");
+    const first: string[] = [`const ${clone} = $.$clone(${t});`];
+    if (single) { visit(roots[0], clone); walk.shift(); }
+    else roots.forEach((r, i) => visit(r, i === 0 ? `${clone}.firstChild` : `${roots[i - 1].ref}.nextSibling`));
+    const out = [...first, ...walk, ...kept, `${frag}.appendChild(${clone});`];
+    const mark = this.marks[head - 1];
+    this.lines.splice(head, body.length, ...out.map((l) => "  ".repeat(this.ind + 1) + l));
+    this.marks.splice(head, body.length, ...out.map(() => mark));
+    // The template itself, once, before the list.
+    this.lines.splice(head - 1, 0, "  ".repeat(this.ind) + `const ${t} = $.$tpl(${JSON.stringify(roots.map(desc))});`);
+    this.marks.splice(head - 1, 0, mark);
   }
 
   nested(fn: () => void) {
