@@ -9,12 +9,24 @@ const queue = new Set();
 // since, has nothing left to mark (`rows.forEach(r => r.done = true)` notifies once per row).
 let epoch = 1;
 
+// `deps` is the one source a computation read, or an array of them (most read one or two; a Set
+// per effect costs ~10x the memory over thousands of rows). `subs` is a Set: one signal can have
+// thousands of subscribers to drop from.
 function track(src) {
-  if (listener) { src.subs.add(listener); listener.deps.add(src); src.hot = 0; }
+  if (!listener || src.subs.has(listener)) return;
+  src.subs.add(listener);
+  src.hot = 0;
+  const d = listener.deps;
+  if (d === null) listener.deps = src;
+  else if (Array.isArray(d)) d.push(src);
+  else listener.deps = [d, src];
 }
 function unsub(c) {
-  for (const d of c.deps) d.subs.delete(c);
-  c.deps.clear();
+  const d = c.deps;
+  if (d === null) return;
+  if (Array.isArray(d)) { for (const s of d) s.subs.delete(c); }
+  else d.subs.delete(c);
+  c.deps = null;
 }
 function run(c, fn) {
   unsub(c);
@@ -24,7 +36,8 @@ function run(c, fn) {
 }
 
 class Signal {
-  constructor(v) { this._v = v; this.subs = new Set(); }
+  constructor(v) { this._v = v; this.subs = new Set(); this.hot = 0; }
+  dispose() { states.delete(this); }
   get v() { track(this); return this._v; }
   set v(n) { if (!Object.is(n, this._v)) { this._v = n; this.notify(); } }
   notify() {
@@ -37,7 +50,8 @@ class Signal {
 // Lazy: marked dirty when a dependency changes, recomputed on read. Assigning it overrides the
 // value until a dependency changes (like Svelte 5's writable $derived).
 class Computed {
-  constructor(fn) { this.fn = fn; this.subs = new Set(); this.deps = new Set(); this.dirty = true; }
+  constructor(fn) { this.fn = fn; this.subs = new Set(); this.deps = null; this.dirty = true; }
+  dispose() { unsub(this); }
   get v() {
     if (this.dirty) { this._v = run(this, this.fn); this.dirty = false; }
     track(this);
@@ -56,9 +70,19 @@ class Computed {
 }
 
 class Effect {
-  constructor(fn) { this.fn = fn; this.deps = new Set(); this.alive = true; }
+  constructor(fn) { this.fn = fn; this.deps = null; this.alive = true; }
   mark() { queue.add(this); }
   run() { if (this.alive) run(this, this.fn); }
+  dispose() { this.alive = false; unsub(this); }
+}
+// A text binding is an effect with its last value as a field: no closure around the expression.
+class TextEffect extends Effect {
+  constructor(n, fn) { super(fn); this.n = n; this.last = undefined; }
+  run() {
+    if (!this.alive) return;
+    const v = str(run(this, this.fn));
+    if (v !== this.last) this.n.textContent = this.last = v;
+  }
 }
 
 export function batch(fn) {
@@ -80,25 +104,26 @@ function flush() {
 }
 
 export function onDispose(f) { if (owner) owner.push(f); }
+const disposeAll = (o) => { for (const f of o.splice(0)) typeof f === "function" ? f() : f.dispose(); };
 // Every live `state` and `data`, so a mutation through an untracked alias (a fn or arrow parameter:
 // `fn add(p) { p.stock-- }`) can still update the screen: `$all` notifies them all.
 const states = new Set();
 export function signal(v) {
   const s = new Signal(v);
   states.add(s);
-  onDispose(() => states.delete(s));
+  onDispose(s);
   return s;
 }
 export const $all = { notify() { if (!listener) batch(() => { for (const s of [...states]) s.notify(); }); } };
 export function computed(fn) {
   const c = new Computed(fn);
-  onDispose(() => unsub(c));
+  onDispose(c);
   return c;
 }
 export function effect(fn) {
   const e = new Effect(fn);
   e.run();
-  onDispose(() => { e.alive = false; unsub(e); });
+  onDispose(e);
 }
 // Creates an isolated scope; returns the function that disposes it.
 export function root(fn) {
@@ -106,7 +131,7 @@ export function root(fn) {
   owner = o;
   listener = null;
   try { fn(); } finally { owner = po; listener = pl; }
-  return () => { for (const f of o.splice(0)) f(); };
+  return () => disposeAll(o);
 }
 // Notifies an in-place mutation (e.g. `todos.push(x)`) and returns its result.
 // Not while a computed is being calculated (`filtered.sort()` inside another computed).
@@ -127,8 +152,9 @@ export function $el(parent, tag, cls) {
 }
 // Each binding writes the DOM only when its value changed (re-running is cheap; writing isn't).
 export function $text(n, fn) {
-  let last;
-  effect(() => { const v = str(fn()); if (v !== last) n.textContent = last = v; });
+  const e = new TextEffect(n, fn);
+  e.run();
+  onDispose(e);
 }
 // URLs from data can't run code: `javascript:` (and `vbscript:`, `data:text/html`) become "#".
 const URL_ATTRS = new Set(["href", "src", "action", "formAction", "poster"]);
@@ -145,9 +171,13 @@ export function $attr(n, name, fn) {
     if (name === "style") n.style.cssText = (base ??= n.style.cssText) + ";" + (v ?? "");
     // `class=(expr)` replaces what it set before, not the classes other props added.
     else if (name === "className") {
-      if (base) n.classList.remove(...base);
-      base = str(v).split(/\s+/).filter(Boolean);
-      n.classList.add(...base);
+      if (base === undefined && !n.className) base = null; // nothing else sets classes: assign
+      if (base === null) n.className = str(v);
+      else {
+        if (base) n.classList.remove(...base);
+        base = str(v).split(/\s+/).filter(Boolean);
+        n.classList.add(...base);
+      }
     }
     else if (name.startsWith("aria-")) v == null ? n.removeAttribute(name) : n.setAttribute(name, String(v));
     else if (name in n && name !== "role") n[name] = v ?? "";
@@ -194,16 +224,35 @@ export function $style(n, prop, fn) {
   let last;
   effect(() => { const v = str(fn()); if (v !== last) n.style[prop] = last = v; });
 }
+// Click handlers are delegated: one listener on the document, the handler on its element (a list
+// of thousands of rows registers no listeners). Installed by `start`; without it (tests on a bare
+// element) handlers are listeners of their own.
+let delegated = false;
+function delegate() {
+  if (delegated) return;
+  delegated = true;
+  document.addEventListener("click", (e) => {
+    for (let t = e.target; t && t !== document; t = t.parentNode) {
+      const h = t.$click;
+      if (!h) continue;
+      Object.defineProperty(e, "currentTarget", { value: t, configurable: true });
+      h(e);
+      if (e.cancelBubble) return;
+    }
+  });
+}
 export function $on(n, kind, fn) {
   const type = kind === "enter" ? "keydown" : kind;
   // A button with its own `->` inside a form only runs that action; one without it submits.
   if (kind === "click" && n.tagName === "BUTTON") n.type = "button";
-  n.addEventListener(type, (e) => {
+  const handler = (e) => {
     if (kind === "enter" && e.key !== "Enter") return;
     if (kind === "submit") e.preventDefault();
     // An action that fails without a `try` (a rejected write) tells the user instead of failing silently.
     batch(() => fn(e))?.catch?.((err) => { notify(err?.message ?? String(err), "danger"); console.error(err); });
-  });
+  };
+  if (kind === "click" && delegated) n.$click = handler;
+  else n.addEventListener(type, handler);
 }
 function untrack(fn) {
   const prev = listener;
@@ -304,7 +353,7 @@ function region(parent) {
   const r = {
     nodes: [], disposers: [],
     clear() {
-      for (const d of r.disposers.splice(0)) d();
+      disposeAll(r.disposers);
       for (const n of r.nodes.splice(0)) remove(n);
     },
     mount(fill) {
@@ -336,11 +385,13 @@ function flat(it) {
   if (it === null || typeof it !== "object") return [it];
   const proto = Object.getPrototypeOf(it);
   if (proto !== Object.prototype && proto !== null) return null;
-  const out = [];
-  for (const k in it) {
-    const v = it[k];
+  const keys = Object.keys(it);
+  const out = new Array(keys.length * 2);
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i], v = it[k];
     if ((typeof v === "object" && v !== null) || typeof v === "function") return null;
-    out.push(k, v);
+    out[i * 2] = k;
+    out[i * 2 + 1] = v;
   }
   return out;
 }
@@ -377,6 +428,8 @@ export function $for(parent, list, render, key = (it) => it) {
   const anchor = document.createComment("");
   parent.appendChild(anchor);
   let rows = [];
+  const withIndex = render.length > 2; // the body reads the index: it gets a signal
+  const scratch = document.createDocumentFragment(); // rows render here, then take their nodes
   const range = (r) => {
     const out = [];
     for (let n = r.start; ; n = n.nextSibling) { out.push(n); if (n === r.end) return out; }
@@ -392,7 +445,7 @@ export function $for(parent, list, render, key = (it) => it) {
     const keep = (r, it, i) => {
       if (it !== r.item._v || !fresh(it, r.snap)) { kept.push(r.item); r.snap = flat(it); }
       r.item._v = it;
-      if (r.index._v !== i) { r.index._v = i; kept.push(r.index); }
+      if (withIndex && r.index._v !== i) { r.index._v = i; kept.push(r.index); }
       return r;
     };
     // Rows at the start that are where they were need no reconciling: all of them when the list
@@ -406,16 +459,16 @@ export function $for(parent, list, render, key = (it) => it) {
       const k = key(it, p + j);
       const r = old.get(k)?.shift();
       if (r) return keep(r, it, p + j);
-      const n = { key: k, item: new Signal(it), index: new Signal(p + j), snap: flat(it), start: document.createComment(""), end: document.createComment(""), frag: document.createDocumentFragment() };
-      n.frag.appendChild(n.start);
-      n.dispose = root(() => render(n.frag, n.item, n.index));
-      n.frag.appendChild(n.end);
+      const n = { key: k, item: new Signal(it), index: withIndex ? new Signal(p + j) : null, snap: flat(it), start: null, end: null, frag: null, fresh: true };
+      n.dispose = root(() => render(scratch, n.item, n.index));
+      const first = scratch.firstChild;
       // A row that is a single element (`tr`, `card`...) is its own marker: no comments around it.
-      const only = n.start.nextSibling;
-      if (only.nodeType === 1 && only.nextSibling === n.end) {
-        n.frag.removeChild(n.start);
-        n.frag.removeChild(n.end);
-        n.start = n.end = only;
+      if (first && first.nodeType === 1 && first === scratch.lastChild) { n.start = n.end = scratch.removeChild(first); }
+      else {
+        n.frag = document.createDocumentFragment();
+        n.frag.appendChild(n.start = document.createComment(""));
+        while (scratch.firstChild) n.frag.appendChild(scratch.firstChild);
+        n.frag.appendChild(n.end = document.createComment(""));
       }
       return n;
     });
@@ -433,13 +486,21 @@ export function $for(parent, list, render, key = (it) => it) {
     const before = new Map(tail.map((r, i) => [r, i]));
     const stay = lis(next.map((r) => before.get(r) ?? -1));
     rows = rows.slice(0, p).concat(next);
-    let ref = anchor;
+    // New rows that are next to each other go into the page in one insertion.
+    let ref = anchor, batchFirst = null;
+    const place = () => { if (batchFirst) { parent.insertBefore(scratch, ref); ref = batchFirst; batchFirst = null; } };
     for (let j = next.length - 1; j >= 0; j--) {
       const r = next[j];
-      if (r.frag) { parent.insertBefore(r.frag, ref); r.frag = null; }
-      else if (!stay.has(j)) for (const n of range(r)) parent.insertBefore(n, ref);
-      ref = r.start;
+      if (r.fresh) {
+        scratch.insertBefore(r.frag ?? r.start, scratch.firstChild);
+        r.frag = null; r.fresh = false; batchFirst = r.start;
+      } else {
+        place();
+        if (!stay.has(j)) for (const n of range(r)) parent.insertBefore(n, ref);
+        ref = r.start;
+      }
     }
+    place();
     untrack(() => batch(() => kept.forEach((s) => s.notify())));
   });
 }
@@ -812,6 +873,7 @@ export function start(routes, mount = document.getElementById("app"), prefix = "
 
   // A `#section` link changes only the hash: the browser scrolls, the page stays.
   window.addEventListener("popstate", () => { if (location.pathname + location.search !== rendered) render(); });
+  delegate(); // before the router's listener: an element's handler runs first, and may preventDefault
   document.addEventListener("click", (e) => {
     const a = e.target.closest?.("a[href]");
     if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || a.target || a.hasAttribute("download")) return;

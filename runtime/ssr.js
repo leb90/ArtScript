@@ -9,6 +9,7 @@ const kebab = (s) => s.replace(/[A-Z]/g, (c) => "-" + c.toLowerCase());
 class Node {
   constructor() { this.childNodes = []; this.parentNode = null; }
   get firstChild() { return this.childNodes[0] ?? null; }
+  get lastChild() { return this.childNodes[this.childNodes.length - 1] ?? null; }
   get nextSibling() {
     const l = this.parentNode?.childNodes;
     return l ? l[l.indexOf(this) + 1] ?? null : null;

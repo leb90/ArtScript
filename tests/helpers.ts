@@ -13,6 +13,9 @@ class FNode {
     const list = this.parentNode?.childNodes;
     return list?.[list.indexOf(this) + 1] ?? null;
   }
+  get firstChild(): FNode | null { return this.childNodes[0] ?? null; }
+  get lastChild(): FNode | null { return this.childNodes[this.childNodes.length - 1] ?? null; }
+  get nodeType(): number { return this instanceof FElement ? 1 : this instanceof FText ? 3 : this instanceof FComment ? 8 : 11; }
   appendChild(n: FNode): FNode {
     return this.insertBefore(n, null);
   }

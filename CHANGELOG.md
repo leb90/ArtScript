@@ -2,6 +2,10 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## Unreleased
+
+- Lists use less memory and render faster: a row's effects keep their sources in a field instead of a Set, single-element rows need no marker comments or fragment of their own, new rows next to each other go into the page in one insertion, text bindings are an effect with no closure around them, and click handlers are delegated to one listener on the document (a list of thousands of rows registers none; `event.currentTarget` is still the element). Measured with js-framework-benchmark's harness: memory after creating 1,000 rows 3.39 → 2.84 MB, creating 10,000 rows 301 → 262 ms, clearing 13.4 → 12.0 ms.
+
 ## 0.2.6 (2026-10-03)
 
 - README on npm: the current status (it still said "v0.1, MVP foundation"), the one-prompt start and the author. No code changes.
