@@ -13,6 +13,8 @@ npm run dev
 
 Open http://localhost:3000. Edit `src/app.art` and save: the page reloads by itself.
 
+When the project is created, the CLI offers to install the [ArtScript extension](https://marketplace.visualstudio.com/items?itemName=LeandroBisceglie.artscript) in VS Code or Cursor if it finds them: `.art` files get their icon, highlighting, snippets and live errors with the compiler's fixes. The project also recommends it (`.vscode/extensions.json`), so the editor offers it when the folder is opened.
+
 To start from a working app instead of a blank page, pick a template:
 
 ```sh

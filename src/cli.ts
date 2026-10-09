@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // ArtScript CLI: `art <command>`. Short output; machine-readable with --ai.
+import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, watch, writeFileSync } from "node:fs";
 import { createServer, type ServerResponse } from "node:http";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
@@ -191,6 +192,32 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
   }
 }
 
+// The editor extension (file icons, highlighting, live errors): offered once a project is created,
+// to each editor found on the PATH, when someone is at the terminal; otherwise just mentioned.
+const EXTENSION = "LeandroBisceglie.artscript";
+async function offerExtension() {
+  const found = ["code", "cursor"].filter((bin) => spawnSync(process.platform === "win32" ? "where" : "which", [bin], { stdio: "ignore" }).status === 0);
+  const names: Record<string, string> = { code: "VS Code", cursor: "Cursor" };
+  const installed = (bin: string) => String(spawnSync(bin, ["--list-extensions"], { encoding: "utf8", shell: process.platform === "win32" }).stdout ?? "").toLowerCase().includes(EXTENSION.toLowerCase());
+  const todo = found.filter((bin) => !installed(bin));
+  if (!todo.length) return;
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    console.log(`Editor: the ArtScript extension gives .art files their icon, highlighting and live errors:\n  ${todo.map((bin) => `${bin} --install-extension ${EXTENSION}`).join("\n  ")}\n`);
+    return;
+  }
+  const { createInterface } = await import("node:readline/promises");
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    let answer: string;
+    try { answer = (await rl.question(`Install the ArtScript extension for ${todo.map((b) => names[b]).join(" and ")} (icons, highlighting, live errors)? [Y/n] `)).trim().toLowerCase(); } catch { return; } // Ctrl+C / Ctrl+D: no
+    if (answer && answer !== "y" && answer !== "yes") return;
+    for (const bin of todo) {
+      const r = spawnSync(bin, ["--install-extension", EXTENSION], { stdio: "ignore", shell: process.platform === "win32" });
+      console.log(r.status === 0 ? `  ${names[bin]}: installed` : `  ${names[bin]}: couldn't install; run \`${bin} --install-extension ${EXTENSION}\``);
+    }
+  } finally { rl.close(); }
+}
+
 // ---------- commands ----------
 switch (cmd) {
   case "init": {
@@ -218,6 +245,7 @@ switch (cmd) {
       .replace("__ARTSCRIPT__", local ? `file:${ROOT}` : `^${PKG.version}`);
     writeFileSync(pkgPath, pkg);
     console.log(`project created in ${name}/\n\n  cd ${name}\n  npm install\n  npm run dev\n`);
+    await offerExtension();
     break;
   }
 
