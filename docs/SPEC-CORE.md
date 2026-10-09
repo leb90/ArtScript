@@ -85,6 +85,7 @@ To store the tasks on the server instead: `api tasks: Task` at the top, `data ta
 | `canvas` | — | | width height |
 
 - Every element takes `class style id role aria-* data-* tabindex`. `gap=4` = 16px. Responsive: `grid cols=1 md:cols=3`.
+- Motion without code: `reveal` (appears on scroll, siblings one after another), `animate=rise|fade|zoom|slide-left|slide-right|pop` with `delay=200` (ms), `stagger` on a container, `hover=lift|grow|glow`. Backgrounds: `art add MeshBackground Particles`.
 - Conditional flag: `text t.title muted=t.done`. Other events: `card on:mouseenter=(hover = true)` (`event` is available).
 - `if cond { } else if { } else { }` and `for x, i in xs key x.id { }` inside the view.
 - Component use: `UserCard user=u onDelete=(id => remove(id))`; its children go where it puts `slot`.

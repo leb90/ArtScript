@@ -538,3 +538,33 @@ test("codegen: a list's rows come from a template; a row with an if or a compone
   assert.doesNotMatch(withIf, /\$tpl\(/);
   assert.match(withIf, /\$\.\$el\(f\d+, "div", "a-card"\)/);
 });
+
+test("motion: reveal, animate, stagger, delay and hover compile to classes and a reveal call; bad values are errors", async () => {
+  const src = 'page P {\n  column stagger gap=2 {\n    title "Hi" animate=rise delay=200\n    card reveal hover=lift {\n      text "a"\n    }\n    button "Go" primary hover=grow animate=pop duration=300\n  }\n}';
+  const r = compile([{ file: "m.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  assert.match(r.js!, /"a-column a-stagger"/);
+  assert.match(r.js!, /"a-title a-anim a-anim-rise"/);
+  assert.match(r.js!, /"a-card a-reveal a-hover-lift"/);
+  assert.match(r.js!, /\$\.\$reveal\(e\d+\);/);
+  assert.match(r.js!, /cssText \+= ";--a-delay:200ms"/);
+  assert.match(r.js!, /cssText \+= ";--a-dur:300ms"/);
+  const dir = mkdtempSync(join(tmpdir(), "art-motion-"));
+  writeFileSync(join(dir, "app.js"), r.js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    delete (globalThis as any).IntersectionObserver; // a browser without it (or a test): revealed at once
+    document.body.innerHTML = '<div id="app"></div>';
+    const app = await import(pathToFileURL(join(dir, "app.js")).href);
+    app.start(document.getElementById("app"));
+    await new Promise((r) => setTimeout(r, 10));
+    assert.ok(document.documentElement.classList.contains("a-motion"), "motion is on with JavaScript");
+    assert.ok(document.querySelector(".a-card.a-reveal.a-in"), "without an IntersectionObserver the element is in");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+  const [bad] = check(parse('page P {\n  text "x" animate=rize\n}', "t"));
+  assert.equal(bad.type, "TYPE_MISMATCH");
+  assert.deepEqual(bad.fixes, ["animate=rise"]);
+});

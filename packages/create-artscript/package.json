@@ -1,6 +1,6 @@
 {
   "name": "create-artscript",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Create an ArtScript app: npm create artscript@latest my-app",
   "license": "MIT",
   "author": "Leandro Bisceglie",
@@ -21,6 +21,6 @@
     "node": ">=24"
   },
   "dependencies": {
-    "@artscript/core": "^0.2.0"
+    "@artscript/core": "^0.2.10"
   }
 }

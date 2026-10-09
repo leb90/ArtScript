@@ -1,6 +1,6 @@
 // Type checker: small type system, null safety and errors with fixes.
 import type { ComponentDecl, Element, Expr, Field, Loc, ModelDecl, Program, ServerFnDecl, Stmt, TestDecl, TypeRef, UseDecl, ViewNode } from "./ast.ts";
-import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, RESPONSIVE_PROPS, TAGS } from "./elements.ts";
+import { ANIMATIONS, BREAKPOINTS, ELEMENTS, ENUM_PROPS, HOVERS, RESPONSIVE_PROPS, TAGS } from "./elements.ts";
 import { ICONS } from "./icons.ts";
 import { CATALOG, diag, suggest, type Diagnostic } from "./errors.ts";
 import { inspectModule, isLocal, packageName } from "./modules.ts";
@@ -686,6 +686,16 @@ class Checker {
       // ARIA and data attributes (and tabindex) go on any element, with any value (a flag is "true").
       if (/^(aria|data)-/.test(p.name) || p.name === "tabindex") {
         if (p.value) this.infer(p.value, scope);
+        continue;
+      }
+      if (p.name === "animate" || p.name === "hover") {
+        const allowed = p.name === "animate" ? ANIMATIONS : HOVERS;
+        const t = p.value?.kind === "Ident" ? p.value.name : p.value?.kind === "Str" ? p.value.value : "";
+        if (!allowed.includes(t)) this.err("TYPE_MISMATCH", `'${p.name}' is one of ${allowed.join(", ")}`, p.loc, { expr: p.name, expected: allowed.join("|"), actual: t || "an expression", fixes: suggest(t, allowed).map((x) => `${p.name}=${x}`) });
+        continue;
+      }
+      if (p.name === "delay" || p.name === "duration") {
+        if (p.value?.kind !== "Num") this.err("TYPE_MISMATCH", `'${p.name}' is a number of milliseconds`, p.loc, { expr: p.name, expected: "Number literal (ms)", actual: p.value ? "an expression" : "a flag", fixes: [`${p.name}=300`] });
         continue;
       }
       if (p.name === "tag" && spec.props.includes("tag")) {

@@ -457,7 +457,7 @@ class ComponentGen {
         n.children.push("");
         textRefs.set(t, n);
         kept.push(`$.$text(${t}, ${m[2]}`);
-      } else if ((m = /^\$\.\$(text|attr|on|bind)\((e\d+), /.exec(line)) && !/^\$\.\$text\(e\d+\.appendChild/.test(line)) {
+      } else if ((m = /^\$\.\$(text|attr|on|bind|reveal)\((e\d+)[,)]/.exec(line)) && !/^\$\.\$text\(e\d+\.appendChild/.test(line)) {
         const n = nodes.get(m[2]);
         if (!n) return;
         if (m[1] === "text") n.dyn = true;
@@ -511,7 +511,10 @@ class ComponentGen {
     const spec = ELEMENTS[el.tag];
     const isAttr = (name: string) => !!spec.attrs?.includes(name);
     const isFlag = (name: string) => spec.flags.includes(name) && !isAttr(name);
-    const classes = [spec.cls, ...el.props.filter((p) => !p.value && isFlag(p.name)).map((p) => "a-" + p.name)].filter(Boolean).join(" ");
+    // Motion: `animate=rise` and `hover=lift` are classes; `reveal` and `stagger` are flags (classes too).
+    const motion = (name: string) => { const p = el.props.find((q) => q.name === name && q.value); const l = p ? literal(p.value!) : null; return l === null && p?.value?.kind === "Ident" ? p.value.name : l; };
+    const anim = motion("animate"), hover = motion("hover");
+    const classes = [spec.cls, ...el.props.filter((p) => !p.value && isFlag(p.name)).map((p) => "a-" + p.name), anim !== null ? `a-anim a-anim-${anim}` : "", hover !== null ? `a-hover-${hover}` : ""].filter(Boolean).join(" ");
 
     // `label="Email"` wraps the control in a <label> (a group gets a labelled <div> instead).
     const label = el.props.find((p) => p.name === "label")?.value;
@@ -556,6 +559,8 @@ class ComponentGen {
       }
       const val = p.value;
       if (p.name === "label" || p.name === "options" || p.name === "tag" || p.name === "style") continue; // style: below, after the layout props
+      if (p.name === "animate" || p.name === "hover") continue; // classes, above
+      if (p.name === "delay" || p.name === "duration") { this.emit(`${v}.style.cssText += ${JSON.stringify(`;--a-${p.name === "delay" ? "delay" : "dur"}:${literal(val)}ms`)};`); continue; }
       if (p.name === "ref") {
         this.emit(`${printExprName(val)} = ${v};`);
         continue;
@@ -633,6 +638,7 @@ class ComponentGen {
       const [bp, name] = p.name.split(":");
       if (name && bp !== "on" && p.value?.kind === "Num") this.responsive(v, bp, name, p.value.value);
     }
+    if (el.props.some((p) => !p.value && p.name === "reveal")) this.emit(`$.$reveal(${v});`);
     const style = el.props.find((p) => p.name === "style")?.value;
     if (style) this.attr(v, "style", style, scope);
 

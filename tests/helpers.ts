@@ -83,6 +83,9 @@ export class FElement extends FNode {
       if (on) set.add(c); else set.delete(c);
       this.className = [...set].join(" ");
     },
+    add: (...cs: string[]) => { for (const c of cs) this.classList.toggle(c, true); },
+    remove: (...cs: string[]) => { for (const c of cs) this.classList.toggle(c, false); },
+    contains: (c: string) => this.className.split(" ").includes(c),
   };
   constructor(tag: string) {
     super();

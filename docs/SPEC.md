@@ -134,6 +134,7 @@ column gap=4 align=center {
 | `table` > `tr` > `th` `td` | th/td: text | tr: click | | td: muted |
 
 - All take `class style id role aria-* data-*` (`button "Menu" aria-expanded=open`); texts and containers take `tag=` for the HTML element (`title "Plans" tag=h1`, `column tag=nav`; default: `title` is an h2, `text` a span); a field without `label=` is named by its `placeholder`. `style { .box { ... } }` in a component: CSS only for its elements. `.css` files in the project are bundled; theme: `:root { --a-primary: #e11d48; --a-radius: 4px; --a-font: Inter }` (also `--a-bg --a-fg --a-surface --a-border --a-muted --a-danger --a-success`).
+- Motion without code: `reveal` (appears when scrolled into view; siblings one after another), `animate=rise|fade|zoom|slide-left|slide-right|pop` on mount with `delay=200` `duration=600` (ms), `stagger` on a container (its children one after another), `hover=lift|grow|glow`. Reduced-motion settings are respected and prerendered pages show everything without JavaScript. Backgrounds and particles come as components: `art add MeshBackground Particles Marquee Counter`.
 - Conditional flag: `text t.title muted=t.done`.
 - `gap=4` and `pad=4`: 1 unit = 4px. `align=start|center|end|stretch`. `justify=start|center|end|between|around`. `cols=3`.
 - `type=text|number|email|password|checkbox|date`. With `type=checkbox`, `input` binds a Bool.

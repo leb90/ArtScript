@@ -16,7 +16,12 @@ export type ElementSpec = {
 };
 
 const LAYOUT = ["gap", "pad", "align", "justify"];
-const COMMON = ["class", "style", "id", "ref", "role"];
+const COMMON = ["class", "style", "id", "ref", "role", "animate", "delay", "duration", "hover"];
+// Motion without code: `reveal` appears on scroll (siblings one after another), `stagger` delays a
+// container's children one after another. `animate=` and `hover=` take the values below.
+const COMMON_FLAGS = ["reveal", "stagger"];
+export const ANIMATIONS = ["fade", "rise", "zoom", "slide-left", "slide-right", "pop"];
+export const HOVERS = ["lift", "grow", "glow"];
 // `tag=nav`: the HTML element of a text or a container (`title "Plans" tag=h1`, `column tag=main`).
 export const TAGS = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "span", "div", "nav", "header", "footer", "main", "section", "article", "aside", "label", "figure", "figcaption", "blockquote", "strong", "em", "small", "pre", "code", "kbd", "samp", "dl", "dt", "dd", "ul", "ol", "li", "abbr", "time", "mark", "sup", "sub", "address", "details", "summary"];
 export const TAG_ELEMENTS = ["text", "title", "row", "column", "grid", "card"];
@@ -58,7 +63,10 @@ export const ELEMENTS: Record<string, ElementSpec> = {
   canvas: { html: "canvas", content: null, action: null, children: false, props: ["width", "height"], flags: [] },
 };
 
-for (const [name, spec] of Object.entries(ELEMENTS)) spec.props = [...spec.props, ...COMMON, ...(TAG_ELEMENTS.includes(name) ? ["tag"] : [])];
+for (const [name, spec] of Object.entries(ELEMENTS)) {
+  spec.props = [...spec.props, ...COMMON, ...(TAG_ELEMENTS.includes(name) ? ["tag"] : [])];
+  spec.flags = [...spec.flags, ...COMMON_FLAGS];
+}
 
 // Props whose value is a keyword (written without quotes: `align=center`).
 export const ENUM_PROPS: Record<string, string[]> = {
