@@ -1,7 +1,7 @@
 // Type checker: small type system, null safety and errors with fixes.
 import type { ComponentDecl, Element, Expr, Field, Loc, ModelDecl, Program, ServerFnDecl, Stmt, TestDecl, TypeRef, UseDecl, ViewNode } from "./ast.ts";
 import { ANIMATIONS, BREAKPOINTS, ELEMENTS, ENUM_PROPS, HOVERS, RESPONSIVE_PROPS, TAGS } from "./elements.ts";
-import { ICONS } from "./icons.ts";
+import { ICONS, iconName } from "./icons.ts";
 import { CATALOG, diag, suggest, type Diagnostic } from "./errors.ts";
 import { inspectModule, isLocal, packageName } from "./modules.ts";
 import { printDecl, printExpr, printType } from "./printer.ts";
@@ -639,7 +639,9 @@ class Checker {
     }
     const spec = ELEMENTS[el.tag];
     if (!spec) {
-      this.err("UNKNOWN_ELEMENT", `unknown element '${el.tag}'`, el.loc, {
+      // `reveal { ... }`: a flag written as an element.
+      if (el.tag === "reveal" || el.tag === "stagger") this.err("UNKNOWN_ELEMENT", `'${el.tag}' is a flag on an element, not an element`, el.loc, { expr: el.tag, fixes: [`card ${el.tag} { ... }`, `column ${el.tag} { ... }`] });
+      else this.err("UNKNOWN_ELEMENT", `unknown element '${el.tag}'`, el.loc, {
         expr: el.tag, fixes: suggest(el.tag, [...Object.keys(ELEMENTS), ...this.comps.keys()]),
       });
       return;
@@ -647,7 +649,7 @@ class Checker {
     // `icon "check"`: a literal name of the built-in set (only used icons go into the app).
     if (el.tag === "icon" && el.content) {
       if (el.content.kind !== "Str") this.err("TYPE_MISMATCH", "an icon's name must be a literal (only the icons an app names are bundled): to switch icons use `if`", el.content.loc, { expr: printExpr(el.content), expected: '"check"' });
-      else if (!ICONS[el.content.value]) this.err("UNKNOWN_ELEMENT", `unknown icon '${el.content.value}'`, el.content.loc, { expr: el.content.value, expected: "a Lucide icon name", fixes: suggest(el.content.value, Object.keys(ICONS)) });
+      else if (!ICONS[iconName(el.content.value)]) this.err("UNKNOWN_ELEMENT", `unknown icon '${el.content.value}'`, el.content.loc, { expr: el.content.value, expected: "a Lucide icon name", fixes: suggest(iconName(el.content.value), Object.keys(ICONS)) });
     }
     if (el.content) {
       if (spec.content === "bind") {
@@ -822,8 +824,9 @@ class Checker {
       }
       else if (s.kind === "ExprStmt") this.infer(s.expr, scope);
       else if (s.kind === "Let") {
-        // `let tick = () => requestAnimationFrame(tick)`: the arrow may call itself.
-        if (s.init.kind === "Arrow") scope.vars.set(s.name, { kind: "let", ty: ANY });
+        // `let tick = () => requestAnimationFrame(tick)`, `let io = new IntersectionObserver(() => io.disconnect())`:
+        // a callback in the initializer may name the variable.
+        scope.vars.set(s.name, { kind: "let", ty: ANY });
         const ty = this.infer(s.init, scope);
         // `let b = null` is a slot for a value that comes later: anything may be assigned to it.
         scope.vars.set(s.name, { kind: "let", ty: ty.k === "null" ? ANY : ty });

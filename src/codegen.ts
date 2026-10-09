@@ -4,7 +4,7 @@ import { specifier } from "./modules.ts";
 import { printDecl, printType } from "./printer.ts";
 import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
 import { slotNames, twoWayProps } from "./checker.ts";
-import { ICONS } from "./icons.ts";
+import { ICONS, iconName } from "./icons.ts";
 import { scopeCss } from "./css.ts";
 
 // Props each component assigns (bound two-way), for the program being generated.
@@ -673,7 +673,7 @@ class ComponentGen {
     const flags = el.props.filter((p) => !p.value && p.name !== "size" && p.name !== "label" && !/^(aria|data)-/.test(p.name)).map((p) => ` a-${p.name}`).join("");
     const size = el.props.find((p) => p.name === "size")?.value;
     const label = el.props.find((p) => p.name === "label")?.value;
-    this.emit(`const ${v} = $.$icon(${parent}, ${JSON.stringify(ICONS[name] ?? "")}, ${size ? this.expr(size, scope) : 20}, ${label ? this.expr(label, scope) : "null"}, ${JSON.stringify("a-icon" + flags)});`);
+    this.emit(`const ${v} = $.$icon(${parent}, ${JSON.stringify(ICONS[iconName(name)] ?? "")}, ${size ? this.expr(size, scope) : 20}, ${label ? this.expr(label, scope) : "null"}, ${JSON.stringify("a-icon" + flags)});`);
     for (const p of el.props) {
       if (!p.value && /^(aria|data)-/.test(p.name)) this.emit(`${v}.setAttribute(${JSON.stringify(p.name)}, "true");`);
       if (!p.value) continue;

@@ -568,3 +568,11 @@ test("motion: reveal, animate, stagger, delay and hover compile to classes and a
   assert.equal(bad.type, "TYPE_MISMATCH");
   assert.deepEqual(bad.fixes, ["animate=rise"]);
 });
+
+test("icons: names as models write them (PascalCase, snake) resolve; a flag written as an element says so", () => {
+  const r = compile([{ file: "i.art", src: 'page P {\n  row gap=2 {\n    icon "ArrowRight"\n    icon "Zap" primary\n    icon "arrow_right"\n  }\n}' }]);
+  assert.deepEqual(r.diagnostics, []);
+  const [e] = check(parse('page P {\n  reveal {\n    text "x"\n  }\n}', "t"));
+  assert.equal(e.type, "UNKNOWN_ELEMENT");
+  assert.deepEqual(e.fixes, ["card reveal { ... }", "column reveal { ... }"]);
+});

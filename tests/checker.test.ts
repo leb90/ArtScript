@@ -158,3 +158,7 @@ test("an api/server/auth call inside try must be awaited; a page may name a stat
   assert.deepEqual(js.diagnostics, []);
   assert.equal((js.js!.match(/const query =/g) ?? []).length, 1);
 });
+
+test("a let may be named by a callback in its own initializer", () => {
+  assert.deepEqual(types('page P {\n  ref box\n  fn watch() {\n    let io = new IntersectionObserver(es => {\n      if es[0].isIntersecting {\n        io.disconnect()\n      }\n    })\n    io.observe(box)\n  }\n  text "x"\n}'), []);
+});
