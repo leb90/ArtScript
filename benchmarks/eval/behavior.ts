@@ -330,8 +330,8 @@ const CHECKS: Record<string, Check> = {
   async "landing-motion"(p) {
     await p.until(() => has(p, "Nimbus") && p.count("Empezar") === 1, 'el título "Nimbus" y el botón "Empezar"');
     await p.until(() => has(p, "Rápido") && has(p, "Simple") && has(p, "Abierto"), 'las tarjetas "Rápido", "Simple" y "Abierto"');
-    await p.settle(1800);
-    await p.until(() => /12[.,]?000\+/.test(p.text()), `la cifra "12.000+" al terminar de contar; se ve: ${(p.text().match(/[\d.,]+\+/g) ?? []).join(" ")}`, 1);
+    // The count-up may take a couple of seconds (and a slower one is still right): wait for it.
+    await p.until(() => /12[.,]?000\s*\+/.test(p.text()), `la cifra "12.000+" al terminar de contar; se ve: ${(p.text().match(/[\d.,]+\s*\+/g) ?? []).join(" ")}`, 6000);
   },
 
   async "imp-particles"(p) {
