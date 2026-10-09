@@ -11,6 +11,7 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 - `@import` and `@charset` in a project's CSS are lifted to the top of `app.css`, where CSS requires them (a Google Fonts import was silently ignored).
 - Checker: typed arrays (`Uint8Array`...) and other browser globals are known; `tabindex` is accepted on any element; a `let` arrow may call itself (`let tick = () => requestAnimationFrame(tick)`); `tag=` takes `pre`, `code`, `kbd`, `dl`, `dt`, `dd`, `ul`, `ol`, `li`, `details`, `summary` and a few more.
 - New projects have `@happy-dom/global-registrator` in their devDependencies, so `art test` works out of the box.
+- `break` and `continue` in loops (`break` outside one is the error BREAK_OUTSIDE_LOOP), and the bitwise operators `& | ^ ~ << >> >>>` with their compound assignments. Number literals keep the form they were written in (`0xff`, `1e3`).
 - The spec says that `fn`, `let` and `ref` compile to plain JavaScript and that a `let` member is a `computed`.
 - New projects recommend the ArtScript extension for VS Code and Cursor (`.vscode/extensions.json`): the editor offers to install it when the project is opened. The extension (0.2.7, `editors/vscode`) now has file icons for `.art`, snippets, and highlighting for every element.
 

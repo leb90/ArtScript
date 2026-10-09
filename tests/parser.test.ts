@@ -6,6 +6,8 @@ import { lex } from "../src/lexer.ts";
 import { parse, parseExpression } from "../src/parser.ts";
 import { printProgram } from "../src/printer.ts";
 import { printExpr } from "../src/printer.ts";
+import { compile } from "../src/compile.ts";
+import { check } from "../src/checker.ts";
 
 const noLoc = (x: unknown) => JSON.parse(JSON.stringify(x, (k, v) => (k === "loc" ? undefined : v)));
 
@@ -161,4 +163,36 @@ test("fmt: long objects, arrays, arrow blocks and calls break over lines; short 
 }
 `;
   assert.equal(printProgram(parse(src, "f")), src);
+});
+
+test("break, continue and bitwise operators: parsed, canonical, compiled; break outside a loop is an error", () => {
+  const src = `page P {
+  state n = 0
+  fn scan(xs) {
+    let mask = 0
+    for x in xs {
+      if x < 0 {
+        continue
+      }
+      if x > 100 {
+        break
+      }
+      mask |= 1 << x
+    }
+    while (mask & 1) == 0 && mask != 0 {
+      mask >>>= 1
+    }
+    return ~mask ^ 0xff
+  }
+
+  text n
+}
+`;
+  assert.equal(printProgram(parse(src, "f")), src);
+  const r = compile([{ file: "a.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  assert.match(r.js!, /continue;[\s\S]*break;[\s\S]*mask \|= \(1 << x\)|mask \|= 1 << x/);
+  const [e] = check(parse('page P {\n  fn f() {\n    break\n  }\n  text "x"\n}', "t"));
+  assert.equal(e.type, "BREAK_OUTSIDE_LOOP");
+  assert.deepEqual(e.fixes, ["remove `break`", "use `return` to leave a fn"]);
 });

@@ -2,7 +2,7 @@
 import type { Commented, Decl, Element, Expr, Field, Program, Stmt, TypeRef, ViewNode } from "./ast.ts";
 
 const PREC: Record<string, number> = {
-  "??": 1, "||": 2, "&&": 3, "==": 4, "!=": 4, "<": 5, ">": 5, "<=": 5, ">=": 5, "+": 6, "-": 6, "*": 7, "/": 7, "%": 7, "**": 8,
+  "??": 1, "||": 2, "&&": 3, "|": 3.2, "^": 3.4, "&": 3.6, "==": 4, "!=": 4, "<": 5, ">": 5, "<=": 5, ">=": 5, "<<": 5.5, ">>": 5.5, ">>>": 5.5, "+": 6, "-": 6, "*": 7, "/": 7, "%": 7, "**": 8,
 };
 
 function prec(e: Expr): number {
@@ -27,7 +27,7 @@ export function printType(t: TypeRef): string {
 
 export function printExpr(e: Expr): string {
   switch (e.kind) {
-    case "Num": return String(e.value);
+    case "Num": return e.raw ?? String(e.value);
     case "Str": return JSON.stringify(e.value);
     case "Template":
       return "`" + e.quasis.map((q, i) => q.replace(/[`\\]|\$(?=\{)/g, "\\$&") + (i < e.exprs.length ? "${" + printExpr(e.exprs[i]) + "}" : "")).join("") + "`";
@@ -77,6 +77,8 @@ export function printStmt(s: Stmt): string {
     case "Return": return s.value ? `return ${printExpr(s.value)}` : "return";
     case "Try": return `try ${printBlockInline(s.body)}${s.rethrow ? "" : ` catch${s.param ? ` (${s.param})` : ""} ${printBlockInline(s.handler)}`}${s.finally ? ` finally ${printBlockInline(s.finally)}` : ""}`;
     case "While": return `while ${printExpr(s.cond)} ${printBlockInline(s.body)}`;
+    case "Break": return "break";
+    case "Continue": return "continue";
     case "Cleanup": return `cleanup ${printBlockInline(s.body)}`;
     case "Loop": return `for (let ${s.name} = ${printExpr(s.init)}; ${printExpr(s.cond)}; ${printExpr(s.update)}) ${printBlockInline(s.body)}`;
     case "For": return `for ${s.item}${s.index ? `, ${s.index}` : ""} in ${printExpr(s.list)} ${printBlockInline(s.body)}`;

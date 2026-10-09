@@ -9,7 +9,7 @@
       "include": "#strings"
     },
     {
-      "match": "\\b(model|api|auth|use|server|job|fn|every|component|page|layout|state|computed|data|ref|mount|effect|cleanup|live|if|else|for|in|key|let|const|return|try|catch|finally|while|await|as|login|private|admin|readonly|requires|shared|test|style|slot|meta|new|throw|typeof|instanceof)\\b",
+      "match": "\\b(model|api|auth|use|server|job|fn|every|component|page|layout|state|computed|data|ref|mount|effect|cleanup|live|if|else|for|in|key|let|const|return|try|catch|finally|while|break|continue|await|as|login|private|admin|readonly|requires|shared|test|style|slot|meta|new|throw|typeof|instanceof)\\b",
       "name": "keyword.control.artscript"
     },
     {

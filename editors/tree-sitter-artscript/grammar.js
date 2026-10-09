@@ -7,8 +7,8 @@
 const NO_CONTENT = ["spinner", "divider", "row", "column", "grid", "card", "form", "list", "table", "tr", "canvas", "meta"];
 
 const PREC = {
-  assign: 1, arrow: 1, ternary: 2, nullish: 3, or: 4, and: 5, equality: 6, compare: 7, add: 8, mul: 9, exp: 10,
-  unary: 11, postfix: 12, call: 13,
+  assign: 1, arrow: 1, ternary: 2, nullish: 3, or: 4, and: 5, bitor: 6, bitxor: 7, bitand: 8, equality: 9, compare: 10, shift: 11, add: 12, mul: 13, exp: 14,
+  unary: 15, postfix: 16, call: 17,
 };
 
 const propertyName = ($) => alias($.identifier, $.property_identifier);
@@ -148,7 +148,7 @@ module.exports = grammar({
     block: ($) => prec.dynamic(1, seq("{", repeat($._statement), "}")),
 
     _statement: ($) => choice(
-      seq(choice($.let_statement, $.return_statement, $.expression_statement), $._terminator),
+      seq(choice($.let_statement, $.return_statement, $.break_statement, $.continue_statement, $.expression_statement), $._terminator),
       $.if_statement,
       $.for_statement,
       $.loop_statement,
@@ -158,6 +158,8 @@ module.exports = grammar({
     ),
     let_statement: ($) => seq(choice("let", "const"), field("name", $.identifier), "=", field("value", $._expression)),
     return_statement: ($) => prec.right(seq("return", optional($._expression))),
+    break_statement: ($) => "break",
+    continue_statement: ($) => "continue",
     expression_statement: ($) => $._expression,
     if_statement: ($) => prec.right(seq(
       "if", field("condition", $._expression), field("then", choice($.block, $._statement)),
@@ -191,7 +193,7 @@ module.exports = grammar({
     ),
 
     assignment: ($) => prec.right(PREC.assign, seq(
-      field("left", $._value), field("operator", choice("=", "+=", "-=", "*=", "/=", "%=", "**=", "??=")), field("right", $._expression),
+      field("left", $._value), field("operator", choice("=", "+=", "-=", "*=", "/=", "%=", "**=", "??=", "&=", "|=", "^=", "<<=", ">>=", ">>>=")), field("right", $._expression),
     )),
 
     arrow_function: ($) => prec.right(PREC.arrow, seq(
@@ -207,7 +209,8 @@ module.exports = grammar({
 
     binary: ($) => {
       const table = [
-        ["??", PREC.nullish], ["||", PREC.or], ["&&", PREC.and],
+        ["??", PREC.nullish], ["||", PREC.or], ["&&", PREC.and], ["|", PREC.bitor], ["^", PREC.bitxor], ["&", PREC.bitand],
+        ["<<", PREC.shift], [">>", PREC.shift], [">>>", PREC.shift],
         ["==", PREC.equality], ["!=", PREC.equality], ["===", PREC.equality], ["!==", PREC.equality],
         ["<", PREC.compare], [">", PREC.compare], ["<=", PREC.compare], [">=", PREC.compare],
         ["+", PREC.add], ["-", PREC.add], ["*", PREC.mul], ["/", PREC.mul], ["%", PREC.mul],
@@ -218,7 +221,7 @@ module.exports = grammar({
       );
     },
 
-    unary: ($) => prec(PREC.unary, seq(field("operator", choice("!", "-", "+", "typeof", "await", "new")), field("argument", $._value))),
+    unary: ($) => prec(PREC.unary, seq(field("operator", choice("!", "-", "+", "~", "typeof", "await", "new")), field("argument", $._value))),
     update: ($) => choice(
       prec(PREC.unary, seq(field("operator", choice("++", "--")), field("argument", $._value))),
       prec(PREC.postfix, seq(field("argument", $._value), field("operator", choice("++", "--")))),

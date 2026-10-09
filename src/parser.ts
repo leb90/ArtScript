@@ -6,12 +6,12 @@ import { CompileError, diag, type Diagnostic } from "./errors.ts";
 import { lex, type Comment, type Token } from "./lexer.ts";
 
 const BINARY_PREC: Record<string, number> = {
-  "??": 1, "||": 2, "&&": 3,
+  "??": 1, "||": 2, "&&": 3, "|": 3.2, "^": 3.4, "&": 3.6,
   "==": 4, "!=": 4, "===": 4, "!==": 4,
-  "<": 5, ">": 5, "<=": 5, ">=": 5,
+  "<": 5, ">": 5, "<=": 5, ">=": 5, "<<": 5.5, ">>": 5.5, ">>>": 5.5,
   "+": 6, "-": 6, "*": 7, "/": 7, "%": 7, "**": 8,
 };
-const ASSIGN_OPS = new Set(["=", "+=", "-=", "*=", "/=", "%=", "**=", "??="]);
+const ASSIGN_OPS = new Set(["=", "+=", "-=", "*=", "/=", "%=", "**=", "??=", "&=", "|=", "^=", "<<=", ">>=", ">>>="]);
 // Equivalent JS forms that are accepted and normalized to one canonical form.
 const CANONICAL: Record<string, string> = { "===": "==", "!==": "!=" };
 
@@ -707,6 +707,10 @@ class Parser {
       this.next();
       return { kind: "While", cond: this.expr(), body: this.block(), loc: t.loc };
     }
+    if ((this.is("break") || this.is("continue")) && (this.peek().t === "nl" || this.is("}", this.peek()) || this.is(";", this.peek()))) {
+      this.next();
+      return { kind: t.v === "break" ? "Break" : "Continue", loc: t.loc };
+    }
     if (this.is("cleanup") && this.is("{", this.peek())) {
       this.next();
       return { kind: "Cleanup", body: this.block(), loc: t.loc };
@@ -785,7 +789,7 @@ class Parser {
 
   unary(): Expr {
     const t = this.tok;
-    if (t.t === "op" && (t.v === "!" || t.v === "-" || t.v === "+")) {
+    if (t.t === "op" && (t.v === "!" || t.v === "-" || t.v === "+" || t.v === "~")) {
       this.next();
       return { kind: "Unary", op: t.v, arg: this.unary(), loc: t.loc };
     }
@@ -847,7 +851,7 @@ class Parser {
   primary(): Expr {
     const t = this.tok;
     const loc: Loc = t.loc;
-    if (t.t === "num") { this.next(); return { kind: "Num", value: Number(t.v), loc }; }
+    if (t.t === "num") { this.next(); return { kind: "Num", value: Number(t.v), ...(String(Number(t.v)) === t.v ? {} : { raw: t.v }), loc }; }
     if (t.t === "str") { this.next(); return { kind: "Str", value: t.v, loc }; }
     if (t.t === "regex") { this.next(); return { kind: "Regex", source: t.v, loc }; }
     if (t.t === "tpl") {

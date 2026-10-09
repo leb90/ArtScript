@@ -122,6 +122,8 @@ export type Stmt =
   | { kind: "Return"; value: Expr | null; loc: Loc }
   | { kind: "Try"; body: Stmt[]; param: string | null; handler: Stmt[]; finally?: Stmt[]; rethrow?: boolean; loc: Loc }
   | { kind: "While"; cond: Expr; body: Stmt[]; loc: Loc }
+  | { kind: "Break"; loc: Loc }
+  | { kind: "Continue"; loc: Loc }
   | { kind: "Cleanup"; body: Stmt[]; loc: Loc }
   // `for x in xs { }` / `for x, i in xs { }`: runs the body for each item, in order.
   | { kind: "For"; item: string; index: string | null; list: Expr; body: Stmt[]; loc: Loc }
@@ -131,7 +133,7 @@ export type Stmt =
 // ---------- Expressions (a JavaScript subset) ----------
 
 export type Expr =
-  | { kind: "Num"; value: number; loc: Loc }
+  | { kind: "Num"; value: number; raw?: string; loc: Loc } // raw: as written when not plain decimal (0xff, 1e3)
   | { kind: "Str"; value: string; loc: Loc }
   | { kind: "Template"; quasis: string[]; exprs: Expr[]; loc: Loc }
   | { kind: "Bool"; value: boolean; loc: Loc }

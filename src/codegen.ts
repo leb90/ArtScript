@@ -702,6 +702,8 @@ class ComponentGen {
         // `let found = cart.find(...)`: mutating `found` must still notify `cart`.
         scope.vars.set(s.name, { kind: "let", sig: this.signalOf(s.init, scope) });
       } else if (s.kind === "Return") this.emit(s.value ? `return ${this.expr(s.value, scope)};` : "return;");
+      else if (s.kind === "Break") this.emit("break;");
+      else if (s.kind === "Continue") this.emit("continue;");
       else if (s.kind === "Loop") {
         const body = scope.child();
         body.vars.set(s.name, { kind: "let" });
@@ -770,7 +772,7 @@ class ComponentGen {
   expr(e: Expr, scope: Scope): string {
     const x = (y: Expr) => this.expr(y, scope);
     switch (e.kind) {
-      case "Num": return String(e.value);
+      case "Num": return e.raw ?? String(e.value);
       case "Str": return JSON.stringify(e.value);
       case "Template": return "`" + e.quasis.map((q, i) => q.replace(/[`\\]|\$(?=\{)/g, "\\$&") + (i < e.exprs.length ? "${" + x(e.exprs[i]) + "}" : "")).join("") + "`";
       case "Bool": return String(e.value);
@@ -910,6 +912,7 @@ function hasAwait(stmts: Stmt[]): boolean {
     if (s.kind === "ExprStmt") return exprHasAwait(s.expr);
     if (s.kind === "Let") return exprHasAwait(s.init);
     if (s.kind === "Return") return s.value !== null && exprHasAwait(s.value);
+    if (s.kind === "Break" || s.kind === "Continue") return false;
     if (s.kind === "Try") return hasAwait(s.body) || hasAwait(s.handler) || hasAwait(s.finally ?? []);
     if (s.kind === "While") return exprHasAwait(s.cond) || hasAwait(s.body);
     if (s.kind === "Cleanup") return false;

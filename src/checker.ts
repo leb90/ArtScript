@@ -802,9 +802,13 @@ class Checker {
   }
 
   // ---------- statements ----------
-  stmts(list: Stmt[], scope: Scope) {
+  // `inLoop`: a `break` or `continue` here has a loop to act on (an arrow inside a loop has none).
+  stmts(list: Stmt[], scope: Scope, inLoop = false) {
     for (const s of list) {
-      if (s.kind === "ExprStmt") this.infer(s.expr, scope);
+      if (s.kind === "Break" || s.kind === "Continue") {
+        if (!inLoop) this.err("BREAK_OUTSIDE_LOOP", `\`${s.kind.toLowerCase()}\` only works inside a \`for\` or \`while\` loop`, s.loc, { expr: s.kind.toLowerCase(), fixes: [`remove \`${s.kind.toLowerCase()}\``, "use `return` to leave a fn"] });
+      }
+      else if (s.kind === "ExprStmt") this.infer(s.expr, scope);
       else if (s.kind === "Let") {
         // `let tick = () => requestAnimationFrame(tick)`: the arrow may call itself.
         if (s.init.kind === "Arrow") scope.vars.set(s.name, { kind: "let", ty: ANY });
@@ -815,21 +819,21 @@ class Checker {
         this.returns?.push(t);
       }
       else if (s.kind === "Try") {
-        this.stmts(s.body, new Scope(scope));
+        this.stmts(s.body, new Scope(scope), inLoop);
         const h = new Scope(scope);
         // The caught error: `e.message` always exists; api errors also carry `status` and `details`.
         if (s.param) h.vars.set(s.param, { kind: "let", ty: { k: "obj", fields: { message: STR, status: NUM, details: ANY } } });
-        this.stmts(s.handler, h);
-        if (s.finally) this.stmts(s.finally, new Scope(scope));
+        this.stmts(s.handler, h, inLoop);
+        if (s.finally) this.stmts(s.finally, new Scope(scope), inLoop);
       } else if (s.kind === "While") {
         this.infer(s.cond, scope);
-        this.stmts(s.body, new Scope(scope));
+        this.stmts(s.body, new Scope(scope), true);
       } else if (s.kind === "Loop") {
         const body = new Scope(scope);
         body.vars.set(s.name, { kind: "let", ty: this.infer(s.init, scope) });
         this.infer(s.cond, body);
         this.infer(s.update, body);
-        this.stmts(s.body, body);
+        this.stmts(s.body, body, true);
       } else if (s.kind === "For") {
         let lt = this.infer(s.list, scope);
         if (lt.k === "opt") lt = lt.of;
@@ -837,14 +841,14 @@ class Checker {
         const body = new Scope(scope);
         body.vars.set(s.item, { kind: "let", ty: lt.k === "list" ? lt.of : ANY });
         if (s.index) body.vars.set(s.index, { kind: "let", ty: NUM });
-        this.stmts(s.body, body);
+        this.stmts(s.body, body, true);
       } else if (s.kind === "Cleanup") {
         if (!this.inHook) this.err("BAD_CLEANUP", "`cleanup` only goes inside `mount { }` or `effect { }`", s.loc, { expr: "cleanup", fixes: ["mount {\n  ...\n  cleanup { ... }\n}"] });
         this.stmts(s.body, new Scope(scope));
       } else {
         this.infer(s.cond, scope);
-        this.stmts(s.then, this.narrow(s.cond, true, scope));
-        if (s.else) this.stmts(s.else, this.narrow(s.cond, false, scope));
+        this.stmts(s.then, this.narrow(s.cond, true, scope), inLoop);
+        if (s.else) this.stmts(s.else, this.narrow(s.cond, false, scope), inLoop);
         // Early exit (`if !x { return }`): the rest of the block runs only when the condition was false.
         const last = s.then[s.then.length - 1];
         // `fail(...)` (server fns) never returns either.
@@ -1315,7 +1319,7 @@ class Checker {
         if (l.k === "str" || r.k === "str") return STR;
         if (l.k === "num" && r.k === "num") return NUM;
         return ANY;
-      case "-": case "*": case "/": case "%": case "**":
+      case "-": case "*": case "/": case "%": case "**": case "&": case "|": case "^": case "<<": case ">>": case ">>>":
         for (const [side, t] of [[e.left, l], [e.right, r]] as const) {
           if (t.k !== "num" && t.k !== "any") this.err("TYPE_MISMATCH", `'${e.op}' needs numbers`, side.loc, { expr: printExpr(side), expected: "Number", actual: show(t) });
         }
