@@ -1,5 +1,5 @@
 // The charts are drawn from the results table the eval writes into the README.
-use "./lib/content.ts" { RESULTS, barWidth, resultsHtml, methodologyHtml }
+use "./lib/content.ts" { RESULTS, IMPERATIVE, barWidth, resultsHtml, methodologyHtml }
 
 page Benchmarks "/benchmarks" {
   state detail = false
@@ -36,6 +36,29 @@ page Benchmarks "/benchmarks" {
     card class="callout" gap=2 {
       text "Read the numbers honestly" bold
       text "Two or three runs per task is an early signal, not a definitive benchmark. With the smallest model, Haiku, ArtScript solved fewer of the new-app tasks than React; on modifications of large projects with focused context it is close to even. The raw data of every run is in the repository, and anyone can reproduce it with npm run eval."
+    }
+    card class="callout" gap=3 {
+      text "Where it doesn't save: imperative code" bold
+      text "One task where almost all the code is a physics loop on a canvas (gravity, walls, elastic collisions, drawing): there ArtScript is JavaScript with another syntax for statements, and the question is only whether it costs the same. Measured apart from the tables above, two runs per cell, USD per solved task." class="body"
+      table {
+        tr {
+          th "Model"
+          for c in IMPERATIVE[0].cells {
+            th c.stack
+          }
+          th "vs React"
+        }
+        for m in IMPERATIVE key m.model {
+          tr {
+            td m.model
+            for c in m.cells {
+              td c.usd bold=c.ours
+            }
+            td m.vsReact bold
+          }
+        }
+      }
+      text "With Sonnet the output is still shorter and it costs less; with Opus and Haiku the spec in the prompt and the retries cost more than the shorter code saves. The recommendation: heavy imperative code goes in a .ts file imported with use, where it costs the same as in any stack, and ArtScript does the rest of the app." class="body"
     }
     card class="callout" gap=2 {
       text "Runtime speed" bold

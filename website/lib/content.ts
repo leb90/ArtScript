@@ -171,6 +171,18 @@ export const RESULTS: ModelResult[] = evalSection.split("\n### ").slice(1)
 
 export const barWidth = (rows: StackResult[], usd: number) => `${Math.max(4, (usd / Math.max(...rows.map((r) => r.usd))) * 100).toFixed(1)}%`;
 export const resultsHtml = markdown(evalSection.replace(/^### Methodology[\s\S]*$/m, ""));
+
+const PLAIN_STACKS: Record<string, string> = { artscript: "ArtScript", react: "React + TS", svelte: "Svelte 5", vue: "Vue 3", solid: "SolidJS" };
+// The imperative task's table (a canvas with physics), reported apart in the README: one row per model.
+export type ImperativeRow = { model: string; cells: { stack: string; usd: string; ours: boolean }[]; vsReact: string };
+export const IMPERATIVE: ImperativeRow[] = (evalSection.split("\n### Imperative code")[1] ?? "").split("\n### ")[0].split("\n")
+  .filter((l) => l.startsWith("| claude-"))
+  .map((l) => {
+    const c = l.slice(1, -1).split("|").map((x) => x.trim().replace(/\*\*/g, ""));
+    const stacks = ["artscript", "react", "svelte", "vue", "solid"];
+    return { model: MODEL_NAMES[c[0]] ?? c[0], cells: stacks.map((s, i) => ({ stack: PLAIN_STACKS[s], usd: c[i + 1], ours: s === "artscript" })), vsReact: c[6] };
+  });
+
 export const methodologyHtml = markdown(evalSection.split("### Methodology and limitations")[1] ?? "");
 
 // ---------- the same full-stack app in every stack (the eval's fs-users reference answers) ----------
