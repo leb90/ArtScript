@@ -85,7 +85,7 @@ Deploy `dist/` with its Dockerfile, add a persistent volume mounted at `/data`, 
 
 ## Behind a proxy (HTTPS)
 
-Terminate HTTPS at Caddy, nginx or the platform and forward to `PORT`. Pass `X-Forwarded-Proto: https` and `X-Forwarded-For` so the server sends HSTS, builds correct links in emails and OAuth, and rate-limits by the real address.
+Terminate HTTPS at Caddy, nginx or the platform and forward to `PORT`. Pass `X-Forwarded-Proto: https` and `X-Forwarded-For` so the server sends HSTS and rate-limits by the real address, and set `ART_ORIGIN=https://app.example.com` for the links in emails.
 
 ```
 app.example.com {
@@ -104,6 +104,7 @@ app.example.com {
 | `ART_CSP` | Replaces the Content-Security-Policy, or `off`. |
 | `ART_MAX_JSON`, `ART_MAX_UPLOAD` | Body limits in bytes (1 MB, 10 MB). |
 | `ART_RATE_LIMIT` | Api requests per address per minute (600; 0 = off). |
+| `ART_ORIGIN` | The app's public address (`https://app.example.com`), for the links in verification and password reset emails and the Google/GitHub callback. Required for those emails outside localhost. |
 | `ART_RESEND_KEY`, `ART_EMAIL_FROM` | Send emails through Resend. |
 | `ART_EMAIL_WEBHOOK` | Send emails as a JSON POST to this URL. |
 | `ART_S3_BUCKET`, `ART_S3_KEY`, `ART_S3_SECRET`, `ART_S3_REGION`, `ART_S3_ENDPOINT` | Keep uploads in S3 or a compatible store (Cloudflare R2, MinIO, ...) instead of the data directory. |

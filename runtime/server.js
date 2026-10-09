@@ -593,11 +593,25 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
   const failedLogins = new Map(); // "email|address" → times of failed attempts (also reset requests)
   // Email verification is on when the accounts model has `verified: Bool`.
   const verifies = !!users && schema.models[users.model]?.verified === "Bool";
+  // The app's public address for links in emails: ART_ORIGIN (https://app.example.com). The Origin
+  // and Host headers come from whoever sends the request, so a reset link built from them could
+  // carry the token to another site; without ART_ORIGIN only a local address is trusted.
+  const ORIGIN = process.env.ART_ORIGIN && URL.parse(process.env.ART_ORIGIN)?.origin;
+  if (process.env.ART_ORIGIN && (!ORIGIN || ORIGIN === "null")) throw new Error(`ART_ORIGIN must be an address like https://app.example.com, not '${process.env.ART_ORIGIN}'`);
+  let warnedOrigin = false;
+  const linkOrigin = (req) => {
+    if (ORIGIN) return ORIGIN;
+    const host = req.headers.host ?? "";
+    if (/^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(host)) return `http://${host}`;
+    if (!warnedOrigin) { warnedOrigin = true; console.error("set ART_ORIGIN (e.g. https://app.example.com) to send verification and password reset emails"); }
+    return null;
+  };
   // Emails a one-time link (`<origin><path>?token=...`, valid 1 hour) to the user.
   const mailToken = async (req, user, kind, subject, path, action) => {
+    const origin = linkOrigin(req);
+    if (!origin) return;
     const token = randomBytes(32).toString("hex");
     sql.prepare("INSERT INTO _tokens VALUES (?, ?, ?, ?)").run(sha256(token), kind, String(user[users.key]), Date.now() + 3_600_000);
-    const origin = req.headers.origin ?? `${req.headers["x-forwarded-proto"] ?? "http"}://${req.headers.host}`;
     await sendEmail(dataDir, { to: user.email, subject, text: `${action}: ${origin}${path}?token=${token}\n\nThe link works for one hour. If you didn't ask for it, ignore this email.` });
   };
 
@@ -680,7 +694,7 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
         if (!users || !(schema.oauth ?? []).includes(o[1])) throw new HttpError(404, "NOT_FOUND", `sign-in with ${o[1]} is not enabled`);
         const p = providerConf(o[1]);
         if (!p.id || !p.secret) throw new HttpError(500, "OAUTH_CONFIG", `set ART_${o[1].toUpperCase()}_ID and ART_${o[1].toUpperCase()}_SECRET`);
-        const origin = `${req.headers["x-forwarded-proto"] ?? "http"}://${req.headers.host}`;
+        const origin = ORIGIN || `${req.headers["x-forwarded-proto"] ?? "http"}://${req.headers.host}`;
         const redirect = `${origin}/api/_auth/oauth/${o[1]}/callback`;
         const stateCookie = "art_oauth";
         if (!o[2]) {

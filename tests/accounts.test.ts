@@ -1,7 +1,7 @@
 // Accounts: email verification, password reset and email() in server fns (dev outbox).
 import assert from "node:assert/strict";
 import { existsSync, mkdtempSync, readFileSync } from "node:fs";
-import { createServer } from "node:http";
+import { createServer, request as httpRequest } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -27,12 +27,16 @@ test("accounts: verification and reset links by email, one use, sessions ended o
   const dir = mkdtempSync(join(tmpdir(), "art-acc-"));
   const r = compile([{ file: "a.art", src: SRC }]);
   const { fns } = await import(`data:text/javascript,${encodeURIComponent(r.server!.fns)}`);
+  process.env.ART_ORIGIN = "app.example";
+  assert.throws(() => createApi(r.server!, dir, fns), /ART_ORIGIN must be an address like https:\/\/app\.example\.com/);
+  process.env.ART_ORIGIN = "https://app.example/some/path";
   const api = createApi(r.server!, dir, fns);
+  delete process.env.ART_ORIGIN;
   const server = createServer(async (req, res) => { if (!(await api(req, res))) res.writeHead(404).end(); });
   servers.push(server);
   await new Promise<void>((ok) => server.listen(0, ok));
   const base = `http://localhost:${(server.address() as AddressInfo).port}/api`;
-  const post = (path: string, body: unknown, cookie = "") => fetch(`${base}/${path}`, { method: "POST", headers: { "content-type": "application/json", cookie, origin: "https://app.example" }, body: JSON.stringify(body) });
+  const post = (path: string, body: unknown, cookie = "") => fetch(`${base}/${path}`, { method: "POST", headers: { "content-type": "application/json", cookie }, body: JSON.stringify(body) });
   const outbox = () => readFileSync(join(dir, "outbox.jsonl"), "utf8").trim().split("\n").map((l) => JSON.parse(l));
   const tokenIn = (text: string, path: string) => new RegExp(`https://app\\.example${path}\\?token=(\\w+)`).exec(text)![1];
 
@@ -55,8 +59,39 @@ test("accounts: verification and reset links by email, one use, sessions ended o
   assert.equal(await (await fetch(`${base}/_auth/me`, { headers: { cookie } })).text(), "null", "every session ended");
   assert.equal((await post("_auth/login", { email: "a@x.co", password: "abcdefgh" })).status, 200);
 
+  // The link's address is ART_ORIGIN, whatever Origin and Host the request claims.
+  await fetch(`${base}/_auth/reset-request`, { method: "POST", headers: { "content-type": "application/json", origin: "https://evil.example", host: "evil.example", "x-forwarded-proto": "https" }, body: JSON.stringify({ email: "a@x.co" }) });
+  assert.match(outbox()[2].text, /^Set a new password: https:\/\/app\.example\/reset-password\?token=\w+\n/);
+  assert.doesNotMatch(outbox()[2].text, /evil/);
+
   // email() in a server fn.
   await post("_fn/invite", { args: ["b@x.co"] });
-  assert.deepEqual([outbox()[2].to, outbox()[2].subject], ["b@x.co", "Join us"]);
+  assert.deepEqual([outbox()[3].to, outbox()[3].subject], ["b@x.co", "Join us"]);
   assert.ok(existsSync(join(dir, "outbox.jsonl")));
+});
+
+test("accounts: without ART_ORIGIN, links go only to a local address", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "art-acc-"));
+  const api = createApi(compile([{ file: "a.art", src: SRC }]).server!, dir, {});
+  const server = createServer(async (req, res) => { if (!(await api(req, res))) res.writeHead(404).end(); });
+  servers.push(server);
+  await new Promise<void>((ok) => server.listen(0, ok));
+  const { port } = server.address() as AddressInfo;
+  // node:http, since fetch always sends the real Host.
+  const request = (host: string, email: string) => new Promise<number>((ok, fail) => {
+    const req = httpRequest({ port, method: "POST", path: "/api/_auth/signup", headers: { "content-type": "application/json", host, origin: "https://evil.example" } }, (res) => { res.resume(); ok(res.statusCode!); });
+    req.on("error", fail).end(JSON.stringify({ email, password: "12345678" }));
+  });
+  const outbox = () => readFileSync(join(dir, "outbox.jsonl"), "utf8").trim().split("\n").map((l) => JSON.parse(l));
+
+  assert.equal(await request(`localhost:${port}`, "a@x.co"), 201);
+  assert.match(outbox()[0].text, new RegExp(`http://localhost:${port}/verify-email\\?token=`));
+  const error = console.error;
+  console.error = () => {};
+  try {
+    assert.equal(await request("evil.example", "b@x.co"), 201, "the account is created, the link isn't sent");
+  } finally {
+    console.error = error;
+  }
+  assert.equal(outbox().length, 1);
 });
