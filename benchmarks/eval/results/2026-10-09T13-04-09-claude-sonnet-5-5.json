@@ -1,0 +1,337 @@
+{
+  "model": "claude-sonnet-5-5",
+  "effort": "medium",
+  "runs": 2,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 2,
+    "out": 10,
+    "cacheRead": 0.2,
+    "cacheWrite": 2.5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "landing-motion",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 3,
+      "usage": {
+        "input": 6341,
+        "output": 4488,
+        "cacheRead": 10332,
+        "cacheWrite": 5166
+      },
+      "usd": 0.0725434,
+      "codeTokens": 1092,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Home \"/\" {\n  meta title=\"Nimbus\" description=\"Nimbus: rápido, simple y abierto.\"\n\n  state n = 0\n  ref statBox\n  ref raf\n  computed shown = String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g, \".\")\n\n  fn run() {\n    let start = performance.now()\n    let step = t => {\n      let p = Math.min((t - start) / 2000, 1)\n      let eased = 1 - Math.pow(1 - p, 3)\n      n = Math.round(12000 * eased)\n      if (p < 1) { raf = requestAnimationFrame(step) }\n    }\n    raf = requestAnimationFrame(step)\n  }\n\n  mount {\n    let reduce = window.matchMedia(\"(prefers-reduced-motion: reduce)\").matches\n    if reduce {\n      n = 12000\n      return\n    }\n    let started = false\n    let io = new IntersectionObserver(entries => {\n      if (!started && entries[0].isIntersecting) {\n        started = true\n        run()\n        io.disconnect()\n      }\n    }, { threshold: 0.4 })\n    io.observe(statBox)\n    cleanup {\n      io.disconnect()\n      if (raf) { cancelAnimationFrame(raf) }\n    }\n  }\n\n  column gap=12 pad=4 {\n    column class=\"hero\" align=center justify=center gap=4 {\n      title \"Nimbus\" tag=h1 large animate=rise\n      text \"La nube que se siente liviana.\" large animate=rise delay=150\n      button \"Empezar\" primary hover=grow animate=rise delay=300\n    }\n\n    grid cols=1 md:cols=3 gap=4 {\n      card reveal pad=6 gap=2 align=center {\n        title \"Rápido\"\n        text \"Respuestas en milisegundos, siempre.\"\n      }\n      card reveal pad=6 gap=2 align=center {\n        title \"Simple\"\n        text \"Todo claro, sin configuraciones eternas.\"\n      }\n      card reveal pad=6 gap=2 align=center {\n        title \"Abierto\"\n        text \"Código abierto y hecho con la comunidad.\"\n      }\n    }\n\n    column ref=statBox align=center gap=1 pad=8 {\n      title shown tag=div class=\"stat\"\n      text \"usuarios\" muted\n    }\n  }\n\n  style {\n    .hero {\n      min-height: 70vh;\n      text-align: center;\n      padding: 48px 16px;\n      border-radius: 16px;\n      background: linear-gradient(120deg, #c7d2fe, #fbcfe8, #a5f3fc, #ddd6fe);\n      background-size: 300% 300%;\n      animation: drift 20s ease-in-out infinite;\n      color: #1e1b4b;\n    }\n    .stat {\n      font-size: 4rem;\n      font-weight: 800;\n      font-variant-numeric: tabular-nums;\n    }\n    @keyframes drift {\n      0% { background-position: 0% 50%; }\n      50% { background-position: 100% 50%; }\n      100% { background-position: 0% 50%; }\n    }\n    @media (prefers-reduced-motion: reduce) {\n      .hero { animation: none; }\n    }\n  }\n}\n"
+          },
+          "errors": [
+            "{\"code\":\"E1001\",\"type\":\"UNDEFINED_NAME\",\"loc\":\"app.art:31:9\",\"at\":\"Home\",\"expr\":\"io\",\"fixes\":[\"n\"]}"
+          ]
+        },
+        {
+          "files": {
+            "app.art": "page Home \"/\" {\n  meta title=\"Nimbus\" description=\"Nimbus: rápido, simple y abierto.\"\n\n  state n = 0\n  ref statBox\n  ref raf\n  ref io\n  ref started\n  computed shown = String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g, \".\")\n\n  fn run() {\n    let start = performance.now()\n    let step = t => {\n      let p = Math.min((t - start) / 2000, 1)\n      let eased = 1 - Math.pow(1 - p, 3)\n      n = Math.round(12000 * eased)\n      if (p < 1) { raf = requestAnimationFrame(step) }\n    }\n    raf = requestAnimationFrame(step)\n  }\n\n  mount {\n    let reduce = window.matchMedia(\"(prefers-reduced-motion: reduce)\").matches\n    if reduce {\n      n = 12000\n      return\n    }\n    started = false\n    io = new IntersectionObserver(entries => {\n      if (!started && entries[0].isIntersecting) {\n        started = true\n        run()\n        io.disconnect()\n      }\n    }, { threshold: 0.4 })\n    io.observe(statBox)\n    cleanup {\n      if (io) { io.disconnect() }\n      if (raf) { cancelAnimationFrame(raf) }\n    }\n  }\n\n  column gap=12 pad=4 {\n    column class=\"hero\" align=center justify=center gap=4 {\n      title \"Nimbus\" tag=h1 large animate=rise\n      text \"La nube que se siente liviana.\" large animate=rise delay=150\n      button \"Empezar\" primary hover=grow animate=rise delay=300\n    }\n\n    grid cols=1 md:cols=3 gap=4 {\n      card reveal pad=6 gap=2 align=center {\n        title \"Rápido\"\n        text \"Respuestas en milisegundos, siempre.\"\n      }\n      card reveal pad=6 gap=2 align=center {\n        title \"Simple\"\n        text \"Todo claro, sin configuraciones eternas.\"\n      }\n      card reveal pad=6 gap=2 align=center {\n        title \"Abierto\"\n        text \"Código abierto y hecho con la comunidad.\"\n      }\n    }\n\n    column ref=statBox align=center gap=1 pad=8 {\n      title shown tag=div class=\"stat\"\n      text \"usuarios\" muted\n    }\n  }\n\n  style {\n    .hero {\n      min-height: 70vh;\n      text-align: center;\n      padding: 48px 16px;\n      border-radius: 16px;\n      background: linear-gradient(120deg, #c7d2fe, #fbcfe8, #a5f3fc, #ddd6fe);\n      background-size: 300% 300%;\n      animation: drift 20s ease-in-out infinite;\n      color: #1e1b4b;\n    }\n    .stat {\n      font-size: 4rem;\n      font-weight: 800;\n      font-variant-numeric: tabular-nums;\n    }\n    @keyframes drift {\n      0% { background-position: 0% 50%; }\n      50% { background-position: 100% 50%; }\n      100% { background-position: 0% 50%; }\n    }\n    @media (prefers-reduced-motion: reduce) {\n      .hero { animation: none; }\n    }\n  }\n}\n"
+          },
+          "errors": [
+            "Prueba de comportamiento: se esperaba la cifra \"12.000+\" al terminar de contar; se ve: . La pantalla muestra: \"Nimbus La nube que se siente liviana. Empezar Rápido Respuestas en milisegundos, siempre. Simple Todo claro, sin configuraciones eternas. Abierto Código abierto y hecho con la comunidad. 12.000 usuarios\""
+          ]
+        },
+        {
+          "files": {
+            "app.art": "page Home \"/\" {\n  meta title=\"Nimbus\" description=\"Nimbus: rápido, simple y abierto.\"\n\n  state n = 0\n  ref statBox\n  ref raf\n  ref io\n  ref started\n  computed shown = String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g, \".\") + \"+\"\n\n  fn run() {\n    let start = performance.now()\n    let step = t => {\n      let p = Math.min((t - start) / 2000, 1)\n      let eased = 1 - Math.pow(1 - p, 3)\n      n = Math.round(12000 * eased)\n      if (p < 1) { raf = requestAnimationFrame(step) }\n    }\n    raf = requestAnimationFrame(step)\n  }\n\n  mount {\n    let reduce = window.matchMedia(\"(prefers-reduced-motion: reduce)\").matches\n    if reduce {\n      n = 12000\n      return\n    }\n    started = false\n    io = new IntersectionObserver(entries => {\n      if (!started && entries[0].isIntersecting) {\n        started = true\n        run()\n        io.disconnect()\n      }\n    }, { threshold: 0.4 })\n    io.observe(statBox)\n    cleanup {\n      if (io) { io.disconnect() }\n      if (raf) { cancelAnimationFrame(raf) }\n    }\n  }\n\n  column gap=12 pad=4 {\n    column class=\"hero\" align=center justify=center gap=4 {\n      title \"Nimbus\" tag=h1 large animate=rise\n      text \"La nube que se siente liviana.\" large animate=rise delay=150\n      button \"Empezar\" primary hover=grow animate=rise delay=300\n    }\n\n    grid cols=1 md:cols=3 gap=4 {\n      card reveal pad=6 gap=2 align=center {\n        title \"Rápido\"\n        text \"Respuestas en milisegundos, siempre.\"\n      }\n      card reveal pad=6 gap=2 align=center {\n        title \"Simple\"\n        text \"Todo claro, sin configuraciones eternas.\"\n      }\n      card reveal pad=6 gap=2 align=center {\n        title \"Abierto\"\n        text \"Código abierto y hecho con la comunidad.\"\n      }\n    }\n\n    column ref=statBox align=center gap=1 pad=8 {\n      title shown tag=div class=\"stat\"\n      text \"usuarios\" muted\n    }\n  }\n\n  style {\n    .hero {\n      min-height: 70vh;\n      text-align: center;\n      padding: 48px 16px;\n      border-radius: 16px;\n      background: linear-gradient(120deg, #c7d2fe, #fbcfe8, #a5f3fc, #ddd6fe);\n      background-size: 300% 300%;\n      animation: drift 20s ease-in-out infinite;\n      color: #1e1b4b;\n    }\n    .stat {\n      font-size: 4rem;\n      font-weight: 800;\n      font-variant-numeric: tabular-nums;\n    }\n    @keyframes drift {\n      0% { background-position: 0% 50%; }\n      50% { background-position: 100% 50%; }\n      100% { background-position: 0% 50%; }\n    }\n    @media (prefers-reduced-motion: reduce) {\n      .hero { animation: none; }\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 19666,
+        "brotli": 6551
+      }
+    },
+    {
+      "task": "landing-motion",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 228,
+        "output": 2161,
+        "cacheRead": 0,
+        "cacheWrite": 5166
+      },
+      "usd": 0.034981,
+      "codeTokens": 1122,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Home \"/\" {\n  meta title=\"Nimbus\" description=\"Nimbus: rápido, simple y abierto.\"\n\n  state n = 0\n  ref box\n  ref frame\n  ref observer\n\n  mount {\n    let target = 12000\n    let reduce = window.matchMedia(\"(prefers-reduced-motion: reduce)\").matches\n    let started = false\n\n    let tick = (t0) => {\n      let step = (now) => {\n        let p = Math.min((now - t0) / 2000, 1)\n        let eased = 1 - Math.pow(1 - p, 3)\n        n = Math.round(target * eased)\n        if (p < 1) {\n          frame = requestAnimationFrame(step)\n        }\n      }\n      frame = requestAnimationFrame(step)\n    }\n\n    observer = new IntersectionObserver((entries) => {\n      if (entries[0].isIntersecting && !started) {\n        started = true\n        if (reduce) {\n          n = target\n        } else {\n          tick(performance.now())\n        }\n        observer.disconnect()\n      }\n    }, { threshold: 0.4 })\n\n    observer.observe(box)\n\n    cleanup {\n      observer.disconnect()\n      if (frame) {\n        cancelAnimationFrame(frame)\n      }\n    }\n  }\n\n  column gap=0 {\n    column class=\"hero\" align=center justify=center gap=4 pad=16 {\n      title \"Nimbus\" tag=h1 large animate=rise\n      text \"La nube que se siente liviana.\" muted large animate=rise delay=150\n      button \"Empezar\" primary hover=grow animate=rise delay=300 -> navigate(\"/signup\")\n    }\n\n    column pad=10 align=center gap=6 {\n      grid cols=1 md:cols=3 gap=4 stagger {\n        card pad=6 gap=2 reveal hover=lift {\n          title \"Rápido\" tag=h3\n          text \"Respuestas en milisegundos, sin esperas.\"\n        }\n        card pad=6 gap=2 reveal hover=lift {\n          title \"Simple\" tag=h3\n          text \"Todo lo que necesitás, sin complicaciones.\"\n        }\n        card pad=6 gap=2 reveal hover=lift {\n          title \"Abierto\" tag=h3\n          text \"Código abierto y pensado para la comunidad.\"\n        }\n      }\n    }\n\n    column ref=box class=\"stat\" align=center justify=center gap=1 pad=12 {\n      title `${n.toLocaleString(\"es-AR\")}+` tag=p large bold\n      text \"usuarios\" muted\n    }\n  }\n\n  style {\n    .hero {\n      min-height: 70vh;\n      text-align: center;\n      background: linear-gradient(120deg, #c7d2fe, #fbcfe8, #a5f3fc, #ddd6fe);\n      background-size: 300% 300%;\n      animation: nimbus-flow 18s ease-in-out infinite;\n      color: #1e1b4b;\n    }\n    .hero * {\n      color: inherit;\n    }\n    .stat {\n      text-align: center;\n    }\n    @keyframes nimbus-flow {\n      0% { background-position: 0% 50%; }\n      50% { background-position: 100% 50%; }\n      100% { background-position: 0% 50%; }\n    }\n    @media (prefers-reduced-motion: reduce) {\n      .hero {\n        animation: none;\n      }\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 19565,
+        "brotli": 6579
+      }
+    },
+    {
+      "task": "landing-motion",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 380,
+        "output": 2550,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.02626,
+      "codeTokens": 2539,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useEffect, useRef, useState } from \"react\";\n\nfunction usePrefersReducedMotion(): boolean {\n  const [reduced, setReduced] = useState<boolean>(() =>\n    typeof window !== \"undefined\" && typeof window.matchMedia === \"function\"\n      ? window.matchMedia(\"(prefers-reduced-motion: reduce)\").matches\n      : false\n  );\n\n  useEffect(() => {\n    if (typeof window.matchMedia !== \"function\") return;\n    const mq = window.matchMedia(\"(prefers-reduced-motion: reduce)\");\n    const onChange = (e: MediaQueryListEvent) => setReduced(e.matches);\n    setReduced(mq.matches);\n    mq.addEventListener(\"change\", onChange);\n    return () => mq.removeEventListener(\"change\", onChange);\n  }, []);\n\n  return reduced;\n}\n\nfunction useInView<T extends Element>(threshold = 0.2) {\n  const ref = useRef<T | null>(null);\n  const [inView, setInView] = useState(false);\n\n  useEffect(() => {\n    const el = ref.current;\n    if (!el) return;\n    if (typeof IntersectionObserver === \"undefined\") {\n      setInView(true);\n      return;\n    }\n    const obs = new IntersectionObserver(\n      (entries) => {\n        entries.forEach((entry) => {\n          if (entry.isIntersecting) {\n            setInView(true);\n            obs.disconnect();\n          }\n        });\n      },\n      { threshold }\n    );\n    obs.observe(el);\n    return () => obs.disconnect();\n  }, [threshold]);\n\n  return { ref, inView };\n}\n\ninterface CardData {\n  title: string;\n  text: string;\n  icon: string;\n}\n\nconst CARDS: CardData[] = [\n  { title: \"Rápido\", text: \"Carga en un instante, sin esperas ni vueltas.\", icon: \"⚡\" },\n  { title: \"Simple\", text: \"Una interfaz clara que se entiende al primer vistazo.\", icon: \"✨\" },\n  { title: \"Abierto\", text: \"Código abierto y transparente, hecho con la comunidad.\", icon: \"🌍\" },\n];\n\nfunction FeatureCard({\n  card,\n  index,\n  reduced,\n}: {\n  card: CardData;\n  index: number;\n  reduced: boolean;\n}) {\n  const { ref, inView } = useInView<HTMLDivElement>(0.25);\n  const visible = reduced || inView;\n\n  return (\n    <div\n      ref={ref}\n      style={{\n        transitionDelay: reduced ? \"0ms\" : `${index * 180}ms`,\n      }}\n      className={`rounded-2xl border border-white/10 bg-white/5 p-8 text-center shadow-xl backdrop-blur ${\n        reduced ? \"\" : \"transition-all duration-700 ease-out\"\n      } ${\n        visible ? \"translate-y-0 opacity-100\" : \"translate-y-10 opacity-0\"\n      }`}\n    >\n      <div className=\"mb-4 text-4xl\" aria-hidden=\"true\">\n        {card.icon}\n      </div>\n      <h3 className=\"mb-2 text-2xl font-semibold text-white\">{card.title}</h3>\n      <p className=\"text-slate-300\">{card.text}</p>\n    </div>\n  );\n}\n\nfunction Counter({ target, reduced }: { target: number; reduced: boolean }) {\n  const { ref, inView } = useInView<HTMLDivElement>(0.4);\n  const [value, setValue] = useState(0);\n\n  useEffect(() => {\n    if (!inView) return;\n    if (reduced) {\n      setValue(target);\n      return;\n    }\n    const duration = 2000;\n    let raf = 0;\n    let start: number | null = null;\n    const tick = (now: number) => {\n      if (start === null) start = now;\n      const progress = Math.min((now - start) / duration, 1);\n      const eased = 1 - Math.pow(1 - progress, 3);\n      setValue(Math.round(eased * target));\n      if (progress < 1) raf = requestAnimationFrame(tick);\n    };\n    raf = requestAnimationFrame(tick);\n    return () => cancelAnimationFrame(raf);\n  }, [inView, reduced, target]);\n\n  const formatted = new Intl.NumberFormat(\"es-AR\").format(value);\n\n  return (\n    <div ref={ref} className=\"text-center\">\n      <div\n        className=\"bg-gradient-to-r from-sky-300 to-fuchsia-300 bg-clip-text text-6xl font-extrabold tabular-nums text-transparent sm:text-7xl\"\n        aria-label={`${new Intl.NumberFormat(\"es-AR\").format(target)} más usuarios`}\n      >\n        <span aria-hidden=\"true\">{formatted}+</span>\n      </div>\n      <p className=\"mt-3 text-lg text-slate-300\">usuarios ya confían en Nimbus</p>\n    </div>\n  );\n}\n\nexport default function App() {\n  const reduced = usePrefersReducedMotion();\n\n  return (\n    <div className=\"min-h-screen bg-slate-950 text-white\">\n      <style>{`\n        @keyframes nimbus-gradient {\n          0% { background-position: 0% 50%; }\n          50% { background-position: 100% 50%; }\n          100% { background-position: 0% 50%; }\n        }\n        .nimbus-animated-bg {\n          background-size: 300% 300%;\n          animation: nimbus-gradient 20s ease-in-out infinite;\n        }\n        @media (prefers-reduced-motion: reduce) {\n          .nimbus-animated-bg { animation: none; }\n        }\n      `}</style>\n\n      <header className=\"relative flex min-h-screen items-center justify-center overflow-hidden px-6\">\n        <div\n          aria-hidden=\"true\"\n          className=\"nimbus-animated-bg absolute inset-0 bg-gradient-to-br from-indigo-700 via-fuchsia-600 to-sky-500 opacity-80\"\n        />\n        <div\n          aria-hidden=\"true\"\n          className=\"absolute inset-0 bg-gradient-to-b from-transparent via-slate-950/20 to-slate-950\"\n        />\n        <div className=\"relative z-10 max-w-2xl text-center\">\n          <h1 className=\"text-6xl font-extrabold tracking-tight sm:text-8xl\">Nimbus</h1>\n          <p className=\"mx-auto mt-6 max-w-xl text-lg text-white/90 sm:text-xl\">\n            La forma más liviana de llevar tus ideas a la nube.\n          </p>\n          <button\n            type=\"button\"\n            className={`mt-10 rounded-full bg-white px-10 py-4 text-lg font-semibold text-slate-900 shadow-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60 ${\n              reduced\n                ? \"\"\n                : \"transition-transform duration-300 ease-out hover:scale-110\"\n            }`}\n          >\n            Empezar\n          </button>\n        </div>\n      </header>\n\n      <main>\n        <section className=\"mx-auto max-w-5xl px-6 py-24\">\n          <div className=\"grid gap-6 md:grid-cols-3\">\n            {CARDS.map((card, i) => (\n              <FeatureCard key={card.title} card={card} index={i} reduced={reduced} />\n            ))}\n          </div>\n        </section>\n\n        <section className=\"px-6 pb-32 pt-8\">\n          <Counter target={12000} reduced={reduced} />\n        </section>\n      </main>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 227976,
+        "brotli": 61021
+      }
+    },
+    {
+      "task": "landing-motion",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 380,
+        "output": 2361,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.02437,
+      "codeTokens": 2350,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useEffect, useRef, useState } from \"react\";\n\nfunction usePrefersReducedMotion(): boolean {\n  const [reduced, setReduced] = useState<boolean>(() =>\n    typeof window !== \"undefined\" && typeof window.matchMedia === \"function\"\n      ? window.matchMedia(\"(prefers-reduced-motion: reduce)\").matches\n      : false\n  );\n\n  useEffect(() => {\n    if (typeof window.matchMedia !== \"function\") return;\n    const mq = window.matchMedia(\"(prefers-reduced-motion: reduce)\");\n    const onChange = () => setReduced(mq.matches);\n    onChange();\n    mq.addEventListener(\"change\", onChange);\n    return () => mq.removeEventListener(\"change\", onChange);\n  }, []);\n\n  return reduced;\n}\n\nfunction useInView<T extends Element>(threshold = 0.3) {\n  const ref = useRef<T | null>(null);\n  const [inView, setInView] = useState(false);\n\n  useEffect(() => {\n    const el = ref.current;\n    if (!el) return;\n    if (typeof IntersectionObserver === \"undefined\") {\n      setInView(true);\n      return;\n    }\n    const observer = new IntersectionObserver(\n      (entries) => {\n        if (entries.some((e) => e.isIntersecting)) {\n          setInView(true);\n          observer.disconnect();\n        }\n      },\n      { threshold }\n    );\n    observer.observe(el);\n    return () => observer.disconnect();\n  }, [threshold]);\n\n  return { ref, inView };\n}\n\ntype CardProps = {\n  title: string;\n  text: string;\n  index: number;\n  visible: boolean;\n  reduced: boolean;\n};\n\nfunction Card({ title, text, index, visible, reduced }: CardProps) {\n  const show = visible || reduced;\n  return (\n    <div\n      style={{\n        transitionDelay: reduced ? \"0ms\" : `${index * 180}ms`,\n      }}\n      className={`rounded-2xl border border-white/10 bg-white/5 p-8 text-center shadow-lg backdrop-blur ${\n        reduced ? \"\" : \"transition-all duration-700 ease-out\"\n      } ${show ? \"translate-y-0 opacity-100\" : \"translate-y-8 opacity-0\"}`}\n    >\n      <h3 className=\"mb-2 text-2xl font-semibold text-white\">{title}</h3>\n      <p className=\"text-slate-300\">{text}</p>\n    </div>\n  );\n}\n\nfunction Counter({ target, reduced }: { target: number; reduced: boolean }) {\n  const { ref, inView } = useInView<HTMLDivElement>(0.5);\n  const [value, setValue] = useState(0);\n\n  useEffect(() => {\n    if (!inView) return;\n    if (reduced) {\n      setValue(target);\n      return;\n    }\n    const duration = 2000;\n    let raf = 0;\n    let start: number | null = null;\n    const tick = (now: number) => {\n      if (start === null) start = now;\n      const p = Math.min((now - start) / duration, 1);\n      const eased = 1 - Math.pow(1 - p, 3);\n      setValue(Math.round(target * eased));\n      if (p < 1) raf = requestAnimationFrame(tick);\n    };\n    raf = requestAnimationFrame(tick);\n    return () => cancelAnimationFrame(raf);\n  }, [inView, reduced, target]);\n\n  return (\n    <div ref={ref} className=\"text-center\">\n      <div\n        className=\"text-6xl font-extrabold tabular-nums text-white sm:text-7xl\"\n        aria-label={`${target.toLocaleString(\"es-AR\")} más usuarios`}\n      >\n        <span aria-hidden=\"true\">{value.toLocaleString(\"es-AR\")}+</span>\n      </div>\n      <p className=\"mt-3 text-lg text-slate-400\">usuarios</p>\n    </div>\n  );\n}\n\nexport default function App() {\n  const reduced = usePrefersReducedMotion();\n  const { ref: cardsRef, inView: cardsVisible } = useInView<HTMLDivElement>(0.25);\n\n  const cards = [\n    { title: \"Rápido\", text: \"Carga al instante y responde sin demoras.\" },\n    { title: \"Simple\", text: \"Una interfaz clara que se entiende sola.\" },\n    { title: \"Abierto\", text: \"Código abierto y pensado para la comunidad.\" },\n  ];\n\n  return (\n    <div className=\"min-h-screen bg-slate-950 text-white\">\n      <style>{`\n        @keyframes nimbus-gradient {\n          0% { background-position: 0% 50%; }\n          50% { background-position: 100% 50%; }\n          100% { background-position: 0% 50%; }\n        }\n        .nimbus-bg {\n          background-size: 300% 300%;\n          animation: nimbus-gradient 20s ease infinite;\n        }\n        @media (prefers-reduced-motion: reduce) {\n          .nimbus-bg { animation: none; }\n        }\n      `}</style>\n\n      <header className=\"relative flex min-h-screen items-center justify-center overflow-hidden px-6\">\n        <div\n          aria-hidden=\"true\"\n          className=\"nimbus-bg absolute inset-0 bg-gradient-to-br from-indigo-600 via-sky-500 to-fuchsia-600 opacity-60\"\n        />\n        <div\n          aria-hidden=\"true\"\n          className=\"absolute inset-0 bg-gradient-to-b from-transparent to-slate-950\"\n        />\n        <div className=\"relative z-10 text-center\">\n          <h1 className=\"text-6xl font-extrabold tracking-tight sm:text-8xl\">\n            Nimbus\n          </h1>\n          <p className=\"mx-auto mt-6 max-w-xl text-lg text-slate-100 sm:text-xl\">\n            La forma más ligera de llevar tus ideas a la nube.\n          </p>\n          <button\n            type=\"button\"\n            className={`mt-10 rounded-full bg-white px-8 py-3 text-lg font-semibold text-slate-900 shadow-xl focus:outline-none focus-visible:ring-4 focus-visible:ring-white/50 ${\n              reduced\n                ? \"\"\n                : \"transition-transform duration-300 ease-out hover:scale-110\"\n            }`}\n          >\n            Empezar\n          </button>\n        </div>\n      </header>\n\n      <main>\n        <section className=\"mx-auto max-w-5xl px-6 py-24\">\n          <div ref={cardsRef} className=\"grid gap-6 md:grid-cols-3\">\n            {cards.map((c, i) => (\n              <Card\n                key={c.title}\n                title={c.title}\n                text={c.text}\n                index={i}\n                visible={cardsVisible}\n                reduced={reduced}\n              />\n            ))}\n          </div>\n        </section>\n\n        <section className=\"px-6 pb-32 pt-8\">\n          <Counter target={12000} reduced={reduced} />\n        </section>\n      </main>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 227646,
+        "brotli": 60814
+      }
+    },
+    {
+      "task": "landing-motion",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 396,
+        "output": 2337,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.024162,
+      "codeTokens": 2294,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  import Hero from './Hero.svelte';\n  import Card from './Card.svelte';\n  import Counter from './Counter.svelte';\n\n  const cards: { title: string; text: string }[] = [\n    { title: 'Rápido', text: 'Carga en un instante y responde sin demoras.' },\n    { title: 'Simple', text: 'Una interfaz clara que no se interpone en tu camino.' },\n    { title: 'Abierto', text: 'Código abierto, transparente y hecho con la comunidad.' }\n  ];\n</script>\n\n<main class=\"min-h-screen bg-slate-950 text-slate-100\">\n  <Hero />\n\n  <section class=\"mx-auto grid max-w-5xl gap-6 px-6 py-24 md:grid-cols-3\">\n    {#each cards as card, i}\n      <Card title={card.title} text={card.text} delay={i * 150} />\n    {/each}\n  </section>\n\n  <section class=\"px-6 pb-32 text-center\">\n    <Counter target={12000} duration={2000} suffix=\"+\" />\n    <p class=\"mt-2 text-lg text-slate-400\">usuarios</p>\n  </section>\n</main>\n",
+            "Hero.svelte": "<script lang=\"ts\">\n</script>\n\n<section class=\"relative flex min-h-screen items-center justify-center overflow-hidden px-6\">\n  <div class=\"hero-bg absolute inset-0 -z-10\"></div>\n  <div class=\"absolute inset-0 -z-10 bg-slate-950/30\"></div>\n\n  <div class=\"text-center\">\n    <h1 class=\"text-6xl font-extrabold tracking-tight sm:text-8xl\">Nimbus</h1>\n    <p class=\"mx-auto mt-6 max-w-xl text-lg text-slate-200 sm:text-xl\">\n      La nube que se siente liviana. Creá, desplegá y escalá sin fricción.\n    </p>\n    <button\n      type=\"button\"\n      class=\"cta mt-10 rounded-full bg-white px-8 py-3 text-lg font-semibold text-slate-900 shadow-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-white/50\"\n    >\n      Empezar\n    </button>\n  </div>\n</section>\n\n<style>\n  .hero-bg {\n    background: linear-gradient(120deg, #4f46e5, #0ea5e9, #8b5cf6, #06b6d4, #4f46e5);\n    background-size: 300% 300%;\n    animation: flow 18s ease-in-out infinite;\n  }\n\n  .cta {\n    transition: transform 300ms ease, box-shadow 300ms ease;\n  }\n  .cta:hover {\n    transform: scale(1.1);\n    box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);\n  }\n\n  @keyframes flow {\n    0% { background-position: 0% 50%; }\n    50% { background-position: 100% 50%; }\n    100% { background-position: 0% 50%; }\n  }\n\n  @media (prefers-reduced-motion: reduce) {\n    .hero-bg {\n      animation: none;\n    }\n    .cta {\n      transition: none;\n    }\n    .cta:hover {\n      transform: none;\n    }\n  }\n</style>\n",
+            "Card.svelte": "<script lang=\"ts\">\n  interface Props {\n    title: string;\n    text: string;\n    delay?: number;\n  }\n\n  let { title, text, delay = 0 }: Props = $props();\n\n  let visible = $state(false);\n  let el: HTMLElement | undefined = $state();\n\n  $effect(() => {\n    if (!el) return;\n\n    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;\n    if (reduced || typeof IntersectionObserver === 'undefined') {\n      visible = true;\n      return;\n    }\n\n    const observer = new IntersectionObserver(\n      (entries) => {\n        for (const entry of entries) {\n          if (entry.isIntersecting) {\n            visible = true;\n            observer.disconnect();\n          }\n        }\n      },\n      { threshold: 0.2 }\n    );\n    observer.observe(el);\n\n    return () => observer.disconnect();\n  });\n</script>\n\n<article\n  bind:this={el}\n  class=\"card rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-xl\"\n  class:visible\n  style=\"transition-delay: {delay}ms\"\n>\n  <h2 class=\"text-2xl font-bold\">{title}</h2>\n  <p class=\"mt-3 text-slate-400\">{text}</p>\n</article>\n\n<style>\n  .card {\n    opacity: 0;\n    transform: translateY(32px);\n    transition: opacity 700ms ease, transform 700ms ease;\n  }\n  .card.visible {\n    opacity: 1;\n    transform: translateY(0);\n  }\n\n  @media (prefers-reduced-motion: reduce) {\n    .card {\n      opacity: 1;\n      transform: none;\n      transition: none;\n    }\n  }\n</style>\n",
+            "Counter.svelte": "<script lang=\"ts\">\n  interface Props {\n    target: number;\n    duration?: number;\n    suffix?: string;\n  }\n\n  let { target, duration = 2000, suffix = '' }: Props = $props();\n\n  let value = $state(0);\n  let el: HTMLElement | undefined = $state();\n\n  const formatter = new Intl.NumberFormat('es-AR');\n  let display = $derived(formatter.format(Math.round(value)));\n\n  $effect(() => {\n    if (!el) return;\n\n    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;\n    if (reduced || typeof IntersectionObserver === 'undefined') {\n      value = target;\n      return;\n    }\n\n    let raf = 0;\n\n    const run = () => {\n      const start = performance.now();\n      const tick = (now: number) => {\n        const progress = Math.min((now - start) / duration, 1);\n        const eased = 1 - Math.pow(1 - progress, 3);\n        value = target * eased;\n        if (progress < 1) raf = requestAnimationFrame(tick);\n      };\n      raf = requestAnimationFrame(tick);\n    };\n\n    const observer = new IntersectionObserver(\n      (entries) => {\n        for (const entry of entries) {\n          if (entry.isIntersecting) {\n            run();\n            observer.disconnect();\n          }\n        }\n      },\n      { threshold: 0.5 }\n    );\n    observer.observe(el);\n\n    return () => {\n      observer.disconnect();\n      cancelAnimationFrame(raf);\n    };\n  });\n</script>\n\n<div\n  bind:this={el}\n  class=\"text-6xl font-extrabold tabular-nums tracking-tight sm:text-8xl\"\n  aria-label=\"{formatter.format(target)}{suffix}\"\n>\n  <span aria-hidden=\"true\">{display}{suffix}</span>\n</div>\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 59413,
+        "brotli": 20281
+      }
+    },
+    {
+      "task": "landing-motion",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 396,
+        "output": 2218,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.022972,
+      "codeTokens": 2171,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  import Hero from './Hero.svelte';\n  import FeatureCard from './FeatureCard.svelte';\n  import Counter from './Counter.svelte';\n\n  const features: { title: string; text: string }[] = [\n    { title: 'Rápido', text: 'Carga en milisegundos y responde al instante.' },\n    { title: 'Simple', text: 'Una interfaz clara que no se interpone en tu camino.' },\n    { title: 'Abierto', text: 'Código abierto, transparente y hecho con la comunidad.' }\n  ];\n</script>\n\n<main class=\"min-h-screen bg-slate-950 text-white\">\n  <Hero />\n\n  <section class=\"mx-auto max-w-5xl px-6 py-24\">\n    <div class=\"grid gap-6 md:grid-cols-3\">\n      {#each features as f, i}\n        <FeatureCard title={f.title} text={f.text} delay={i * 150} />\n      {/each}\n    </div>\n  </section>\n\n  <section class=\"px-6 pb-32 text-center\">\n    <Counter target={12000} suffix=\"+\" label=\"usuarios\" />\n  </section>\n</main>\n",
+            "Hero.svelte": "<script lang=\"ts\">\n</script>\n\n<section class=\"relative flex min-h-screen items-center justify-center overflow-hidden px-6\">\n  <div class=\"bg-animated absolute inset-0\" aria-hidden=\"true\"></div>\n  <div class=\"absolute inset-0 bg-slate-950/30\" aria-hidden=\"true\"></div>\n\n  <div class=\"relative z-10 text-center\">\n    <h1 class=\"text-6xl font-extrabold tracking-tight sm:text-8xl\">Nimbus</h1>\n    <p class=\"mx-auto mt-6 max-w-xl text-lg text-white/80 sm:text-xl\">\n      La forma más ligera de llevar tus ideas a la nube.\n    </p>\n    <button\n      type=\"button\"\n      class=\"cta mt-10 rounded-full bg-white px-8 py-3 text-lg font-semibold text-slate-900 shadow-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-white/50\"\n    >\n      Empezar\n    </button>\n  </div>\n</section>\n\n<style>\n  .bg-animated {\n    background: linear-gradient(120deg, #4f46e5, #06b6d4, #8b5cf6, #ec4899, #4f46e5);\n    background-size: 300% 300%;\n    animation: flow 18s ease-in-out infinite;\n  }\n\n  .cta {\n    transition: transform 300ms ease, box-shadow 300ms ease;\n  }\n  .cta:hover {\n    transform: scale(1.1);\n  }\n\n  @keyframes flow {\n    0% { background-position: 0% 50%; }\n    50% { background-position: 100% 50%; }\n    100% { background-position: 0% 50%; }\n  }\n\n  @media (prefers-reduced-motion: reduce) {\n    .bg-animated {\n      animation: none;\n    }\n    .cta {\n      transition: none;\n    }\n    .cta:hover {\n      transform: none;\n    }\n  }\n</style>\n",
+            "FeatureCard.svelte": "<script lang=\"ts\">\n  import { onMount } from 'svelte';\n\n  let { title, text, delay = 0 }: { title: string; text: string; delay?: number } = $props();\n\n  let el: HTMLElement;\n  let visible = $state(false);\n\n  onMount(() => {\n    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;\n    if (reduce) {\n      visible = true;\n      return;\n    }\n    const observer = new IntersectionObserver(\n      (entries) => {\n        if (entries[0].isIntersecting) {\n          visible = true;\n          observer.disconnect();\n        }\n      },\n      { threshold: 0.3 }\n    );\n    observer.observe(el);\n    return () => observer.disconnect();\n  });\n</script>\n\n<article\n  bind:this={el}\n  class=\"card rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur\"\n  class:visible\n  style=\"transition-delay: {delay}ms\"\n>\n  <h2 class=\"text-2xl font-bold\">{title}</h2>\n  <p class=\"mt-3 text-white/70\">{text}</p>\n</article>\n\n<style>\n  .card {\n    opacity: 0;\n    transform: translateY(32px);\n    transition: opacity 700ms ease, transform 700ms ease;\n  }\n  .card.visible {\n    opacity: 1;\n    transform: translateY(0);\n  }\n\n  @media (prefers-reduced-motion: reduce) {\n    .card {\n      opacity: 1;\n      transform: none;\n      transition: none;\n    }\n  }\n</style>\n",
+            "Counter.svelte": "<script lang=\"ts\">\n  import { onMount } from 'svelte';\n\n  let {\n    target,\n    suffix = '',\n    label = '',\n    duration = 2000\n  }: { target: number; suffix?: string; label?: string; duration?: number } = $props();\n\n  let el: HTMLElement;\n  let value = $state(0);\n\n  const formatted = $derived(new Intl.NumberFormat('es-AR').format(Math.round(value)));\n\n  onMount(() => {\n    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;\n    let raf = 0;\n\n    const start = () => {\n      if (reduce) {\n        value = target;\n        return;\n      }\n      const t0 = performance.now();\n      const tick = (now: number) => {\n        const p = Math.min((now - t0) / duration, 1);\n        const eased = 1 - Math.pow(1 - p, 3);\n        value = target * eased;\n        if (p < 1) raf = requestAnimationFrame(tick);\n      };\n      raf = requestAnimationFrame(tick);\n    };\n\n    const observer = new IntersectionObserver(\n      (entries) => {\n        if (entries[0].isIntersecting) {\n          start();\n          observer.disconnect();\n        }\n      },\n      { threshold: 0.5 }\n    );\n    observer.observe(el);\n\n    return () => {\n      observer.disconnect();\n      cancelAnimationFrame(raf);\n    };\n  });\n</script>\n\n<div bind:this={el}>\n  <p class=\"text-6xl font-extrabold tabular-nums sm:text-8xl\" aria-label=\"{target} {suffix} {label}\">\n    {formatted}{suffix}\n  </p>\n  <p class=\"mt-2 text-lg text-white/70\">{label}</p>\n</div>\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 59759,
+        "brotli": 20359
+      }
+    },
+    {
+      "task": "landing-motion",
+      "stack": "vue",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 404,
+        "output": 2611,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.026918,
+      "codeTokens": 2558,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.vue": "<script setup lang=\"ts\">\nimport HeroSection from './components/HeroSection.vue'\nimport FeatureCards from './components/FeatureCards.vue'\nimport StatCounter from './components/StatCounter.vue'\n</script>\n\n<template>\n  <main class=\"min-h-screen bg-slate-950 text-white antialiased\">\n    <HeroSection />\n    <FeatureCards />\n    <StatCounter :target=\"12000\" suffix=\"+\" label=\"usuarios\" />\n  </main>\n</template>\n\n<style>\nhtml {\n  scroll-behavior: smooth;\n}\n@media (prefers-reduced-motion: reduce) {\n  html {\n    scroll-behavior: auto;\n  }\n}\n</style>\n",
+            "components/HeroSection.vue": "<script setup lang=\"ts\">\nconst scrollToFeatures = () => {\n  document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })\n}\n</script>\n\n<template>\n  <section class=\"relative flex min-h-screen items-center justify-center overflow-hidden px-6\">\n    <div class=\"hero-bg absolute inset-0\" aria-hidden=\"true\"></div>\n    <div class=\"absolute inset-0 bg-slate-950/30\" aria-hidden=\"true\"></div>\n\n    <div class=\"relative z-10 mx-auto max-w-2xl text-center\">\n      <h1 class=\"text-6xl font-extrabold tracking-tight sm:text-8xl\">Nimbus</h1>\n      <p class=\"mt-6 text-lg text-slate-100/90 sm:text-xl\">\n        La plataforma liviana para llevar tus ideas a la nube sin fricción.\n      </p>\n      <button\n        type=\"button\"\n        class=\"hero-btn mt-10 rounded-full bg-white px-8 py-3 text-lg font-semibold text-slate-900 shadow-lg shadow-black/30 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/50\"\n        @click=\"scrollToFeatures\"\n      >\n        Empezar\n      </button>\n    </div>\n  </section>\n</template>\n\n<style scoped>\n.hero-bg {\n  background: linear-gradient(120deg, #4f46e5, #0ea5e9, #8b5cf6, #06b6d4, #4f46e5);\n  background-size: 400% 400%;\n  animation: gradient-move 20s ease infinite;\n}\n\n.hero-btn {\n  transition: transform 300ms ease, box-shadow 300ms ease;\n}\n.hero-btn:hover {\n  transform: scale(1.1);\n}\n.hero-btn:active {\n  transform: scale(1.03);\n}\n\n@keyframes gradient-move {\n  0% {\n    background-position: 0% 50%;\n  }\n  50% {\n    background-position: 100% 50%;\n  }\n  100% {\n    background-position: 0% 50%;\n  }\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .hero-bg {\n    animation: none;\n  }\n  .hero-btn {\n    transition: none;\n  }\n  .hero-btn:hover,\n  .hero-btn:active {\n    transform: none;\n  }\n}\n</style>\n",
+            "components/FeatureCards.vue": "<script setup lang=\"ts\">\nimport { onBeforeUnmount, onMounted, ref } from 'vue'\n\ninterface Feature {\n  title: string\n  text: string\n}\n\nconst features: Feature[] = [\n  { title: 'Rápido', text: 'Despliegues en segundos, sin esperas.' },\n  { title: 'Simple', text: 'Una interfaz clara que se entiende al instante.' },\n  { title: 'Abierto', text: 'Código abierto y pensado para la comunidad.' },\n]\n\nconst container = ref<HTMLElement | null>(null)\nconst visible = ref(false)\nlet observer: IntersectionObserver | null = null\n\nonMounted(() => {\n  if (!container.value) return\n  observer = new IntersectionObserver(\n    (entries) => {\n      if (entries.some((e) => e.isIntersecting)) {\n        visible.value = true\n        observer?.disconnect()\n      }\n    },\n    { threshold: 0.25 },\n  )\n  observer.observe(container.value)\n})\n\nonBeforeUnmount(() => observer?.disconnect())\n</script>\n\n<template>\n  <section id=\"features\" class=\"mx-auto max-w-5xl px-6 py-24\">\n    <div ref=\"container\" class=\"grid gap-6 md:grid-cols-3\">\n      <article\n        v-for=\"(f, i) in features\"\n        :key=\"f.title\"\n        class=\"card rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur\"\n        :class=\"{ 'card-visible': visible }\"\n        :style=\"{ transitionDelay: `${i * 200}ms` }\"\n      >\n        <h2 class=\"text-2xl font-bold\">{{ f.title }}</h2>\n        <p class=\"mt-3 text-slate-300\">{{ f.text }}</p>\n      </article>\n    </div>\n  </section>\n</template>\n\n<style scoped>\n.card {\n  opacity: 0;\n  transform: translateY(32px);\n  transition: opacity 700ms ease, transform 700ms ease;\n}\n.card-visible {\n  opacity: 1;\n  transform: translateY(0);\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .card {\n    opacity: 1;\n    transform: none;\n    transition: none;\n    transition-delay: 0ms !important;\n  }\n}\n</style>\n",
+            "components/StatCounter.vue": "<script setup lang=\"ts\">\nimport { computed, onBeforeUnmount, onMounted, ref } from 'vue'\n\nconst props = withDefaults(\n  defineProps<{\n    target: number\n    duration?: number\n    suffix?: string\n    label?: string\n  }>(),\n  { duration: 2000, suffix: '', label: '' },\n)\n\nconst el = ref<HTMLElement | null>(null)\nconst value = ref(0)\nlet observer: IntersectionObserver | null = null\nlet rafId = 0\n\nconst formatted = computed(() =>\n  new Intl.NumberFormat('es-AR').format(Math.round(value.value)),\n)\n\nconst start = () => {\n  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches\n  if (reduce) {\n    value.value = props.target\n    return\n  }\n  const t0 = performance.now()\n  const tick = (now: number) => {\n    const p = Math.min((now - t0) / props.duration, 1)\n    const eased = 1 - Math.pow(1 - p, 3)\n    value.value = props.target * eased\n    if (p < 1) rafId = requestAnimationFrame(tick)\n  }\n  rafId = requestAnimationFrame(tick)\n}\n\nonMounted(() => {\n  if (!el.value) return\n  observer = new IntersectionObserver(\n    (entries) => {\n      if (entries.some((e) => e.isIntersecting)) {\n        start()\n        observer?.disconnect()\n      }\n    },\n    { threshold: 0.5 },\n  )\n  observer.observe(el.value)\n})\n\nonBeforeUnmount(() => {\n  observer?.disconnect()\n  cancelAnimationFrame(rafId)\n})\n</script>\n\n<template>\n  <section class=\"px-6 pb-32 pt-8 text-center\">\n    <div ref=\"el\">\n      <p class=\"text-6xl font-extrabold tabular-nums sm:text-8xl\" aria-live=\"off\">\n        {{ formatted }}{{ suffix }}\n      </p>\n      <p v-if=\"label\" class=\"mt-3 text-lg uppercase tracking-widest text-slate-400\">\n        {{ label }}\n      </p>\n    </div>\n  </section>\n</template>\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 67029,
+        "brotli": 24377
+      }
+    },
+    {
+      "task": "landing-motion",
+      "stack": "vue",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 404,
+        "output": 2419,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.024998,
+      "codeTokens": 2366,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.vue": "<script setup lang=\"ts\">\nimport HeroSection from './components/HeroSection.vue'\nimport FeatureCards from './components/FeatureCards.vue'\nimport StatCounter from './components/StatCounter.vue'\n</script>\n\n<template>\n  <main class=\"min-h-screen bg-slate-950 text-white antialiased\">\n    <HeroSection />\n    <FeatureCards />\n    <StatCounter :target=\"12000\" suffix=\"+\" label=\"usuarios\" />\n  </main>\n</template>\n",
+            "components/HeroSection.vue": "<script setup lang=\"ts\">\nconst emit = defineEmits<{ (e: 'start'): void }>()\n</script>\n\n<template>\n  <section class=\"relative flex min-h-screen items-center justify-center overflow-hidden px-6\">\n    <div class=\"hero-bg absolute inset-0\" aria-hidden=\"true\"></div>\n    <div class=\"absolute inset-0 bg-slate-950/30\" aria-hidden=\"true\"></div>\n\n    <div class=\"relative z-10 max-w-2xl text-center\">\n      <h1 class=\"text-6xl font-extrabold tracking-tight sm:text-8xl\">Nimbus</h1>\n      <p class=\"mt-6 text-lg text-white/80 sm:text-xl\">\n        La plataforma liviana para llevar tus ideas a la nube, sin fricción.\n      </p>\n      <button\n        type=\"button\"\n        class=\"cta mt-10 rounded-full bg-white px-8 py-3 text-lg font-semibold text-slate-900 shadow-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-white/50\"\n        @click=\"emit('start')\"\n      >\n        Empezar\n      </button>\n    </div>\n  </section>\n</template>\n\n<style scoped>\n.hero-bg {\n  background: linear-gradient(120deg, #4f46e5, #0ea5e9, #8b5cf6, #06b6d4, #4f46e5);\n  background-size: 400% 400%;\n  animation: gradientMove 20s ease infinite;\n}\n\n.cta {\n  transition: transform 0.3s ease, box-shadow 0.3s ease;\n}\n.cta:hover {\n  transform: scale(1.1);\n}\n\n@keyframes gradientMove {\n  0% { background-position: 0% 50%; }\n  50% { background-position: 100% 50%; }\n  100% { background-position: 0% 50%; }\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .hero-bg {\n    animation: none;\n  }\n  .cta {\n    transition: none;\n  }\n  .cta:hover {\n    transform: none;\n  }\n}\n</style>\n",
+            "components/FeatureCards.vue": "<script setup lang=\"ts\">\nimport { ref, onMounted, onBeforeUnmount } from 'vue'\n\ninterface Feature {\n  title: string\n  text: string\n}\n\nconst features: Feature[] = [\n  { title: 'Rápido', text: 'Carga en milisegundos, en cualquier dispositivo.' },\n  { title: 'Simple', text: 'Una interfaz clara que no te hace perder tiempo.' },\n  { title: 'Abierto', text: 'Código abierto y construido junto a la comunidad.' },\n]\n\nconst container = ref<HTMLElement | null>(null)\nconst visible = ref(false)\nlet observer: IntersectionObserver | null = null\n\nonMounted(() => {\n  if (!container.value) return\n  observer = new IntersectionObserver(\n    (entries) => {\n      if (entries.some((e) => e.isIntersecting)) {\n        visible.value = true\n        observer?.disconnect()\n      }\n    },\n    { threshold: 0.2 }\n  )\n  observer.observe(container.value)\n})\n\nonBeforeUnmount(() => observer?.disconnect())\n</script>\n\n<template>\n  <section class=\"mx-auto max-w-5xl px-6 py-24\">\n    <div ref=\"container\" class=\"grid gap-6 md:grid-cols-3\">\n      <article\n        v-for=\"(f, i) in features\"\n        :key=\"f.title\"\n        class=\"card rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur\"\n        :class=\"{ 'is-visible': visible }\"\n        :style=\"{ transitionDelay: `${i * 200}ms` }\"\n      >\n        <h2 class=\"text-2xl font-bold\">{{ f.title }}</h2>\n        <p class=\"mt-3 text-white/70\">{{ f.text }}</p>\n      </article>\n    </div>\n  </section>\n</template>\n\n<style scoped>\n.card {\n  opacity: 0;\n  transform: translateY(32px);\n  transition: opacity 0.7s ease, transform 0.7s ease;\n}\n.card.is-visible {\n  opacity: 1;\n  transform: translateY(0);\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .card {\n    opacity: 1;\n    transform: none;\n    transition: none;\n    transition-delay: 0ms !important;\n  }\n}\n</style>\n",
+            "components/StatCounter.vue": "<script setup lang=\"ts\">\nimport { ref, computed, onMounted, onBeforeUnmount } from 'vue'\n\nconst props = withDefaults(\n  defineProps<{\n    target: number\n    duration?: number\n    suffix?: string\n    label?: string\n  }>(),\n  { duration: 2000, suffix: '', label: '' }\n)\n\nconst root = ref<HTMLElement | null>(null)\nconst value = ref(0)\nlet observer: IntersectionObserver | null = null\nlet rafId = 0\n\nconst formatted = computed(\n  () => new Intl.NumberFormat('es-AR').format(Math.round(value.value)) + props.suffix\n)\n\nfunction start() {\n  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches\n  if (reduce) {\n    value.value = props.target\n    return\n  }\n  const t0 = performance.now()\n  const tick = (now: number) => {\n    const p = Math.min((now - t0) / props.duration, 1)\n    const eased = 1 - Math.pow(1 - p, 3)\n    value.value = props.target * eased\n    if (p < 1) rafId = requestAnimationFrame(tick)\n  }\n  rafId = requestAnimationFrame(tick)\n}\n\nonMounted(() => {\n  if (!root.value) return\n  observer = new IntersectionObserver(\n    (entries) => {\n      if (entries.some((e) => e.isIntersecting)) {\n        start()\n        observer?.disconnect()\n      }\n    },\n    { threshold: 0.5 }\n  )\n  observer.observe(root.value)\n})\n\nonBeforeUnmount(() => {\n  observer?.disconnect()\n  cancelAnimationFrame(rafId)\n})\n</script>\n\n<template>\n  <section ref=\"root\" class=\"px-6 pb-32 pt-8 text-center\">\n    <p class=\"text-6xl font-extrabold tabular-nums sm:text-8xl\" aria-live=\"off\">\n      {{ formatted }}\n    </p>\n    <p v-if=\"label\" class=\"mt-3 text-lg text-white/70\">{{ label }}</p>\n  </section>\n</template>\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 66932,
+        "brotli": 24352
+      }
+    },
+    {
+      "task": "landing-motion",
+      "stack": "solid",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 407,
+        "output": 2553,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.026344,
+      "codeTokens": 2519,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { createSignal, For, onCleanup, onMount, Show } from \"solid-js\";\nimport Reveal from \"./Reveal\";\nimport Counter from \"./Counter\";\n\nconst features = [\n  { title: \"Rápido\", text: \"Carga al instante y responde sin esperas.\" },\n  { title: \"Simple\", text: \"Una interfaz clara que se entiende sola.\" },\n  { title: \"Abierto\", text: \"Código abierto y pensado para la comunidad.\" },\n];\n\nexport default function App() {\n  const [reduced, setReduced] = createSignal(false);\n\n  onMount(() => {\n    const mq = window.matchMedia(\"(prefers-reduced-motion: reduce)\");\n    setReduced(mq.matches);\n    const handler = (e: MediaQueryListEvent) => setReduced(e.matches);\n    mq.addEventListener(\"change\", handler);\n    onCleanup(() => mq.removeEventListener(\"change\", handler));\n  });\n\n  return (\n    <div class=\"min-h-screen bg-slate-950 text-white\">\n      <style>{`\n        @keyframes nimbus-gradient {\n          0% { background-position: 0% 50%; }\n          50% { background-position: 100% 50%; }\n          100% { background-position: 0% 50%; }\n        }\n        .nimbus-bg {\n          background: linear-gradient(120deg, #4f46e5, #0ea5e9, #8b5cf6, #06b6d4, #4f46e5);\n          background-size: 300% 300%;\n          animation: nimbus-gradient 18s ease-in-out infinite;\n        }\n        @media (prefers-reduced-motion: reduce) {\n          .nimbus-bg { animation: none; }\n          .nimbus-btn { transition: none !important; transform: none !important; }\n        }\n        .nimbus-btn { transition: transform 300ms ease, box-shadow 300ms ease; }\n        .nimbus-btn:hover, .nimbus-btn:focus-visible { transform: scale(1.08); }\n        @media (prefers-reduced-motion: reduce) {\n          .nimbus-btn:hover, .nimbus-btn:focus-visible { transform: none; }\n        }\n      `}</style>\n\n      <header class=\"relative isolate overflow-hidden\">\n        <div class=\"nimbus-bg absolute inset-0 -z-10\" aria-hidden=\"true\" />\n        <div class=\"absolute inset-0 -z-10 bg-slate-950/30\" aria-hidden=\"true\" />\n        <div class=\"mx-auto flex min-h-[80vh] max-w-3xl flex-col items-center justify-center px-6 py-24 text-center\">\n          <h1 class=\"text-6xl font-extrabold tracking-tight sm:text-8xl\">Nimbus</h1>\n          <p class=\"mt-6 max-w-xl text-lg text-white/90 sm:text-xl\">\n            La forma más ligera de llevar tus ideas a la nube.\n          </p>\n          <button\n            type=\"button\"\n            class=\"nimbus-btn mt-10 rounded-full bg-white px-8 py-3 text-lg font-semibold text-indigo-700 shadow-lg hover:shadow-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60\"\n          >\n            Empezar\n          </button>\n        </div>\n      </header>\n\n      <section class=\"mx-auto max-w-5xl px-6 py-24\">\n        <div class=\"grid gap-6 md:grid-cols-3\">\n          <For each={features}>\n            {(f, i) => (\n              <Reveal delay={i() * 150} reduced={reduced()}>\n                <div class=\"h-full rounded-2xl border border-white/10 bg-white/5 p-8 shadow-xl backdrop-blur\">\n                  <h2 class=\"text-2xl font-bold\">{f.title}</h2>\n                  <p class=\"mt-3 text-slate-300\">{f.text}</p>\n                </div>\n              </Reveal>\n            )}\n          </For>\n        </div>\n      </section>\n\n      <section class=\"px-6 pb-32 text-center\">\n        <Counter target={12000} reduced={reduced()} />\n        <p class=\"mt-2 text-lg text-slate-400\">usuarios</p>\n      </section>\n    </div>\n  );\n}\n",
+            "Reveal.tsx": "import { createSignal, JSX, onCleanup, onMount } from \"solid-js\";\n\ninterface RevealProps {\n  children: JSX.Element;\n  delay?: number;\n  reduced?: boolean;\n}\n\nexport default function Reveal(props: RevealProps) {\n  let el!: HTMLDivElement;\n  const [visible, setVisible] = createSignal(false);\n\n  onMount(() => {\n    const io = new IntersectionObserver(\n      (entries) => {\n        if (entries.some((e) => e.isIntersecting)) {\n          setVisible(true);\n          io.disconnect();\n        }\n      },\n      { threshold: 0.2 }\n    );\n    io.observe(el);\n    onCleanup(() => io.disconnect());\n  });\n\n  const style = (): JSX.CSSProperties => {\n    if (props.reduced) {\n      return { opacity: 1, transform: \"none\", transition: \"none\" };\n    }\n    return {\n      opacity: visible() ? 1 : 0,\n      transform: visible() ? \"translateY(0)\" : \"translateY(32px)\",\n      transition: \"opacity 700ms ease-out, transform 700ms ease-out\",\n      \"transition-delay\": `${props.delay ?? 0}ms`,\n    };\n  };\n\n  return (\n    <div ref={el} style={style()}>\n      {props.children}\n    </div>\n  );\n}\n",
+            "Counter.tsx": "import { createSignal, onCleanup, onMount } from \"solid-js\";\n\ninterface CounterProps {\n  target: number;\n  reduced?: boolean;\n  duration?: number;\n}\n\nexport default function Counter(props: CounterProps) {\n  let el!: HTMLDivElement;\n  const [value, setValue] = createSignal(0);\n  let raf = 0;\n  let started = false;\n\n  const format = (n: number) =>\n    new Intl.NumberFormat(\"es-AR\").format(Math.round(n));\n\n  const start = () => {\n    if (started) return;\n    started = true;\n    if (props.reduced) {\n      setValue(props.target);\n      return;\n    }\n    const duration = props.duration ?? 2200;\n    const t0 = performance.now();\n    const tick = (now: number) => {\n      const p = Math.min((now - t0) / duration, 1);\n      const eased = 1 - Math.pow(1 - p, 3);\n      setValue(props.target * eased);\n      if (p < 1) raf = requestAnimationFrame(tick);\n    };\n    raf = requestAnimationFrame(tick);\n  };\n\n  onMount(() => {\n    const io = new IntersectionObserver(\n      (entries) => {\n        if (entries.some((e) => e.isIntersecting)) {\n          start();\n          io.disconnect();\n        }\n      },\n      { threshold: 0.4 }\n    );\n    io.observe(el);\n    onCleanup(() => {\n      io.disconnect();\n      cancelAnimationFrame(raf);\n    });\n  });\n\n  return (\n    <div\n      ref={el}\n      class=\"bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-6xl font-extrabold tabular-nums text-transparent sm:text-8xl\"\n      aria-label={`${format(props.target)}+`}\n    >\n      <span aria-hidden=\"true\">{format(value())}+</span>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 17825,
+        "brotli": 6520
+      }
+    },
+    {
+      "task": "landing-motion",
+      "stack": "solid",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 407,
+        "output": 2804,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.028854,
+      "codeTokens": 2770,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { createSignal, For, onCleanup, onMount, Show } from \"solid-js\";\nimport Reveal from \"./Reveal\";\nimport Counter from \"./Counter\";\n\nconst features = [\n  { title: \"Rápido\", text: \"Carga al instante y responde sin demoras.\", icon: \"⚡\" },\n  { title: \"Simple\", text: \"Una interfaz clara que no se interpone en tu camino.\", icon: \"✨\" },\n  { title: \"Abierto\", text: \"Código abierto y transparente, hecho con la comunidad.\", icon: \"🌍\" },\n];\n\nexport default function App() {\n  const [started, setStarted] = createSignal(false);\n  let timer: number | undefined;\n\n  onMount(() => {});\n  onCleanup(() => {\n    if (timer) clearTimeout(timer);\n  });\n\n  const handleStart = () => {\n    setStarted(true);\n    timer = window.setTimeout(() => setStarted(false), 2500);\n  };\n\n  return (\n    <div class=\"min-h-screen bg-slate-950 text-white font-sans\">\n      <style>{`\n        @keyframes nimbus-gradient {\n          0% { background-position: 0% 50%; }\n          50% { background-position: 100% 50%; }\n          100% { background-position: 0% 50%; }\n        }\n        .nimbus-bg {\n          background: linear-gradient(120deg, #0ea5e9, #6366f1, #a855f7, #ec4899, #0ea5e9);\n          background-size: 300% 300%;\n          animation: nimbus-gradient 18s ease infinite;\n        }\n        .nimbus-btn {\n          transition: transform 300ms ease, box-shadow 300ms ease;\n        }\n        .nimbus-btn:hover, .nimbus-btn:focus-visible {\n          transform: scale(1.1);\n        }\n        .reveal {\n          opacity: 0;\n          transform: translateY(32px);\n          transition: opacity 700ms ease, transform 700ms ease;\n          transition-delay: var(--delay, 0ms);\n        }\n        .reveal.is-visible {\n          opacity: 1;\n          transform: translateY(0);\n        }\n        @media (prefers-reduced-motion: reduce) {\n          .nimbus-bg { animation: none; }\n          .nimbus-btn { transition: none; }\n          .nimbus-btn:hover, .nimbus-btn:focus-visible { transform: none; }\n          .reveal {\n            opacity: 1;\n            transform: none;\n            transition: none;\n          }\n        }\n      `}</style>\n\n      <header class=\"relative overflow-hidden\">\n        <div class=\"nimbus-bg absolute inset-0 opacity-80\" aria-hidden=\"true\" />\n        <div class=\"absolute inset-0 bg-slate-950/30\" aria-hidden=\"true\" />\n        <div class=\"relative z-10 mx-auto flex min-h-[80vh] max-w-4xl flex-col items-center justify-center px-6 py-24 text-center\">\n          <h1 class=\"text-6xl font-extrabold tracking-tight sm:text-8xl drop-shadow-lg\">\n            Nimbus\n          </h1>\n          <p class=\"mt-6 max-w-xl text-lg text-white/90 sm:text-2xl\">\n            La forma más liviana de llevar tus ideas a la nube.\n          </p>\n          <button\n            type=\"button\"\n            onClick={handleStart}\n            class=\"nimbus-btn mt-10 rounded-full bg-white px-8 py-3 text-lg font-semibold text-indigo-700 shadow-xl focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60\"\n          >\n            Empezar\n          </button>\n          <div class=\"mt-4 h-6 text-sm text-white/90\" aria-live=\"polite\">\n            <Show when={started()}>¡Genial, vamos a empezar!</Show>\n          </div>\n        </div>\n      </header>\n\n      <main>\n        <section class=\"mx-auto max-w-5xl px-6 py-24\">\n          <div class=\"grid gap-6 md:grid-cols-3\">\n            <For each={features}>\n              {(f, i) => (\n                <Reveal delay={i() * 200}>\n                  <div class=\"h-full rounded-2xl border border-white/10 bg-white/5 p-8 text-center shadow-lg backdrop-blur\">\n                    <div class=\"text-4xl\" aria-hidden=\"true\">{f.icon}</div>\n                    <h2 class=\"mt-4 text-2xl font-bold\">{f.title}</h2>\n                    <p class=\"mt-2 text-slate-300\">{f.text}</p>\n                  </div>\n                </Reveal>\n              )}\n            </For>\n          </div>\n        </section>\n\n        <section class=\"px-6 pb-32 text-center\">\n          <Reveal>\n            <div class=\"text-6xl font-extrabold text-sky-400 sm:text-7xl\">\n              <Counter target={12000} duration={2000} suffix=\"+\" />\n            </div>\n            <p class=\"mt-2 text-lg text-slate-300\">usuarios</p>\n          </Reveal>\n        </section>\n      </main>\n    </div>\n  );\n}\n",
+            "Reveal.tsx": "import { JSX, onCleanup, onMount } from \"solid-js\";\n\ninterface RevealProps {\n  delay?: number;\n  children: JSX.Element;\n}\n\nexport default function Reveal(props: RevealProps) {\n  let el: HTMLDivElement | undefined;\n  let observer: IntersectionObserver | undefined;\n\n  onMount(() => {\n    if (!el) return;\n    if (typeof IntersectionObserver === \"undefined\") {\n      el.classList.add(\"is-visible\");\n      return;\n    }\n    observer = new IntersectionObserver(\n      (entries) => {\n        for (const entry of entries) {\n          if (entry.isIntersecting) {\n            entry.target.classList.add(\"is-visible\");\n            observer?.unobserve(entry.target);\n          }\n        }\n      },\n      { threshold: 0.2 }\n    );\n    observer.observe(el);\n  });\n\n  onCleanup(() => observer?.disconnect());\n\n  return (\n    <div\n      ref={el}\n      class=\"reveal\"\n      style={{ \"--delay\": `${props.delay ?? 0}ms` }}\n    >\n      {props.children}\n    </div>\n  );\n}\n",
+            "Counter.tsx": "import { createSignal, onCleanup, onMount } from \"solid-js\";\n\ninterface CounterProps {\n  target: number;\n  duration?: number;\n  suffix?: string;\n}\n\nexport default function Counter(props: CounterProps) {\n  const [value, setValue] = createSignal(0);\n  let el: HTMLSpanElement | undefined;\n  let observer: IntersectionObserver | undefined;\n  let raf = 0;\n\n  const format = (n: number) =>\n    new Intl.NumberFormat(\"es-AR\").format(Math.round(n));\n\n  const run = () => {\n    const reduce = window.matchMedia(\"(prefers-reduced-motion: reduce)\").matches;\n    if (reduce) {\n      setValue(props.target);\n      return;\n    }\n    const duration = props.duration ?? 2000;\n    const start = performance.now();\n    const tick = (now: number) => {\n      const t = Math.min((now - start) / duration, 1);\n      const eased = 1 - Math.pow(1 - t, 3);\n      setValue(props.target * eased);\n      if (t < 1) raf = requestAnimationFrame(tick);\n    };\n    raf = requestAnimationFrame(tick);\n  };\n\n  onMount(() => {\n    if (!el) return;\n    if (typeof IntersectionObserver === \"undefined\") {\n      setValue(props.target);\n      return;\n    }\n    observer = new IntersectionObserver(\n      (entries) => {\n        if (entries.some((e) => e.isIntersecting)) {\n          run();\n          observer?.disconnect();\n        }\n      },\n      { threshold: 0.4 }\n    );\n    observer.observe(el);\n  });\n\n  onCleanup(() => {\n    observer?.disconnect();\n    cancelAnimationFrame(raf);\n  });\n\n  return (\n    <span ref={el} aria-label={`${format(props.target)}${props.suffix ?? \"\"}`}>\n      {format(value())}\n      {props.suffix ?? \"\"}\n    </span>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 19577,
+        "brotli": 7139
+      }
+    }
+  ]
+}

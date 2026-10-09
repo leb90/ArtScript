@@ -212,7 +212,7 @@ module.exports = grammar({
         ["??", PREC.nullish], ["||", PREC.or], ["&&", PREC.and], ["|", PREC.bitor], ["^", PREC.bitxor], ["&", PREC.bitand],
         ["<<", PREC.shift], [">>", PREC.shift], [">>>", PREC.shift],
         ["==", PREC.equality], ["!=", PREC.equality], ["===", PREC.equality], ["!==", PREC.equality],
-        ["<", PREC.compare], [">", PREC.compare], ["<=", PREC.compare], [">=", PREC.compare],
+        ["<", PREC.compare], [">", PREC.compare], ["<=", PREC.compare], [">=", PREC.compare], ["in", PREC.compare], ["instanceof", PREC.compare],
         ["+", PREC.add], ["-", PREC.add], ["*", PREC.mul], ["/", PREC.mul], ["%", PREC.mul],
       ];
       return choice(

@@ -925,6 +925,14 @@
             "named": false
           },
           {
+            "type": "in",
+            "named": false
+          },
+          {
+            "type": "instanceof",
+            "named": false
+          },
+          {
             "type": "|",
             "named": false
           },
@@ -5226,6 +5234,10 @@
   },
   {
     "type": "in",
+    "named": false
+  },
+  {
+    "type": "instanceof",
     "named": false
   },
   {

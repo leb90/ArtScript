@@ -512,3 +512,12 @@ test("tolerance: `event` is available in a `->` action", () => {
   assert.deepEqual(r.diagnostics, []);
   assert.match(r.js!, /\(event\) => \{/);
 });
+
+test("tolerance: `in` and `instanceof`, and a nested fn inside a block", () => {
+  const src = 'page P {\n  state ok = false\n  fn check(e) {\n    fn inner(x) {\n      return x * 2\n    }\n    ok = "IntersectionObserver" in window && !(e instanceof Error) && inner(2) == 4\n  }\n\n  text ok\n}\n';
+  const r = compile([{ file: "a.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  assert.match(r.js!, /"IntersectionObserver" in window/);
+  assert.match(r.js!, /let inner = \(\(x\) => \{/);
+  assert.equal(printProgram(parse(src, "a")), src.replace("    fn inner(x) {\n      return x * 2\n    }", "    let inner = x => { return x * 2 }"));
+});

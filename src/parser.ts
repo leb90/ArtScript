@@ -8,7 +8,7 @@ import { lex, type Comment, type Token } from "./lexer.ts";
 const BINARY_PREC: Record<string, number> = {
   "??": 1, "||": 2, "&&": 3, "|": 3.2, "^": 3.4, "&": 3.6,
   "==": 4, "!=": 4, "===": 4, "!==": 4,
-  "<": 5, ">": 5, "<=": 5, ">=": 5, "<<": 5.5, ">>": 5.5, ">>>": 5.5,
+  "<": 5, ">": 5, "<=": 5, ">=": 5, "in": 5, "instanceof": 5, "<<": 5.5, ">>": 5.5, ">>>": 5.5,
   "+": 6, "-": 6, "*": 7, "/": 7, "%": 7, "**": 8,
 };
 const ASSIGN_OPS = new Set(["=", "+=", "-=", "*=", "/=", "%=", "**=", "??=", "&=", "|=", "^=", "<<=", ">>=", ">>>="]);
@@ -651,6 +651,13 @@ class Parser {
 
   stmt(): Stmt {
     const t = this.tok;
+    // `fn helper(a) { ... }` inside a block (as models write inner functions): a let with an arrow.
+    if (this.is("fn") && this.peek().t === "id" && this.is("(", this.peek(2))) {
+      this.next();
+      const name = this.ident().v;
+      const { params } = this.fnParams();
+      return { kind: "Let", name, init: { kind: "Arrow", params, body: this.block(), loc: t.loc }, loc: t.loc };
+    }
     if (this.is("let") || this.is("const")) {
       this.next();
       const name = this.ident().v;
@@ -792,7 +799,8 @@ class Parser {
     let left = first ?? this.unary();
     for (;;) {
       const t = this.tok;
-      const prec = t.t === "op" ? BINARY_PREC[t.v] : undefined;
+      // `"x" in obj` and `e instanceof Error` are words, not symbols.
+      const prec = t.t === "op" || (t.t === "id" && (t.v === "in" || t.v === "instanceof")) ? BINARY_PREC[t.v] : undefined;
       if (prec === undefined || prec <= min) break;
       this.next();
       const right = this.binary(t.v === "**" ? prec - 1 : prec); // ** is right-associative

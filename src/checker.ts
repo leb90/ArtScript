@@ -1344,6 +1344,7 @@ class Checker {
         if (l.k === "str" || r.k === "str") return STR;
         if (l.k === "num" && r.k === "num") return NUM;
         return ANY;
+      case "in": case "instanceof": return BOOL;
       case "-": case "*": case "/": case "%": case "**": case "&": case "|": case "^": case "<<": case ">>": case ">>>":
         for (const [side, t] of [[e.left, l], [e.right, r]] as const) {
           if (t.k !== "num" && t.k !== "any") this.err("TYPE_MISMATCH", `'${e.op}' needs numbers`, side.loc, { expr: printExpr(side), expected: "Number", actual: show(t) });

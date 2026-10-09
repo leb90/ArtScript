@@ -124,7 +124,7 @@ function comparable(results: Run[]): Run[] {
 // Categories reported apart from the UI/data tables: imperative code, and motion-heavy design.
 const EXTRA: { match: (task: string) => boolean; title: string; intro: string; after?: string }[] = [
   { match: (t) => t.startsWith("imp-"), title: "Imperative code: a canvas with animation and physics", intro: "One task where almost all the code is a physics loop (gravity, walls, elastic collisions, drawing): the kind of app where ArtScript is JavaScript with another syntax for statements. Reported apart from the tables above, which are apps of UI and data. USD per solved task (solved runs / runs):" },
-  { match: (t) => t === "landing-motion", title: "Motion-heavy design: a landing with entrances, scroll reveals, hover and an animated background", intro: "One task of the kind a design-led site is made of: a hero with staggered entrances and a slowly moving gradient, cards that reveal on scroll one after another, a button that grows on hover, a number that counts up, reduced-motion respected. In ArtScript these are flags and props on any element (`reveal`, `animate=`, `stagger`, `hover=`); in the other stacks they are CSS, an IntersectionObserver and a requestAnimationFrame loop the model writes. USD per solved task (solved runs / runs):" },
+  { match: (t) => t === "landing-motion", title: "Motion-heavy design: a landing with entrances, scroll reveals, hover and an animated background", intro: "One task of the kind a design-led site is made of: a hero with staggered entrances and a slowly moving gradient, cards that reveal on scroll one after another, a button that grows on hover, a number that counts up, reduced-motion respected. In ArtScript these are flags and props on any element (`reveal`, `animate=`, `stagger`, `hover=`); in the other stacks they are CSS, an IntersectionObserver and a requestAnimationFrame loop the model writes. USD per solved task (solved runs / runs):", after: "Read with the breakdown (2026-10-09, two runs per cell): the ArtScript answers are 40–55% shorter (Sonnet 1,243 tokens of code against React's 2,313) and, with the final compiler, solved at the first attempt by Sonnet and Opus; what they pay is the spec written to the prompt cache in every fresh conversation (about $0.013 with Sonnet, $0.026 with Opus) and 900–1,200 tokens of deliberation over props the model hasn't seen before, against ~10 for CSS it knows. In a session, with the spec read from the cache, the same single-attempt runs cost 3–9% less than React. Three earlier rounds were lost to harness defects (no working IntersectionObserver, a count-up check that raced the number) and are in the raw data, not here; what the runs taught became tolerances (`in`, a nested `fn`, icon names as models write them, a flag used as an element)." },
 ];
 const imperative = (r: Run) => EXTRA.some((x) => x.match(r.task));
 function impTable(loaded: Loaded[]): string[] {
@@ -136,6 +136,7 @@ function extraTable(loaded: Loaded[], x: typeof EXTRA[number]): string[] {
   const rows = loaded.flatMap(({ data, paths }) => {
     const pooled: Run[] = [];
     for (const path of paths) {
+      if (/Not in the table/.test(NOTES[basename(path)] ?? "")) continue; // a round a harness defect invalidated
       const rs = (JSON.parse(readFileSync(path, "utf8")) as ResultFile).results.filter((r) => x.match(r.task) && !notRun(r));
       if (ORDER.every((k) => rs.some((r) => r.stack === k))) pooled.push(...rs);
     }
@@ -149,7 +150,7 @@ function extraTable(loaded: Loaded[], x: typeof EXTRA[number]): string[] {
     const art = cell("artscript"), react = cell("react");
     out.push(`| ${data.model} | ${ORDER.map((k) => { const c = cell(k); return c.n ? `${k === "artscript" ? `**${usd(c.per)}**` : usd(c.per)} (${c.ok}/${c.n})` : "—"; }).join(" | ")} | **${pct(art.per, react.per)}** |`);
   }
-  return [...out, ""];
+  return [...out, ...(x.after ? ["", x.after] : []), ""];
 }
 
 function section(loaded: Loaded[]): string {
