@@ -172,7 +172,10 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
     // .css file of the project (outside dist/public). A file, not inline styles: a strict CSP works.
     const root = projectRoot(target);
     const cssFiles = findFiles(root, ".css").filter((f) => !relative(root, f).startsWith("public"));
-    const css = [`@layer art{${CSS}}`, ...cssFiles.map((f) => `/* ${relative(root, f)} */\n${readFileSync(f, "utf8")}`)].join("\n");
+    // `@import` (fonts) and `@charset` must come before any rule: they're lifted to the top.
+    const heads: string[] = [];
+    const body = cssFiles.map((f) => `/* ${relative(root, f)} */\n${readFileSync(f, "utf8").replace(/^\s*@(import|charset)\b[^;]*;/gm, (m) => { heads.push(m.trim()); return ""; })}`);
+    const css = [...heads, `@layer art{${CSS}}`, ...body].join("\n");
     // A favicon in public/ is linked from every page.
     const icon = ["favicon.svg", "favicon.png", "favicon.ico"].find((f) => existsSync(join(root, "public", f)));
     shellHead = (icon ? `<link rel="icon" href="${base}${icon}">` : "") + (existsSync(join(root, "public", "apple-touch-icon.png")) ? `<link rel="apple-touch-icon" href="${base}apple-touch-icon.png">` : "");

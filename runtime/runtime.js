@@ -87,7 +87,7 @@ class TextEffect extends Effect {
 
 export function batch(fn) {
   depth++;
-  try { return fn(); } finally { if (--depth === 0) flush(); }
+  try { return fn(); } finally { if (--depth === 0) { if (touchPending) flushTouched(); flush(); } }
 }
 function flush() {
   if (flushing) return;
@@ -127,6 +127,41 @@ export function signal(v) {
   return s;
 }
 export const $all = { notify() { if (!listener) batch(() => { for (const s of [...states]) s.notify(); }); } };
+// A mutation through an untracked alias (a fn parameter, a computed's item): the states whose
+// value holds that object are notified, once per flush. An object no state holds (a local of a
+// physics loop) notifies nothing, however many times it changes.
+const touched = new Set();
+let touchQueued = false, touchPending = false;
+export function $mut(obj, value) {
+  if (obj !== null && typeof obj === "object" && !(listener instanceof Computed)) {
+    touched.add(obj);
+    if (depth > 0) touchPending = true;
+    else if (!touchQueued) { touchQueued = true; queueMicrotask(flushTouched); }
+  }
+  return value;
+}
+function flushTouched() {
+  touchQueued = touchPending = false;
+  if (!touched.size) return;
+  const objs = new Set(touched);
+  touched.clear();
+  batch(() => { for (const s of [...states]) if (holds(s._v, objs)) s.notify(); });
+}
+// Whether `v` is or contains one of `objs` (three levels deep; past 20,000 values it assumes so).
+function holds(v, objs) {
+  let budget = 20000;
+  const walk = (x, d) => {
+    if (x === null || typeof x !== "object") return false;
+    if (objs.has(x)) return true;
+    if (d === 0) return false;
+    if (--budget < 0) return true;
+    if (Array.isArray(x)) { for (const y of x) if (walk(y, d - 1)) return true; }
+    else if (x instanceof Map || x instanceof Set) { for (const y of x.values()) if (walk(y, d - 1)) return true; }
+    else for (const k in x) if (walk(x[k], d - 1)) return true;
+    return false;
+  };
+  return walk(v, 3);
+}
 export function computed(fn) {
   const c = new Computed(fn);
   onDispose(c);
@@ -545,7 +580,11 @@ export function $mount(fn) {
     const prev = owner;
     owner = o;
     // On the server, code meant for a real browser (a chart library...) just doesn't render.
-    try { fn(); } catch (e) { if (!globalThis.__artSSR && !globalThis.__artStatic) throw e; } finally { owner = prev; }
+    const server = () => globalThis.__artSSR || globalThis.__artStatic;
+    try {
+      const r = fn();
+      if (server() && r && typeof r.catch === "function") r.catch(() => {});
+    } catch (e) { if (!server()) throw e; } finally { owner = prev; }
   });
 }
 

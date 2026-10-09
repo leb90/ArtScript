@@ -389,7 +389,8 @@ test("in-place changes through a computed's items and through iteration callback
   assert.deepEqual(r.diagnostics, []);
   // The callback's item belongs to the state being iterated: only that state is notified.
   assert.match(r.js!, /todos\.v\.forEach\(\(\(t\) => \$\.\$m\(todos, /);
-  assert.match(r.js!, /open\.v\.forEach\(\(\(t\) => \$\.\$m\(\$\.\$all, /);
+  // A computed's item may belong to any state: the runtime finds which one holds the object.
+  assert.match(r.js!, /open\.v\.forEach\(\(\(t\) => \$\.\$mut\(t, /);
   const dir = mkdtempSync(join(tmpdir(), "art-computed-items-"));
   writeFileSync(join(dir, "app.js"), r.js!);
   copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));

@@ -548,7 +548,7 @@ class ComponentGen {
     // `class` first: the classes other props add (responsive props, conditional flags) come after it.
     for (const p of [...el.props.filter((q) => q.name === "class"), ...el.props.filter((q) => q.name !== "class")]) {
       if (!p.value) {
-        if (/^(aria|data)-/.test(p.name)) this.emit(`${v}.setAttribute(${JSON.stringify(p.name)}, "true");`);
+        if (/^(aria|data)-/.test(p.name) || p.name === "tabindex") this.emit(`${v}.setAttribute(${JSON.stringify(p.name)}, "true");`);
         else if (p.name === "novalidate") this.emit(`${v}.setAttribute("novalidate", "");`);
         else if (isAttr(p.name)) this.emit(`${v}.${p.name} = true;`);
         continue;
@@ -796,6 +796,7 @@ class ComponentGen {
         const call = `${this.wrapPostfix(e.callee, scope)}${e.optional ? "?.(" : "("}${args.join(", ")})`;
         if (e.callee.kind === "Member" && MUTATORS.has(e.callee.prop)) {
           const sig = this.notifier(e.callee.object, scope);
+          if (sig === "$.$all") return `$.$mut(${this.container(e.callee, scope)}, ${call})`;
           if (sig) return `$.$m(${sig}, ${call})`;
         }
         return call;
@@ -849,7 +850,17 @@ class ComponentGen {
   mutation(target: Expr, code: string, scope: Scope): string {
     if (target.kind === "Ident") return code;
     const sig = this.notifier(target, scope);
+    if (sig === "$.$all") return `$.$mut(${this.container(target, scope)}, ${code})`;
     return sig ? `$.$m(${sig}, ${code})` : code;
+  }
+
+  // The object a mutation changes (`p.x = 1` → `p`, `xs[i] = v` → `xs`, `p.items.push(x)` → `p.items`),
+  // so the runtime can tell which state holds it. If reading it would call something, the root instead.
+  container(target: Expr, scope: Scope): string {
+    let obj = target.kind === "Member" || target.kind === "Index" ? target.object : target;
+    const calls = (e: Expr): boolean => e.kind === "Call" || ((e.kind === "Member" || e.kind === "Index") && calls(e.object));
+    while (calls(obj) && (obj.kind === "Member" || obj.kind === "Index" || obj.kind === "Call")) obj = obj.kind === "Call" ? obj.callee : obj.object;
+    return this.expr(obj, scope);
   }
 
   // What to notify when `target` is mutated in place. A computed's items belong to the states it

@@ -136,7 +136,10 @@ class Element extends Node {
     return null;
   }
   set innerHTML(v) { this.textContent = ""; this.appendChild(new Raw(String(v))); }
-  getBoundingClientRect() { return { left: 0, right: 0, top: 0, bottom: 0 }; }
+  getBoundingClientRect() { return { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0 }; }
+  getContext() { return null; } // a canvas has no drawing context on the server
+  focus() {}
+  blur() {}
   showModal() { this.open = true; }
   close() { this.open = false; }
   get style() { return this.$style; }
@@ -187,6 +190,23 @@ class Document extends Node {
 
 let document;
 
+// What a `mount` or `effect` written for the browser may touch on the server: inert stand-ins, so
+// a chart, a canvas or a media query doesn't stop the render (its output isn't prerendered anyway).
+const noop = () => {};
+class Observer { observe() {} unobserve() {} disconnect() {} takeRecords() { return []; } }
+function browserGlobals() {
+  return {
+    matchMedia: () => ({ matches: false, media: "", addEventListener: noop, removeEventListener: noop, addListener: noop, removeListener: noop }),
+    requestAnimationFrame: () => 0, cancelAnimationFrame: noop,
+    ResizeObserver: Observer, IntersectionObserver: Observer, MutationObserver: Observer,
+    getComputedStyle: () => ({ getPropertyValue: () => "" }),
+    devicePixelRatio: 1, innerWidth: 1280, innerHeight: 800, scrollX: 0, scrollY: 0,
+  };
+}
+function browserWindow(location) {
+  return { addEventListener: noop, removeEventListener: noop, dispatchEvent: () => true, scrollTo: noop, scrollBy: noop, location, ...browserGlobals() };
+}
+
 // Renders the app bundle at `bundleUrl` for `path`: installs this DOM as the globals the runtime
 // uses, imports the bundle (it starts itself), waits for mounts, and returns the HTML of #app, the
 // page's <head> additions (title, meta, the runtime's CSS) and its title. Requests never resolve,
@@ -204,13 +224,14 @@ export async function prerender(bundleUrl, path) {
   const saved = {};
   const globals = {
     document,
-    window: { addEventListener() {}, removeEventListener() {}, scrollTo() {}, location: url },
+    window: browserWindow(url),
     // Code in `mount`/`effect` meant for a real browser (an observer, a media query) doesn't stop the build.
     __artStatic: true,
     location: url,
     history: { pushState() {}, replaceState() {} },
     fetch: () => new Promise(() => {}),
     Event: class { constructor(type) { this.type = type; } },
+    ...browserGlobals(),
   };
   for (const [k, v] of Object.entries(globals)) {
     saved[k] = Object.getOwnPropertyDescriptor(globalThis, k);
@@ -267,9 +288,10 @@ async function renderOnce(bundleUrl, url, base, apiFetch, timeout) {
   const go = (_s, _t, to) => { loc.href = new URL(String(to), loc).href; };
   const globals = {
     document, location: loc, fetch, __artSSR: true,
-    window: { addEventListener() {}, removeEventListener() {}, scrollTo() {}, location: loc },
+    window: browserWindow(loc),
     history: { pushState: go, replaceState: go },
     Event: class { constructor(type) { this.type = type; } },
+    ...browserGlobals(),
   };
   const saved = {};
   for (const [k, v] of Object.entries(globals)) {

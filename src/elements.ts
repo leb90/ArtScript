@@ -18,7 +18,7 @@ export type ElementSpec = {
 const LAYOUT = ["gap", "pad", "align", "justify"];
 const COMMON = ["class", "style", "id", "ref", "role"];
 // `tag=nav`: the HTML element of a text or a container (`title "Plans" tag=h1`, `column tag=main`).
-export const TAGS = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "span", "div", "nav", "header", "footer", "main", "section", "article", "aside", "label", "figure", "figcaption", "blockquote", "strong", "em", "small"];
+export const TAGS = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "span", "div", "nav", "header", "footer", "main", "section", "article", "aside", "label", "figure", "figcaption", "blockquote", "strong", "em", "small", "pre", "code", "kbd", "samp", "dl", "dt", "dd", "ul", "ol", "li", "abbr", "time", "mark", "sup", "sub", "address", "details", "summary"];
 export const TAG_ELEMENTS = ["text", "title", "row", "column", "grid", "card"];
 const MEDIA = ["controls", "autoplay", "loop", "muted"];
 

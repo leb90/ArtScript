@@ -34,6 +34,11 @@ export const GLOBALS = new Set([
   "encodeURIComponent", "decodeURIComponent", "structuredClone", "Infinity", "NaN",
   "URL", "URLSearchParams", "history", "Blob", "FormData", "TextEncoder", "TextDecoder", "AbortController",
   "requestAnimationFrame", "cancelAnimationFrame", "matchMedia", "getComputedStyle", "globalThis", "IntersectionObserver", "ResizeObserver", "MutationObserver", "performance", "queueMicrotask", "RegExp", "Error", "BigInt", "Symbol",
+  "Uint8Array", "Uint8ClampedArray", "Uint16Array", "Uint32Array", "Int8Array", "Int16Array", "Int32Array", "Float32Array", "Float64Array", "ArrayBuffer", "DataView",
+  "WeakMap", "WeakSet", "Proxy", "Reflect", "isFinite", "atob", "btoa", "undefined",
+  "Image", "Audio", "Path2D", "OffscreenCanvas", "ImageData", "AudioContext", "Worker", "WebSocket", "EventSource", "Notification", "speechSynthesis",
+  "devicePixelRatio", "innerWidth", "innerHeight", "screen", "scrollX", "scrollY", "scrollTo", "scrollBy", "open", "addEventListener", "removeEventListener", "dispatchEvent",
+  "Headers", "Request", "Response", "File", "FileReader", "DOMParser", "CustomEvent", "KeyboardEvent", "MouseEvent", "Element", "HTMLElement", "Node", "CSS",
 ]);
 
 export function show(t: Ty): string {
@@ -678,8 +683,8 @@ class Checker {
         }
         continue;
       }
-      // ARIA and data attributes go on any element, with any value (a flag is "true").
-      if (/^(aria|data)-/.test(p.name)) {
+      // ARIA and data attributes (and tabindex) go on any element, with any value (a flag is "true").
+      if (/^(aria|data)-/.test(p.name) || p.name === "tabindex") {
         if (p.value) this.infer(p.value, scope);
         continue;
       }
@@ -800,7 +805,11 @@ class Checker {
   stmts(list: Stmt[], scope: Scope) {
     for (const s of list) {
       if (s.kind === "ExprStmt") this.infer(s.expr, scope);
-      else if (s.kind === "Let") scope.vars.set(s.name, { kind: "let", ty: this.infer(s.init, scope) });
+      else if (s.kind === "Let") {
+        // `let tick = () => requestAnimationFrame(tick)`: the arrow may call itself.
+        if (s.init.kind === "Arrow") scope.vars.set(s.name, { kind: "let", ty: ANY });
+        scope.vars.set(s.name, { kind: "let", ty: this.infer(s.init, scope) });
+      }
       else if (s.kind === "Return") {
         const t = s.value ? this.infer(s.value, scope) : { k: "void" as const };
         this.returns?.push(t);
