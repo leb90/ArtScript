@@ -2,7 +2,7 @@
 // ArtScript CLI: `art <command>`. Short output; machine-readable with --ai.
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, watch, writeFileSync } from "node:fs";
-import { createServer, type ServerResponse } from "node:http";
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { brotliCompressSync, gzipSync } from "node:zlib";
@@ -488,9 +488,15 @@ switch (cmd) {
     await rebuild();
 
     const types: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".ico": "image/x-icon" };
-    const server = createServer(async (req, res) => {
+    const respond = async (req: IncomingMessage, res: ServerResponse) => {
       if (api && (await api(req, res))) return;
-      const url = decodeURIComponent((req.url ?? "/").split("?")[0]);
+      let url: string;
+      try {
+        url = decodeURIComponent((req.url ?? "/").split("?")[0]);
+      } catch {
+        res.writeHead(400).end("400"); // a malformed escape like /%E0%A4%A
+        return;
+      }
       if (url === "/__art") {
         res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache" });
         clients.add(res);
@@ -499,7 +505,7 @@ switch (cmd) {
         return;
       }
       const name = url === "/" ? "index.html" : url.slice(1);
-      if (name in files) {
+      if (Object.hasOwn(files, name)) {
         const body = name === "index.html" ? files[name].replace("</body>", client + "</body>") : files[name];
         res.writeHead(200, { "content-type": types[extname(name)] ?? "text/plain", "cache-control": "no-store" }).end(body);
         return;
@@ -512,12 +518,17 @@ switch (cmd) {
         return;
       }
       // Route paths (no file extension) get the app, so URLs like /products/7 work on reload.
-      if (!extname(url) && "index.html" in files) {
+      if (!extname(url) && Object.hasOwn(files, "index.html")) {
         res.writeHead(200, { "content-type": "text/html", "cache-control": "no-store" }).end(files["index.html"].replace("</body>", client + "</body>"));
         return;
       }
       res.writeHead(404).end("404");
-    });
+    };
+    const server = createServer((req, res) => respond(req, res).catch((e) => {
+      console.error(e);
+      if (res.headersSent) res.destroy();
+      else res.writeHead(500).end();
+    }));
 
     // If the port is busy, try the next one (like Vite).
     let port = Number(flag("--port") ?? 3000);

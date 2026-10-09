@@ -627,7 +627,8 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
   let window = { start: Date.now(), hits: new Map() };
   const metrics = { requests: new Map(), seconds: 0, count: 0 };
   const handler = async (req, res) => {
-    const url = new URL(req.url ?? "/", "http://localhost");
+    const url = URL.parse(req.url ?? "/", "http://localhost");
+    if (!url) { res.writeHead(400).end(); return true; } // e.g. `GET http://[x`: not a URL
     if (!url.pathname.startsWith("/api/")) return false;
     const t0 = performance.now();
     res.on?.("finish", () => {
@@ -884,13 +885,19 @@ export function serve(schema, fns, rootUrl, port = Number(process.env.PORT ?? 30
       return null;
     }
   };
-  const server = createServer(async (req, res) => {
+  const respond = async (req, res) => {
     if (log) {
       const t0 = performance.now();
       res.on("finish", () => process.stdout.write(JSON.stringify({ t: new Date().toISOString(), method: req.method, path: req.url, status: res.statusCode, ms: Math.round(performance.now() - t0) }) + "\n"));
     }
     if (await api(req, res)) return;
-    const path = decodeURIComponent(new URL(req.url ?? "/", "http://localhost").pathname);
+    let path;
+    try {
+      path = decodeURIComponent(new URL(req.url ?? "/", "http://localhost").pathname);
+    } catch {
+      res.writeHead(400, securityHeaders(req)).end(); // a malformed escape like /%E0%A4%A
+      return;
+    }
     let file = resolve(root, "." + path);
     const blocked = (!file.startsWith(root + sep) && file !== root) || file.startsWith(dataDir + sep) || PRIVATE.has(basename(file));
     // Pages are rendered here with their data (ART_SSR=off: the browser does it).
@@ -908,7 +915,13 @@ export function serve(schema, fns, rootUrl, port = Number(process.env.PORT ?? 30
     if (!blocked && existsSync(file) && statSync(file).isDirectory() && existsSync(join(file, "index.html"))) file = join(file, "index.html");
     if (blocked || !existsSync(file) || statSync(file).isDirectory()) file = existsSync(join(root, "_app.html")) ? join(root, "_app.html") : join(root, "index.html");
     res.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream", ...securityHeaders(req) }).end(readFileSync(file));
-  });
+  };
+  // An error in one request answers 500 instead of ending the process for everyone.
+  const server = createServer((req, res) => respond(req, res).catch((e) => {
+    console.error(e);
+    if (res.headersSent) res.destroy();
+    else res.writeHead(500).end();
+  }));
   server.listen(port, () => console.log(`ArtScript server → http://localhost:${port}`));
   return server;
 }
