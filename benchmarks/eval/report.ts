@@ -123,9 +123,18 @@ function comparable(results: Run[]): Run[] {
 // UI and data has nothing to shorten, and the question is only whether it costs the same as JS.
 const imperative = (r: Run) => r.task.startsWith("imp-");
 function impTable(loaded: Loaded[]): string[] {
-  const rows = loaded.filter(({ data }) => data.results.some(imperative));
+  // Every run of every round in which the task ran on all five stacks is pooled (a round that
+  // re-ran one stack alone stays in the raw data only), so each cell has the same number of runs.
+  const rows = loaded.flatMap(({ data, paths }) => {
+    const pooled: Run[] = [];
+    for (const path of paths) {
+      const rs = (JSON.parse(readFileSync(path, "utf8")) as ResultFile).results.filter((r) => imperative(r) && !notRun(r));
+      if (ORDER.every((k) => rs.some((r) => r.stack === k))) pooled.push(...rs);
+    }
+    return pooled.length ? [{ data: { ...data, results: pooled } }] : [];
+  });
   if (!rows.length) return [];
-  const out = ["### Imperative code: a canvas with animation and physics", "", "One task where almost all the code is a physics loop (gravity, walls, elastic collisions, drawing): the kind of app where ArtScript is JavaScript with another syntax for statements. Reported apart from the tables above, which are apps of UI and data. USD per solved task (solved runs / runs):", "", "ArtScript's cells were measured three times on the same day while the harness was being fixed (at first it rejected an answer that put the physics in a `.ts` module imported with `use`); across those runs ArtScript landed between −19% and +35% of React with Sonnet and between −10% and +19% with Opus, and about +110% with Haiku (its retries were a typo and an effect that changed a state it read). That is parity within the noise of two runs per cell, not a saving. The table shows the last run; every run is in the raw data. No model moved the physics to a `.ts` file by itself, even with the spec suggesting it.", "", `| Model | ${ORDER.map((k) => NAMES[k]).join(" | ")} | ArtScript vs React |`, `|---|${ORDER.map(() => "---").join("|")}|---|`];
+  const out = ["### Imperative code: a canvas with animation and physics", "", "One task where almost all the code is a physics loop (gravity, walls, elastic collisions, drawing): the kind of app where ArtScript is JavaScript with another syntax for statements. Reported apart from the tables above, which are apps of UI and data. USD per solved task (solved runs / runs):", "", "Two rounds of two runs per cell, pooled: four runs per cell. Between them, ArtScript's cells alone were re-run three times while the harness was being fixed (at first it rejected an answer that put the physics in a `.ts` module imported with `use`); those re-runs stay in the raw data and aren't in the table, so every stack has the same runs. No model moved the physics to a `.ts` file by itself, even with the spec suggesting it; Haiku's retries were its own errors (a typo, an effect that changed a state it read).", "", `| Model | ${ORDER.map((k) => NAMES[k]).join(" | ")} | ArtScript vs React |`, `|---|${ORDER.map(() => "---").join("|")}|---|`];
   for (const { data } of rows) {
     const rs = data.results.filter(imperative);
     const cell = (k: string) => { const x = rs.filter((r) => r.stack === k), ok = x.filter((r) => r.ok).length; return { n: x.length, ok, per: ok ? x.reduce((a, r) => a + r.usd, 0) / ok : Infinity }; };

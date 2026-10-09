@@ -28,5 +28,8 @@
   "2026-10-09T11-15-09-claude-opus-5-5.json": "imp-particles, ArtScript only, with the spec that recommends a .ts module for heavy code",
   "2026-10-09T11-17-12-claude-sonnet-5-5.json": "imp-particles, ArtScript only, final harness (a .ts module next to the .art files is accepted); the run reported in the table",
   "2026-10-09T11-17-37-claude-haiku-4-5.json": "imp-particles, ArtScript only, final harness; the run reported in the table",
-  "2026-10-09T11-18-04-claude-opus-5-5.json": "imp-particles, ArtScript only, final harness; the run reported in the table"
+  "2026-10-09T11-18-04-claude-opus-5-5.json": "imp-particles, ArtScript only, final harness; the run reported in the table",
+  "2026-10-09T11-23-11-claude-sonnet-5-5.json": "imp-particles, second full round (all five stacks, two runs), pooled with the first in the imperative table",
+  "2026-10-09T11-24-34-claude-haiku-4-5.json": "imp-particles, second full round (all five stacks, two runs), pooled with the first in the imperative table",
+  "2026-10-09T11-25-48-claude-opus-5-5.json": "imp-particles, second full round (all five stacks, two runs), pooled with the first in the imperative table"
 }

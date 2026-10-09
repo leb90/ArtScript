@@ -1,0 +1,305 @@
+{
+  "model": "claude-opus-5-5",
+  "effort": "medium",
+  "runs": 2,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 4,
+    "out": 20,
+    "cacheRead": 0.2,
+    "cacheWrite": 5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 2518,
+        "cacheRead": 0,
+        "cacheWrite": 4996
+      },
+      "usd": 0.076576,
+      "codeTokens": 1504,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Sim \"/\" {\n  meta title=\"Simulación de pelotas\"\n\n  state count = 0\n  state frames = 0\n  state paused = false\n\n  ref box\n  ref balls\n  ref raf\n\n  fn makeBall() {\n    let r = 10\n    return {\n      x: r + Math.random() * (400 - 2 * r),\n      y: r + Math.random() * (300 - 2 * r),\n      vx: (Math.random() * 2 - 1) * 3,\n      vy: (Math.random() * 2 - 1) * 3,\n      r: r\n    }\n  }\n\n  fn clamp(b) {\n    if b.x < b.r {\n      b.x = b.r\n      b.vx = Math.abs(b.vx)\n    }\n    if b.x > 400 - b.r {\n      b.x = 400 - b.r\n      b.vx = -Math.abs(b.vx)\n    }\n    if b.y < b.r {\n      b.y = b.r\n      b.vy = Math.abs(b.vy)\n    }\n    if b.y > 300 - b.r {\n      b.y = 300 - b.r\n      b.vy = -Math.abs(b.vy)\n    }\n  }\n\n  fn physics() {\n    for (let i = 0; i < balls.length; i++) {\n      let b = balls[i]\n      b.vy += 0.2\n      b.x += b.vx\n      b.y += b.vy\n      clamp(b)\n    }\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        let a = balls[i]\n        let b = balls[j]\n        let dx = b.x - a.x\n        let dy = b.y - a.y\n        let minD = a.r + b.r\n        let d2 = dx * dx + dy * dy\n        if d2 < minD * minD {\n          let d = Math.sqrt(d2) || 0.01\n          let nx = d2 > 0 ? dx / d : 1\n          let ny = d2 > 0 ? dy / d : 0\n          let overlap = minD - d\n          a.x -= nx * overlap / 2\n          a.y -= ny * overlap / 2\n          b.x += nx * overlap / 2\n          b.y += ny * overlap / 2\n          if (b.vx - a.vx) * nx + (b.vy - a.vy) * ny < 0 {\n            let tx = a.vx\n            let ty = a.vy\n            a.vx = b.vx\n            a.vy = b.vy\n            b.vx = tx\n            b.vy = ty\n          }\n          clamp(a)\n          clamp(b)\n        }\n      }\n    }\n  }\n\n  fn draw() {\n    if !box { return }\n    let ctx = box.getContext(\"2d\")\n    ctx.clearRect(0, 0, 400, 300)\n    ctx.fillStyle = \"#2563eb\"\n    for (let i = 0; i < balls.length; i++) {\n      let b = balls[i]\n      ctx.beginPath()\n      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)\n      ctx.fill()\n    }\n  }\n\n  fn step() {\n    if paused { return }\n    physics()\n    draw()\n    frames++\n    raf = requestAnimationFrame(step)\n  }\n\n  fn add() {\n    balls.push(makeBall())\n    count = balls.length\n    if paused { draw() }\n  }\n\n  fn toggle() {\n    paused = !paused\n    if paused {\n      cancelAnimationFrame(raf)\n    } else {\n      raf = requestAnimationFrame(step)\n    }\n  }\n\n  fn reset() {\n    let list = []\n    for (let i = 0; i < 5; i++) {\n      list.push(makeBall())\n    }\n    balls = list\n    count = balls.length\n    frames = 0\n    draw()\n  }\n\n  mount {\n    reset()\n    raf = requestAnimationFrame(step)\n    cleanup { cancelAnimationFrame(raf) }\n  }\n\n  column gap=3 pad=4 align=start {\n    title \"Simulación de pelotas\" tag=h1\n    canvas ref=box id=\"sim\" width=400 height=300 style=\"border: 1px solid #ccc\"\n    row gap=2 {\n      button \"Agregar\" primary -> add()\n      button `${paused ? \"Reanudar\" : \"Pausar\"}` -> toggle()\n      button \"Reiniciar\" -> reset()\n    }\n    row gap=4 {\n      text `Pelotas: ${count}`\n      text `Cuadros: ${frames}`\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 15847,
+        "brotli": 5736
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 2600,
+        "cacheRead": 0,
+        "cacheWrite": 4996
+      },
+      "usd": 0.078216,
+      "codeTokens": 1602,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Sim \"/\" {\n  state n = 0\n  state frames = 0\n  state paused = false\n\n  ref box\n  ref ctx\n  ref balls\n  ref rafId\n\n  fn makeBall() {\n    let r = 10\n    let b = null\n    for (let attempt = 0; attempt < 50; attempt++) {\n      b = {\n        x: r + Math.random() * (400 - 2 * r),\n        y: r + Math.random() * (300 - 2 * r),\n        vx: (Math.random() * 2 - 1) * 3,\n        vy: (Math.random() * 2 - 1) * 3,\n        r: r\n      }\n      let ok = true\n      if balls {\n        for o in balls {\n          let dx = o.x - b.x\n          let dy = o.y - b.y\n          if dx * dx + dy * dy < (o.r + b.r) * (o.r + b.r) {\n            ok = false\n            break\n          }\n        }\n      }\n      if ok { break }\n    }\n    return b\n  }\n\n  fn makeBalls(count) {\n    balls = []\n    for (let i = 0; i < count; i++) {\n      balls.push(makeBall())\n    }\n    n = balls.length\n  }\n\n  fn clamp(b) {\n    if b.x < b.r {\n      b.x = b.r\n      b.vx = Math.abs(b.vx)\n    }\n    if b.x > 400 - b.r {\n      b.x = 400 - b.r\n      b.vx = -Math.abs(b.vx)\n    }\n    if b.y < b.r {\n      b.y = b.r\n      b.vy = Math.abs(b.vy)\n    }\n    if b.y > 300 - b.r {\n      b.y = 300 - b.r\n      b.vy = -Math.abs(b.vy)\n    }\n  }\n\n  fn step() {\n    for b in balls {\n      b.vy += 0.2\n      b.x += b.vx\n      b.y += b.vy\n      clamp(b)\n    }\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        let a = balls[i]\n        let c = balls[j]\n        let dx = c.x - a.x\n        let dy = c.y - a.y\n        let minD = a.r + c.r\n        let d2 = dx * dx + dy * dy\n        if d2 < minD * minD {\n          let d = Math.sqrt(d2)\n          if d == 0 {\n            dx = 1\n            dy = 0\n            d = 1\n          }\n          let nx = dx / d\n          let ny = dy / d\n          let overlap = (minD - d) / 2\n          a.x -= nx * overlap\n          a.y -= ny * overlap\n          c.x += nx * overlap\n          c.y += ny * overlap\n          let tvx = a.vx\n          let tvy = a.vy\n          a.vx = c.vx\n          a.vy = c.vy\n          c.vx = tvx\n          c.vy = tvy\n          clamp(a)\n          clamp(c)\n        }\n      }\n    }\n  }\n\n  fn draw() {\n    if !ctx { return }\n    ctx.clearRect(0, 0, 400, 300)\n    ctx.fillStyle = \"#2563eb\"\n    for b in balls {\n      ctx.beginPath()\n      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)\n      ctx.fill()\n    }\n  }\n\n  fn tick() {\n    step()\n    draw()\n    frames++\n    rafId = requestAnimationFrame(tick)\n  }\n\n  fn togglePause() {\n    if paused {\n      paused = false\n      rafId = requestAnimationFrame(tick)\n    } else {\n      paused = true\n      cancelAnimationFrame(rafId)\n      rafId = null\n    }\n  }\n\n  fn addBall() {\n    balls.push(makeBall())\n    n = balls.length\n    if paused { draw() }\n  }\n\n  fn restart() {\n    balls = null\n    makeBalls(5)\n    frames = 0\n    draw()\n  }\n\n  mount {\n    ctx = box.getContext(\"2d\")\n    makeBalls(5)\n    draw()\n    rafId = requestAnimationFrame(tick)\n    cleanup {\n      if rafId { cancelAnimationFrame(rafId) }\n    }\n  }\n\n  column gap=3 pad=4 {\n    title \"Simulación de pelotas\" tag=h1\n    canvas ref=box id=\"sim\" width=400 height=300 style=\"border: 1px solid #ccc\"\n    row gap=2 {\n      button \"Agregar\" primary -> addBall()\n      button (paused ? \"Reanudar\" : \"Pausar\") -> togglePause()\n      button \"Reiniciar\" -> restart()\n    }\n    text `Pelotas: ${n}`\n    text `Cuadros: ${frames}`\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 15245,
+        "brotli": 5588
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "react",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 461,
+        "output": 3283,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.067504,
+      "codeTokens": 2845,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useCallback, useEffect, useRef, useState } from \"react\";\n\nconst WIDTH = 400;\nconst HEIGHT = 300;\nconst RADIUS = 10;\nconst GRAVITY = 0.2;\nconst INITIAL_BALLS = 5;\n\ntype Ball = {\n  x: number;\n  y: number;\n  vx: number;\n  vy: number;\n  color: string;\n};\n\nconst COLORS = [\"#ef4444\", \"#3b82f6\", \"#22c55e\", \"#eab308\", \"#a855f7\", \"#f97316\", \"#14b8a6\", \"#ec4899\"];\n\nfunction randomBall(existing: Ball[]): Ball {\n  let x = 0;\n  let y = 0;\n  for (let attempt = 0; attempt < 50; attempt++) {\n    x = RADIUS + Math.random() * (WIDTH - 2 * RADIUS);\n    y = RADIUS + Math.random() * (HEIGHT - 2 * RADIUS);\n    const overlaps = existing.some((b) => Math.hypot(b.x - x, b.y - y) < 2 * RADIUS);\n    if (!overlaps) break;\n  }\n  return {\n    x,\n    y,\n    vx: (Math.random() * 2 - 1) * 4,\n    vy: (Math.random() * 2 - 1) * 4,\n    color: COLORS[Math.floor(Math.random() * COLORS.length)],\n  };\n}\n\nfunction createBalls(n: number): Ball[] {\n  const balls: Ball[] = [];\n  for (let i = 0; i < n; i++) balls.push(randomBall(balls));\n  return balls;\n}\n\nfunction step(balls: Ball[]) {\n  // Gravedad y movimiento\n  for (const b of balls) {\n    b.vy += GRAVITY;\n    b.x += b.vx;\n    b.y += b.vy;\n\n    // Rebote contra bordes\n    if (b.x - RADIUS < 0) {\n      b.x = RADIUS;\n      b.vx = Math.abs(b.vx);\n    } else if (b.x + RADIUS > WIDTH) {\n      b.x = WIDTH - RADIUS;\n      b.vx = -Math.abs(b.vx);\n    }\n    if (b.y - RADIUS < 0) {\n      b.y = RADIUS;\n      b.vy = Math.abs(b.vy);\n    } else if (b.y + RADIUS > HEIGHT) {\n      b.y = HEIGHT - RADIUS;\n      b.vy = -Math.abs(b.vy);\n    }\n  }\n\n  // Colisiones entre pelotas\n  for (let i = 0; i < balls.length; i++) {\n    for (let j = i + 1; j < balls.length; j++) {\n      const a = balls[i];\n      const b = balls[j];\n      const dx = b.x - a.x;\n      const dy = b.y - a.y;\n      const dist = Math.hypot(dx, dy);\n      if (dist < 2 * RADIUS) {\n        // Separar para evitar que queden pegadas\n        const nx = dist === 0 ? 1 : dx / dist;\n        const ny = dist === 0 ? 0 : dy / dist;\n        const overlap = 2 * RADIUS - dist;\n        a.x -= (nx * overlap) / 2;\n        a.y -= (ny * overlap) / 2;\n        b.x += (nx * overlap) / 2;\n        b.y += (ny * overlap) / 2;\n\n        // Intercambiar velocidades si se están acercando\n        const relVel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;\n        if (relVel < 0 || dist === 0) {\n          const tvx = a.vx;\n          const tvy = a.vy;\n          a.vx = b.vx;\n          a.vy = b.vy;\n          b.vx = tvx;\n          b.vy = tvy;\n        }\n      }\n    }\n  }\n\n  // Asegurar que ninguna pelota quede fuera del canvas tras separar\n  for (const b of balls) {\n    b.x = Math.min(Math.max(b.x, RADIUS), WIDTH - RADIUS);\n    b.y = Math.min(Math.max(b.y, RADIUS), HEIGHT - RADIUS);\n  }\n}\n\nfunction draw(canvas: HTMLCanvasElement | null, balls: Ball[]) {\n  if (!canvas) return;\n  const ctx = canvas.getContext(\"2d\");\n  if (!ctx) return;\n  ctx.clearRect(0, 0, WIDTH, HEIGHT);\n  ctx.fillStyle = \"#f8fafc\";\n  ctx.fillRect(0, 0, WIDTH, HEIGHT);\n  for (const b of balls) {\n    ctx.beginPath();\n    ctx.arc(b.x, b.y, RADIUS, 0, Math.PI * 2);\n    ctx.fillStyle = b.color;\n    ctx.fill();\n    ctx.strokeStyle = \"#1e293b\";\n    ctx.lineWidth = 1;\n    ctx.stroke();\n  }\n}\n\nexport default function App() {\n  const canvasRef = useRef<HTMLCanvasElement | null>(null);\n  const ballsRef = useRef<Ball[] | null>(null);\n  if (ballsRef.current === null) ballsRef.current = createBalls(INITIAL_BALLS);\n  const framesRef = useRef(0);\n\n  const [paused, setPaused] = useState(false);\n  const [ballCount, setBallCount] = useState(INITIAL_BALLS);\n  const [frames, setFrames] = useState(0);\n\n  // Dibujo inicial\n  useEffect(() => {\n    draw(canvasRef.current, ballsRef.current!);\n  }, []);\n\n  // Bucle de animación\n  useEffect(() => {\n    if (paused) return;\n    let id = 0;\n    const loop = () => {\n      const balls = ballsRef.current!;\n      step(balls);\n      draw(canvasRef.current, balls);\n      framesRef.current += 1;\n      setFrames(framesRef.current);\n      id = requestAnimationFrame(loop);\n    };\n    id = requestAnimationFrame(loop);\n    return () => cancelAnimationFrame(id);\n  }, [paused]);\n\n  const handleAdd = useCallback(() => {\n    const balls = ballsRef.current!;\n    balls.push(randomBall(balls));\n    setBallCount(balls.length);\n    if (paused) draw(canvasRef.current, balls);\n  }, [paused]);\n\n  const handleTogglePause = useCallback(() => {\n    setPaused((p) => !p);\n  }, []);\n\n  const handleReset = useCallback(() => {\n    ballsRef.current = createBalls(INITIAL_BALLS);\n    framesRef.current = 0;\n    setFrames(0);\n    setBallCount(INITIAL_BALLS);\n    draw(canvasRef.current, ballsRef.current);\n  }, []);\n\n  return (\n    <div className=\"min-h-screen bg-slate-100 flex flex-col items-center justify-center gap-4 p-6\">\n      <h1 className=\"text-2xl font-bold text-slate-800\">Simulación de pelotas</h1>\n      <canvas\n        id=\"sim\"\n        ref={canvasRef}\n        width={WIDTH}\n        height={HEIGHT}\n        className=\"border-2 border-slate-700 rounded shadow bg-slate-50\"\n      />\n      <div className=\"flex gap-2\">\n        <button\n          onClick={handleAdd}\n          className=\"px-4 py-2 rounded bg-blue-600 text-white font-medium hover:bg-blue-700\"\n        >\n          Agregar\n        </button>\n        <button\n          onClick={handleTogglePause}\n          className=\"px-4 py-2 rounded bg-amber-500 text-white font-medium hover:bg-amber-600\"\n        >\n          {paused ? \"Reanudar\" : \"Pausar\"}\n        </button>\n        <button\n          onClick={handleReset}\n          className=\"px-4 py-2 rounded bg-rose-600 text-white font-medium hover:bg-rose-700\"\n        >\n          Reiniciar\n        </button>\n      </div>\n      <div className=\"flex gap-6 text-slate-700 font-mono\">\n        <span>Pelotas: {ballCount}</span>\n        <span>Cuadros: {frames}</span>\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 226506,
+        "brotli": 60555
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "react",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 461,
+        "output": 2970,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.061244,
+      "codeTokens": 2434,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { useCallback, useEffect, useRef, useState } from \"react\";\n\nconst W = 400;\nconst H = 300;\nconst R = 10;\nconst G = 0.2;\n\ntype Ball = { x: number; y: number; vx: number; vy: number; color: string };\n\nconst COLORS = [\"#ef4444\", \"#3b82f6\", \"#22c55e\", \"#eab308\", \"#a855f7\", \"#ec4899\", \"#14b8a6\", \"#f97316\"];\n\nfunction randomBall(existing: Ball[]): Ball {\n  let x = 0;\n  let y = 0;\n  for (let attempt = 0; attempt < 100; attempt++) {\n    x = R + Math.random() * (W - 2 * R);\n    y = R + Math.random() * (H - 2 * R);\n    const overlaps = existing.some((b) => Math.hypot(b.x - x, b.y - y) < 2 * R);\n    if (!overlaps) break;\n  }\n  return {\n    x,\n    y,\n    vx: (Math.random() * 2 - 1) * 4,\n    vy: (Math.random() * 2 - 1) * 4,\n    color: COLORS[Math.floor(Math.random() * COLORS.length)],\n  };\n}\n\nfunction makeBalls(n: number): Ball[] {\n  const arr: Ball[] = [];\n  for (let i = 0; i < n; i++) arr.push(randomBall(arr));\n  return arr;\n}\n\nfunction clampBall(b: Ball) {\n  if (b.x < R) {\n    b.x = R;\n    b.vx = Math.abs(b.vx);\n  } else if (b.x > W - R) {\n    b.x = W - R;\n    b.vx = -Math.abs(b.vx);\n  }\n  if (b.y < R) {\n    b.y = R;\n    b.vy = Math.abs(b.vy);\n  } else if (b.y > H - R) {\n    b.y = H - R;\n    b.vy = -Math.abs(b.vy);\n  }\n}\n\nfunction step(balls: Ball[]) {\n  for (const b of balls) {\n    b.vy += G;\n    b.x += b.vx;\n    b.y += b.vy;\n    clampBall(b);\n  }\n  for (let i = 0; i < balls.length; i++) {\n    for (let j = i + 1; j < balls.length; j++) {\n      const a = balls[i];\n      const b = balls[j];\n      const dx = b.x - a.x;\n      const dy = b.y - a.y;\n      let dist = Math.hypot(dx, dy);\n      if (dist < 2 * R) {\n        let nx: number;\n        let ny: number;\n        if (dist === 0) {\n          nx = 1;\n          ny = 0;\n          dist = 0;\n        } else {\n          nx = dx / dist;\n          ny = dy / dist;\n        }\n        // intercambiar velocidades solo si se acercan\n        const relVel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;\n        if (relVel < 0 || dist === 0) {\n          const tvx = a.vx;\n          const tvy = a.vy;\n          a.vx = b.vx;\n          a.vy = b.vy;\n          b.vx = tvx;\n          b.vy = tvy;\n        }\n        // separar para que no queden superpuestas\n        const overlap = (2 * R - dist) / 2;\n        a.x -= nx * overlap;\n        a.y -= ny * overlap;\n        b.x += nx * overlap;\n        b.y += ny * overlap;\n        clampBall(a);\n        clampBall(b);\n      }\n    }\n  }\n}\n\nfunction draw(ctx: CanvasRenderingContext2D, balls: Ball[]) {\n  ctx.clearRect(0, 0, W, H);\n  ctx.fillStyle = \"#f8fafc\";\n  ctx.fillRect(0, 0, W, H);\n  for (const b of balls) {\n    ctx.beginPath();\n    ctx.arc(b.x, b.y, R, 0, Math.PI * 2);\n    ctx.fillStyle = b.color;\n    ctx.fill();\n    ctx.strokeStyle = \"#1e293b\";\n    ctx.lineWidth = 1;\n    ctx.stroke();\n  }\n}\n\nexport default function App() {\n  const canvasRef = useRef<HTMLCanvasElement | null>(null);\n  const ballsRef = useRef<Ball[] | null>(null);\n  if (ballsRef.current === null) ballsRef.current = makeBalls(5);\n  const framesRef = useRef(0);\n\n  const [running, setRunning] = useState(true);\n  const [count, setCount] = useState(5);\n  const [frames, setFrames] = useState(0);\n\n  const redraw = useCallback(() => {\n    const ctx = canvasRef.current?.getContext(\"2d\");\n    if (ctx && ballsRef.current) draw(ctx, ballsRef.current);\n  }, []);\n\n  useEffect(() => {\n    redraw();\n  }, [redraw]);\n\n  useEffect(() => {\n    if (!running) return;\n    let id = 0;\n    const loop = () => {\n      const balls = ballsRef.current!;\n      step(balls);\n      redraw();\n      framesRef.current += 1;\n      setFrames(framesRef.current);\n      id = requestAnimationFrame(loop);\n    };\n    id = requestAnimationFrame(loop);\n    return () => cancelAnimationFrame(id);\n  }, [running, redraw]);\n\n  const handleAdd = () => {\n    const balls = ballsRef.current!;\n    balls.push(randomBall(balls));\n    setCount(balls.length);\n    if (!running) redraw();\n  };\n\n  const handleToggle = () => setRunning((r) => !r);\n\n  const handleReset = () => {\n    ballsRef.current = makeBalls(5);\n    framesRef.current = 0;\n    setFrames(0);\n    setCount(5);\n    redraw();\n  };\n\n  return (\n    <div className=\"min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-100 p-6\">\n      <h1 className=\"text-2xl font-bold text-slate-800\">Simulación de pelotas</h1>\n      <canvas\n        id=\"sim\"\n        ref={canvasRef}\n        width={W}\n        height={H}\n        className=\"border-2 border-slate-700 rounded shadow\"\n      />\n      <div className=\"flex gap-2\">\n        <button\n          onClick={handleAdd}\n          className=\"px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700\"\n        >\n          Agregar\n        </button>\n        <button\n          onClick={handleToggle}\n          className=\"px-4 py-2 rounded bg-amber-500 text-white hover:bg-amber-600\"\n        >\n          {running ? \"Pausar\" : \"Reanudar\"}\n        </button>\n        <button\n          onClick={handleReset}\n          className=\"px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700\"\n        >\n          Reiniciar\n        </button>\n      </div>\n      <div className=\"flex gap-6 text-slate-700 font-mono\">\n        <span>Pelotas: {count}</span>\n        <span>Cuadros: {frames}</span>\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 226300,
+        "brotli": 60565
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "svelte",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 477,
+        "output": 2412,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.050148,
+      "codeTokens": 1935,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  type Ball = { x: number; y: number; vx: number; vy: number; r: number; color: string };\n\n  const W = 400;\n  const H = 300;\n  const R = 10;\n  const G = 0.2;\n\n  let canvas: HTMLCanvasElement | undefined = $state();\n  let balls: Ball[] = [];\n  let count = $state(0);\n  let frames = $state(0);\n  let paused = $state(false);\n  let rafId = 0;\n\n  function rand(min: number, max: number) {\n    return Math.random() * (max - min) + min;\n  }\n\n  function makeBall(): Ball {\n    let x = 0;\n    let y = 0;\n    for (let i = 0; i < 50; i++) {\n      x = rand(R, W - R);\n      y = rand(R, H - R);\n      if (balls.every((b) => Math.hypot(b.x - x, b.y - y) >= b.r + R)) break;\n    }\n    return {\n      x,\n      y,\n      vx: rand(-3, 3),\n      vy: rand(-3, 3),\n      r: R,\n      color: `hsl(${Math.floor(rand(0, 360))}, 70%, 50%)`\n    };\n  }\n\n  function clamp(b: Ball) {\n    if (b.x < b.r) b.x = b.r;\n    if (b.x > W - b.r) b.x = W - b.r;\n    if (b.y < b.r) b.y = b.r;\n    if (b.y > H - b.r) b.y = H - b.r;\n  }\n\n  function step() {\n    for (const b of balls) {\n      b.vy += G;\n      b.x += b.vx;\n      b.y += b.vy;\n      if (b.x - b.r < 0) {\n        b.x = b.r;\n        b.vx = Math.abs(b.vx);\n      } else if (b.x + b.r > W) {\n        b.x = W - b.r;\n        b.vx = -Math.abs(b.vx);\n      }\n      if (b.y - b.r < 0) {\n        b.y = b.r;\n        b.vy = Math.abs(b.vy);\n      } else if (b.y + b.r > H) {\n        b.y = H - b.r;\n        b.vy = -Math.abs(b.vy);\n      }\n    }\n\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        const a = balls[i];\n        const b = balls[j];\n        const dx = b.x - a.x;\n        const dy = b.y - a.y;\n        const dist = Math.hypot(dx, dy);\n        const minD = a.r + b.r;\n        if (dist < minD) {\n          const nx = dist > 0 ? dx / dist : 1;\n          const ny = dist > 0 ? dy / dist : 0;\n          const overlap = (minD - dist) / 2;\n          a.x -= nx * overlap;\n          a.y -= ny * overlap;\n          b.x += nx * overlap;\n          b.y += ny * overlap;\n          clamp(a);\n          clamp(b);\n          const rvx = b.vx - a.vx;\n          const rvy = b.vy - a.vy;\n          if (rvx * nx + rvy * ny < 0) {\n            const tx = a.vx;\n            const ty = a.vy;\n            a.vx = b.vx;\n            a.vy = b.vy;\n            b.vx = tx;\n            b.vy = ty;\n          }\n        }\n      }\n    }\n  }\n\n  function draw() {\n    const ctx = canvas?.getContext('2d');\n    if (!ctx) return;\n    ctx.clearRect(0, 0, W, H);\n    for (const b of balls) {\n      ctx.beginPath();\n      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);\n      ctx.fillStyle = b.color;\n      ctx.fill();\n    }\n  }\n\n  function loop() {\n    step();\n    draw();\n    frames++;\n    rafId = requestAnimationFrame(loop);\n  }\n\n  function start() {\n    cancelAnimationFrame(rafId);\n    rafId = requestAnimationFrame(loop);\n  }\n\n  function stop() {\n    cancelAnimationFrame(rafId);\n    rafId = 0;\n  }\n\n  function init() {\n    balls = [];\n    for (let i = 0; i < 5; i++) balls.push(makeBall());\n    count = balls.length;\n    frames = 0;\n  }\n\n  function add() {\n    balls.push(makeBall());\n    count = balls.length;\n    if (paused) draw();\n  }\n\n  function togglePause() {\n    if (paused) {\n      paused = false;\n      start();\n    } else {\n      paused = true;\n      stop();\n    }\n  }\n\n  function reset() {\n    init();\n    if (paused) draw();\n  }\n\n  $effect(() => {\n    init();\n    start();\n    return () => stop();\n  });\n</script>\n\n<div class=\"flex flex-col items-center gap-3 p-4\">\n  <canvas id=\"sim\" bind:this={canvas} width={W} height={H} class=\"border border-gray-400 bg-white\"></canvas>\n  <div class=\"flex gap-2\">\n    <button class=\"px-3 py-1 rounded bg-blue-600 text-white\" onclick={add}>Agregar</button>\n    <button class=\"px-3 py-1 rounded bg-yellow-500 text-white\" onclick={togglePause}>\n      {paused ? 'Reanudar' : 'Pausar'}\n    </button>\n    <button class=\"px-3 py-1 rounded bg-red-600 text-white\" onclick={reset}>Reiniciar</button>\n  </div>\n  <div class=\"flex gap-4 text-sm\">\n    <span>Pelotas: {count}</span>\n    <span>Cuadros: {frames}</span>\n  </div>\n</div>\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 50020,
+        "brotli": 17148
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "svelte",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 477,
+        "output": 2595,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.053808,
+      "codeTokens": 2086,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.svelte": "<script lang=\"ts\">\n  type Ball = { x: number; y: number; vx: number; vy: number; color: string };\n\n  const W = 400;\n  const H = 300;\n  const R = 10;\n  const G = 0.2;\n  const COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#14b8a6', '#f97316'];\n\n  let canvas: HTMLCanvasElement | undefined = $state();\n  let balls: Ball[] = [];\n  let count = $state(0);\n  let frames = $state(0);\n  let paused = $state(false);\n\n  function rand(min: number, max: number) {\n    return Math.random() * (max - min) + min;\n  }\n\n  function makeBall(): Ball {\n    let x = rand(R, W - R);\n    let y = rand(R, H - R);\n    for (let attempt = 0; attempt < 50; attempt++) {\n      const overlaps = balls.some((b) => Math.hypot(b.x - x, b.y - y) < 2 * R);\n      if (!overlaps) break;\n      x = rand(R, W - R);\n      y = rand(R, H - R);\n    }\n    return {\n      x,\n      y,\n      vx: rand(-3, 3),\n      vy: rand(-3, 3),\n      color: COLORS[Math.floor(Math.random() * COLORS.length)]\n    };\n  }\n\n  function reset() {\n    balls = [];\n    for (let i = 0; i < 5; i++) balls.push(makeBall());\n    count = balls.length;\n    frames = 0;\n    draw();\n  }\n\n  function addBall() {\n    balls.push(makeBall());\n    count = balls.length;\n    if (paused) draw();\n  }\n\n  function togglePause() {\n    paused = !paused;\n  }\n\n  function step() {\n    for (const b of balls) {\n      b.vy += G;\n      b.x += b.vx;\n      b.y += b.vy;\n\n      if (b.x < R) {\n        b.x = R;\n        b.vx = Math.abs(b.vx);\n      } else if (b.x > W - R) {\n        b.x = W - R;\n        b.vx = -Math.abs(b.vx);\n      }\n      if (b.y < R) {\n        b.y = R;\n        b.vy = Math.abs(b.vy);\n      } else if (b.y > H - R) {\n        b.y = H - R;\n        b.vy = -Math.abs(b.vy);\n      }\n    }\n\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        const a = balls[i];\n        const b = balls[j];\n        const dx = b.x - a.x;\n        const dy = b.y - a.y;\n        const dist = Math.hypot(dx, dy);\n        if (dist < 2 * R) {\n          const approaching = (b.vx - a.vx) * dx + (b.vy - a.vy) * dy < 0;\n          if (approaching) {\n            const tvx = a.vx;\n            const tvy = a.vy;\n            a.vx = b.vx;\n            a.vy = b.vy;\n            b.vx = tvx;\n            b.vy = tvy;\n          }\n          const nx = dist === 0 ? 1 : dx / dist;\n          const ny = dist === 0 ? 0 : dy / dist;\n          const overlap = (2 * R - dist) / 2;\n          a.x -= nx * overlap;\n          a.y -= ny * overlap;\n          b.x += nx * overlap;\n          b.y += ny * overlap;\n          for (const p of [a, b]) {\n            p.x = Math.min(Math.max(p.x, R), W - R);\n            p.y = Math.min(Math.max(p.y, R), H - R);\n          }\n        }\n      }\n    }\n  }\n\n  function draw() {\n    if (!canvas) return;\n    const ctx = canvas.getContext('2d');\n    if (!ctx) return;\n    ctx.clearRect(0, 0, W, H);\n    ctx.fillStyle = '#f8fafc';\n    ctx.fillRect(0, 0, W, H);\n    for (const b of balls) {\n      ctx.beginPath();\n      ctx.arc(b.x, b.y, R, 0, Math.PI * 2);\n      ctx.fillStyle = b.color;\n      ctx.fill();\n      ctx.strokeStyle = '#1e293b';\n      ctx.lineWidth = 1;\n      ctx.stroke();\n    }\n  }\n\n  $effect(() => {\n    if (!canvas) return;\n    reset();\n    let id = 0;\n    const loop = () => {\n      if (!paused) {\n        step();\n        draw();\n        frames += 1;\n      }\n      id = requestAnimationFrame(loop);\n    };\n    id = requestAnimationFrame(loop);\n    return () => cancelAnimationFrame(id);\n  });\n</script>\n\n<main class=\"min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-100 p-6\">\n  <h1 class=\"text-2xl font-bold text-slate-800\">Simulación de pelotas</h1>\n\n  <canvas\n    id=\"sim\"\n    bind:this={canvas}\n    width={W}\n    height={H}\n    class=\"border-2 border-slate-700 rounded shadow bg-white\"\n  ></canvas>\n\n  <div class=\"flex gap-2\">\n    <button\n      class=\"px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700\"\n      onclick={addBall}\n    >\n      Agregar\n    </button>\n    <button\n      class=\"px-4 py-2 rounded bg-amber-500 text-white hover:bg-amber-600\"\n      onclick={togglePause}\n    >\n      {paused ? 'Reanudar' : 'Pausar'}\n    </button>\n    <button\n      class=\"px-4 py-2 rounded bg-rose-600 text-white hover:bg-rose-700\"\n      onclick={reset}\n    >\n      Reiniciar\n    </button>\n  </div>\n\n  <div class=\"flex gap-6 text-slate-700 font-mono\">\n    <span>Pelotas: {count}</span>\n    <span>Cuadros: {frames}</span>\n  </div>\n</main>\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 50222,
+        "brotli": 17274
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "vue",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 485,
+        "output": 2762,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.05718,
+      "codeTokens": 2257,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.vue": "<script setup lang=\"ts\">\nimport { ref, onMounted, onBeforeUnmount } from 'vue'\n\ninterface Ball {\n  x: number\n  y: number\n  vx: number\n  vy: number\n}\n\nconst WIDTH = 400\nconst HEIGHT = 300\nconst RADIUS = 10\nconst GRAVITY = 0.2\nconst INITIAL_BALLS = 5\n\nconst canvasRef = ref<HTMLCanvasElement | null>(null)\nconst ballCount = ref(0)\nconst frames = ref(0)\nconst paused = ref(false)\n\nlet balls: Ball[] = []\nlet rafId: number | null = null\n\nfunction rand(min: number, max: number): number {\n  return Math.random() * (max - min) + min\n}\n\nfunction createBall(): Ball {\n  let x = rand(RADIUS, WIDTH - RADIUS)\n  let y = rand(RADIUS, HEIGHT - RADIUS)\n  for (let attempt = 0; attempt < 50; attempt++) {\n    const overlaps = balls.some(\n      (b) => Math.hypot(b.x - x, b.y - y) < RADIUS * 2\n    )\n    if (!overlaps) break\n    x = rand(RADIUS, WIDTH - RADIUS)\n    y = rand(RADIUS, HEIGHT - RADIUS)\n  }\n  return {\n    x,\n    y,\n    vx: rand(-3, 3),\n    vy: rand(-3, 3),\n  }\n}\n\nfunction addBall(): void {\n  balls.push(createBall())\n  ballCount.value = balls.length\n  if (paused.value) draw()\n}\n\nfunction resolveCollisions(): void {\n  const minDist = RADIUS * 2\n  for (let i = 0; i < balls.length; i++) {\n    for (let j = i + 1; j < balls.length; j++) {\n      const a = balls[i]\n      const b = balls[j]\n      const dx = b.x - a.x\n      const dy = b.y - a.y\n      let dist = Math.hypot(dx, dy)\n      if (dist < minDist) {\n        let nx: number\n        let ny: number\n        if (dist === 0) {\n          nx = 1\n          ny = 0\n          dist = 0\n        } else {\n          nx = dx / dist\n          ny = dy / dist\n        }\n        // Separar para que no queden superpuestas\n        const overlap = (minDist - dist) / 2\n        a.x -= nx * overlap\n        a.y -= ny * overlap\n        b.x += nx * overlap\n        b.y += ny * overlap\n\n        // Intercambiar velocidades solo si se acercan\n        const relVel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny\n        if (relVel < 0 || dist === 0) {\n          const tvx = a.vx\n          const tvy = a.vy\n          a.vx = b.vx\n          a.vy = b.vy\n          b.vx = tvx\n          b.vy = tvy\n        }\n      }\n    }\n  }\n}\n\nfunction handleWalls(b: Ball): void {\n  if (b.x < RADIUS) {\n    b.x = RADIUS\n    b.vx = Math.abs(b.vx)\n  } else if (b.x > WIDTH - RADIUS) {\n    b.x = WIDTH - RADIUS\n    b.vx = -Math.abs(b.vx)\n  }\n  if (b.y < RADIUS) {\n    b.y = RADIUS\n    b.vy = Math.abs(b.vy)\n  } else if (b.y > HEIGHT - RADIUS) {\n    b.y = HEIGHT - RADIUS\n    b.vy = -Math.abs(b.vy)\n  }\n}\n\nfunction update(): void {\n  for (const b of balls) {\n    b.vy += GRAVITY\n    b.x += b.vx\n    b.y += b.vy\n  }\n  resolveCollisions()\n  for (const b of balls) {\n    handleWalls(b)\n  }\n}\n\nfunction draw(): void {\n  const canvas = canvasRef.value\n  if (!canvas) return\n  const ctx = canvas.getContext('2d')\n  if (!ctx) return\n  ctx.clearRect(0, 0, WIDTH, HEIGHT)\n  ctx.fillStyle = '#3b82f6'\n  for (const b of balls) {\n    ctx.beginPath()\n    ctx.arc(b.x, b.y, RADIUS, 0, Math.PI * 2)\n    ctx.fill()\n  }\n}\n\nfunction loop(): void {\n  update()\n  draw()\n  frames.value++\n  rafId = requestAnimationFrame(loop)\n}\n\nfunction start(): void {\n  if (rafId === null) {\n    rafId = requestAnimationFrame(loop)\n  }\n}\n\nfunction stop(): void {\n  if (rafId !== null) {\n    cancelAnimationFrame(rafId)\n    rafId = null\n  }\n}\n\nfunction togglePause(): void {\n  if (paused.value) {\n    paused.value = false\n    start()\n  } else {\n    paused.value = true\n    stop()\n  }\n}\n\nfunction reset(): void {\n  balls = []\n  for (let i = 0; i < INITIAL_BALLS; i++) {\n    balls.push(createBall())\n  }\n  ballCount.value = balls.length\n  frames.value = 0\n  if (paused.value) {\n    draw()\n  }\n}\n\nonMounted(() => {\n  reset()\n  start()\n})\n\nonBeforeUnmount(() => {\n  stop()\n})\n</script>\n\n<template>\n  <div class=\"min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-100 p-4\">\n    <canvas\n      id=\"sim\"\n      ref=\"canvasRef\"\n      width=\"400\"\n      height=\"300\"\n      class=\"border border-gray-400 bg-white rounded\"\n    ></canvas>\n    <div class=\"flex gap-2\">\n      <button\n        class=\"px-4 py-2 rounded bg-green-500 text-white hover:bg-green-600\"\n        @click=\"addBall\"\n      >\n        Agregar\n      </button>\n      <button\n        class=\"px-4 py-2 rounded bg-yellow-500 text-white hover:bg-yellow-600\"\n        @click=\"togglePause\"\n      >\n        {{ paused ? 'Reanudar' : 'Pausar' }}\n      </button>\n      <button\n        class=\"px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600\"\n        @click=\"reset\"\n      >\n        Reiniciar\n      </button>\n    </div>\n    <div class=\"flex gap-6 text-gray-800 font-mono\">\n      <span>Pelotas: {{ ballCount }}</span>\n      <span>Cuadros: {{ frames }}</span>\n    </div>\n  </div>\n</template>\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 65421,
+        "brotli": 23810
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "vue",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 485,
+        "output": 2703,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.056,
+      "codeTokens": 2327,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.vue": "<script setup lang=\"ts\">\nimport { ref, onMounted, onUnmounted } from 'vue'\n\ninterface Ball {\n  x: number\n  y: number\n  vx: number\n  vy: number\n  color: string\n}\n\nconst WIDTH = 400\nconst HEIGHT = 300\nconst RADIUS = 10\nconst GRAVITY = 0.2\nconst COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#14b8a6', '#f97316']\n\nconst canvasRef = ref<HTMLCanvasElement | null>(null)\nconst ballCount = ref(0)\nconst frames = ref(0)\nconst paused = ref(false)\n\nlet balls: Ball[] = []\nlet rafId: number | null = null\n\nfunction randomBall(): Ball {\n  let x = 0\n  let y = 0\n  for (let attempt = 0; attempt < 50; attempt++) {\n    x = RADIUS + Math.random() * (WIDTH - 2 * RADIUS)\n    y = RADIUS + Math.random() * (HEIGHT - 2 * RADIUS)\n    const overlaps = balls.some(b => Math.hypot(b.x - x, b.y - y) < 2 * RADIUS)\n    if (!overlaps) break\n  }\n  return {\n    x,\n    y,\n    vx: (Math.random() * 2 - 1) * 4,\n    vy: (Math.random() * 2 - 1) * 4,\n    color: COLORS[Math.floor(Math.random() * COLORS.length)]\n  }\n}\n\nfunction update() {\n  for (const b of balls) {\n    b.vy += GRAVITY\n    b.x += b.vx\n    b.y += b.vy\n\n    if (b.x - RADIUS < 0) {\n      b.x = RADIUS\n      b.vx = Math.abs(b.vx)\n    } else if (b.x + RADIUS > WIDTH) {\n      b.x = WIDTH - RADIUS\n      b.vx = -Math.abs(b.vx)\n    }\n    if (b.y - RADIUS < 0) {\n      b.y = RADIUS\n      b.vy = Math.abs(b.vy)\n    } else if (b.y + RADIUS > HEIGHT) {\n      b.y = HEIGHT - RADIUS\n      b.vy = -Math.abs(b.vy)\n    }\n  }\n\n  for (let i = 0; i < balls.length; i++) {\n    for (let j = i + 1; j < balls.length; j++) {\n      const a = balls[i]\n      const b = balls[j]\n      const dx = b.x - a.x\n      const dy = b.y - a.y\n      let dist = Math.hypot(dx, dy)\n      if (dist < 2 * RADIUS) {\n        let nx: number\n        let ny: number\n        if (dist === 0) {\n          nx = 1\n          ny = 0\n          dist = 0\n        } else {\n          nx = dx / dist\n          ny = dy / dist\n        }\n        const approaching = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny < 0\n        if (approaching) {\n          const tvx = a.vx\n          const tvy = a.vy\n          a.vx = b.vx\n          a.vy = b.vy\n          b.vx = tvx\n          b.vy = tvy\n        }\n        const overlap = (2 * RADIUS - dist) / 2\n        a.x -= nx * overlap\n        a.y -= ny * overlap\n        b.x += nx * overlap\n        b.y += ny * overlap\n        for (const p of [a, b]) {\n          p.x = Math.min(Math.max(p.x, RADIUS), WIDTH - RADIUS)\n          p.y = Math.min(Math.max(p.y, RADIUS), HEIGHT - RADIUS)\n        }\n      }\n    }\n  }\n}\n\nfunction draw() {\n  const canvas = canvasRef.value\n  if (!canvas) return\n  const ctx = canvas.getContext('2d')\n  if (!ctx) return\n  ctx.clearRect(0, 0, WIDTH, HEIGHT)\n  ctx.fillStyle = '#f8fafc'\n  ctx.fillRect(0, 0, WIDTH, HEIGHT)\n  for (const b of balls) {\n    ctx.beginPath()\n    ctx.arc(b.x, b.y, RADIUS, 0, Math.PI * 2)\n    ctx.fillStyle = b.color\n    ctx.fill()\n  }\n}\n\nfunction loop() {\n  update()\n  draw()\n  frames.value++\n  rafId = requestAnimationFrame(loop)\n}\n\nfunction start() {\n  if (rafId === null) {\n    rafId = requestAnimationFrame(loop)\n  }\n}\n\nfunction stop() {\n  if (rafId !== null) {\n    cancelAnimationFrame(rafId)\n    rafId = null\n  }\n}\n\nfunction createBalls() {\n  balls = []\n  for (let i = 0; i < 5; i++) {\n    balls.push(randomBall())\n  }\n  ballCount.value = balls.length\n}\n\nfunction addBall() {\n  balls.push(randomBall())\n  ballCount.value = balls.length\n  if (paused.value) draw()\n}\n\nfunction togglePause() {\n  if (paused.value) {\n    paused.value = false\n    start()\n  } else {\n    paused.value = true\n    stop()\n  }\n}\n\nfunction reset() {\n  createBalls()\n  frames.value = 0\n  if (paused.value) draw()\n}\n\nonMounted(() => {\n  createBalls()\n  start()\n})\n\nonUnmounted(() => {\n  stop()\n})\n</script>\n\n<template>\n  <div class=\"min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-100 p-6\">\n    <canvas\n      id=\"sim\"\n      ref=\"canvasRef\"\n      :width=\"WIDTH\"\n      :height=\"HEIGHT\"\n      class=\"border border-gray-400 rounded shadow bg-white\"\n    ></canvas>\n    <div class=\"flex gap-2\">\n      <button\n        class=\"px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700\"\n        @click=\"addBall\"\n      >\n        Agregar\n      </button>\n      <button\n        class=\"px-4 py-2 rounded bg-amber-500 text-white hover:bg-amber-600\"\n        @click=\"togglePause\"\n      >\n        {{ paused ? 'Reanudar' : 'Pausar' }}\n      </button>\n      <button\n        class=\"px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700\"\n        @click=\"reset\"\n      >\n        Reiniciar\n      </button>\n    </div>\n    <div class=\"flex gap-6 text-gray-800 font-mono\">\n      <span>Pelotas: {{ ballCount }}</span>\n      <span>Cuadros: {{ frames }}</span>\n    </div>\n  </div>\n</template>\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 65619,
+        "brotli": 23919
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "solid",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 488,
+        "output": 2636,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.054672,
+      "codeTokens": 2216,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { createSignal, onMount, onCleanup, Show } from \"solid-js\";\n\nconst W = 400;\nconst H = 300;\nconst R = 10;\nconst GRAVITY = 0.2;\nconst INITIAL = 5;\n\ntype Ball = { x: number; y: number; vx: number; vy: number; color: string };\n\nconst COLORS = [\"#ef4444\", \"#3b82f6\", \"#22c55e\", \"#eab308\", \"#a855f7\", \"#f97316\", \"#06b6d4\", \"#ec4899\"];\n\nfunction randomBall(existing: Ball[]): Ball {\n  let x = 0;\n  let y = 0;\n  for (let attempt = 0; attempt < 100; attempt++) {\n    x = R + Math.random() * (W - 2 * R);\n    y = R + Math.random() * (H - 2 * R);\n    const overlaps = existing.some((b) => Math.hypot(b.x - x, b.y - y) < 2 * R);\n    if (!overlaps) break;\n  }\n  return {\n    x,\n    y,\n    vx: (Math.random() * 2 - 1) * 4,\n    vy: (Math.random() * 2 - 1) * 4,\n    color: COLORS[Math.floor(Math.random() * COLORS.length)],\n  };\n}\n\nfunction createBalls(n: number): Ball[] {\n  const arr: Ball[] = [];\n  for (let i = 0; i < n; i++) arr.push(randomBall(arr));\n  return arr;\n}\n\nexport default function App() {\n  let canvas: HTMLCanvasElement | undefined;\n  let balls: Ball[] = createBalls(INITIAL);\n  let rafId: number | null = null;\n\n  const [count, setCount] = createSignal(balls.length);\n  const [frames, setFrames] = createSignal(0);\n  const [paused, setPaused] = createSignal(false);\n\n  const step = () => {\n    for (const b of balls) {\n      b.vy += GRAVITY;\n      b.x += b.vx;\n      b.y += b.vy;\n\n      if (b.x - R < 0) {\n        b.x = R;\n        b.vx = Math.abs(b.vx);\n      } else if (b.x + R > W) {\n        b.x = W - R;\n        b.vx = -Math.abs(b.vx);\n      }\n      if (b.y - R < 0) {\n        b.y = R;\n        b.vy = Math.abs(b.vy);\n      } else if (b.y + R > H) {\n        b.y = H - R;\n        b.vy = -Math.abs(b.vy);\n      }\n    }\n\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        const a = balls[i];\n        const b = balls[j];\n        const dx = b.x - a.x;\n        const dy = b.y - a.y;\n        const dist = Math.hypot(dx, dy);\n        if (dist < 2 * R) {\n          const nx = dist === 0 ? 1 : dx / dist;\n          const ny = dist === 0 ? 0 : dy / dist;\n          // Separar para evitar que queden pegadas\n          const overlap = (2 * R - dist) / 2;\n          a.x -= nx * overlap;\n          a.y -= ny * overlap;\n          b.x += nx * overlap;\n          b.y += ny * overlap;\n          // Mantener dentro del canvas\n          for (const p of [a, b]) {\n            p.x = Math.min(Math.max(p.x, R), W - R);\n            p.y = Math.min(Math.max(p.y, R), H - R);\n          }\n          // Intercambio de velocidades (colisión elástica, masas iguales)\n          const tvx = a.vx;\n          const tvy = a.vy;\n          a.vx = b.vx;\n          a.vy = b.vy;\n          b.vx = tvx;\n          b.vy = tvy;\n        }\n      }\n    }\n  };\n\n  const draw = () => {\n    const ctx = canvas?.getContext(\"2d\");\n    if (!ctx) return;\n    ctx.clearRect(0, 0, W, H);\n    for (const b of balls) {\n      ctx.beginPath();\n      ctx.arc(b.x, b.y, R, 0, Math.PI * 2);\n      ctx.fillStyle = b.color;\n      ctx.fill();\n      ctx.closePath();\n    }\n  };\n\n  const loop = () => {\n    step();\n    draw();\n    setFrames((f) => f + 1);\n    rafId = requestAnimationFrame(loop);\n  };\n\n  const start = () => {\n    if (rafId === null) rafId = requestAnimationFrame(loop);\n  };\n\n  const stop = () => {\n    if (rafId !== null) {\n      cancelAnimationFrame(rafId);\n      rafId = null;\n    }\n  };\n\n  onMount(() => {\n    draw();\n    start();\n  });\n\n  onCleanup(() => stop());\n\n  const add = () => {\n    balls.push(randomBall(balls));\n    setCount(balls.length);\n    if (paused()) draw();\n  };\n\n  const togglePause = () => {\n    if (paused()) {\n      setPaused(false);\n      start();\n    } else {\n      setPaused(true);\n      stop();\n    }\n  };\n\n  const reset = () => {\n    balls = createBalls(INITIAL);\n    setCount(balls.length);\n    setFrames(0);\n    draw();\n  };\n\n  return (\n    <div class=\"min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-100 p-4\">\n      <canvas\n        id=\"sim\"\n        ref={canvas}\n        width={W}\n        height={H}\n        class=\"border border-gray-400 bg-white rounded shadow\"\n      />\n      <div class=\"flex gap-2\">\n        <button\n          class=\"px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700\"\n          onClick={add}\n        >\n          Agregar\n        </button>\n        <button\n          class=\"px-4 py-2 rounded bg-yellow-500 text-white hover:bg-yellow-600\"\n          onClick={togglePause}\n        >\n          <Show when={paused()} fallback=\"Pausar\">\n            Reanudar\n          </Show>\n        </button>\n        <button\n          class=\"px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700\"\n          onClick={reset}\n        >\n          Reiniciar\n        </button>\n      </div>\n      <div class=\"flex gap-6 text-gray-800 font-mono\">\n        <span>Pelotas: {count()}</span>\n        <span>Cuadros: {frames()}</span>\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 15833,
+        "brotli": 5923
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "solid",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 488,
+        "output": 3384,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.069632,
+      "codeTokens": 2788,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.tsx": "import { createSignal, onCleanup, onMount } from \"solid-js\";\n\ntype Ball = {\n  x: number;\n  y: number;\n  vx: number;\n  vy: number;\n  color: string;\n};\n\nconst WIDTH = 400;\nconst HEIGHT = 300;\nconst RADIUS = 10;\nconst GRAVITY = 0.2;\nconst INITIAL_BALLS = 5;\n\nconst COLORS = [\n  \"#ef4444\",\n  \"#f97316\",\n  \"#eab308\",\n  \"#22c55e\",\n  \"#06b6d4\",\n  \"#3b82f6\",\n  \"#8b5cf6\",\n  \"#ec4899\",\n];\n\nfunction randomBetween(min: number, max: number): number {\n  return min + Math.random() * (max - min);\n}\n\nfunction createBall(existing: Ball[]): Ball {\n  let x = randomBetween(RADIUS, WIDTH - RADIUS);\n  let y = randomBetween(RADIUS, HEIGHT - RADIUS);\n  // Intentar no superponer con pelotas existentes\n  for (let attempt = 0; attempt < 50; attempt++) {\n    const overlaps = existing.some((b) => {\n      const dx = b.x - x;\n      const dy = b.y - y;\n      return dx * dx + dy * dy < (2 * RADIUS) * (2 * RADIUS);\n    });\n    if (!overlaps) break;\n    x = randomBetween(RADIUS, WIDTH - RADIUS);\n    y = randomBetween(RADIUS, HEIGHT - RADIUS);\n  }\n  let vx = randomBetween(-3, 3);\n  let vy = randomBetween(-3, 3);\n  if (Math.abs(vx) < 0.5) vx = vx < 0 ? -1 : 1;\n  return {\n    x,\n    y,\n    vx,\n    vy,\n    color: COLORS[Math.floor(Math.random() * COLORS.length)],\n  };\n}\n\nfunction createBalls(n: number): Ball[] {\n  const arr: Ball[] = [];\n  for (let i = 0; i < n; i++) arr.push(createBall(arr));\n  return arr;\n}\n\nfunction clampToBounds(b: Ball) {\n  if (b.x < RADIUS) {\n    b.x = RADIUS;\n    b.vx = Math.abs(b.vx);\n  } else if (b.x > WIDTH - RADIUS) {\n    b.x = WIDTH - RADIUS;\n    b.vx = -Math.abs(b.vx);\n  }\n  if (b.y < RADIUS) {\n    b.y = RADIUS;\n    b.vy = Math.abs(b.vy);\n  } else if (b.y > HEIGHT - RADIUS) {\n    b.y = HEIGHT - RADIUS;\n    b.vy = -Math.abs(b.vy);\n  }\n}\n\nexport default function App() {\n  let canvasRef: HTMLCanvasElement | undefined;\n  let balls: Ball[] = createBalls(INITIAL_BALLS);\n  let rafId: number | null = null;\n\n  const [count, setCount] = createSignal(balls.length);\n  const [frames, setFrames] = createSignal(0);\n  const [paused, setPaused] = createSignal(false);\n\n  const step = () => {\n    // Gravedad y movimiento\n    for (const b of balls) {\n      b.vy += GRAVITY;\n      b.x += b.vx;\n      b.y += b.vy;\n      clampToBounds(b);\n    }\n\n    // Colisiones entre pelotas (intercambio de velocidades)\n    const minDist = 2 * RADIUS;\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        const a = balls[i];\n        const b = balls[j];\n        const dx = b.x - a.x;\n        const dy = b.y - a.y;\n        const distSq = dx * dx + dy * dy;\n        if (distSq < minDist * minDist) {\n          const dist = Math.sqrt(distSq) || 0.0001;\n          const nx = distSq === 0 ? 1 : dx / dist;\n          const ny = distSq === 0 ? 0 : dy / dist;\n\n          // Separar para que no queden superpuestas\n          const overlap = (minDist - dist) / 2;\n          a.x -= nx * overlap;\n          a.y -= ny * overlap;\n          b.x += nx * overlap;\n          b.y += ny * overlap;\n\n          // Intercambiar velocidades solo si se acercan\n          const rvx = b.vx - a.vx;\n          const rvy = b.vy - a.vy;\n          if (rvx * nx + rvy * ny < 0) {\n            const tvx = a.vx;\n            const tvy = a.vy;\n            a.vx = b.vx;\n            a.vy = b.vy;\n            b.vx = tvx;\n            b.vy = tvy;\n          }\n\n          clampToBounds(a);\n          clampToBounds(b);\n        }\n      }\n    }\n  };\n\n  const draw = () => {\n    if (!canvasRef) return;\n    const ctx = canvasRef.getContext(\"2d\");\n    if (!ctx) return;\n    ctx.clearRect(0, 0, WIDTH, HEIGHT);\n    ctx.fillStyle = \"#f8fafc\";\n    ctx.fillRect(0, 0, WIDTH, HEIGHT);\n    for (const b of balls) {\n      ctx.beginPath();\n      ctx.arc(b.x, b.y, RADIUS, 0, Math.PI * 2);\n      ctx.fillStyle = b.color;\n      ctx.fill();\n      ctx.strokeStyle = \"#1e293b\";\n      ctx.lineWidth = 1;\n      ctx.stroke();\n    }\n  };\n\n  const loop = () => {\n    step();\n    draw();\n    setFrames((f) => f + 1);\n    rafId = requestAnimationFrame(loop);\n  };\n\n  const start = () => {\n    if (rafId === null) {\n      rafId = requestAnimationFrame(loop);\n    }\n  };\n\n  const stop = () => {\n    if (rafId !== null) {\n      cancelAnimationFrame(rafId);\n      rafId = null;\n    }\n  };\n\n  const handleAdd = () => {\n    balls.push(createBall(balls));\n    setCount(balls.length);\n    if (paused()) draw();\n  };\n\n  const handleTogglePause = () => {\n    if (paused()) {\n      setPaused(false);\n      start();\n    } else {\n      setPaused(true);\n      stop();\n    }\n  };\n\n  const handleReset = () => {\n    balls = createBalls(INITIAL_BALLS);\n    setCount(balls.length);\n    setFrames(0);\n    draw();\n  };\n\n  onMount(() => {\n    draw();\n    start();\n  });\n\n  onCleanup(() => {\n    stop();\n  });\n\n  return (\n    <div class=\"min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-100 p-6\">\n      <h1 class=\"text-2xl font-bold text-slate-800\">Simulación de pelotas</h1>\n      <canvas\n        id=\"sim\"\n        ref={canvasRef}\n        width={WIDTH}\n        height={HEIGHT}\n        class=\"border border-slate-400 rounded shadow bg-slate-50\"\n      />\n      <div class=\"flex gap-2\">\n        <button\n          class=\"px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700\"\n          onClick={handleAdd}\n        >\n          Agregar\n        </button>\n        <button\n          class=\"px-4 py-2 rounded bg-amber-500 text-white hover:bg-amber-600\"\n          onClick={handleTogglePause}\n        >\n          {paused() ? \"Reanudar\" : \"Pausar\"}\n        </button>\n        <button\n          class=\"px-4 py-2 rounded bg-slate-600 text-white hover:bg-slate-700\"\n          onClick={handleReset}\n        >\n          Reiniciar\n        </button>\n      </div>\n      <div class=\"flex gap-6 text-slate-700 font-mono\">\n        <span>Pelotas: {count()}</span>\n        <span>Cuadros: {frames()}</span>\n      </div>\n    </div>\n  );\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 15534,
+        "brotli": 5893
+      }
+    }
+  ]
+}
