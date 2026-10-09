@@ -173,3 +173,11 @@ test("the patch example in docs/SPEC-EDIT.md applies to examples/todo", () => {
   assert.match(out, /title "My tasks"/);
   assert.match(out, /component TodoItem\(todo: Todo, remove: Fn, compact: Bool = false\)/);
 });
+
+test("patch: a file no operation touched is left exactly as it is", () => {
+  const other = 'component Other {\n  text "x"\n}\n\n\n'; // not canonical: extra blank lines
+  const r = applyPatch([{ file: "app.art", src: 'page Home "/" {\n  text "hi"\n}\n' }, { file: "other.art", src: other }], "append Home\n  text \"more\"\n");
+  assert.deepEqual(r.diagnostics, []);
+  assert.deepEqual(r.changed, ["app.art"]);
+  assert.equal(r.files["other.art"], other);
+});

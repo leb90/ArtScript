@@ -50,7 +50,12 @@ page Customers "/customers" layout Shell requires login {
       return
     }
     saving = true
-    let fields = { name: name.trim(), email: email.trim(), company: company.trim() == "" ? null : company.trim(), country }
+    let fields = {
+      name: name.trim(),
+      email: email.trim(),
+      company: company.trim() == "" ? null : company.trim(),
+      country
+    }
     try {
       if editId == "" {
         await api.customers.create({ ...fields, createdAt: Date.now() })

@@ -187,8 +187,16 @@ component Hero {
 }
 
 component Press {
-  state names = ["The Daily Grind", "Slow Mornings", "Crema Quarterly", "Roast Report", "Kitchen & Counter", "The Pour"]
-  state stats = [{ value: "12 kg", label: "per batch, never more" }, { value: "48 h", label: "from roaster to post" }, { value: "31", label: "partner farms, paid direct" }, { value: "2,300+", label: "kitchens brewing Brisa" }]
+  state names = [
+    "The Daily Grind", "Slow Mornings", "Crema Quarterly", "Roast Report", "Kitchen & Counter",
+    "The Pour"
+  ]
+  state stats = [
+    { value: "12 kg", label: "per batch, never more" },
+    { value: "48 h", label: "from roaster to post" },
+    { value: "31", label: "partner farms, paid direct" },
+    { value: "2,300+", label: "kitchens brewing Brisa" }
+  ]
 
   column class="press" {
     text "As poured over in" class="press-label wrap"
@@ -262,7 +270,23 @@ component Features {
 }
 
 component Steps {
-  state steps = [{ n: "01", title: "Tell us how you brew", body: "Pick your brewer, how adventurous you feel and how much you drink. It takes a minute." }, { n: "02", title: "We roast your batch", body: "Every Monday our roasters fire up for the week's orders. Yours is bagged warm and posted that day." }, { n: "03", title: "It lands. You brew.", body: "Letterbox-friendly bags arrive by Thursday with brew notes for your exact setup." }]
+  state steps = [
+    {
+      n: "01",
+      title: "Tell us how you brew",
+      body: "Pick your brewer, how adventurous you feel and how much you drink. It takes a minute."
+    },
+    {
+      n: "02",
+      title: "We roast your batch",
+      body: "Every Monday our roasters fire up for the week's orders. Yours is bagged warm and posted that day."
+    },
+    {
+      n: "03",
+      title: "It lands. You brew.",
+      body: "Letterbox-friendly bags arrive by Thursday with brew notes for your exact setup."
+    }
+  ]
 
   column tag=section class="section section-tint" id="how" {
     column class="wrap" {
@@ -282,7 +306,41 @@ component Steps {
 
 component Pricing {
   state billing = "Monthly"
-  state plans = [{ name: "Taster", blurb: "One bag to keep things interesting.", monthly: 16, yearly: 13, bags: "1 × 250 g bag a month", perks: ["A new origin every month", "Brew notes for your setup", "Free shipping"], featured: false }, { name: "Regular", blurb: "A cup or two every day, covered.", monthly: 29, yearly: 24, bags: "2 × 250 g bags a month", perks: ["Choose or be surprised", "Brew notes for your setup", "Free shipping", "First pick of micro-lots"], featured: true }, { name: "Household", blurb: "For homes that go through a lot.", monthly: 52, yearly: 43, bags: "4 × 250 g bags a month", perks: ["Split across two roasts", "Brew notes for your setup", "Free express shipping", "First pick of micro-lots"], featured: false }]
+  state plans = [
+    {
+      name: "Taster",
+      blurb: "One bag to keep things interesting.",
+      monthly: 16,
+      yearly: 13,
+      bags: "1 × 250 g bag a month",
+      perks: ["A new origin every month", "Brew notes for your setup", "Free shipping"],
+      featured: false
+    },
+    {
+      name: "Regular",
+      blurb: "A cup or two every day, covered.",
+      monthly: 29,
+      yearly: 24,
+      bags: "2 × 250 g bags a month",
+      perks: [
+        "Choose or be surprised", "Brew notes for your setup", "Free shipping",
+        "First pick of micro-lots"
+      ],
+      featured: true
+    },
+    {
+      name: "Household",
+      blurb: "For homes that go through a lot.",
+      monthly: 52,
+      yearly: 43,
+      bags: "4 × 250 g bags a month",
+      perks: [
+        "Split across two roasts", "Brew notes for your setup", "Free express shipping",
+        "First pick of micro-lots"
+      ],
+      featured: false
+    }
+  ]
   computed yearly = billing == "Yearly"
 
   column tag=section class="section" id="plans" {
@@ -328,7 +386,26 @@ component Pricing {
 }
 
 component Stories {
-  state quotes = [{ body: "I didn't know coffee could taste like mandarin until the first Brisa bag. Now the supermarket stuff tastes like cardboard.", name: "Maya Rosário", place: "Lisbon · filter", initials: "MR" }, { body: "The brew notes are tuned to my moka pot, down to the grind. It's the first subscription I've never thought about cancelling.", name: "Tomás Echeverría", place: "Buenos Aires · moka", initials: "TE" }, { body: "We skip August every year and it takes ten seconds. The roast date on the bag is always within the week.", name: "Priya Nair", place: "Toronto · espresso", initials: "PN" }]
+  state quotes = [
+    {
+      body: "I didn't know coffee could taste like mandarin until the first Brisa bag. Now the supermarket stuff tastes like cardboard.",
+      name: "Maya Rosário",
+      place: "Lisbon · filter",
+      initials: "MR"
+    },
+    {
+      body: "The brew notes are tuned to my moka pot, down to the grind. It's the first subscription I've never thought about cancelling.",
+      name: "Tomás Echeverría",
+      place: "Buenos Aires · moka",
+      initials: "TE"
+    },
+    {
+      body: "We skip August every year and it takes ten seconds. The roast date on the bag is always within the week.",
+      name: "Priya Nair",
+      place: "Toronto · espresso",
+      initials: "PN"
+    }
+  ]
 
   column tag=section class="section section-tint" id="stories" {
     column class="wrap" {
@@ -390,7 +467,28 @@ component FaqItem(n: Number, q: String, a: String, start: Bool = false) {
 }
 
 component Faq {
-  state items = [{ q: "When will my coffee arrive?", a: "We roast every Monday and post the same day. Most addresses receive their bags by Thursday; you get a tracking link as soon as they leave the roastery." }, { q: "Can I choose whole beans or ground?", a: "Yes. Tell us your brewer and we grind for it, or send whole beans if you have a grinder (we'd recommend it: whole beans stay fresh about three weeks longer)." }, { q: "How do I skip, pause or cancel?", a: "From your account, in two taps, any time before Sunday midnight. There is no minimum term and no cancellation fee, on monthly and yearly plans alike." }, { q: "What if I don't like a coffee?", a: "Tell us and the next bag is free. We'd rather adjust your profile than have you drink something you don't enjoy." }, { q: "Where do the beans come from?", a: "From 31 small farms and co-operatives in Colombia, Ethiopia, Guatemala, Peru and Rwanda. Each bag lists the farm, the lot, the altitude and the price we paid for it." }]
+  state items = [
+    {
+      q: "When will my coffee arrive?",
+      a: "We roast every Monday and post the same day. Most addresses receive their bags by Thursday; you get a tracking link as soon as they leave the roastery."
+    },
+    {
+      q: "Can I choose whole beans or ground?",
+      a: "Yes. Tell us your brewer and we grind for it, or send whole beans if you have a grinder (we'd recommend it: whole beans stay fresh about three weeks longer)."
+    },
+    {
+      q: "How do I skip, pause or cancel?",
+      a: "From your account, in two taps, any time before Sunday midnight. There is no minimum term and no cancellation fee, on monthly and yearly plans alike."
+    },
+    {
+      q: "What if I don't like a coffee?",
+      a: "Tell us and the next bag is free. We'd rather adjust your profile than have you drink something you don't enjoy."
+    },
+    {
+      q: "Where do the beans come from?",
+      a: "From 31 small farms and co-operatives in Colombia, Ethiopia, Guatemala, Peru and Rwanda. Each bag lists the farm, the lot, the altitude and the price we paid for it."
+    }
+  ]
 
   column tag=section class="section" id="faq" {
     grid class="wrap faq-grid" {

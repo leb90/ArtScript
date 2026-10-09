@@ -56,7 +56,7 @@ fn add(x) {                      // function; body = JS statements
 - Assigning to a `state` updates the UI: `count++`, `name = "x"`, `users.push(u)`, `user.name = "x"`, also through a fn parameter (`fn sell(p) { p.stock-- }`).
 - A component that assigns its prop (`items = items.filter(...)`) changes the parent's state: pass a state (`List items=items`).
 - No hooks, setters or manual dependencies.
-- Statements: expression, `let x = ...`, `if cond { } else { }`, `for x in xs { }`, `while cond { }`, `return`, `try { } catch (e) { } finally { }`.
+- Statements: expression, `let x = ...`, `if cond { } else { }`, `for x in xs { }`, `while cond { }`, `return`, `try { } catch (e) { } finally { }`. `fn`, `let` and `ref` compile to plain JavaScript (no overhead in a loop); a `let` or `const` written as a member is a `computed`.
 - For DOM libraries (charts, maps), timers and subscriptions:
   ```
   ref box                          // the element marked `canvas ref=box` (set before mount runs)

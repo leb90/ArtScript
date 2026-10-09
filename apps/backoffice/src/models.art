@@ -74,7 +74,21 @@ server fn stats(days) {
     p.revenue += o.total
     p.orders++
   }
-  return { empty: orders.length == 0 && customers.length == 0 && db.products.count() == 0, span, revenue: revenue(current), revenueChange: change(revenue(current), revenue(previous)), orders: current.length, ordersChange: change(current.length, previous.length), customers: joined(from, now), customersChange: change(joined(from, now), joined(before, from)), average: average(current), averageChange: change(average(current), average(previous)), points, categories: CATEGORIES.map(name => ({ name, orders: current.filter(o => o.product.category == name).length })), statuses: STATUSES.map(name => ({ name, orders: current.filter(o => o.status == name).length })) }
+  return {
+    empty: orders.length == 0 && customers.length == 0 && db.products.count() == 0,
+    span,
+    revenue: revenue(current),
+    revenueChange: change(revenue(current), revenue(previous)),
+    orders: current.length,
+    ordersChange: change(current.length, previous.length),
+    customers: joined(from, now),
+    customersChange: change(joined(from, now), joined(before, from)),
+    average: average(current),
+    averageChange: change(average(current), average(previous)),
+    points,
+    categories: CATEGORIES.map(name => ({ name, orders: current.filter(o => o.product.category == name).length })),
+    statuses: STATUSES.map(name => ({ name, orders: current.filter(o => o.status == name).length }))
+  }
 }
 
 // Fills an empty workspace with 40 customers, 12 products and 300 orders over the last 90 days.

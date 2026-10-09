@@ -4,6 +4,7 @@ import type { ComponentDecl, Element } from "../src/ast.ts";
 import { CompileError } from "../src/errors.ts";
 import { lex } from "../src/lexer.ts";
 import { parse, parseExpression } from "../src/parser.ts";
+import { printProgram } from "../src/printer.ts";
 import { printExpr } from "../src/printer.ts";
 
 const noLoc = (x: unknown) => JSON.parse(JSON.stringify(x, (k, v) => (k === "loc" ? undefined : v)));
@@ -132,4 +133,32 @@ test("parser: props and flags after the action are accepted and printed first", 
   const el = (parse(src, "t").decls[0] as ComponentDecl).view[0] as Element;
   assert.deepEqual(el.props.map((p) => p.name), ["disabled", "small"]);
   assert.equal(el.action!.length, 1);
+});
+
+test("fmt: long objects, arrays, arrow blocks and calls break over lines; short ones stay on one", () => {
+  const src = `page P {
+  state dict = {
+    en: {
+      hello: "Hello, welcome to this small page about rain and everything that falls from the sky",
+      bye: "Bye"
+    },
+    es: { hello: "Hola, bienvenido a esta pequeña página sobre la lluvia", bye: "Chau" }
+  }
+  state short = { a: 1, b: 2 }
+  fn go() {
+    let xs = items.map(x => {
+      let y = x * 2
+      return y + 1
+    })
+    fetch("/api/things", {
+      method: "POST",
+      body: JSON.stringify({ name: "a very long name that goes on and on and on and on and on", kind: "thing" })
+    })
+    return xs
+  }
+
+  text short.a
+}
+`;
+  assert.equal(printProgram(parse(src, "f")), src);
 });

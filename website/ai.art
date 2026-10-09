@@ -3,8 +3,45 @@ use "./lib/content.ts" { specText, editText, specTokens, editTokens, AGENTS_MD, 
 use "./lib/markdown.ts" { copyText }
 
 page Ai "/ai" layout Docs {
-  state tools = [{ name: "art_spec", what: "The language spec (full, or the short edit version)." }, { name: "art_check", what: "Typechecks the project; errors as JSON with expected, actual and fixes." }, { name: "art_context", what: "The project map, or a component's source with every patch path." }, { name: "art_patch", what: "Applies a structured edit: atomic and typechecked, nothing is written on error." }]
-  state loop = [{ n: "1", title: "Read the spec once", body: "About 3K tokens describe the whole language. With prompt caching it is billed at the cache rate after the first request." }, { n: "2", title: "Write .art files", body: "One file can hold the models, the api, the pages and the tests. Expressions are plain JavaScript, so nothing new to learn there." }, { n: "3", title: "Check, fix, repeat", body: "art check --ai returns one JSON line per error with the fix. Most retries are a single small patch." }, { n: "4", title: "Verify behavior", body: "test blocks click, type and read the screen in a simulated browser: art test runs them with a fresh database." }, { n: "5", title: "Change with patches", body: "For later changes the agent reads art context for the part it needs and sends an art patch instead of rewriting files." }]
+  state tools = [
+    { name: "art_spec", what: "The language spec (full, or the short edit version)." },
+    {
+      name: "art_check",
+      what: "Typechecks the project; errors as JSON with expected, actual and fixes."
+    },
+    { name: "art_context", what: "The project map, or a component's source with every patch path." },
+    {
+      name: "art_patch",
+      what: "Applies a structured edit: atomic and typechecked, nothing is written on error."
+    }
+  ]
+  state loop = [
+    {
+      n: "1",
+      title: "Read the spec once",
+      body: "About 3K tokens describe the whole language. With prompt caching it is billed at the cache rate after the first request."
+    },
+    {
+      n: "2",
+      title: "Write .art files",
+      body: "One file can hold the models, the api, the pages and the tests. Expressions are plain JavaScript, so nothing new to learn there."
+    },
+    {
+      n: "3",
+      title: "Check, fix, repeat",
+      body: "art check --ai returns one JSON line per error with the fix. Most retries are a single small patch."
+    },
+    {
+      n: "4",
+      title: "Verify behavior",
+      body: "test blocks click, type and read the screen in a simulated browser: art test runs them with a fresh database."
+    },
+    {
+      n: "5",
+      title: "Change with patches",
+      body: "For later changes the agent reads art context for the part it needs and sends an art patch instead of rewriting files."
+    }
+  ]
 
   meta title="ArtScript for AI agents" description="How to give an AI agent ArtScript: llms.txt, the spec, the MCP server, the instructions file and the build-check-patch loop."
   DocShell path="/ai" section="For AI" heading="ArtScript for AI agents" {

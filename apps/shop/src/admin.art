@@ -14,7 +14,17 @@ page Admin "/admin" requires admin {
   state saving = false
   computed revenue = orders.filter(o => o.status != "Cancelled").reduce((n, o) => n + o.total, 0)
   computed lowStock = products.filter(p => p.stock <= 3).length
-  computed pictures = [{ value: "/products/placeholder.svg", label: "Plain box" }, { value: "/products/pour-over.svg", label: "Pour-over" }, { value: "/products/mug.svg", label: "Mug" }, { value: "/products/blanket.svg", label: "Blanket" }, { value: "/products/candle.svg", label: "Candle" }, { value: "/products/lamp.svg", label: "Lamp" }, { value: "/products/organizer.svg", label: "Organizer" }, { value: "/products/weekender.svg", label: "Bag" }, { value: "/products/bottle.svg", label: "Bottle" }]
+  computed pictures = [
+    { value: "/products/placeholder.svg", label: "Plain box" },
+    { value: "/products/pour-over.svg", label: "Pour-over" },
+    { value: "/products/mug.svg", label: "Mug" },
+    { value: "/products/blanket.svg", label: "Blanket" },
+    { value: "/products/candle.svg", label: "Candle" },
+    { value: "/products/lamp.svg", label: "Lamp" },
+    { value: "/products/organizer.svg", label: "Organizer" },
+    { value: "/products/weekender.svg", label: "Bag" },
+    { value: "/products/bottle.svg", label: "Bottle" }
+  ]
   fn startNew() {
     editId = ""
     name = ""
@@ -40,7 +50,14 @@ page Admin "/admin" requires admin {
   fn save() {
     error = ""
     saving = true
-    let fields = { name: name.trim(), category: category.trim(), price: Math.round(Number(price) * 100) / 100, stock: Math.max(0, Math.floor(Number(stock) || 0)), image, description: description.trim() }
+    let fields = {
+      name: name.trim(),
+      category: category.trim(),
+      price: Math.round(Number(price) * 100) / 100,
+      stock: Math.max(0, Math.floor(Number(stock) || 0)),
+      image,
+      description: description.trim()
+    }
     try {
       if editId == "" {
         await api.products.create(fields)

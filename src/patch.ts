@@ -492,10 +492,13 @@ export function applyPatch(sources: Source[], patchText: string): PatchResult {
   const files: Record<string, string> = {};
   const changed: string[] = [];
   const names = [...new Set([...sources.map((s) => s.file), ...p.decls.map((d) => d.loc.file)])];
+  const ast = (prog: Program, file: string) => JSON.stringify(prog.decls.filter((d) => d.loc.file === file));
   for (const file of names) {
+    const before = sources.find((s) => s.file === file)?.src ?? null;
+    // A file no operation touched stays exactly as it is, formatted or not.
+    if (before !== null && ast(program, file) === ast(p, file)) { files[file] = before; continue; }
     const decls = p.decls.filter((d) => d.loc.file === file);
     const out = decls.length ? printProgram({ kind: "Program", decls }) : "";
-    const before = sources.find((s) => s.file === file)?.src ?? null;
     files[file] = out;
     if (out === before) continue;
     changed.push(file);

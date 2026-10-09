@@ -15,25 +15,95 @@ component ChartView(kind: String, labels: String[], values: Number[], name: Stri
     let main = token("--chart-1")
     let surface = token("--a-surface")
     if kind == "line" {
-      return { label: name, data: values, borderColor: main, backgroundColor: token("--chart-1-soft"), fill: true, borderWidth: 2, cubicInterpolationMode: "monotone", pointRadius: 0, pointHoverRadius: 5, pointHitRadius: 16, pointBackgroundColor: main, pointHoverBorderColor: surface, pointHoverBorderWidth: 2 }
+      return {
+        label: name,
+        data: values,
+        borderColor: main,
+        backgroundColor: token("--chart-1-soft"),
+        fill: true,
+        borderWidth: 2,
+        cubicInterpolationMode: "monotone",
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHitRadius: 16,
+        pointBackgroundColor: main,
+        pointHoverBorderColor: surface,
+        pointHoverBorderWidth: 2
+      }
     }
     if kind == "bar" {
-      return { label: name, data: values, backgroundColor: main, borderRadius: 4, borderSkipped: "start", maxBarThickness: 22 }
+      return {
+        label: name,
+        data: values,
+        backgroundColor: main,
+        borderRadius: 4,
+        borderSkipped: "start",
+        maxBarThickness: 22
+      }
     }
-    return { label: name, data: values, backgroundColor: colors.map(token), borderColor: surface, borderWidth: 2, hoverOffset: 4 }
+    return {
+      label: name,
+      data: values,
+      backgroundColor: colors.map(token),
+      borderColor: surface,
+      borderWidth: 2,
+      hoverOffset: 4
+    }
   }
   fn options() {
     let muted = token("--a-muted")
     let line = token("--chart-grid")
-    let tooltip = { backgroundColor: token("--tooltip-bg"), titleColor: token("--tooltip-fg"), bodyColor: token("--tooltip-fg"), padding: 10, cornerRadius: 8, displayColors: kind == "doughnut", boxPadding: 4, callbacks: { label: item => ` ${kind == "doughnut" ? item.label : name}: ${show(item.raw)}` } }
-    let base = { responsive: true, maintainAspectRatio: false, animation: { duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500 }, plugins: { legend: { display: false }, tooltip } }
+    let tooltip = {
+      backgroundColor: token("--tooltip-bg"),
+      titleColor: token("--tooltip-fg"),
+      bodyColor: token("--tooltip-fg"),
+      padding: 10,
+      cornerRadius: 8,
+      displayColors: kind == "doughnut",
+      boxPadding: 4,
+      callbacks: { label: item => ` ${kind == "doughnut" ? item.label : name}: ${show(item.raw)}` }
+    }
+    let base = {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500 },
+      plugins: { legend: { display: false }, tooltip }
+    }
     let quiet = { display: false }
     let ticks = { color: muted, font: { size: 12 } }
     if kind == "line" {
-      return { ...base, interaction: { mode: "index", intersect: false }, scales: { x: { grid: quiet, border: quiet, ticks: { ...ticks, maxTicksLimit: 7, maxRotation: 0 } }, y: { beginAtZero: true, border: quiet, grid: { color: line }, ticks: { ...ticks, maxTicksLimit: 5, callback: v => currency ? formatMoney(v, true) : formatNumber(v) } } } }
+      return {
+        ...base,
+        interaction: { mode: "index", intersect: false },
+        scales: {
+          x: { grid: quiet, border: quiet, ticks: { ...ticks, maxTicksLimit: 7, maxRotation: 0 } },
+          y: {
+            beginAtZero: true,
+            border: quiet,
+            grid: { color: line },
+            ticks: {
+              ...ticks,
+              maxTicksLimit: 5,
+              callback: v => currency ? formatMoney(v, true) : formatNumber(v)
+            }
+          }
+        }
+      }
     }
     if kind == "bar" {
-      return { ...base, indexAxis: "y", scales: { x: { beginAtZero: true, border: quiet, grid: { color: line }, ticks: { ...ticks, maxTicksLimit: 6, precision: 0 } }, y: { grid: quiet, border: quiet, ticks: { ...ticks, color: token("--a-fg") } } } }
+      return {
+        ...base,
+        indexAxis: "y",
+        scales: {
+          x: {
+            beginAtZero: true,
+            border: quiet,
+            grid: { color: line },
+            ticks: { ...ticks, maxTicksLimit: 6, precision: 0 }
+          },
+          y: { grid: quiet, border: quiet, ticks: { ...ticks, color: token("--a-fg") } }
+        }
+      }
     }
     return { ...base, cutout: "68%" }
   }

@@ -4,6 +4,14 @@ ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0
 
 ## Unreleased
 
+- Fixed: assigning a field of a `fn` parameter or of a computed's item (`fn move(d) { d.x++ }`) notified every state of the app on every assignment, which re-ran every effect; in a loop that runs per frame it froze the page. Now the runtime notifies only the states that hold the mutated object, once per flush, and an object no state holds (a local of a physics loop) notifies nothing.
+- `art fmt` keeps long objects, arrays and calls readable: one entry per line past 100 columns (a list of plain values fills each line), and an arrow with several statements always breaks over lines. Before, a 10,000-character dictionary ended up on one line.
+- `art patch` rewrites only the files an operation changed; the others are left exactly as they are.
+- `art build --prerender` and server rendering: a `mount` that fails asynchronously, or that uses `canvas.getContext`, `matchMedia`, `requestAnimationFrame`, observers or `getComputedStyle`, no longer stops the build (inert stand-ins on the server).
+- `@import` and `@charset` in a project's CSS are lifted to the top of `app.css`, where CSS requires them (a Google Fonts import was silently ignored).
+- Checker: typed arrays (`Uint8Array`...) and other browser globals are known; `tabindex` is accepted on any element; a `let` arrow may call itself (`let tick = () => requestAnimationFrame(tick)`); `tag=` takes `pre`, `code`, `kbd`, `dl`, `dt`, `dd`, `ul`, `ol`, `li`, `details`, `summary` and a few more.
+- New projects have `@happy-dom/global-registrator` in their devDependencies, so `art test` works out of the box.
+- The spec says that `fn`, `let` and `ref` compile to plain JavaScript and that a `let` member is a `computed`.
 - New projects recommend the ArtScript extension for VS Code and Cursor (`.vscode/extensions.json`): the editor offers to install it when the project is opened. The extension (0.2.7, `editors/vscode`) now has file icons for `.art`, snippets, and highlighting for every element.
 
 ## 0.2.7 (2026-10-07)

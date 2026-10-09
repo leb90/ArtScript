@@ -88,6 +88,73 @@ export function printStmt(s: Stmt): string {
   }
 }
 
+// An expression that starts a line breaks over several when its one-line form is longer than
+// WIDTH: objects and arrays one entry per line, an arrow's block one statement per line, a call
+// whose last argument is one of those with that argument broken. The first line has no padding
+// (it continues the caller's line); the others are padded for `depth`.
+const WIDTH = 100;
+// An arrow whose block has several statements (or a control statement) always breaks.
+const multi = (e: Expr): boolean => e.kind === "Arrow" && Array.isArray(e.body) && (e.body.length > 1 || e.body.some((s) => s.kind !== "ExprStmt" && s.kind !== "Return"));
+export function printExprLines(e: Expr, depth: number): string[] {
+  const one = printExpr(e);
+  const pad = IND.repeat(depth);
+  const breaks = multi(e) || (e.kind === "Call" && e.args.length > 0 && multi(e.args[e.args.length - 1])) || (e.kind === "Assign" && multi(e.value));
+  if (!breaks && pad.length + one.length <= WIDTH) return [one];
+  const inner = IND.repeat(depth + 1);
+  const entries = (items: string[][]) => items.flatMap((ls, i) => ls.map((l, j) => (j === 0 ? inner + l : l) + (j === ls.length - 1 && i < items.length - 1 ? "," : "")));
+  if (e.kind === "Object" && e.props.length) {
+    const props = e.props.map((p) => {
+      if ("spread" in p) return ["..." + printExpr(p.spread)];
+      const key = "computed" in p ? `[${printExpr(p.computed)}]` : /^[A-Za-z_$][\w$]*$/.test(p.key) ? p.key : JSON.stringify(p.key);
+      if (!("computed" in p) && p.value.kind === "Ident" && p.value.name === p.key) return [key];
+      const [first, ...rest] = printExprLines(p.value, depth + 1);
+      return [`${key}: ${first}`, ...rest];
+    });
+    return ["{", ...entries(props), pad + "}"];
+  }
+  if (e.kind === "Array" && e.items.length) {
+    // A list of plain values (words, numbers) fills each line; anything else goes one item per line.
+    if (e.items.every((it) => ["Num", "Str", "Bool", "Null", "Ident"].includes(it.kind))) {
+      const lines: string[] = [];
+      for (const it of e.items.map(printExpr)) {
+        const last = lines[lines.length - 1];
+        if (last !== undefined && last.length + 1 + it.length + 1 <= WIDTH) lines[lines.length - 1] = `${last} ${it},`;
+        else lines.push(`${inner}${it},`);
+      }
+      lines[lines.length - 1] = lines[lines.length - 1].slice(0, -1);
+      return ["[", ...lines, pad + "]"];
+    }
+    return ["[", ...entries(e.items.map((it) => printExprLines(it, depth + 1))), pad + "]"];
+  }
+  if (e.kind === "Arrow") {
+    const ps = e.params.length === 1 ? e.params[0] : `(${e.params.join(", ")})`;
+    if (Array.isArray(e.body)) return [`${ps} => {`, ...printStmts(e.body, depth + 1), pad + "}"];
+    const [first, ...rest] = printExprLines(e.body, depth);
+    return e.body.kind === "Object" ? [`${ps} => (${first}`, ...rest.slice(0, -1), rest.at(-1) + ")"] : [`${ps} => ${first}`, ...rest];
+  }
+  if (e.kind === "Call" && e.args.length) {
+    const last = e.args[e.args.length - 1];
+    if (last.kind === "Object" || last.kind === "Array" || last.kind === "Arrow") {
+      const head = wrap(e.callee, 10) + (e.optional ? "?.(" : "(") + e.args.slice(0, -1).map((a) => printExpr(a) + ", ").join("");
+      const [first, ...rest] = printExprLines(last, depth);
+      if (rest.length) return [head + first, ...rest.slice(0, -1), rest.at(-1) + ")"];
+    }
+  }
+  if (e.kind === "Assign") {
+    const [first, ...rest] = printExprLines(e.value, depth);
+    return [`${printExpr(e.target)} ${e.op} ${first}`, ...rest];
+  }
+  return [one];
+}
+// A statement's lines when it starts a line of its own (see printExprLines).
+function printStmtLines(s: Stmt, depth: number): string[] {
+  const at = (head: string, e: Expr) => { const [first, ...rest] = printExprLines(e, depth); return [head + first, ...rest]; };
+  if (s.kind === "ExprStmt") return at("", s.expr);
+  if (s.kind === "Let") return at(`let ${s.name} = `, s.init);
+  if (s.kind === "Return" && s.value) return at("return ", s.value);
+  return [printStmt(s)];
+}
+
 export function printBlockInline(stmts: Stmt[]): string {
   return stmts.length ? `{ ${stmts.map(printStmt).join("; ")} }` : "{}";
 }
@@ -152,9 +219,10 @@ export function printDecl(d: Decl): string {
   const out: string[] = [];
   for (const m of d.members) {
     const lines: string[] = [];
-    if (m.kind === "State") lines.push(`${IND}state ${m.name}${m.type ? `: ${printType(m.type)}` : ""} = ${printExpr(m.init)}`);
-    else if (m.kind === "Computed") lines.push(`${IND}computed ${m.name} = ${printExpr(m.expr)}`);
-    else if (m.kind === "Data") lines.push(`${IND}data ${m.name} = ${printExpr(m.expr)}${m.live ? " live" : ""}`);
+    const init = (head: string, e: Expr, tail = "") => { const [first, ...rest] = printExprLines(e, 1); lines.push(IND + head + first + (rest.length ? "" : tail), ...(rest.length ? [...rest.slice(0, -1), rest.at(-1) + tail] : [])); };
+    if (m.kind === "State") init(`state ${m.name}${m.type ? `: ${printType(m.type)}` : ""} = `, m.init);
+    else if (m.kind === "Computed") init(`computed ${m.name} = `, m.expr);
+    else if (m.kind === "Data") init(`data ${m.name} = `, m.expr, m.live ? " live" : "");
     else if (m.kind === "Ref") lines.push(`${IND}ref ${m.name}`);
     else if (m.kind === "Mount" || m.kind === "Effect") lines.push(`${IND}${m.name} {`, ...printStmts(m.body, 2), `${IND}}`);
     else if (m.kind === "Fn") lines.push(`${IND}fn ${m.name}(${printParams(m)}) {`, ...printStmts(m.body, 2), `${IND}}`);
@@ -204,7 +272,10 @@ function printStmt1(s: Stmt, depth: number, pad: string, out: string[]) {
       if (!s.rethrow) out.push(`${pad}} catch${s.param ? ` (${s.param})` : ""} {`, ...printStmts(s.handler, depth + 1));
       if (s.finally) out.push(`${pad}} finally {`, ...printStmts(s.finally, depth + 1));
       out.push(`${pad}}`);
-    } else out.push(pad + printStmt(s));
+    } else {
+      const [first, ...rest] = printStmtLines(s, depth);
+      out.push(pad + first, ...rest);
+    }
   }
 }
 

@@ -63,7 +63,72 @@ server fn seed() {
   if db.products.count() > 0 {
     return 0
   }
-  let samples = [{ name: "Ceramic Pour-Over Set", category: "Kitchen", price: 48, stock: 12, image: "/products/pour-over.svg", description: "A hand-glazed dripper and carafe that brew two generous cups. Slow coffee, done properly." }, { name: "Stoneware Mug", category: "Kitchen", price: 18, stock: 40, image: "/products/mug.svg", description: "A 12 oz mug with a dipped glaze and a handle that fits four fingers. Dishwasher safe." }, { name: "Linen Throw Blanket", category: "Home", price: 79, stock: 8, image: "/products/blanket.svg", description: "Stonewashed European linen, soft from day one and softer every wash. 50 x 70 in." }, { name: "Soy Wax Candle", category: "Home", price: 24, stock: 0, image: "/products/candle.svg", description: "Cedar, fig and a little smoke. Hand-poured soy wax with a 45 hour burn time." }, { name: "Oak Desk Lamp", category: "Workspace", price: 129, stock: 5, image: "/products/lamp.svg", description: "A jointed oak arm, a matte steel shade and a warm dimmable LED. Light where you want it." }, { name: "Walnut Desk Organizer", category: "Workspace", price: 42, stock: 15, image: "/products/organizer.svg", description: "Solid walnut with room for pens, cards and the cables you swear you'll sort out." }, { name: "Canvas Weekender Bag", category: "Travel", price: 95, stock: 6, image: "/products/weekender.svg", description: "Waxed canvas, leather handles and brass hardware. Fits two nights and an extra pair of shoes." }, { name: "Insulated Water Bottle", category: "Travel", price: 32, stock: 3, image: "/products/bottle.svg", description: "Double-wall steel that keeps drinks cold for 24 hours or hot for 12. 20 oz, leakproof." }]
+  let samples = [
+    {
+      name: "Ceramic Pour-Over Set",
+      category: "Kitchen",
+      price: 48,
+      stock: 12,
+      image: "/products/pour-over.svg",
+      description: "A hand-glazed dripper and carafe that brew two generous cups. Slow coffee, done properly."
+    },
+    {
+      name: "Stoneware Mug",
+      category: "Kitchen",
+      price: 18,
+      stock: 40,
+      image: "/products/mug.svg",
+      description: "A 12 oz mug with a dipped glaze and a handle that fits four fingers. Dishwasher safe."
+    },
+    {
+      name: "Linen Throw Blanket",
+      category: "Home",
+      price: 79,
+      stock: 8,
+      image: "/products/blanket.svg",
+      description: "Stonewashed European linen, soft from day one and softer every wash. 50 x 70 in."
+    },
+    {
+      name: "Soy Wax Candle",
+      category: "Home",
+      price: 24,
+      stock: 0,
+      image: "/products/candle.svg",
+      description: "Cedar, fig and a little smoke. Hand-poured soy wax with a 45 hour burn time."
+    },
+    {
+      name: "Oak Desk Lamp",
+      category: "Workspace",
+      price: 129,
+      stock: 5,
+      image: "/products/lamp.svg",
+      description: "A jointed oak arm, a matte steel shade and a warm dimmable LED. Light where you want it."
+    },
+    {
+      name: "Walnut Desk Organizer",
+      category: "Workspace",
+      price: 42,
+      stock: 15,
+      image: "/products/organizer.svg",
+      description: "Solid walnut with room for pens, cards and the cables you swear you'll sort out."
+    },
+    {
+      name: "Canvas Weekender Bag",
+      category: "Travel",
+      price: 95,
+      stock: 6,
+      image: "/products/weekender.svg",
+      description: "Waxed canvas, leather handles and brass hardware. Fits two nights and an extra pair of shoes."
+    },
+    {
+      name: "Insulated Water Bottle",
+      category: "Travel",
+      price: 32,
+      stock: 3,
+      image: "/products/bottle.svg",
+      description: "Double-wall steel that keeps drinks cold for 24 hours or hot for 12. 20 oz, leakproof."
+    }
+  ]
   for p in samples {
     db.products.create(p)
   }
@@ -103,7 +168,16 @@ server fn placeOrder(items, name, address) {
   for l in q.lines {
     db.products.update(l.productId, { stock: (db.products.get(l.productId)?.stock ?? 0) - l.qty })
   }
-  return db.orders.create({ owner: me.id, email: me.email, name: fullName.slice(0, 80), address: shipTo.slice(0, 300), lines: q.lines, total: q.total, status: "Paid", createdAt: new Date().toISOString() })
+  return db.orders.create({
+    owner: me.id,
+    email: me.email,
+    name: fullName.slice(0, 80),
+    address: shipTo.slice(0, 300),
+    lines: q.lines,
+    total: q.total,
+    status: "Paid",
+    createdAt: new Date().toISOString()
+  })
 }
 
 server fn allOrders() {

@@ -52,16 +52,23 @@ test("prerender: styles written as text, browser-only code in mount, 404.html, f
   const dir = mkdtempSync(join(tmpdir(), "art-pre2-"));
   mkdirSync(join(dir, "public"));
   writeFileSync(join(dir, "public", "favicon.svg"), "<svg xmlns='http://www.w3.org/2000/svg'/>");
+  writeFileSync(join(dir, "styles.css"), '@import url("https://fonts.example/css2?family=Inter");\nbody { color: red }\n');
   writeFileSync(join(dir, "app.art"), `page Home "/" {
   state big = true
+  ref cv
   meta title="Home" image="/og.png"
   mount {
     document.documentElement.style.setProperty("--x", "1")
     window.matchMedia("(min-width: 1px)").addEventListener("change", () => null)
+    matchMedia("(prefers-reduced-motion)").matches
+    cv.getContext("2d")?.fillRect(0, 0, 1, 1)
+    requestAnimationFrame(() => null)
+    await Promise.reject(new Error("browser only"))
   }
 
   column gap=2 style="--d: 40ms" id="box" {
     title "Hello" tag=h1 class=(big ? "hero big" : "hero")
+    canvas ref=cv
   }
   form novalidate
 }
@@ -78,4 +85,6 @@ page Missing "*" {
   assert.match(home, /<link rel="icon" href="\/favicon.svg">/);
   assert.match(home, /property="og:image" content="https:\/\/x.example\/og.png"/);
   assert.match(readFileSync(join(dir, "dist", "404.html"), "utf8"), /Nothing here/);
+  // The mount's async failure and browser-only calls didn't stop the build; @import comes first in app.css.
+  assert.match(readFileSync(join(dir, "dist", "app.css"), "utf8"), /^@import url\("https:\/\/fonts.example[^\n]*;\n@layer art\{/);
 });
