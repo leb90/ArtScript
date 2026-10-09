@@ -104,6 +104,11 @@ export const TASKS: Task[] = [
     prompt: "Creá una simulación de pelotas en un canvas de 400×300 con id 'sim'. Al iniciar hay 5 pelotas de radio 10 con posición y velocidad aleatorias. En cada cuadro (requestAnimationFrame): gravedad de 0.2 por cuadro en y, rebote contra los cuatro bordes (la pelota nunca sale del canvas), colisión elástica entre pelotas (al tocarse intercambian velocidades) y se dibujan como círculos. Botones: 'Agregar' suma una pelota, 'Pausar' detiene la animación y pasa a llamarse 'Reanudar' (que la continúa), 'Reiniciar' vuelve a 5 pelotas nuevas. Mostrar 'Pelotas: N' y 'Cuadros: F' (cuadros dibujados desde el inicio o el último reinicio).",
   },
   {
+    // Motion-heavy design: entrances, scroll reveals, hover, an animated background, a count-up.
+    id: "landing-motion",
+    prompt: "Creá una landing con estilo: un hero con el título 'Nimbus', un subtítulo y un botón 'Empezar' que se agranda suavemente al pasar el mouse; detrás del hero, un fondo con un gradiente que se mueve lentamente. Debajo, tres tarjetas ('Rápido', 'Simple', 'Abierto'), cada una con una línea de texto, que aparecen con una animación al entrar en pantalla, una después de la otra. Al final, la cifra '12.000+' (usuarios) que cuenta desde 0 hasta 12.000 cuando aparece. Respetar prefers-reduced-motion.",
+  },
+  {
     id: "stopwatch",
     prompt: "Creá un cronómetro que muestra 'Tiempo: N' (empieza en 0). El botón 'Iniciar' hace que N aumente 1 cada 100 ms; 'Pausar' lo detiene conservando el valor; 'Reiniciar' lo detiene y vuelve a 0. Tocar 'Iniciar' dos veces no debe hacerlo avanzar más rápido.",
   },

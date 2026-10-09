@@ -1,0 +1,62 @@
+// Floating dots on a canvas, behind a section: `Particles count=60 color="#2563eb"`.
+// The parent needs `position: relative`. Added with `art add Particles`.
+component Particles(count: Number = 60, color: String = "#2563eb", speed: Number = 0.3) {
+  ref cv
+  state dots = []
+  state raf = 0
+  fn resize() {
+    cv.width = cv.offsetWidth || 800
+    cv.height = cv.offsetHeight || 400
+  }
+  fn draw() {
+    let ctx = cv.getContext("2d")
+    if !ctx {
+      return
+    }
+    ctx.clearRect(0, 0, cv.width, cv.height)
+    ctx.fillStyle = color
+    for d in dots {
+      d.x += d.vx
+      d.y += d.vy
+      if d.x < 0 || d.x > cv.width {
+        d.vx = -d.vx
+      }
+      if d.y < 0 || d.y > cv.height {
+        d.vy = -d.vy
+      }
+      ctx.globalAlpha = d.a
+      ctx.beginPath()
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    ctx.globalAlpha = 1
+    raf = requestAnimationFrame(draw)
+  }
+  mount {
+    resize()
+    dots = Array.from({ length: count }, () => ({
+      x: Math.random() * cv.width,
+      y: Math.random() * cv.height,
+      vx: (Math.random() - 0.5) * speed,
+      vy: (Math.random() - 0.5) * speed,
+      r: 1 + Math.random() * 2,
+      a: 0.3 + Math.random() * 0.5
+    }))
+    window.addEventListener("resize", resize)
+    if !matchMedia("(prefers-reduced-motion: reduce)").matches {
+      raf = requestAnimationFrame(draw)
+    } else {
+      draw()
+      cancelAnimationFrame(raf)
+    }
+    cleanup {
+      cancelAnimationFrame(raf)
+      window.removeEventListener("resize", resize)
+    }
+  }
+  style {
+    .particles { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+  }
+
+  canvas ref=cv class="particles" aria-hidden
+}

@@ -1,0 +1,70 @@
+component Counter(to: Number, duration: Number = 1200) {
+  state shown = 0
+  fn run() {
+    let start = performance.now()
+    let step = now => {
+      let t = Math.min(1, (now - start) / duration)
+      shown = Math.round(to * (1 - Math.pow(1 - t, 3)))
+      if t < 1 {
+        requestAnimationFrame(step)
+      }
+    }
+    requestAnimationFrame(step)
+  }
+  mount {
+    if matchMedia("(prefers-reduced-motion: reduce)").matches {
+      shown = to
+    } else {
+      run()
+    }
+  }
+
+  text `${shown.toLocaleString("es-AR")}+` large bold
+}
+
+page Home "/" {
+  style {
+    .hero { position: relative; overflow: hidden; }
+    .mesh {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: radial-gradient(60% 60% at 20% 30%, #2563eb55, transparent 70%), radial-gradient(50% 50% at 80% 20%, #9333ea44, transparent 70%);
+      background-size: 160% 160%;
+      animation: drift 18s ease-in-out infinite alternate;
+    }
+    @keyframes drift {
+      to { background-position: 100% 100%, 0% 60%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .mesh { animation: none; }
+    }
+  }
+
+  column gap=8 {
+    column class="hero" gap=3 align=center pad=10 {
+      column class="mesh" aria-hidden
+      title "Nimbus" tag=h1 animate=rise
+      text "La forma simple de lanzar tu producto." muted animate=rise delay=120
+      button "Empezar" primary hover=grow animate=pop delay=240
+    }
+    grid cols=1 md:cols=3 gap=4 stagger {
+      card reveal gap=1 {
+        text "Rápido" bold
+        text "Listo en minutos, no en semanas." small
+      }
+      card reveal gap=1 {
+        text "Simple" bold
+        text "Sin configuración que mantener." small
+      }
+      card reveal gap=1 {
+        text "Abierto" bold
+        text "Código abierto, sin ataduras." small
+      }
+    }
+    column align=center gap=1 reveal {
+      Counter to=12000
+      text "usuarios" muted
+    }
+  }
+}

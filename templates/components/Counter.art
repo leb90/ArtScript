@@ -1,0 +1,29 @@
+// A number that counts up when it appears: `Counter to=1200 suffix="+"`. Added with `art add Counter`.
+component Counter(to: Number, duration: Number = 1200, prefix: String = "", suffix: String = "", decimals: Number = 0) {
+  state shown = 0
+  state raf = 0
+  fn run() {
+    let start = performance.now()
+    let step = now => {
+      let t = Math.min(1, (now - start) / duration)
+      let eased = 1 - Math.pow(1 - t, 3)
+      shown = Number((to * eased).toFixed(decimals))
+      if t < 1 {
+        raf = requestAnimationFrame(step)
+      }
+    }
+    raf = requestAnimationFrame(step)
+  }
+  mount {
+    if matchMedia("(prefers-reduced-motion: reduce)").matches {
+      shown = to
+    } else {
+      run()
+    }
+    cleanup {
+      cancelAnimationFrame(raf)
+    }
+  }
+
+  text `${prefix}${shown.toLocaleString()}${suffix}` large bold
+}

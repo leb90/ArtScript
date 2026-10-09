@@ -1,0 +1,19 @@
+// A strip of text that scrolls sideways forever: `Marquee text="New · Fast · Open source"`.
+// Added with `art add Marquee`.
+component Marquee(text: String, seconds: Number = 20) {
+  style {
+    .marquee { overflow: hidden; white-space: nowrap; }
+    .track { display: inline-block; padding-right: 2em; animation: marquee-move var(--marquee-seconds) linear infinite; }
+    @keyframes marquee-move {
+      to { transform: translateX(-100%); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .track { animation: none; }
+    }
+  }
+
+  row class="marquee" aria-label=text style=`--marquee-seconds: ${seconds}s` {
+    text `${text} · ${text} · ${text} · ${text} · ` class="track" aria-hidden
+    text `${text} · ${text} · ${text} · ${text} · ` class="track" aria-hidden
+  }
+}

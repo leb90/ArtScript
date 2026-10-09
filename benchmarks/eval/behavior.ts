@@ -327,6 +327,13 @@ const CHECKS: Record<string, Check> = {
     await p.until(() => names() === "Beto,Dani,Ana,Caro" && has(p, "Empleados: 4"), "las 4 filas otra vez, todavía ordenadas por edad");
   },
 
+  async "landing-motion"(p) {
+    await p.until(() => has(p, "Nimbus") && p.count("Empezar") === 1, 'el título "Nimbus" y el botón "Empezar"');
+    await p.until(() => has(p, "Rápido") && has(p, "Simple") && has(p, "Abierto"), 'las tarjetas "Rápido", "Simple" y "Abierto"');
+    await p.settle(1800);
+    await p.until(() => /12[.,]?000\+/.test(p.text()), `la cifra "12.000+" al terminar de contar; se ve: ${(p.text().match(/[\d.,]+\+/g) ?? []).join(" ")}`, 1);
+  },
+
   async "imp-particles"(p) {
     const frames = () => Number(/Cuadros: (\d+)/.exec(p.text())?.[1] ?? NaN);
     const drawn = () => (window as any).__canvas as { arcs: { x: number; y: number; r: number }[] };

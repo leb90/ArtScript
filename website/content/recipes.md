@@ -310,6 +310,38 @@ page Weather "/" {
 }
 ```
 
+## Animations without code
+
+Entrances, scroll reveals, hover effects and staggered lists are flags and props on any element: no CSS, no observers, no library. `reveal` appears when scrolled into view (siblings one after another), `animate=` plays on mount, `stagger` delays a container's children, `hover=` answers the pointer. Reduced-motion settings are respected and a prerendered page shows everything without JavaScript. Backgrounds and counters come as components: `art add MeshBackground Particles Marquee Counter`.
+
+```art
+page Home "/" {
+  column gap=8 {
+    column class="hero" gap=3 align=center pad=10 {
+      title "Nimbus" tag=h1 animate=rise
+      text "The simple way to launch." muted animate=rise delay=120
+      button "Get started" primary hover=grow animate=pop delay=240
+    }
+    grid cols=1 md:cols=3 gap=4 stagger {
+      card reveal hover=lift {
+        text "Fast" bold
+        text "Ready in minutes." small
+      }
+      card reveal hover=lift {
+        text "Simple" bold
+        text "Nothing to configure." small
+      }
+      card reveal hover=lift {
+        text "Open" bold
+        text "Open source, no lock-in." small
+      }
+    }
+  }
+}
+```
+
+For a game loop or a physics simulation, write the engine in a `.ts` file and import it with `use`: that code is plain TypeScript and costs an agent the same as in any stack.
+
 ## A chart
 
 Charting libraries draw into an element: `ref` hands it over, `mount` starts the chart and `cleanup` stops it.

@@ -1,0 +1,28 @@
+// A soft animated gradient behind a hero: `column class="hero" { MeshBackground; title "..." }`.
+// The parent needs `position: relative` (the component sets it with `style`). Added with `art add MeshBackground`.
+component MeshBackground(from: String = "#2563eb", to: String = "#9333ea", speed: Number = 18) {
+  style {
+    .mesh {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+      pointer-events: none;
+      background:
+        radial-gradient(60% 60% at 20% 30%, color-mix(in srgb, var(--mesh-from) 35%, transparent), transparent 70%),
+        radial-gradient(50% 50% at 80% 20%, color-mix(in srgb, var(--mesh-to) 30%, transparent), transparent 70%),
+        radial-gradient(55% 55% at 60% 85%, color-mix(in srgb, var(--mesh-from) 22%, transparent), transparent 70%);
+      background-size: 160% 160%;
+      animation: mesh-drift var(--mesh-speed) ease-in-out infinite alternate;
+    }
+    @keyframes mesh-drift {
+      from { background-position: 0% 0%, 100% 0%, 50% 100%; }
+      to { background-position: 100% 100%, 0% 60%, 20% 0%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .mesh { animation: none; }
+    }
+  }
+
+  column class="mesh" aria-hidden style=`--mesh-from: ${from}; --mesh-to: ${to}; --mesh-speed: ${speed}s`
+}

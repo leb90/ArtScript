@@ -2,6 +2,11 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## Unreleased
+
+- Motion without code, on every element: `reveal` (appears when scrolled into view, siblings one after another), `animate=rise|fade|zoom|slide-left|slide-right|pop` with `delay=` and `duration=` (ms), `stagger` on a container, `hover=lift|grow|glow`. Pure CSS plus one shared IntersectionObserver; reduced-motion settings are respected; a prerendered page shows everything without JavaScript. Bad values are errors with the fix. `art add MeshBackground Particles Marquee Counter`: an animated gradient, floating dots on a canvas, a scrolling strip and a count-up number, as source.
+- `npm create artscript` always uses the latest `@artscript/core` (`create-artscript` 0.2.1): before, npx could reuse an older copy it had cached and the new project got an old version range.
+
 ## 0.2.10 (2026-10-09)
 
 - Tolerances from what the models wrote: `async fn` and `async x => ...` (the word is dropped: a fn or arrow with `await` is async by itself), `api x: M login private` (the strongest word wins), `event` available in `->` actions.
