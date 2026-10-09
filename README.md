@@ -22,7 +22,7 @@ page Counter "/" {
 }
 ```
 
-Status: **0.2.8**, usable for prototypes and small or medium apps built with an AI agent; the syntax may still change before 1.0. What is measured, proven and not yet: [artscript.dev/status](https://artscript.dev/status). In the [official js-framework-benchmark results](https://krausest.github.io/js-framework-benchmark/2026/chrome154.html) since Chrome 154: between Svelte and Vue, ahead of React ([numbers](benchmarks/js-framework-benchmark/RESULTS.md)).
+Status: **0.2.9**, usable for prototypes and small or medium apps built with an AI agent; the syntax may still change before 1.0. What is measured, proven and not yet: [artscript.dev/status](https://artscript.dev/status). In the [official js-framework-benchmark results](https://krausest.github.io/js-framework-benchmark/2026/chrome154.html) since Chrome 154: between Svelte and Vue, ahead of React ([numbers](benchmarks/js-framework-benchmark/RESULTS.md)).
 
 Made by [Leandro Bisceglie](https://github.com/leb90). Issues and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -315,7 +315,7 @@ Whole project in the prompt ("full") vs. what a good agent would read ("focus": 
 
 Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
 
-Run 2026-10-02: 26 tasks × 5 stacks × 2 runs, total $4.15, prices as of 2026-09-25. 2026-10-02T16-45-31-claude-haiku-4-5.json: 50 tasks × 5 stacks × 2 runs; ArtScript solved 76/100 here at $0.0125 per solved task (15% less than React); 50 cell(s) re-run in 2026-10-02T17-35-30-claude-haiku-4-5.json (ArtScript only, after three rounds of compiler fixes from what Haiku wrote (commits bec073d, e257d73, 49a1dc4); a run between them, 2026-10-02T17-10-22, solved 80/100 at $0.0116. The other stacks are unchanged). Raw data: [`benchmarks/eval/results/2026-10-02T16-45-31-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-02T16-45-31-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-02T17-35-30-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-02T17-35-30-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-09T11-02-14-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-09T11-02-14-claude-haiku-4-5.json).
+Run 2026-10-02: 26 tasks × 5 stacks × 2 runs, total $4.15, prices as of 2026-09-25. 2026-10-02T16-45-31-claude-haiku-4-5.json: 50 tasks × 5 stacks × 2 runs; ArtScript solved 76/100 here at $0.0125 per solved task (15% less than React); 50 cell(s) re-run in 2026-10-02T17-35-30-claude-haiku-4-5.json (ArtScript only, after three rounds of compiler fixes from what Haiku wrote (commits bec073d, e257d73, 49a1dc4); a run between them, 2026-10-02T17-10-22, solved 80/100 at $0.0116. The other stacks are unchanged); 2026-10-09T11-02-14-claude-haiku-4-5.json: the imperative task (imp-particles); ArtScript's retries were a typo of the model and an effect that changed a state it read. Raw data: [`benchmarks/eval/results/2026-10-02T16-45-31-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-02T16-45-31-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-02T17-35-30-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-02T17-35-30-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-09T11-02-14-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-09T11-02-14-claude-haiku-4-5.json).
 
 ### claude-sonnet-5-5 (effort medium)
 
@@ -412,7 +412,7 @@ Whole project in the prompt ("full") vs. what a good agent would read ("focus": 
 
 Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
 
-Run 2026-10-02: 26 tasks × 5 stacks × 2 runs, total $3.59, prices as of 2026-09-25. 2026-10-02T17-07-31-claude-sonnet-5-5.json: 50 tasks × 5 stacks × 2 runs, ArtScript at commit e257d73. Raw data: [`benchmarks/eval/results/2026-10-02T17-07-31-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-02T17-07-31-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-09T11-00-28-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-09T11-00-28-claude-sonnet-5-5.json).
+Run 2026-10-02: 26 tasks × 5 stacks × 2 runs, total $3.59, prices as of 2026-09-25. 2026-10-02T17-07-31-claude-sonnet-5-5.json: 50 tasks × 5 stacks × 2 runs, ArtScript at commit e257d73; 2026-10-09T11-00-28-claude-sonnet-5-5.json: the imperative task (imp-particles: a canvas with physics), reported in its own table. Raw data: [`benchmarks/eval/results/2026-10-02T17-07-31-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-02T17-07-31-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-09T11-00-28-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-09T11-00-28-claude-sonnet-5-5.json).
 
 ### claude-opus-5-5 (effort medium)
 
@@ -509,7 +509,7 @@ Whole project in the prompt ("full") vs. what a good agent would read ("focus": 
 
 Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
 
-Run 2026-10-02: 26 tasks × 5 stacks × 2 runs, total $8.74, prices as of 2026-09-25. 2026-10-02T17-49-54-claude-opus-5-5.json: 50 tasks × 5 stacks × 2 runs; ArtScript's first run at commit e257d73, its second at 7f81b5e; one React run was a model refusal and is left out. Raw data: [`benchmarks/eval/results/2026-10-02T17-49-54-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-02T17-49-54-claude-opus-5-5.json), [`benchmarks/eval/results/2026-10-09T11-03-29-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-09T11-03-29-claude-opus-5-5.json).
+Run 2026-10-02: 26 tasks × 5 stacks × 2 runs, total $8.74, prices as of 2026-09-25. 2026-10-02T17-49-54-claude-opus-5-5.json: 50 tasks × 5 stacks × 2 runs; ArtScript's first run at commit e257d73, its second at 7f81b5e; one React run was a model refusal and is left out; 2026-10-09T11-03-29-claude-opus-5-5.json: the imperative task (imp-particles); one ArtScript run needed a retry because the checker rejected `let b = null` later assigned an object, fixed in 0.2.9; 1 cell(s) re-run in 2026-10-09T11-06-04-claude-opus-5-5.json (imp-particles, ArtScript only, after fixing the checker's `let b = null` rejection: both runs solved at the first attempt). Raw data: [`benchmarks/eval/results/2026-10-02T17-49-54-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-02T17-49-54-claude-opus-5-5.json), [`benchmarks/eval/results/2026-10-09T11-03-29-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-09T11-03-29-claude-opus-5-5.json), [`benchmarks/eval/results/2026-10-09T11-06-04-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-09T11-06-04-claude-opus-5-5.json).
 
 ### Imperative code: a canvas with animation and physics
 
@@ -519,7 +519,7 @@ One task where almost all the code is a physics loop (gravity, walls, elastic co
 |---|---|---|---|---|---|---|
 | claude-haiku-4-5 | **$0.0234** (2/2) | $0.0111 (2/2) | $0.0267 (2/2) | $0.0193 (2/2) | $0.0493 (1/2) | **+111%** |
 | claude-sonnet-5-5 | **$0.0164** (2/2) | $0.0203 (2/2) | $0.0205 (2/2) | $0.0203 (2/2) | $0.0219 (2/2) | **−19%** |
-| claude-opus-5-5 | **$0.1083** (2/2) | $0.0623 (2/2) | $0.0552 (2/2) | $0.0602 (2/2) | $0.0539 (2/2) | **+74%** |
+| claude-opus-5-5 | **$0.0741** (2/2) | $0.0623 (2/2) | $0.0552 (2/2) | $0.0602 (2/2) | $0.0539 (2/2) | **+19%** |
 
 ### Methodology and limitations
 

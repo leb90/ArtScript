@@ -2,7 +2,7 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
-## Unreleased
+## 0.2.9 (2026-10-09)
 
 - Guidance, in the spec, `AGENTS.md`, the Cursor rule, the Claude Code skill and the site's prompt: heavy imperative code (a physics loop, a parser, canvas drawing) goes in a `.ts` or `.js` file imported with `use`, where it is plain JavaScript with no restrictions; ArtScript is for what it shortens (pages, state, the api, forms, lists, tests). The status page says where the saving is and where it isn't.
 - The cost eval has an imperative task (`imp-particles`: a canvas with gravity, walls and elastic collisions), reported in its own table, so that case has a number too. The simulated browser now gives canvases a recording 2D context and paces `requestAnimationFrame` at 60 fps.

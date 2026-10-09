@@ -21,5 +21,6 @@
   "2026-10-02T17-49-54-claude-opus-5-5.json": "50 tasks × 5 stacks × 2 runs; ArtScript's first run at commit e257d73, its second at 7f81b5e; one React run was a model refusal and is left out",
   "2026-10-09T11-00-28-claude-sonnet-5-5.json": "the imperative task (imp-particles: a canvas with physics), reported in its own table",
   "2026-10-09T11-02-14-claude-haiku-4-5.json": "the imperative task (imp-particles); ArtScript's retries were a typo of the model and an effect that changed a state it read",
-  "2026-10-09T11-03-29-claude-opus-5-5.json": "the imperative task (imp-particles); one ArtScript run needed a retry because the checker rejected `let b = null` later assigned an object, fixed in 0.2.9"
+  "2026-10-09T11-03-29-claude-opus-5-5.json": "the imperative task (imp-particles); one ArtScript run needed a retry because the checker rejected `let b = null` later assigned an object, fixed in 0.2.9",
+  "2026-10-09T11-06-04-claude-opus-5-5.json": "imp-particles, ArtScript only, after fixing the checker's `let b = null` rejection: both runs solved at the first attempt"
 }

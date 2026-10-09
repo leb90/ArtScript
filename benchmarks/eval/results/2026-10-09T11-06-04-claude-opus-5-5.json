@@ -1,0 +1,73 @@
+{
+  "model": "claude-opus-5-5",
+  "effort": "medium",
+  "runs": 2,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 4,
+    "out": 20,
+    "cacheRead": 0.2,
+    "cacheWrite": 5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 2493,
+        "cacheRead": 0,
+        "cacheWrite": 4996
+      },
+      "usd": 0.076076,
+      "codeTokens": 1626,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Home \"/\" {\n  meta title=\"Simulación de pelotas\"\n\n  state count = 0\n  state frames = 0\n  state paused = false\n\n  ref box\n  ref ctx\n  ref balls\n  ref raf\n\n  fn rnd(a, b) {\n    return a + Math.random() * (b - a)\n  }\n\n  fn newBall() {\n    let r = 10\n    let x = 0\n    let y = 0\n    for (let tries = 0; tries < 50; tries++) {\n      x = rnd(r, 400 - r)\n      y = rnd(r, 300 - r)\n      let ok = true\n      for b in balls ?? [] {\n        if Math.hypot(b.x - x, b.y - y) < 2 * r {\n          ok = false\n          break\n        }\n      }\n      if ok { break }\n    }\n    return { x: x, y: y, vx: rnd(-3, 3), vy: rnd(-3, 3), r: r, color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)` }\n  }\n\n  fn makeBalls(n) {\n    balls = []\n    for (let i = 0; i < n; i++) {\n      balls.push(newBall())\n    }\n    count = balls.length\n  }\n\n  fn step() {\n    for b in balls {\n      b.vy += 0.2\n      b.x += b.vx\n      b.y += b.vy\n    }\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        let a = balls[i]\n        let b = balls[j]\n        let dx = b.x - a.x\n        let dy = b.y - a.y\n        let dist = Math.hypot(dx, dy)\n        let minD = a.r + b.r\n        if dist < minD {\n          if dist == 0 {\n            dx = 1\n            dy = 0\n            dist = 1\n          }\n          let nx = dx / dist\n          let ny = dy / dist\n          let approaching = (b.vx - a.vx) * dx + (b.vy - a.vy) * dy < 0\n          if approaching {\n            let tvx = a.vx\n            let tvy = a.vy\n            a.vx = b.vx\n            a.vy = b.vy\n            b.vx = tvx\n            b.vy = tvy\n          }\n          let overlap = (minD - dist) / 2\n          a.x -= nx * overlap\n          a.y -= ny * overlap\n          b.x += nx * overlap\n          b.y += ny * overlap\n        }\n      }\n    }\n    for b in balls {\n      if b.x < b.r {\n        b.x = b.r\n        b.vx = Math.abs(b.vx)\n      }\n      if b.x > 400 - b.r {\n        b.x = 400 - b.r\n        b.vx = -Math.abs(b.vx)\n      }\n      if b.y < b.r {\n        b.y = b.r\n        b.vy = Math.abs(b.vy)\n      }\n      if b.y > 300 - b.r {\n        b.y = 300 - b.r\n        b.vy = -Math.abs(b.vy)\n      }\n    }\n  }\n\n  fn draw() {\n    ctx.clearRect(0, 0, 400, 300)\n    for b in balls {\n      ctx.beginPath()\n      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)\n      ctx.fillStyle = b.color\n      ctx.fill()\n    }\n  }\n\n  fn tick() {\n    step()\n    draw()\n    frames++\n    raf = requestAnimationFrame(tick)\n  }\n\n  fn start() {\n    cancelAnimationFrame(raf)\n    raf = requestAnimationFrame(tick)\n  }\n\n  fn toggle() {\n    if paused {\n      paused = false\n      start()\n    } else {\n      paused = true\n      cancelAnimationFrame(raf)\n    }\n  }\n\n  fn add() {\n    balls.push(newBall())\n    count = balls.length\n    if paused { draw() }\n  }\n\n  fn reset() {\n    makeBalls(5)\n    frames = 0\n    draw()\n  }\n\n  mount {\n    ctx = box.getContext(\"2d\")\n    makeBalls(5)\n    frames = 0\n    draw()\n    start()\n    cleanup { cancelAnimationFrame(raf) }\n  }\n\n  column gap=3 pad=4 align=center {\n    title \"Simulación de pelotas\" tag=h1\n    canvas ref=box id=\"sim\" width=400 height=300 style=\"border: 1px solid #ccc; background: #fafafa\"\n    row gap=2 {\n      button \"Agregar\" primary -> add()\n      button (paused ? \"Reanudar\" : \"Pausar\") -> toggle()\n      button \"Reiniciar\" -> reset()\n    }\n    row gap=4 {\n      text `Pelotas: ${count}` bold\n      text `Cuadros: ${frames}` muted\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 15415,
+        "brotli": 5731
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 2297,
+        "cacheRead": 0,
+        "cacheWrite": 4996
+      },
+      "usd": 0.072156,
+      "codeTokens": 1442,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Home \"/\" {\n  state count = 0\n  state frames = 0\n  state paused = false\n  ref box\n  ref balls\n  ref raf\n\n  fn makeBall() {\n    let r = 10\n    return {\n      x: r + Math.random() * (400 - 2 * r),\n      y: r + Math.random() * (300 - 2 * r),\n      vx: (Math.random() * 2 - 1) * 3,\n      vy: (Math.random() * 2 - 1) * 3,\n      r: r\n    }\n  }\n\n  fn clamp(b) {\n    if b.x < b.r {\n      b.x = b.r\n      b.vx = Math.abs(b.vx)\n    }\n    if b.x > 400 - b.r {\n      b.x = 400 - b.r\n      b.vx = -Math.abs(b.vx)\n    }\n    if b.y < b.r {\n      b.y = b.r\n      b.vy = Math.abs(b.vy)\n    }\n    if b.y > 300 - b.r {\n      b.y = 300 - b.r\n      b.vy = -Math.abs(b.vy)\n    }\n  }\n\n  fn update() {\n    for b in balls {\n      b.vy += 0.2\n      b.x += b.vx\n      b.y += b.vy\n      clamp(b)\n    }\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        let a = balls[i]\n        let c = balls[j]\n        let dx = c.x - a.x\n        let dy = c.y - a.y\n        let dist = Math.sqrt(dx * dx + dy * dy)\n        let minD = a.r + c.r\n        if dist < minD {\n          if dist == 0 {\n            dx = 1\n            dy = 0\n            dist = 1\n          }\n          let approaching = (c.vx - a.vx) * dx + (c.vy - a.vy) * dy < 0\n          if approaching {\n            let tx = a.vx\n            let ty = a.vy\n            a.vx = c.vx\n            a.vy = c.vy\n            c.vx = tx\n            c.vy = ty\n          }\n          let overlap = (minD - dist) / 2\n          let nx = dx / dist\n          let ny = dy / dist\n          a.x -= nx * overlap\n          a.y -= ny * overlap\n          c.x += nx * overlap\n          c.y += ny * overlap\n          clamp(a)\n          clamp(c)\n        }\n      }\n    }\n  }\n\n  fn draw() {\n    if !box { return }\n    let ctx = box.getContext(\"2d\")\n    ctx.clearRect(0, 0, 400, 300)\n    ctx.fillStyle = \"#2563eb\"\n    for b in balls {\n      ctx.beginPath()\n      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)\n      ctx.fill()\n    }\n  }\n\n  fn loop() {\n    update()\n    draw()\n    frames++\n    raf = requestAnimationFrame(loop)\n  }\n\n  fn reset() {\n    let list = []\n    for (let i = 0; i < 5; i++) {\n      list.push(makeBall())\n    }\n    balls = list\n    count = balls.length\n    frames = 0\n    draw()\n  }\n\n  fn addBall() {\n    balls.push(makeBall())\n    count = balls.length\n    if paused {\n      draw()\n    }\n  }\n\n  fn toggle() {\n    if paused {\n      paused = false\n      raf = requestAnimationFrame(loop)\n    } else {\n      paused = true\n      cancelAnimationFrame(raf)\n    }\n  }\n\n  mount {\n    reset()\n    raf = requestAnimationFrame(loop)\n    cleanup { cancelAnimationFrame(raf) }\n  }\n\n  column gap=3 pad=4 align=center {\n    title \"Simulación de pelotas\" tag=h1\n    canvas ref=box id=\"sim\" width=400 height=300 style=\"border: 1px solid #ccc\"\n    row gap=2 {\n      button \"Agregar\" primary -> addBall()\n      button (paused ? \"Reanudar\" : \"Pausar\") -> toggle()\n      button \"Reiniciar\" -> reset()\n    }\n    row gap=4 {\n      text `Pelotas: ${count}`\n      text `Cuadros: ${frames}`\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 15164,
+        "brotli": 5547
+      }
+    }
+  ]
+}
