@@ -187,6 +187,18 @@ function canvasStub() {
   };
   for (const m of ["fillRect", "strokeRect", "beginPath", "closePath", "ellipse", "moveTo", "lineTo", "arcTo", "rect", "quadraticCurveTo", "bezierCurveTo", "fill", "stroke", "clip", "save", "restore", "translate", "scale", "rotate", "transform", "setTransform", "resetTransform", "fillText", "strokeText", "drawImage", "putImageData", "setLineDash"]) ctx[m] = () => {};
   (window as any).HTMLCanvasElement.prototype.getContext = function () { ctx.canvas = this; return ctx; };
+  // happy-dom's IntersectionObserver never fires: here everything observed is in view on the next tick
+  // (scroll reveals, count-ups "when they appear" and lazy content run as in a browser).
+  class Observed {
+    private cb: (entries: object[], io: Observed) => void;
+    constructor(cb: (entries: object[], io: Observed) => void) { this.cb = cb; }
+    observe(el: Element) { setTimeout(() => this.cb([{ target: el, isIntersecting: true, intersectionRatio: 1, boundingClientRect: el.getBoundingClientRect?.() ?? {}, time: performance.now() }], this), 0); }
+    unobserve() {}
+    disconnect() {}
+    takeRecords() { return []; }
+  }
+  (window as any).IntersectionObserver = Observed;
+  (globalThis as any).IntersectionObserver = Observed;
   // happy-dom runs requestAnimationFrame as fast as it can (~150,000 frames a second); a browser paces it.
   (window as any).requestAnimationFrame = (cb: (t: number) => void) => setTimeout(() => cb(performance.now()), 16);
   (window as any).cancelAnimationFrame = (id: number) => clearTimeout(id);
