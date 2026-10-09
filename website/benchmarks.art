@@ -58,7 +58,7 @@ page Benchmarks "/benchmarks" {
           }
         }
       }
-      text "With Sonnet the output is still shorter and it costs less; with Opus and Haiku the spec in the prompt and the retries cost more than the shorter code saves. The recommendation: heavy imperative code goes in a .ts file imported with use, where it costs the same as in any stack, and ArtScript does the rest of the app." class="body"
+      text "ArtScript's cells were measured three times while the harness was being fixed; across those runs it landed between −19% and +35% of React with Sonnet, between −10% and +19% with Opus, and around +110% with Haiku (its retries were its own errors). That is parity within the noise of two runs per cell, not a saving. The recommendation stands: heavy imperative code goes in a .ts file imported with use, where it costs the same as in any stack, and ArtScript does the rest of the app." class="body"
     }
     card class="callout" gap=2 {
       text "Runtime speed" bold

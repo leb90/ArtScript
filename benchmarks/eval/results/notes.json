@@ -22,5 +22,11 @@
   "2026-10-09T11-00-28-claude-sonnet-5-5.json": "the imperative task (imp-particles: a canvas with physics), reported in its own table",
   "2026-10-09T11-02-14-claude-haiku-4-5.json": "the imperative task (imp-particles); ArtScript's retries were a typo of the model and an effect that changed a state it read",
   "2026-10-09T11-03-29-claude-opus-5-5.json": "the imperative task (imp-particles); one ArtScript run needed a retry because the checker rejected `let b = null` later assigned an object, fixed in 0.2.9",
-  "2026-10-09T11-06-04-claude-opus-5-5.json": "imp-particles, ArtScript only, after fixing the checker's `let b = null` rejection: both runs solved at the first attempt"
+  "2026-10-09T11-06-04-claude-opus-5-5.json": "imp-particles, ArtScript only, after fixing the checker's `let b = null` rejection: both runs solved at the first attempt",
+  "2026-10-09T11-14-13-claude-sonnet-5-5.json": "imp-particles, ArtScript only, with the spec that recommends a .ts module for heavy code; one run tried `use \"./sim.ts\"` and the harness wrongly rejected it (fixed next)",
+  "2026-10-09T11-14-45-claude-haiku-4-5.json": "imp-particles, ArtScript only, with the spec that recommends a .ts module for heavy code",
+  "2026-10-09T11-15-09-claude-opus-5-5.json": "imp-particles, ArtScript only, with the spec that recommends a .ts module for heavy code",
+  "2026-10-09T11-17-12-claude-sonnet-5-5.json": "imp-particles, ArtScript only, final harness (a .ts module next to the .art files is accepted); the run reported in the table",
+  "2026-10-09T11-17-37-claude-haiku-4-5.json": "imp-particles, ArtScript only, final harness; the run reported in the table",
+  "2026-10-09T11-18-04-claude-opus-5-5.json": "imp-particles, ArtScript only, final harness; the run reported in the table"
 }

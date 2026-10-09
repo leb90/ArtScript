@@ -1,0 +1,73 @@
+{
+  "model": "claude-opus-5-5",
+  "effort": "medium",
+  "runs": 2,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 4,
+    "out": 20,
+    "cacheRead": 0.2,
+    "cacheWrite": 5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 2373,
+        "cacheRead": 0,
+        "cacheWrite": 4996
+      },
+      "usd": 0.073676,
+      "codeTokens": 1360,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Sim \"/\" {\n  state paused = false\n  state frames = 0\n  state count = 0\n  ref box\n  ref balls\n  ref raf\n\n  fn makeBall() {\n    let r = 10\n    return {\n      x: r + Math.random() * (400 - 2 * r),\n      y: r + Math.random() * (300 - 2 * r),\n      vx: (Math.random() * 2 - 1) * 4,\n      vy: (Math.random() * 2 - 1) * 4,\n      r: r\n    }\n  }\n\n  fn reset() {\n    let list = []\n    for (let i = 0; i < 5; i++) {\n      list.push(makeBall())\n    }\n    balls = list\n    count = balls.length\n    frames = 0\n  }\n\n  fn add() {\n    balls.push(makeBall())\n    count = balls.length\n  }\n\n  fn clamp(b) {\n    if b.x < b.r {\n      b.x = b.r\n      b.vx = Math.abs(b.vx)\n    }\n    if b.x > 400 - b.r {\n      b.x = 400 - b.r\n      b.vx = -Math.abs(b.vx)\n    }\n    if b.y < b.r {\n      b.y = b.r\n      b.vy = Math.abs(b.vy)\n    }\n    if b.y > 300 - b.r {\n      b.y = 300 - b.r\n      b.vy = -Math.abs(b.vy)\n    }\n  }\n\n  fn step() {\n    for b in balls {\n      b.vy += 0.2\n      b.x += b.vx\n      b.y += b.vy\n      clamp(b)\n    }\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        let a = balls[i]\n        let c = balls[j]\n        let dx = c.x - a.x\n        let dy = c.y - a.y\n        let dist = Math.sqrt(dx * dx + dy * dy)\n        let minDist = a.r + c.r\n        if dist < minDist {\n          if dist == 0 {\n            dx = 1\n            dy = 0\n            dist = 1\n          }\n          let nx = dx / dist\n          let ny = dy / dist\n          let approaching = (c.vx - a.vx) * nx + (c.vy - a.vy) * ny\n          if approaching < 0 {\n            let tvx = a.vx\n            let tvy = a.vy\n            a.vx = c.vx\n            a.vy = c.vy\n            c.vx = tvx\n            c.vy = tvy\n          }\n          let overlap = (minDist - dist) / 2\n          a.x -= nx * overlap\n          a.y -= ny * overlap\n          c.x += nx * overlap\n          c.y += ny * overlap\n          clamp(a)\n          clamp(c)\n        }\n      }\n    }\n  }\n\n  fn draw() {\n    let ctx = box.getContext(\"2d\")\n    ctx.clearRect(0, 0, 400, 300)\n    ctx.fillStyle = \"#2563eb\"\n    for b in balls {\n      ctx.beginPath()\n      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)\n      ctx.fill()\n    }\n  }\n\n  fn loop() {\n    if !paused {\n      step()\n      draw()\n      frames++\n    }\n    raf = requestAnimationFrame(loop)\n  }\n\n  mount {\n    reset()\n    raf = requestAnimationFrame(loop)\n    cleanup { cancelAnimationFrame(raf) }\n  }\n\n  style {\n    .board { border: 1px solid #ccc; }\n  }\n\n  column gap=3 pad=4 {\n    title \"Simulación de pelotas\" tag=h1\n    canvas id=\"sim\" width=400 height=300 ref=box class=\"board\"\n    row gap=2 {\n      button \"Agregar\" primary -> add()\n      button (paused ? \"Reanudar\" : \"Pausar\") -> paused = !paused\n      button \"Reiniciar\" -> reset()\n    }\n    text `Pelotas: ${count}`\n    text `Cuadros: ${frames}`\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 15554,
+        "brotli": 5636
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 2448,
+        "cacheRead": 0,
+        "cacheWrite": 4996
+      },
+      "usd": 0.075176,
+      "codeTokens": 1342,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Sim \"/\" {\n  ref box\n  ref ctx\n  ref balls\n  ref raf\n  state count = 0\n  state frames = 0\n  state paused = false\n\n  fn makeBall() {\n    return {\n      x: 10 + Math.random() * 380,\n      y: 10 + Math.random() * 280,\n      vx: (Math.random() * 2 - 1) * 3,\n      vy: (Math.random() * 2 - 1) * 3\n    }\n  }\n\n  fn reset() {\n    balls = []\n    for (let i = 0; i < 5; i++) {\n      balls.push(makeBall())\n    }\n    count = balls.length\n    frames = 0\n    draw()\n  }\n\n  fn add() {\n    balls.push(makeBall())\n    count = balls.length\n    if paused {\n      draw()\n    }\n  }\n\n  fn step() {\n    let R = 10\n    let W = 400\n    let H = 300\n    for b in balls {\n      b.vy += 0.2\n      b.x += b.vx\n      b.y += b.vy\n    }\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        let a = balls[i]\n        let c = balls[j]\n        let dx = c.x - a.x\n        let dy = c.y - a.y\n        let d = Math.hypot(dx, dy)\n        if d < 2 * R && d > 0 {\n          let nx = dx / d\n          let ny = dy / d\n          let rel = (c.vx - a.vx) * nx + (c.vy - a.vy) * ny\n          if rel < 0 {\n            let tvx = a.vx\n            let tvy = a.vy\n            a.vx = c.vx\n            a.vy = c.vy\n            c.vx = tvx\n            c.vy = tvy\n          }\n          let overlap = (2 * R - d) / 2\n          a.x -= nx * overlap\n          a.y -= ny * overlap\n          c.x += nx * overlap\n          c.y += ny * overlap\n        }\n      }\n    }\n    for b in balls {\n      if b.x < R {\n        b.x = R\n        b.vx = Math.abs(b.vx)\n      }\n      if b.x > W - R {\n        b.x = W - R\n        b.vx = -Math.abs(b.vx)\n      }\n      if b.y < R {\n        b.y = R\n        b.vy = Math.abs(b.vy)\n      }\n      if b.y > H - R {\n        b.y = H - R\n        b.vy = -Math.abs(b.vy)\n      }\n    }\n  }\n\n  fn draw() {\n    if !ctx {\n      ctx = box.getContext(\"2d\")\n    }\n    ctx.clearRect(0, 0, 400, 300)\n    ctx.fillStyle = \"#2563eb\"\n    for b in balls {\n      ctx.beginPath()\n      ctx.arc(b.x, b.y, 10, 0, Math.PI * 2)\n      ctx.fill()\n    }\n  }\n\n  fn loop() {\n    step()\n    draw()\n    frames++\n    raf = requestAnimationFrame(loop)\n  }\n\n  fn togglePause() {\n    if paused {\n      paused = false\n      raf = requestAnimationFrame(loop)\n    } else {\n      paused = true\n      cancelAnimationFrame(raf)\n    }\n  }\n\n  fn restart() {\n    reset()\n  }\n\n  mount {\n    reset()\n    raf = requestAnimationFrame(loop)\n    cleanup { cancelAnimationFrame(raf) }\n  }\n\n  column gap=3 pad=4 {\n    title \"Simulación de pelotas\"\n    canvas id=\"sim\" ref=box width=400 height=300 style=\"border: 1px solid #ccc\"\n    row gap=2 {\n      button \"Agregar\" -> add()\n      button (paused ? \"Reanudar\" : \"Pausar\") primary -> togglePause()\n      button \"Reiniciar\" -> restart()\n    }\n    text `Pelotas: ${count}`\n    text `Cuadros: ${frames}`\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 14451,
+        "brotli": 5396
+      }
+    }
+  ]
+}

@@ -27,10 +27,17 @@ export async function validate(stack: Stack, files: Files): Promise<string[]> {
   return validateSvelte(files);
 }
 
+// The files go to disk first, so a `use "./engine.ts"` next to the .art files resolves.
 function validateArt(files: Files): string[] {
-  const src = Object.entries(files).filter(([n]) => n.endsWith(".art")).map(([file, src]) => ({ file, src }));
-  if (!src.length) return ["no hay archivos .art"];
-  return compile(src).diagnostics.map(formatAI);
+  const names = Object.keys(files).filter((n) => n.endsWith(".art"));
+  if (!names.length) return ["no hay archivos .art"];
+  const dir = join(WORK, `art-${process.pid}-${seq++}`);
+  mkdirSync(dir, { recursive: true });
+  try {
+    for (const n of Object.keys(files)) writeFileSync(join(dir, n), files[n]);
+    const r = compile(names.map((n) => ({ file: join(dir, n), src: files[n] })));
+    return r.diagnostics.map((d) => formatAI({ ...d, loc: { ...d.loc, file: d.loc.file.startsWith(dir) ? d.loc.file.slice(dir.length + 1) : d.loc.file } }));
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 }
 
 let seq = 0;

@@ -43,7 +43,9 @@ async function bundle(stack: Stack, files: Files, dir: string): Promise<{ path: 
   const write = (name: string, src: string) => { mkdirSync(join(dir, name, ".."), { recursive: true }); writeFileSync(join(dir, name), src); };
   let entry: string;
   if (stack === "artscript") {
-    const r = compile(Object.entries(files).filter(([n]) => n.endsWith(".art")).map(([file, src]) => ({ file, src })));
+    // Every file goes to disk (a `use "./engine.ts"` must resolve); the .art files compile from there.
+    for (const n of Object.keys(files)) if (n !== "server.ts") write(n, files[n]);
+    const r = compile(Object.entries(files).filter(([n]) => n.endsWith(".art")).map(([file, src]) => ({ file: join(dir, file), src })));
     if (!r.js) throw new BehaviorError("no compila: " + r.diagnostics.map((d) => d.msg).join("; "));
     write("app.js", r.js);
     write("runtime.js", (await import("node:fs")).readFileSync(join(import.meta.dirname, "..", "..", "runtime", "runtime.js"), "utf8"));

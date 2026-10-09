@@ -1,0 +1,89 @@
+{
+  "model": "claude-haiku-4-5",
+  "effort": "medium",
+  "runs": 2,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 1,
+    "out": 5,
+    "cacheRead": 0.1,
+    "cacheWrite": 1.25
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 2,
+      "usage": {
+        "input": 9795,
+        "output": 2567,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.02263,
+      "codeTokens": 1260,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "model Ball {\n  id: ID\n  x: Number\n  y: Number\n  vx: Number\n  vy: Number\n  radius: Number = 10\n}\n\ncomponent BallSimulation {\n  state balls: Ball[] = []\n  state isRunning = true\n  state frameCount = 0\n  ref canvas\n  ref animationId\n\n  fn initializeBalls {\n    balls = []\n    for (let i = 0; i < 5; i++) {\n      balls.push({\n        id: crypto.randomUUID(),\n        x: Math.random() * 380 + 10,\n        y: Math.random() * 280 + 10,\n        vx: (Math.random() - 0.5) * 4,\n        vy: (Math.random() - 0.5) * 4,\n        radius: 10\n      })\n    }\n    frameCount = 0\n  }\n\n  fn addBall {\n    balls.push({\n      id: crypto.randomUUID(),\n      x: Math.random() * 380 + 10,\n      y: Math.random() * 280 + 10,\n      vx: (Math.random() - 0.5) * 4,\n      vy: (Math.random() - 0.5) * 4,\n      radius: 10\n    })\n  }\n\n  fn togglePause {\n    isRunning = !isRunning\n  }\n\n  fn applyGravity {\n    for b in balls {\n      b.vy += 0.2\n    }\n  }\n\n  fn checkBoundaryCollisions {\n    for b in balls {\n      if b.x - b.radius < 0 {\n        b.x = b.radius\n        b.vx = -b.vx\n      }\n      if b.x + b.radius > 400 {\n        b.x = 400 - b.radius\n        b.vx = -b.vx\n      }\n      if b.y - b.radius < 0 {\n        b.y = b.radius\n        b.vy = -b.vy\n      }\n      if b.y + b.radius > 300 {\n        b.y = 300 - b.radius\n        b.vy = -b.vy\n      }\n    }\n  }\n\n  fn checkBallCollisions {\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        let b1 = balls[i]\n        let b2 = balls[j]\n        let dx = b2.x - b1.x\n        let dy = b2.y - b1.y\n        let distance = Math.sqrt(dx * dx + dy * dy)\n        \n        if distance < b1.radius + b2.radius {\n          let temp_vx = b1.vx\n          let temp_vy = b1.vy\n          b1.vx = b2.vx\n          b1.vy = b2.vy\n          b2.vx = temp_vx\n          b2.vy = temp_vy\n        }\n      }\n    }\n  }\n\n  fn updatePositions {\n    for b in balls {\n      b.x += b.vx\n      b.y += b.vy\n    }\n  }\n\n  fn draw {\n    let ctx = canvas.getContext(\"2d\")\n    ctx.fillStyle = \"#ffffff\"\n    ctx.fillRect(0, 0, 400, 300)\n    \n    ctx.fillStyle = \"#e11d48\"\n    for b in balls {\n      ctx.beginPath()\n      ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2)\n      ctx.fill()\n    }\n  }\n\n  fn simulate {\n    if isRunning {\n      applyGravity()\n      checkBoundaryCollisions()\n      checkBallCollisions()\n      updatePositions()\n      frameCount++\n    }\n    draw()\n    animationId = requestAnimationFrame(simulate)\n  }\n\n  mount {\n    initializeBalls()\n    draw()\n    simulate()\n    cleanup {\n      if animationId {\n        cancelAnimationFrame(animationId)\n      }\n    }\n  }\n\n  column gap=4 pad=4 {\n    row gap=4 align=center {\n      title \"Simulador de Pelotas\" tag=h1\n    }\n    row gap=4 {\n      button \"Agregar\" primary -> addBall()\n      button (isRunning ? \"Pausar\" : \"Reanudar\") -> togglePause()\n      button \"Reiniciar\" danger -> initializeBalls()\n    }\n    row gap=4 {\n      text `Pelotas: ${balls.length}` bold\n      text `Cuadros: ${frameCount}` bold\n    }\n    canvas ref=canvas width=400 height=300 style=\"border: 2px solid #666; display: block; background: white;\"\n  }\n}\n\npage Home \"/\" {\n  column gap=4 pad=4 align=center {\n    BallSimulation\n  }\n}\n"
+          },
+          "errors": [
+            "Prueba de comportamiento: se esperaba un canvas con id \"sim\", \"Pelotas: 5\" y \"Cuadros: N\". La pantalla muestra: \"Simulador de Pelotas Agregar Pausar Reiniciar Pelotas: 5 Cuadros: 154\""
+          ]
+        },
+        {
+          "files": {
+            "app.art": "model Ball {\n  id: ID\n  x: Number\n  y: Number\n  vx: Number\n  vy: Number\n  radius: Number = 10\n}\n\ncomponent BallSimulation {\n  state balls: Ball[] = []\n  state isRunning = true\n  state frameCount = 0\n  ref canvas\n  ref animationId\n\n  fn initializeBalls {\n    balls = []\n    for (let i = 0; i < 5; i++) {\n      balls.push({\n        id: crypto.randomUUID(),\n        x: Math.random() * 380 + 10,\n        y: Math.random() * 280 + 10,\n        vx: (Math.random() - 0.5) * 4,\n        vy: (Math.random() - 0.5) * 4,\n        radius: 10\n      })\n    }\n    frameCount = 0\n  }\n\n  fn addBall {\n    balls.push({\n      id: crypto.randomUUID(),\n      x: Math.random() * 380 + 10,\n      y: Math.random() * 280 + 10,\n      vx: (Math.random() - 0.5) * 4,\n      vy: (Math.random() - 0.5) * 4,\n      radius: 10\n    })\n  }\n\n  fn togglePause {\n    isRunning = !isRunning\n  }\n\n  fn applyGravity {\n    for b in balls {\n      b.vy += 0.2\n    }\n  }\n\n  fn checkBoundaryCollisions {\n    for b in balls {\n      if b.x - b.radius < 0 {\n        b.x = b.radius\n        b.vx = -b.vx\n      }\n      if b.x + b.radius > 400 {\n        b.x = 400 - b.radius\n        b.vx = -b.vx\n      }\n      if b.y - b.radius < 0 {\n        b.y = b.radius\n        b.vy = -b.vy\n      }\n      if b.y + b.radius > 300 {\n        b.y = 300 - b.radius\n        b.vy = -b.vy\n      }\n    }\n  }\n\n  fn checkBallCollisions {\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        let b1 = balls[i]\n        let b2 = balls[j]\n        let dx = b2.x - b1.x\n        let dy = b2.y - b1.y\n        let distance = Math.sqrt(dx * dx + dy * dy)\n        \n        if distance < b1.radius + b2.radius {\n          let temp_vx = b1.vx\n          let temp_vy = b1.vy\n          b1.vx = b2.vx\n          b1.vy = b2.vy\n          b2.vx = temp_vx\n          b2.vy = temp_vy\n        }\n      }\n    }\n  }\n\n  fn updatePositions {\n    for b in balls {\n      b.x += b.vx\n      b.y += b.vy\n    }\n  }\n\n  fn draw {\n    let ctx = canvas.getContext(\"2d\")\n    ctx.fillStyle = \"#ffffff\"\n    ctx.fillRect(0, 0, 400, 300)\n    \n    ctx.fillStyle = \"#e11d48\"\n    for b in balls {\n      ctx.beginPath()\n      ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2)\n      ctx.fill()\n    }\n  }\n\n  fn simulate {\n    if isRunning {\n      applyGravity()\n      checkBoundaryCollisions()\n      checkBallCollisions()\n      updatePositions()\n      frameCount++\n    }\n    draw()\n    animationId = requestAnimationFrame(simulate)\n  }\n\n  mount {\n    initializeBalls()\n    draw()\n    simulate()\n    cleanup {\n      if animationId {\n        cancelAnimationFrame(animationId)\n      }\n    }\n  }\n\n  column gap=4 pad=4 {\n    row gap=4 {\n      button \"Agregar\" primary -> addBall()\n      button (isRunning ? \"Pausar\" : \"Reanudar\") -> togglePause()\n      button \"Reiniciar\" danger -> initializeBalls()\n    }\n    row gap=4 {\n      text `Pelotas: ${balls.length}` bold\n      text `Cuadros: ${frameCount}` bold\n    }\n    canvas ref=canvas id=\"sim\" width=400 height=300 style=\"border: 2px solid #666; display: block; background: white;\"\n  }\n}\n\npage Home \"/\" {\n  column gap=4 pad=4 align=center {\n    BallSimulation\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 15184,
+        "brotli": 5452
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 2,
+      "usage": {
+        "input": 9818,
+        "output": 2668,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0.023158,
+      "codeTokens": 1330,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "App.art": "model Ball {\n  id: ID\n  x: Number\n  y: Number\n  vx: Number\n  vy: Number\n  radius: Number = 10\n}\n\ncomponent BallSimulation {\n  ref canvas\n  state balls: Ball[] = []\n  state paused = false\n  state frames = 0\n  state animationId = null\n\n  fn initBalls {\n    balls = []\n    for (let i = 0; i < 5; i++) {\n      balls.push({\n        id: crypto.randomUUID(),\n        x: Math.random() * 380 + 10,\n        y: Math.random() * 280 + 10,\n        vx: (Math.random() - 0.5) * 8,\n        vy: (Math.random() - 0.5) * 8,\n        radius: 10\n      })\n    }\n    frames = 0\n  }\n\n  fn addBall {\n    balls.push({\n      id: crypto.randomUUID(),\n      x: Math.random() * 380 + 10,\n      y: Math.random() * 280 + 10,\n      vx: (Math.random() - 0.5) * 8,\n      vy: (Math.random() - 0.5) * 8,\n      radius: 10\n    })\n  }\n\n  fn togglePause {\n    paused = !paused\n  }\n\n  fn updatePhysics {\n    const gravity = 0.2\n    \n    for (let i = 0; i < balls.length; i++) {\n      const ball = balls[i]\n      ball.vy += gravity\n      \n      ball.x += ball.vx\n      ball.y += ball.vy\n      \n      if (ball.x - ball.radius < 0) {\n        ball.x = ball.radius\n        ball.vx = -ball.vx\n      }\n      if (ball.x + ball.radius > 400) {\n        ball.x = 400 - ball.radius\n        ball.vx = -ball.vx\n      }\n      if (ball.y - ball.radius < 0) {\n        ball.y = ball.radius\n        ball.vy = -ball.vy\n      }\n      if (ball.y + ball.radius > 300) {\n        ball.y = 300 - ball.radius\n        ball.vy = -ball.vy\n      }\n    }\n    \n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        const b1 = balls[i]\n        const b2 = balls[j]\n        const dx = b2.x - b1.x\n        const dy = b2.y - b1.y\n        const dist = Math.sqrt(dx * dx + dy * dy)\n        \n        if (dist < b1.radius + b2.radius) {\n          const temp_vx = b1.vx\n          const temp_vy = b1.vy\n          b1.vx = b2.vx\n          b1.vy = b2.vy\n          b2.vx = temp_vx\n          b2.vy = temp_vy\n          \n          const overlap = b1.radius + b2.radius - dist\n          const nx = dx / dist\n          const ny = dy / dist\n          b1.x -= (overlap / 2) * nx\n          b1.y -= (overlap / 2) * ny\n          b2.x += (overlap / 2) * nx\n          b2.y += (overlap / 2) * ny\n        }\n      }\n    }\n  }\n\n  fn drawBalls {\n    const ctx = canvas.getContext(\"2d\")\n    ctx.fillStyle = \"#ffffff\"\n    ctx.fillRect(0, 0, 400, 300)\n    \n    ctx.fillStyle = \"#2563eb\"\n    for (let i = 0; i < balls.length; i++) {\n      const ball = balls[i]\n      ctx.beginPath()\n      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2)\n      ctx.fill()\n    }\n    \n    ctx.strokeStyle = \"#1e293b\"\n    ctx.lineWidth = 1\n    ctx.strokeRect(0, 0, 400, 300)\n  }\n\n  fn animate {\n    if (!paused) {\n      updatePhysics()\n      frames++\n    }\n    drawBalls()\n    animationId = requestAnimationFrame(animate)\n  }\n\n  mount {\n    initBalls()\n    drawBalls()\n    animate()\n    cleanup {\n      if (animationId) {\n        cancelAnimationFrame(animationId)\n      }\n    }\n  }\n\n  row gap=4 pad=4 {\n    column gap=2 {\n      canvas ref=canvas width=400 height=300\n    }\n    column gap=3 {\n      button \"Agregar\" primary -> addBall()\n      button (paused ? \"Reanudar\" : \"Pausar\") -> togglePause()\n      button \"Reiniciar\" danger -> initBalls()\n      text `Pelotas: ${balls.length}`\n      text `Cuadros: ${frames}`\n    }\n  }\n}\n"
+          },
+          "errors": [
+            "Prueba de comportamiento: se esperaba un canvas con id \"sim\", \"Pelotas: 5\" y \"Cuadros: N\". La pantalla muestra: \"Agregar Pausar Reiniciar Pelotas: 5 Cuadros: 154\""
+          ]
+        },
+        {
+          "files": {
+            "App.art": "model Ball {\n  id: ID\n  x: Number\n  y: Number\n  vx: Number\n  vy: Number\n  radius: Number = 10\n}\n\npage BallSimulation \"/sim\" {\n  ref canvas\n  state balls: Ball[] = []\n  state paused = false\n  state frames = 0\n  state animationId = null\n\n  fn initBalls {\n    balls = []\n    for (let i = 0; i < 5; i++) {\n      balls.push({\n        id: crypto.randomUUID(),\n        x: Math.random() * 380 + 10,\n        y: Math.random() * 280 + 10,\n        vx: (Math.random() - 0.5) * 8,\n        vy: (Math.random() - 0.5) * 8,\n        radius: 10\n      })\n    }\n    frames = 0\n  }\n\n  fn addBall {\n    balls.push({\n      id: crypto.randomUUID(),\n      x: Math.random() * 380 + 10,\n      y: Math.random() * 280 + 10,\n      vx: (Math.random() - 0.5) * 8,\n      vy: (Math.random() - 0.5) * 8,\n      radius: 10\n    })\n  }\n\n  fn togglePause {\n    paused = !paused\n  }\n\n  fn updatePhysics {\n    const gravity = 0.2\n    \n    for (let i = 0; i < balls.length; i++) {\n      const ball = balls[i]\n      ball.vy += gravity\n      \n      ball.x += ball.vx\n      ball.y += ball.vy\n      \n      if (ball.x - ball.radius < 0) {\n        ball.x = ball.radius\n        ball.vx = -ball.vx\n      }\n      if (ball.x + ball.radius > 400) {\n        ball.x = 400 - ball.radius\n        ball.vx = -ball.vx\n      }\n      if (ball.y - ball.radius < 0) {\n        ball.y = ball.radius\n        ball.vy = -ball.vy\n      }\n      if (ball.y + ball.radius > 300) {\n        ball.y = 300 - ball.radius\n        ball.vy = -ball.vy\n      }\n    }\n    \n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        const b1 = balls[i]\n        const b2 = balls[j]\n        const dx = b2.x - b1.x\n        const dy = b2.y - b1.y\n        const dist = Math.sqrt(dx * dx + dy * dy)\n        \n        if (dist < b1.radius + b2.radius && dist > 0) {\n          const temp_vx = b1.vx\n          const temp_vy = b1.vy\n          b1.vx = b2.vx\n          b1.vy = b2.vy\n          b2.vx = temp_vx\n          b2.vy = temp_vy\n          \n          const overlap = b1.radius + b2.radius - dist\n          const nx = dx / dist\n          const ny = dy / dist\n          b1.x -= (overlap / 2) * nx\n          b1.y -= (overlap / 2) * ny\n          b2.x += (overlap / 2) * nx\n          b2.y += (overlap / 2) * ny\n        }\n      }\n    }\n  }\n\n  fn drawBalls {\n    const ctx = canvas.getContext(\"2d\")\n    ctx.fillStyle = \"#ffffff\"\n    ctx.fillRect(0, 0, 400, 300)\n    \n    ctx.fillStyle = \"#2563eb\"\n    for (let i = 0; i < balls.length; i++) {\n      const ball = balls[i]\n      ctx.beginPath()\n      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2)\n      ctx.fill()\n    }\n    \n    ctx.strokeStyle = \"#1e293b\"\n    ctx.lineWidth = 1\n    ctx.strokeRect(0, 0, 400, 300)\n  }\n\n  fn animate {\n    if (!paused) {\n      updatePhysics()\n      frames++\n    }\n    drawBalls()\n    animationId = requestAnimationFrame(animate)\n  }\n\n  mount {\n    initBalls()\n    drawBalls()\n    animate()\n    cleanup {\n      if (animationId) {\n        cancelAnimationFrame(animationId)\n      }\n    }\n  }\n\n  row gap=4 pad=4 {\n    column gap=2 {\n      canvas ref=canvas id=\"sim\" width=400 height=300\n    }\n    column gap=3 {\n      button \"Agregar\" primary -> addBall()\n      button (paused ? \"Reanudar\" : \"Pausar\") -> togglePause()\n      button \"Reiniciar\" danger -> initBalls()\n      text `Pelotas: ${balls.length}`\n      text `Cuadros: ${frames}`\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 15137,
+        "brotli": 5474
+      }
+    }
+  ]
+}

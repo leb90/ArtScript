@@ -1,0 +1,82 @@
+{
+  "model": "claude-sonnet-5-5",
+  "effort": "medium",
+  "runs": 2,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 2,
+    "out": 10,
+    "cacheRead": 0.2,
+    "cacheWrite": 2.5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 2,
+      "usage": {
+        "input": 2220,
+        "output": 3512,
+        "cacheRead": 4996,
+        "cacheWrite": 4996
+      },
+      "usd": 0.0530492,
+      "codeTokens": 1363,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "use \"./sim.ts\" { createBall, step, draw }\n\npage Sim \"/\" {\n  ref box\n  ref balls\n  ref raf\n  state count = 5\n  state frames = 0\n  state paused = false\n  ref isPaused\n\n  fn reset() {\n    balls = []\n    for (let i = 0; i < 5; i++) {\n      balls.push(createBall(400, 300))\n    }\n    count = balls.length\n    frames = 0\n  }\n\n  fn add() {\n    balls.push(createBall(400, 300))\n    count = balls.length\n  }\n\n  fn toggle() {\n    paused = !paused\n    isPaused = paused\n  }\n\n  fn loop() {\n    if !isPaused {\n      step(balls, 400, 300)\n      frames = frames + 1\n    }\n    draw(box, balls)\n    raf = requestAnimationFrame(loop)\n  }\n\n  mount {\n    isPaused = false\n    reset()\n    raf = requestAnimationFrame(loop)\n    cleanup { cancelAnimationFrame(raf) }\n  }\n\n  column gap=3 pad=4 {\n    title \"Simulación de pelotas\"\n    canvas ref=box id=\"sim\" width=400 height=300 style=\"border:1px solid #888\"\n    row gap=2 {\n      button \"Agregar\" primary -> add()\n      button (paused ? \"Reanudar\" : \"Pausar\") -> toggle()\n      button \"Reiniciar\" danger -> reset()\n    }\n    text `Pelotas: ${count}`\n    text `Cuadros: ${frames}`\n  }\n}\n",
+            "sim.ts": "export function createBall(w: number, h: number) {\n  const r = 10;\n  return {\n    x: r + Math.random() * (w - 2 * r),\n    y: r + Math.random() * (h - 2 * r),\n    vx: (Math.random() - 0.5) * 6,\n    vy: (Math.random() - 0.5) * 6,\n    r,\n  };\n}\n\nexport function step(balls: any[], w: number, h: number) {\n  for (const b of balls) {\n    b.vy += 0.2;\n    b.x += b.vx;\n    b.y += b.vy;\n    if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx); }\n    if (b.x > w - b.r) { b.x = w - b.r; b.vx = -Math.abs(b.vx); }\n    if (b.y < b.r) { b.y = b.r; b.vy = Math.abs(b.vy); }\n    if (b.y > h - b.r) { b.y = h - b.r; b.vy = -Math.abs(b.vy); }\n  }\n  for (let i = 0; i < balls.length; i++) {\n    for (let j = i + 1; j < balls.length; j++) {\n      const a = balls[i];\n      const b = balls[j];\n      const dx = b.x - a.x;\n      const dy = b.y - a.y;\n      const d = Math.hypot(dx, dy);\n      const min = a.r + b.r;\n      if (d < min) {\n        const nx = d === 0 ? 1 : dx / d;\n        const ny = d === 0 ? 0 : dy / d;\n        const overlap = min - d;\n        a.x -= nx * overlap / 2;\n        a.y -= ny * overlap / 2;\n        b.x += nx * overlap / 2;\n        b.y += ny * overlap / 2;\n        for (const p of [a, b]) {\n          if (p.x < p.r) p.x = p.r;\n          if (p.x > w - p.r) p.x = w - p.r;\n          if (p.y < p.r) p.y = p.r;\n          if (p.y > h - p.r) p.y = h - p.r;\n        }\n        const t = a.vx; a.vx = b.vx; b.vx = t;\n        const u = a.vy; a.vy = b.vy; b.vy = u;\n      }\n    }\n  }\n}\n\nexport function draw(canvas: HTMLCanvasElement, balls: any[]) {\n  if (!canvas) return;\n  const ctx = canvas.getContext(\"2d\");\n  if (!ctx) return;\n  ctx.clearRect(0, 0, canvas.width, canvas.height);\n  ctx.fillStyle = \"#e11d48\";\n  for (const b of balls) {\n    ctx.beginPath();\n    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);\n    ctx.fill();\n  }\n}\n"
+          },
+          "errors": [
+            "{\"code\":\"E1050\",\"type\":\"UNKNOWN_MODULE\",\"loc\":\"app.art:1:1\",\"at\":\"use ./sim.ts\",\"expr\":\"./sim.ts\",\"fixes\":[\"check the path './sim.ts' in <stdin>\"]}"
+          ]
+        },
+        {
+          "files": {
+            "app.art": "page Sim \"/\" {\n  ref box\n  ref balls\n  ref raf\n  ref isPaused\n  state count = 5\n  state frames = 0\n  state paused = false\n\n  fn makeBall() {\n    let r = 10\n    return {\n      x: r + Math.random() * (400 - 2 * r),\n      y: r + Math.random() * (300 - 2 * r),\n      vx: (Math.random() - 0.5) * 6,\n      vy: (Math.random() - 0.5) * 6,\n      r: r\n    }\n  }\n\n  fn reset() {\n    let list = []\n    for (let i = 0; i < 5; i++) {\n      list.push(makeBall())\n    }\n    balls = list\n    count = list.length\n    frames = 0\n  }\n\n  fn add() {\n    balls.push(makeBall())\n    count = balls.length\n  }\n\n  fn toggle() {\n    paused = !paused\n    isPaused = paused\n  }\n\n  fn walls(b) {\n    if b.x < b.r {\n      b.x = b.r\n      b.vx = Math.abs(b.vx)\n    }\n    if b.x > 400 - b.r {\n      b.x = 400 - b.r\n      b.vx = -Math.abs(b.vx)\n    }\n    if b.y < b.r {\n      b.y = b.r\n      b.vy = Math.abs(b.vy)\n    }\n    if b.y > 300 - b.r {\n      b.y = 300 - b.r\n      b.vy = -Math.abs(b.vy)\n    }\n  }\n\n  fn step() {\n    for (let i = 0; i < balls.length; i++) {\n      let b = balls[i]\n      b.vy += 0.2\n      b.x += b.vx\n      b.y += b.vy\n      walls(b)\n    }\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        let a = balls[i]\n        let b = balls[j]\n        let dx = b.x - a.x\n        let dy = b.y - a.y\n        let d = Math.sqrt(dx * dx + dy * dy)\n        let min = a.r + b.r\n        if d < min {\n          let nx = 1\n          let ny = 0\n          if d > 0 {\n            nx = dx / d\n            ny = dy / d\n          }\n          let overlap = min - d\n          a.x -= nx * overlap / 2\n          a.y -= ny * overlap / 2\n          b.x += nx * overlap / 2\n          b.y += ny * overlap / 2\n          walls(a)\n          walls(b)\n          let tx = a.vx\n          a.vx = b.vx\n          b.vx = tx\n          let ty = a.vy\n          a.vy = b.vy\n          b.vy = ty\n        }\n      }\n    }\n  }\n\n  fn draw() {\n    let ctx = box.getContext(\"2d\")\n    ctx.clearRect(0, 0, 400, 300)\n    ctx.fillStyle = \"#e11d48\"\n    for (let i = 0; i < balls.length; i++) {\n      let b = balls[i]\n      ctx.beginPath()\n      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)\n      ctx.fill()\n    }\n  }\n\n  fn loop() {\n    if !isPaused {\n      step()\n      frames = frames + 1\n    }\n    draw()\n    raf = requestAnimationFrame(loop)\n  }\n\n  mount {\n    isPaused = false\n    reset()\n    raf = requestAnimationFrame(loop)\n    cleanup { cancelAnimationFrame(raf) }\n  }\n\n  column gap=3 pad=4 {\n    title \"Simulación de pelotas\"\n    canvas ref=box id=\"sim\" width=400 height=300 style=\"border:1px solid #888\"\n    row gap=2 {\n      button \"Agregar\" primary -> add()\n      button `${paused ? \"Reanudar\" : \"Pausar\"}` -> toggle()\n      button \"Reiniciar\" danger -> reset()\n    }\n    text `Pelotas: ${count}`\n    text `Cuadros: ${frames}`\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 15062,
+        "brotli": 5542
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 1452,
+        "cacheRead": 0,
+        "cacheWrite": 4996
+      },
+      "usd": 0.027628,
+      "codeTokens": 1443,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Sim \"/\" {\n  state count = 5\n  state frames = 0\n  state paused = false\n  ref cv\n  ref balls\n  ref raf\n  ref pausedRef\n  ref framesRef\n\n  fn rnd(a, b) {\n    return a + Math.random() * (b - a)\n  }\n\n  fn makeBall() {\n    return { x: rnd(10, 390), y: rnd(10, 290), vx: rnd(-3, 3), vy: rnd(-3, 3), r: 10 }\n  }\n\n  fn reset() {\n    let arr = []\n    for (let i = 0; i < 5; i++) {\n      arr.push(makeBall())\n    }\n    balls = arr\n    count = 5\n    frames = 0\n    framesRef = 0\n  }\n\n  fn add() {\n    balls.push(makeBall())\n    count = balls.length\n  }\n\n  fn togglePause() {\n    paused = !paused\n    pausedRef = paused\n  }\n\n  fn step() {\n    let W = 400\n    let H = 300\n    for (let i = 0; i < balls.length; i++) {\n      let b = balls[i]\n      b.vy += 0.2\n      b.x += b.vx\n      b.y += b.vy\n      if b.x < b.r {\n        b.x = b.r\n        b.vx = Math.abs(b.vx)\n      }\n      if b.x > W - b.r {\n        b.x = W - b.r\n        b.vx = -Math.abs(b.vx)\n      }\n      if b.y < b.r {\n        b.y = b.r\n        b.vy = Math.abs(b.vy)\n      }\n      if b.y > H - b.r {\n        b.y = H - b.r\n        b.vy = -Math.abs(b.vy)\n      }\n    }\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        let a = balls[i]\n        let c = balls[j]\n        let dx = c.x - a.x\n        let dy = c.y - a.y\n        let d = Math.sqrt(dx * dx + dy * dy)\n        if d < a.r + c.r {\n          let tx = a.vx\n          let ty = a.vy\n          a.vx = c.vx\n          a.vy = c.vy\n          c.vx = tx\n          c.vy = ty\n          if d > 0 {\n            let o = (a.r + c.r - d) / 2\n            let nx = dx / d\n            let ny = dy / d\n            a.x -= nx * o\n            a.y -= ny * o\n            c.x += nx * o\n            c.y += ny * o\n            a.x = Math.min(Math.max(a.x, a.r), W - a.r)\n            a.y = Math.min(Math.max(a.y, a.r), H - a.r)\n            c.x = Math.min(Math.max(c.x, c.r), W - c.r)\n            c.y = Math.min(Math.max(c.y, c.r), H - c.r)\n          }\n        }\n      }\n    }\n  }\n\n  fn draw() {\n    let ctx = cv.getContext(\"2d\")\n    ctx.clearRect(0, 0, 400, 300)\n    ctx.fillStyle = \"#e11d48\"\n    for (let i = 0; i < balls.length; i++) {\n      let b = balls[i]\n      ctx.beginPath()\n      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)\n      ctx.fill()\n    }\n  }\n\n  fn loop() {\n    if !pausedRef {\n      step()\n      draw()\n      framesRef = framesRef + 1\n      frames = framesRef\n    }\n    raf = requestAnimationFrame(loop)\n  }\n\n  mount {\n    pausedRef = false\n    framesRef = 0\n    reset()\n    draw()\n    raf = requestAnimationFrame(loop)\n    cleanup { cancelAnimationFrame(raf) }\n  }\n\n  column gap=3 pad=4 {\n    canvas ref=cv id=\"sim\" width=400 height=300 style=\"border:1px solid #888\"\n    row gap=2 {\n      button \"Agregar\" -> add()\n      button (paused ? \"Reanudar\" : \"Pausar\") -> togglePause()\n      button \"Reiniciar\" -> reset()\n    }\n    text `Pelotas: ${count}`\n    text `Cuadros: ${frames}`\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 14490,
+        "brotli": 5440
+      }
+    }
+  ]
+}
