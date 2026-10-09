@@ -1,23 +1,88 @@
 {
   "name": "artscript",
   "displayName": "ArtScript",
-  "description": "ArtScript language support: highlighting, live errors, formatting and completion (art lsp).",
-  "version": "0.1.0",
+  "description": "ArtScript language support: file icons, highlighting, snippets, live errors with fixes, formatting, completion, go to definition, hover and rename (art lsp).",
+  "version": "0.2.7",
   "publisher": "artscript",
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/leb90/ArtScript" },
-  "engines": { "vscode": "^1.90.0" },
-  "categories": ["Programming Languages", "Formatters", "Linters"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/leb90/ArtScript"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters",
+    "Linters"
+  ],
   "main": "./extension.js",
-  "activationEvents": ["onLanguage:artscript"],
+  "activationEvents": [
+    "onLanguage:artscript"
+  ],
   "contributes": {
-    "languages": [{ "id": "artscript", "aliases": ["ArtScript"], "extensions": [".art"], "configuration": "./language-configuration.json" }],
-    "grammars": [{ "language": "artscript", "scopeName": "source.artscript", "path": "./syntaxes/artscript.tmLanguage.json" }],
+    "languages": [
+      {
+        "id": "artscript",
+        "aliases": [
+          "ArtScript"
+        ],
+        "extensions": [
+          ".art"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/art-light.svg",
+          "dark": "./icons/art-dark.svg"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "artscript",
+        "scopeName": "source.artscript",
+        "path": "./syntaxes/artscript.tmLanguage.json"
+      }
+    ],
     "configuration": {
       "title": "ArtScript",
       "properties": {
-        "artscript.command": { "type": "string", "default": "", "description": "Command that starts the language server (default: the project's node_modules/.bin/art, else `art` on the PATH), followed by `lsp`." }
+        "artscript.command": {
+          "type": "string",
+          "default": "",
+          "description": "Command that starts the language server (default: the project's node_modules/.bin/art, else `art` on the PATH), followed by `lsp`."
+        }
       }
-    }
+    },
+    "snippets": [
+      {
+        "language": "artscript",
+        "path": "./snippets/artscript.json"
+      }
+    ]
+  },
+  "icon": "icon.png",
+  "homepage": "https://artscript.dev",
+  "bugs": {
+    "url": "https://github.com/leb90/ArtScript/issues"
+  },
+  "keywords": [
+    "artscript",
+    "art",
+    "ai",
+    "agents",
+    "web",
+    "framework",
+    "language"
+  ],
+  "galleryBanner": {
+    "color": "#111111",
+    "theme": "dark"
+  },
+  "scripts": {
+    "package": "npx --yes @vscode/vsce package --no-dependencies",
+    "publish:vscode": "npx --yes @vscode/vsce publish --no-dependencies",
+    "publish:openvsx": "npx --yes ovsx publish --no-dependencies"
   }
 }

@@ -1,0 +1,169 @@
+{
+  "page": {
+    "prefix": "page",
+    "body": [
+      "page ${1:Name} \"/${2:path}\" {",
+      "  state ${3:count} = 0",
+      "",
+      "  column gap=2 {",
+      "    title \"${4:Title}\"",
+      "    $0",
+      "  }",
+      "}"
+    ],
+    "description": "A page with a route"
+  },
+  "component": {
+    "prefix": "component",
+    "body": [
+      "component ${1:Name}(${2:label}: ${3:String}) {",
+      "  $0",
+      "}"
+    ],
+    "description": "A component with props"
+  },
+  "model+api": {
+    "prefix": "model",
+    "body": [
+      "model ${1:Item} {",
+      "  id: ID",
+      "  ${2:name}: String",
+      "}",
+      "",
+      "api ${3:items}: $1 ${4:login}"
+    ],
+    "description": "A model and its REST api"
+  },
+  "auth": {
+    "prefix": "auth",
+    "body": [
+      "model User {",
+      "  id: ID",
+      "  email: Email",
+      "  password: String",
+      "  name: String",
+      "}",
+      "",
+      "auth users: User"
+    ],
+    "description": "Accounts"
+  },
+  "state": {
+    "prefix": "state",
+    "body": [
+      "state ${1:name} = ${2:value}"
+    ],
+    "description": "Reactive state"
+  },
+  "computed": {
+    "prefix": "computed",
+    "body": [
+      "computed ${1:name} = ${2:expr}"
+    ],
+    "description": "Derived value"
+  },
+  "data": {
+    "prefix": "data",
+    "body": [
+      "data ${1:items} = api.${2:items}.list()"
+    ],
+    "description": "Data loaded from the api"
+  },
+  "fn": {
+    "prefix": "fn",
+    "body": [
+      "fn ${1:name}(${2}) {",
+      "  $0",
+      "}"
+    ],
+    "description": "A function"
+  },
+  "server fn": {
+    "prefix": "server",
+    "body": [
+      "server fn ${1:name}(${2}) {",
+      "  $0",
+      "}"
+    ],
+    "description": "A function that runs on the server"
+  },
+  "for": {
+    "prefix": "for",
+    "body": [
+      "for ${1:item} in ${2:items} key $1.id {",
+      "  $0",
+      "}"
+    ],
+    "description": "Keyed list"
+  },
+  "if": {
+    "prefix": "if",
+    "body": [
+      "if ${1:cond} {",
+      "  $0",
+      "}"
+    ],
+    "description": "Conditional view"
+  },
+  "button": {
+    "prefix": "button",
+    "body": [
+      "button \"${1:Label}\" ${2:primary} -> ${3:action}"
+    ],
+    "description": "A button with an action"
+  },
+  "input": {
+    "prefix": "input",
+    "body": [
+      "input ${1:value} placeholder=\"${2}\""
+    ],
+    "description": "A bound input"
+  },
+  "form": {
+    "prefix": "form",
+    "body": [
+      "form -> ${1:save}() {",
+      "  input ${2:name} label=\"${3:Name}\"",
+      "  button \"${4:Save}\" primary",
+      "}"
+    ],
+    "description": "A form"
+  },
+  "test": {
+    "prefix": "test",
+    "body": [
+      "test \"${1:what it does}\" {",
+      "  ${2:click \"Add\"}",
+      "  see \"${3:text}\"",
+      "}"
+    ],
+    "description": "A behavior test"
+  },
+  "effect": {
+    "prefix": "effect",
+    "body": [
+      "effect {",
+      "  $0",
+      "}"
+    ],
+    "description": "Runs when what it reads changes"
+  },
+  "mount": {
+    "prefix": "mount",
+    "body": [
+      "mount {",
+      "  $0",
+      "}"
+    ],
+    "description": "Runs once the view is in the page"
+  },
+  "job": {
+    "prefix": "job",
+    "body": [
+      "job ${1:name} every ${2:1h} {",
+      "  $0",
+      "}"
+    ],
+    "description": "A scheduled server job"
+  }
+}

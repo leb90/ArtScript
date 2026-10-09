@@ -13,3 +13,9 @@ benchmarks/eval/.work/
 /ROADMAP.md
 site/
 benchmarks/eval/results/*.jsonl
+
+# Launch material (local)
+/LAUNCH.md
+
+# Packaged editor extension
+*.vsix

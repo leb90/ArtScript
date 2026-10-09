@@ -27,3 +27,30 @@ Two packages, both at the same version:
 5. `git tag v<version> && git push --tags`.
 
 `art init` run from the repository (not installed) points the new project at the local copy (`file:`); installed from npm it points at `^<version>`.
+
+## The editor extension
+
+`editors/vscode` is published twice, because VS Code and Cursor use different registries. Both take the same `.vsix`; its `version` in `editors/vscode/package.json` follows the compiler's.
+
+Build and check it locally:
+
+```sh
+cd editors/vscode
+npm run package                                   # writes artscript-<version>.vsix
+code --install-extension artscript-<version>.vsix   # VS Code
+cursor --install-extension artscript-<version>.vsix # Cursor (its CLI; or Extensions → ... → Install from VSIX)
+```
+
+**Visual Studio Marketplace** (VS Code), once:
+1. Sign in at https://marketplace.visualstudio.com/manage with a Microsoft account and create the publisher `artscript` (the `publisher` field of `package.json`).
+2. Create a Personal Access Token at https://dev.azure.com (User settings → Personal access tokens: organization "All accessible organizations", scope Marketplace → Manage).
+3. `npx @vscode/vsce login artscript` and paste the token.
+
+Then, for every release: `npm run publish:vscode` (from `editors/vscode`).
+
+**Open VSX** (Cursor, VSCodium, Gitpod), once:
+1. Create an account at https://open-vsx.org (Eclipse account), sign the publisher agreement in your profile, and create the namespace: `npx ovsx create-namespace artscript -p <token>` (the token is made at https://open-vsx.org/user-settings/tokens).
+
+Then, for every release: `OVSX_PAT=<token> npm run publish:openvsx` (from `editors/vscode`).
+
+Both commands run `vsce package` first; nothing else is needed. The `ci` workflow packages the extension on every push, so a `.vsix` that fails to build is caught before a release.

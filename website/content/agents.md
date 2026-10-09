@@ -25,7 +25,7 @@ Agents that crawl the web can start from [llms.txt](/llms.txt) or read everythin
 - prefer a small `art patch` to rewriting files;
 - write `test` blocks and run `npx art test`.
 
-Cursor also gets `.cursor/rules/artscript.mdc`, a rule attached to every `.art` file, and Claude Code gets the skill `.claude/skills/artscript/SKILL.md`, loaded when it works on `.art` files. If your agent uses another file (`.github/copilot-instructions.md`, `.windsurfrules`), copy the same text there.
+Cursor also gets `.cursor/rules/artscript.mdc`, a rule attached to every `.art` file, and Claude Code gets the skill `.claude/skills/artscript/SKILL.md`, loaded when it works on `.art` files. The project also recommends the ArtScript extension for VS Code and Cursor (`.vscode/extensions.json`): file icons, highlighting, snippets and live errors with fixes for the person reviewing the agent's work. If your agent uses another file (`.github/copilot-instructions.md`, `.windsurfrules`), copy the same text there.
 
 ## MCP
 

@@ -2,30 +2,101 @@
   "name": "ArtScript",
   "scopeName": "source.artscript",
   "patterns": [
-    { "include": "#comments" },
-    { "include": "#strings" },
-    { "match": "\\b(model|api|auth|use|server|job|fn|every|component|page|layout|state|computed|data|ref|mount|effect|cleanup|live|if|else|for|in|key|let|const|return|try|catch|await|as|login|private|admin)\\b", "name": "keyword.control.artscript" },
-    { "match": "\\b(true|false|null)\\b", "name": "constant.language.artscript" },
-    { "match": "\\b\\d+(\\.\\d+)?\\b", "name": "constant.numeric.artscript" },
-    { "match": "\\b(String|Number|Bool|ID|Email|Date|Fn|Any|File)\\b", "name": "support.type.artscript" },
-    { "match": "\\b(min|max|match|unique|cascade|was|accept)(?==|\\b)", "name": "storage.modifier.artscript" },
-    { "match": "\\b(on:[a-z]+|(sm|md|lg|xl):[a-z]+)(?==)", "name": "entity.other.attribute-name.artscript" },
-    { "match": "\\b([a-z][\\w]*)(?==)", "name": "entity.other.attribute-name.artscript" },
-    { "match": "^\\s*(text|title|button|input|textarea|select|radio|tabs|checkbox|file|modal|image|video|audio|link|badge|spinner|divider|row|column|card|grid|form|list|item|table|tr|th|td|slot|meta)\\b", "captures": { "1": { "name": "entity.name.tag.artscript" } } },
-    { "match": "\\b[A-Z][A-Za-z0-9_]*\\b", "name": "entity.name.type.artscript" },
-    { "match": "->", "name": "keyword.operator.arrow.artscript" }
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "match": "\\b(model|api|auth|use|server|job|fn|every|component|page|layout|state|computed|data|ref|mount|effect|cleanup|live|if|else|for|in|key|let|const|return|try|catch|finally|while|await|as|login|private|admin|readonly|requires|shared|test|style|slot|meta|new|throw|typeof|instanceof)\\b",
+      "name": "keyword.control.artscript"
+    },
+    {
+      "match": "\\b(true|false|null)\\b",
+      "name": "constant.language.artscript"
+    },
+    {
+      "match": "\\b\\d+(\\.\\d+)?\\b",
+      "name": "constant.numeric.artscript"
+    },
+    {
+      "match": "\\b(String|Number|Bool|ID|Email|Date|Fn|Any|File)\\b",
+      "name": "support.type.artscript"
+    },
+    {
+      "match": "\\b(min|max|match|unique|cascade|was|accept)(?==|\\b)",
+      "name": "storage.modifier.artscript"
+    },
+    {
+      "match": "\\b(on:[a-z]+|(sm|md|lg|xl):[a-z]+)(?==)",
+      "name": "entity.other.attribute-name.artscript"
+    },
+    {
+      "match": "\\b([a-z][\\w]*)(?==)",
+      "name": "entity.other.attribute-name.artscript"
+    },
+    {
+      "match": "^\\s*(text|title|button|input|textarea|select|checkbox|radio|tabs|file|modal|image|video|audio|link|badge|icon|spinner|divider|row|column|grid|card|form|list|item|table|tr|th|td|canvas)\\b",
+      "captures": {
+        "1": {
+          "name": "entity.name.tag.artscript"
+        }
+      }
+    },
+    {
+      "match": "\\b[A-Z][A-Za-z0-9_]*\\b",
+      "name": "entity.name.type.artscript"
+    },
+    {
+      "match": "->",
+      "name": "keyword.operator.arrow.artscript"
+    }
   ],
   "repository": {
     "comments": {
       "patterns": [
-        { "match": "//.*$", "name": "comment.line.double-slash.artscript" },
-        { "begin": "/\\*", "end": "\\*/", "name": "comment.block.artscript" }
+        {
+          "match": "//.*$",
+          "name": "comment.line.double-slash.artscript"
+        },
+        {
+          "begin": "/\\*",
+          "end": "\\*/",
+          "name": "comment.block.artscript"
+        }
       ]
     },
     "strings": {
       "patterns": [
-        { "begin": "\"", "end": "\"", "name": "string.quoted.double.artscript", "patterns": [{ "match": "\\\\.", "name": "constant.character.escape.artscript" }] },
-        { "begin": "`", "end": "`", "name": "string.template.artscript", "patterns": [{ "begin": "\\$\\{", "end": "\\}", "name": "meta.embedded.artscript", "patterns": [{ "include": "$self" }] }] }
+        {
+          "begin": "\"",
+          "end": "\"",
+          "name": "string.quoted.double.artscript",
+          "patterns": [
+            {
+              "match": "\\\\.",
+              "name": "constant.character.escape.artscript"
+            }
+          ]
+        },
+        {
+          "begin": "`",
+          "end": "`",
+          "name": "string.template.artscript",
+          "patterns": [
+            {
+              "begin": "\\$\\{",
+              "end": "\\}",
+              "name": "meta.embedded.artscript",
+              "patterns": [
+                {
+                  "include": "$self"
+                }
+              ]
+            }
+          ]
+        }
       ]
     }
   }
