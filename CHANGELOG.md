@@ -2,7 +2,7 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
-## Unreleased
+## 0.2.8 (2026-10-09)
 
 - Fixed: assigning a field of a `fn` parameter or of a computed's item (`fn move(d) { d.x++ }`) notified every state of the app on every assignment, which re-ran every effect; in a loop that runs per frame it froze the page. Now the runtime notifies only the states that hold the mutated object, once per flush, and an object no state holds (a local of a physics loop) notifies nothing.
 - `art fmt` keeps long objects, arrays and calls readable: one entry per line past 100 columns (a list of plain values fills each line), and an arrow with several statements always breaks over lines. Before, a 10,000-character dictionary ended up on one line.

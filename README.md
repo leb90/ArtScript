@@ -22,7 +22,7 @@ page Counter "/" {
 }
 ```
 
-Status: **0.2.7**, usable for prototypes and small or medium apps built with an AI agent; the syntax may still change before 1.0. What is measured, proven and not yet: [artscript.dev/status](https://artscript.dev/status). In the [official js-framework-benchmark results](https://krausest.github.io/js-framework-benchmark/2026/chrome154.html) since Chrome 154: between Svelte and Vue, ahead of React ([numbers](benchmarks/js-framework-benchmark/RESULTS.md)).
+Status: **0.2.8**, usable for prototypes and small or medium apps built with an AI agent; the syntax may still change before 1.0. What is measured, proven and not yet: [artscript.dev/status](https://artscript.dev/status). In the [official js-framework-benchmark results](https://krausest.github.io/js-framework-benchmark/2026/chrome154.html) since Chrome 154: between Svelte and Vue, ahead of React ([numbers](benchmarks/js-framework-benchmark/RESULTS.md)).
 
 Made by [Leandro Bisceglie](https://github.com/leb90). Issues and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
