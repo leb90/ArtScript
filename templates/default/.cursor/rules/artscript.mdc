@@ -4,7 +4,7 @@ globs: **/*.art
 alwaysApply: false
 ---
 
-This project is written in ArtScript. Before writing `.art` code, read `ARTSCRIPT-CORE.md` (~1,600 tokens, a whole app as the example); `ARTSCRIPT.md` is the full reference when you need the backend, accounts or relations in detail; to only change existing code, `ARTSCRIPT-EDIT.md` (~800 tokens) is enough.
+This project is written in ArtScript. Read `ARTSCRIPT.md` (the whole language, ~3.4K tokens) before writing code; `ARTSCRIPT-CORE.md` (~1.9K tokens, a whole app as the example) is enough for a small app or a canvas one. To only change existing code, `ARTSCRIPT-EDIT.md` (~800 tokens) is enough.
 
 - After every change run `npx art check --ai` and fix what it reports (each error has `expected` and `fixes`).
 - Read `npx art context <Component>` instead of whole files; prefer a small `art patch` to rewriting files.

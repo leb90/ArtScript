@@ -182,6 +182,7 @@ class Parser {
       if (this.is("component") || this.is("page") || this.is("layout")) return this.component();
       if (this.is("test") && this.peek().t === "str") return this.test();
       // `state`, `computed` and `fn` outside a component are shared by all of them.
+      if (this.is("async") && this.is("fn", this.peek())) this.next(); // `async fn`: a fn with await is async by itself
       if ((this.is("state") || this.is("computed") || this.is("fn") || this.is("let") || this.is("const")) && this.peek().t === "id") {
         const loc = this.tok.loc;
         const member = this.member() as SharedDecl["member"];
@@ -236,7 +237,10 @@ class Parser {
     this.next();
     const model = this.ident("the api's model");
     let access: ApiAccess = "public";
-    if (this.is("login") || this.is("private") || this.is("admin")) access = this.next().v as ApiAccess;
+    // `login private`: the strongest word wins (private and admin imply login).
+    const words = new Set<string>();
+    while (this.is("login") || this.is("private") || this.is("admin")) words.add(this.next().v);
+    if (words.size) access = words.has("private") ? "private" : words.has("admin") ? "admin" : "login";
     const readonly = this.eat("readonly");
     return { kind: "Api", name, model: model.v, access, ...(readonly ? { readonly } : {}), modelLoc: model.loc, loc };
   }
@@ -446,6 +450,7 @@ class Parser {
 
   memberAhead(): boolean {
     if (this.is("state") || this.is("computed") || this.is("fn") || this.is("data")) return true;
+    if (this.is("async") && this.is("fn", this.peek())) return true;
     if (this.is("ref")) return this.peek().t === "id";
     // `let x = ...` in a component is a derived value: a `computed` (fmt writes it that way).
     if (this.is("let") || this.is("const")) return this.peek().t === "id" && (this.is("=", this.peek(2)) || this.is(":", this.peek(2)));
@@ -455,6 +460,7 @@ class Parser {
 
   member(): Member {
     const kw = this.next();
+    if (kw.v === "async" && this.is("fn")) return this.member(); // the word is dropped
     if (kw.v === "style") return { kind: "Style", name: "style", css: this.next().v, loc: kw.loc };
     if (kw.v === "mount" || kw.v === "effect") {
       return { kind: kw.v === "mount" ? "Mount" : "Effect", name: kw.v, body: this.block(), loc: kw.loc };

@@ -733,7 +733,9 @@ class Checker {
     }
     if (el.action) {
       if (!spec.action) this.err("NO_ACTION", `'${el.tag}' doesn't take an '->' action`, el.loc, { expr: el.tag, fixes: ["use `button \"...\" -> action`"] });
-      this.stmts(el.action, new Scope(scope));
+      const s = new Scope(scope);
+      s.vars.set("event", { kind: "param", ty: ANY }); // the DOM event, as in `on:` handlers
+      this.stmts(el.action, s);
     }
     if (el.children.length) {
       if (!spec.children) this.err("NO_CHILDREN", `'${el.tag}' doesn't take children`, el.loc, { expr: el.tag, fixes: ["wrap it in `row`, `column` or `card`"] });

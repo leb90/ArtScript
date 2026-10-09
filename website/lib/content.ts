@@ -132,7 +132,7 @@ Setup (skip what already exists):
 1. \`npm create artscript@latest my-app && cd my-app && npm install\`
 2. If you support MCP, register the server: \`claude mcp add artscript -- npx art mcp\` (Claude Code) or add {"command":"npx","args":["art","mcp"]} to your MCP config. It gives you art_spec, art_check, art_context and art_patch as tools.
 
-Before writing any .art code, read ARTSCRIPT-CORE.md in the project (or https://artscript.dev/md/SPEC-CORE.md, ~1,600 tokens: the structure with a whole app as the example); ARTSCRIPT.md (https://artscript.dev/md/SPEC.md) is the full reference when you need the backend, accounts or relations in detail. To change existing code, ARTSCRIPT-EDIT.md (~800 tokens) is enough.
+Before writing any .art code, read the language spec once: ARTSCRIPT.md in the project (or https://artscript.dev/md/SPEC.md, ~3.4K tokens); for a small app or a canvas one, ARTSCRIPT-CORE.md (https://artscript.dev/md/SPEC-CORE.md, ~1.9K tokens, a whole app as the example) is enough. To change existing code, ARTSCRIPT-EDIT.md (~800 tokens) is enough.
 
 How to work:
 - Expressions are JavaScript; only the structure (page, component, model, api, state, computed, data, fn, the view) is ArtScript's own.

@@ -499,3 +499,16 @@ test("tolerance: `async` before an arrow is accepted and dropped", () => {
   assert.match(r.js!, /then\(\(async \(r\) => \{/);
   assert.equal(printProgram(parse(src, "a")), 'page P {\n  state n = 0\n  fn load() {\n    fetch("/x").then(r => { n = await r.json() })\n  }\n\n  text n\n}\n');
 });
+
+test("tolerance: `async fn`, and several access words on an api", () => {
+  const src = 'model User {\n  id: ID\n  email: Email\n  password: String\n}\n\nmodel Note {\n  id: ID\n  text: String\n  owner: ID\n}\n\napi users: User\n\nauth users\n\napi notes: Note login private\n\npage P {\n  state n = 0\n  async fn load() {\n    n = (await api.notes.list()).length\n  }\n\n  text n\n}\n';
+  const r = compile([{ file: "a.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  assert.equal(printProgram(parse(src, "a")), src.replace("async fn", "fn").replace(" login private", " private"));
+});
+
+test("tolerance: `event` is available in a `->` action", () => {
+  const r = compile([{ file: "a.art", src: 'page P {\n  state k = ""\n  input k placeholder="x" -> k = event.type\n  text k\n}' }]);
+  assert.deepEqual(r.diagnostics, []);
+  assert.match(r.js!, /\(event\) => \{/);
+});

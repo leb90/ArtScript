@@ -19,7 +19,7 @@ page Ai "/ai" layout Docs {
     {
       n: "1",
       title: "Read the spec once",
-      body: "About 1,600 tokens (the core spec) describe the structure with a whole app as the example; the full spec has every detail. With prompt caching it is billed at the cache rate after the first request."
+      body: "About 3.4K tokens describe the whole language (the core spec, 1.9K, is enough for a small app). With prompt caching it is billed at the cache rate after the first request."
     },
     {
       n: "2",
@@ -66,7 +66,7 @@ page Ai "/ai" layout Docs {
         }
         card class="feature" gap=2 {
           text `Core spec · ~${coreTokens} tokens` class="h3" bold
-          text "The structure of the language with a whole app as the example: what an agent reads before its first line. Measured: with it and the project rule for heavy code, an agent writes ArtScript as fluently as React." class="body"
+          text "The structure of the language with a whole app as the example. Measured on the 50 tasks: the same results and cost as the full spec; on a canvas app, with the project rule for heavy code, cheaper. Enough for a small app." class="body"
           row gap=2 wrap {
             button "Copy the core spec" small class="pill" -> copyText(coreText)
             link "Markdown" href="/md/SPEC-CORE.md" class="pill"

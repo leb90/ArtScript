@@ -69,7 +69,7 @@ test("codegen: async functions and handlers only where await is used", () => {
   assert.match(js, /const api = \{ users: \$\.\$api\("users"\) \};/);
   assert.match(js, /const users = \$\.\$data\(\(\) => api\.users\.list\(\), \[\]\);/);
   assert.match(js, /async function add\(\)/);
-  assert.match(js, /\$\.\$on\(e\d+, "click", \(\) => \{\n\s+api\.users\.remove/);
+  assert.match(js, /\$\.\$on\(e\d+, "click", \(event\) => \{\n\s+api\.users\.remove/);
 });
 
 // ---------- server runtime ----------

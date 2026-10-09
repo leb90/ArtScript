@@ -637,7 +637,7 @@ class ComponentGen {
     if (style) this.attr(v, "style", style, scope);
 
     if (el.action && spec.action) {
-      this.emit(`$.$on(${v}, "${spec.action}", ${hasAwait(el.action) ? "async " : ""}() => {`);
+      this.emit(`$.$on(${v}, "${spec.action}", ${hasAwait(el.action) ? "async " : ""}(event) => {`);
       this.nested(() => this.stmts(el.action!, scope.child()));
       this.emit("});");
     }

@@ -31,5 +31,9 @@
   "2026-10-09T11-18-04-claude-opus-5-5.json": "imp-particles, ArtScript only, final harness; the run reported in the table",
   "2026-10-09T11-23-11-claude-sonnet-5-5.json": "imp-particles, second full round (all five stacks, two runs), pooled with the first in the imperative table",
   "2026-10-09T11-24-34-claude-haiku-4-5.json": "imp-particles, second full round (all five stacks, two runs), pooled with the first in the imperative table",
-  "2026-10-09T11-25-48-claude-opus-5-5.json": "imp-particles, second full round (all five stacks, two runs), pooled with the first in the imperative table"
+  "2026-10-09T11-25-48-claude-opus-5-5.json": "imp-particles, second full round (all five stacks, two runs), pooled with the first in the imperative table",
+  "2026-10-09T12-14-35-claude-sonnet-5-5.json": "the 50 tasks with the core spec and the .ts rule (ArtScript only), not merged into the tables: the same results as the full spec, no cheaper; see the imperative section",
+  "2026-10-09T12-22-28-claude-sonnet-5-5.json": "the 50 tasks with the core spec and the .ts rule (ArtScript only), not merged into the tables: the same results as the full spec, no cheaper; see the imperative section",
+  "2026-10-09T12-26-38-claude-haiku-4-5.json": "the 50 tasks with the core spec and the .ts rule (ArtScript only), not merged into the tables: the same results as the full spec, no cheaper; see the imperative section",
+  "2026-10-09T12-30-48-claude-opus-5-5.json": "the 50 tasks with the core spec and the .ts rule (ArtScript only), not merged into the tables: the same results as the full spec, no cheaper; see the imperative section"
 }

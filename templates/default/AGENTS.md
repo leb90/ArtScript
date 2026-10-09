@@ -1,6 +1,6 @@
 # Instructions for AI agents
 
-This project uses **ArtScript** (`.art` files in `src/`). Read `ARTSCRIPT-CORE.md` (~1,600 tokens: the structure, with a whole app as the example) before writing code; `ARTSCRIPT.md` is the full reference (backend, accounts, relations, every element) when you need more. To only change existing code, `ARTSCRIPT-EDIT.md` (~800 tokens) is enough.
+This project uses **ArtScript** (`.art` files in `src/`). Read `ARTSCRIPT.md` (the whole language, ~3.4K tokens) before writing code; `ARTSCRIPT-CORE.md` (~1.9K tokens, a whole app as the example) is enough for a small app or a canvas one. To only change existing code, `ARTSCRIPT-EDIT.md` (~800 tokens) is enough.
 
 If your tool supports MCP, `npx art mcp` gives you `art_spec`, `art_check`, `art_context` and `art_patch` as tools.
 

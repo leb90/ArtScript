@@ -3,7 +3,7 @@ name: artscript
 description: How to write, check and change ArtScript (.art) code in this project. Use it before touching any .art file.
 ---
 
-This project is written in ArtScript (`.art` files in `src/`). Before writing `.art` code, read `ARTSCRIPT-CORE.md` (~1,600 tokens, a whole app as the example); `ARTSCRIPT.md` is the full reference when you need the backend, accounts or relations in detail; to only change existing code, `ARTSCRIPT-EDIT.md` (~800 tokens) is enough.
+This project is written in ArtScript (`.art` files in `src/`). Read `ARTSCRIPT.md` (the whole language, ~3.4K tokens) before writing code; `ARTSCRIPT-CORE.md` (~1.9K tokens, a whole app as the example) is enough for a small app or a canvas one. To only change existing code, `ARTSCRIPT-EDIT.md` (~800 tokens) is enough.
 
 - Expressions are JavaScript; only the structure (`page`, `component`, `model`, `api`, `state`, `computed`, `data`, `fn`, the view) is ArtScript's own.
 - After every change run `npx art check --ai` and apply what it reports: each error has `expected`, `actual` and `fixes`.
