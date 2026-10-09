@@ -69,6 +69,11 @@ page Spec "/reference/spec" layout Docs {
   DocPage slug="spec"
 }
 
+page CoreSpec "/reference/core" layout Docs {
+  meta title="Core spec · ArtScript" description="About 1,600 tokens: the structure of ArtScript with a whole app as the example, what an agent reads before its first line."
+  DocPage slug="core"
+}
+
 page EditSpec "/reference/edit" layout Docs {
   meta title="Edit spec · ArtScript" description="About 800 tokens: enough for a model to change existing ArtScript code."
   DocPage slug="edit"

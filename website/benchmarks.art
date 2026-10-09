@@ -58,7 +58,7 @@ page Benchmarks "/benchmarks" {
           }
         }
       }
-      text "Four runs per cell (two full rounds). Here ArtScript costs more than React with every model, not less: the code it writes is still a quarter shorter, but the spec in the prompt and the retries weigh more than that. The recommendation: heavy imperative code goes in a .ts file imported with use, where it costs the same as in any stack, and ArtScript does the rest of the app." class="body"
+      text "Four runs per cell (two full rounds), with the full spec and no project rules: here ArtScript cost more than React with every model. The breakdown showed why: the code was still a quarter shorter, but the model deliberated 650–1,600 extra tokens writing a less familiar syntax, and retried more. Then, measured apart (ArtScript only, two runs per model): with the project rule that puts the physics in a .ts file imported with use, and the core spec with a whole app as the example, every model wrote sim.ts + app.art at the first attempt with React-level thinking: Sonnet $0.0227 (React $0.0209), Opus $0.0618 (React $0.0634), Haiku $0.0084 (React $0.0110). New projects now carry that rule and the core spec." class="body"
     }
     card class="callout" gap=2 {
       text "Runtime speed" bold

@@ -21,7 +21,7 @@ node src/cli.ts build apps/landing --out site/demos/brisa --base /demos/brisa --
 rm -f site/demos/*/404.html site/demos/*/_redirects
 # Every guide as Markdown, and all of them in one file, for AI agents.
 mkdir -p site/md
-cp docs/SPEC.md docs/SPEC-EDIT.md docs/DEPLOY.md SECURITY.md website/content/*.md site/md/
+cp docs/SPEC.md docs/SPEC-CORE.md docs/SPEC-EDIT.md docs/DEPLOY.md SECURITY.md website/content/*.md site/md/
 C=website/content
 cat docs/SPEC.md docs/SPEC-EDIT.md $C/introduction.md $C/quick-start.md $C/tutorial.md $C/components.md $C/routing.md \
   $C/backend.md $C/auth.md $C/styling.md $C/testing.md $C/libraries.md $C/recipes.md $C/agents.md $C/cli.md docs/DEPLOY.md SECURITY.md > site/llms-full.txt

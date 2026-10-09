@@ -64,6 +64,8 @@ const SITE_LINKS: Record<string, string> = {
   "docs/SPEC.md": "/reference/spec",
   "SPEC.md": "/reference/spec",
   "docs/SPEC-EDIT.md": "/reference/edit",
+  "docs/SPEC-CORE.md": "/reference/core",
+  "SPEC-CORE.md": "/reference/core",
   "SPEC-EDIT.md": "/reference/edit",
   "docs/DEPLOY.md": "/learn/deploy",
   "DEPLOY.md": "/learn/deploy",

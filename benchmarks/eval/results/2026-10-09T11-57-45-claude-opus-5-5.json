@@ -1,0 +1,75 @@
+{
+  "model": "claude-opus-5-5",
+  "effort": "medium",
+  "runs": 2,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 4,
+    "out": 20,
+    "cacheRead": 0.2,
+    "cacheWrite": 5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 2245,
+        "cacheRead": 0,
+        "cacheWrite": 2590
+      },
+      "usd": 0.059086,
+      "codeTokens": 1734,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "sim.ts": "export type Ball = { x: number; y: number; vx: number; vy: number; r: number; color: string };\n\nexport const W = 400;\nexport const H = 300;\nexport const R = 10;\nconst G = 0.2;\n\nconst COLORS = [\"#e74c3c\", \"#3498db\", \"#2ecc71\", \"#f1c40f\", \"#9b59b6\", \"#e67e22\", \"#1abc9c\", \"#34495e\"];\n\nfunction rand(a: number, b: number): number {\n  return a + Math.random() * (b - a);\n}\n\nexport function make(): Ball {\n  return {\n    x: rand(R, W - R),\n    y: rand(R, H - R),\n    vx: rand(-3, 3),\n    vy: rand(-3, 3),\n    r: R,\n    color: COLORS[Math.floor(Math.random() * COLORS.length)],\n  };\n}\n\nexport function makeMany(n: number): Ball[] {\n  return Array.from({ length: n }, () => make());\n}\n\nfunction walls(b: Ball): void {\n  if (b.x - b.r < 0) {\n    b.x = b.r;\n    b.vx = Math.abs(b.vx);\n  } else if (b.x + b.r > W) {\n    b.x = W - b.r;\n    b.vx = -Math.abs(b.vx);\n  }\n  if (b.y - b.r < 0) {\n    b.y = b.r;\n    b.vy = Math.abs(b.vy);\n  } else if (b.y + b.r > H) {\n    b.y = H - b.r;\n    b.vy = -Math.abs(b.vy);\n  }\n}\n\nexport function step(balls: Ball[]): void {\n  for (const b of balls) {\n    b.vy += G;\n    b.x += b.vx;\n    b.y += b.vy;\n  }\n\n  for (let i = 0; i < balls.length; i++) {\n    for (let j = i + 1; j < balls.length; j++) {\n      const a = balls[i];\n      const b = balls[j];\n      const dx = b.x - a.x;\n      const dy = b.y - a.y;\n      const minD = a.r + b.r;\n      const d2 = dx * dx + dy * dy;\n      if (d2 < minD * minD) {\n        let d = Math.sqrt(d2);\n        let nx: number;\n        let ny: number;\n        if (d === 0) {\n          nx = 1;\n          ny = 0;\n          d = 0;\n        } else {\n          nx = dx / d;\n          ny = dy / d;\n        }\n        // separar para que no queden superpuestas\n        const overlap = (minD - d) / 2;\n        a.x -= nx * overlap;\n        a.y -= ny * overlap;\n        b.x += nx * overlap;\n        b.y += ny * overlap;\n        // intercambiar velocidades si se acercan\n        const rel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;\n        if (rel < 0) {\n          const tvx = a.vx;\n          const tvy = a.vy;\n          a.vx = b.vx;\n          a.vy = b.vy;\n          b.vx = tvx;\n          b.vy = tvy;\n        }\n      }\n    }\n  }\n\n  for (const b of balls) walls(b);\n}\n\nexport function draw(canvas: HTMLCanvasElement | null, balls: Ball[]): void {\n  if (!canvas) return;\n  const ctx = canvas.getContext(\"2d\");\n  if (!ctx) return;\n  ctx.clearRect(0, 0, W, H);\n  ctx.fillStyle = \"#fafafa\";\n  ctx.fillRect(0, 0, W, H);\n  for (const b of balls) {\n    ctx.beginPath();\n    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);\n    ctx.fillStyle = b.color;\n    ctx.fill();\n  }\n}\n",
+            "app.art": "use \"./sim.ts\" { make, makeMany, step, draw }\n\npage Sim \"/\" {\n  state balls: Any[] = []\n  state frames = 0\n  state paused = false\n  ref cv\n  ref rafId\n\n  fn tick() {\n    if !paused {\n      step(balls)\n      draw(cv, balls)\n      frames++\n    }\n    rafId = requestAnimationFrame(tick)\n  }\n\n  fn add() {\n    balls = [...balls, make()]\n    if paused { draw(cv, balls) }\n  }\n\n  fn reset() {\n    balls = makeMany(5)\n    frames = 0\n    if paused { draw(cv, balls) }\n  }\n\n  mount {\n    balls = makeMany(5)\n    rafId = requestAnimationFrame(tick)\n    cleanup {\n      cancelAnimationFrame(rafId)\n    }\n  }\n\n  column gap=2 {\n    canvas ref=cv id=\"sim\" width=400 height=300 style=\"border: 1px solid #ccc\"\n    row gap=2 {\n      text `Pelotas: ${balls.length}`\n      text `Cuadros: ${frames}`\n    }\n    row gap=2 {\n      button \"Agregar\" primary -> add()\n      button paused ? \"Reanudar\" : \"Pausar\" -> paused = !paused\n      button \"Reiniciar\" -> reset()\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 14559,
+        "brotli": 5481
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 2519,
+        "cacheRead": 0,
+        "cacheWrite": 2590
+      },
+      "usd": 0.064566,
+      "codeTokens": 1944,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "sim.ts": "export const W = 400;\nexport const H = 300;\nexport const R = 10;\nexport const GRAVITY = 0.2;\n\nexport interface Ball {\n  x: number;\n  y: number;\n  vx: number;\n  vy: number;\n  r: number;\n  color: string;\n}\n\nconst COLORS = [\"#e74c3c\", \"#3498db\", \"#2ecc71\", \"#f1c40f\", \"#9b59b6\", \"#e67e22\", \"#1abc9c\"];\n\nfunction rand(min: number, max: number): number {\n  return min + Math.random() * (max - min);\n}\n\nexport function make(existing: Ball[] = []): Ball {\n  let x = rand(R, W - R);\n  let y = rand(R, H - R);\n  for (let tries = 0; tries < 50; tries++) {\n    const overlaps = existing.some((b) => Math.hypot(b.x - x, b.y - y) < b.r + R);\n    if (!overlaps) break;\n    x = rand(R, W - R);\n    y = rand(R, H - R);\n  }\n  let vx = rand(-3, 3);\n  let vy = rand(-3, 3);\n  if (Math.abs(vx) < 0.5) vx = vx < 0 ? -0.5 : 0.5;\n  return {\n    x,\n    y,\n    vx,\n    vy,\n    r: R,\n    color: COLORS[Math.floor(Math.random() * COLORS.length)],\n  };\n}\n\nexport function makeMany(n: number): Ball[] {\n  const balls: Ball[] = [];\n  for (let i = 0; i < n; i++) balls.push(make(balls));\n  return balls;\n}\n\nfunction confine(b: Ball): void {\n  if (b.x - b.r < 0) {\n    b.x = b.r;\n    b.vx = Math.abs(b.vx);\n  } else if (b.x + b.r > W) {\n    b.x = W - b.r;\n    b.vx = -Math.abs(b.vx);\n  }\n  if (b.y - b.r < 0) {\n    b.y = b.r;\n    b.vy = Math.abs(b.vy);\n  } else if (b.y + b.r > H) {\n    b.y = H - b.r;\n    b.vy = -Math.abs(b.vy);\n  }\n}\n\nexport function step(balls: Ball[]): void {\n  for (const b of balls) {\n    b.vy += GRAVITY;\n    b.x += b.vx;\n    b.y += b.vy;\n    confine(b);\n  }\n\n  for (let i = 0; i < balls.length; i++) {\n    for (let j = i + 1; j < balls.length; j++) {\n      const a = balls[i];\n      const b = balls[j];\n      let dx = b.x - a.x;\n      let dy = b.y - a.y;\n      let dist = Math.hypot(dx, dy);\n      const minDist = a.r + b.r;\n      if (dist < minDist) {\n        // colisión elástica (masas iguales): intercambian velocidades\n        const tvx = a.vx;\n        const tvy = a.vy;\n        a.vx = b.vx;\n        a.vy = b.vy;\n        b.vx = tvx;\n        b.vy = tvy;\n\n        // separarlas para que no queden pegadas\n        if (dist === 0) {\n          dx = 1;\n          dy = 0;\n          dist = 1;\n        }\n        const overlap = (minDist - dist) / 2;\n        const nx = dx / dist;\n        const ny = dy / dist;\n        a.x -= nx * overlap;\n        a.y -= ny * overlap;\n        b.x += nx * overlap;\n        b.y += ny * overlap;\n        confine(a);\n        confine(b);\n      }\n    }\n  }\n}\n\nexport function draw(cv: HTMLCanvasElement | null | undefined, balls: Ball[]): void {\n  if (!cv) return;\n  const ctx = cv.getContext(\"2d\");\n  if (!ctx) return;\n  ctx.clearRect(0, 0, cv.width, cv.height);\n  ctx.fillStyle = \"#f8f9fa\";\n  ctx.fillRect(0, 0, cv.width, cv.height);\n  for (const b of balls) {\n    ctx.beginPath();\n    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);\n    ctx.fillStyle = b.color;\n    ctx.fill();\n    ctx.strokeStyle = \"#333\";\n    ctx.lineWidth = 1;\n    ctx.stroke();\n  }\n}\n",
+            "app.art": "use \"./sim.ts\" { make, makeMany, step, draw }\n\npage Sim \"/\" {\n  state balls: Any[] = []\n  state frames = 0\n  state paused = false\n  ref cv\n  ref raf\n\n  fn tick() {\n    if !paused {\n      step(balls)\n      draw(cv, balls)\n      frames++\n    }\n    raf = requestAnimationFrame(tick)\n  }\n\n  fn add() {\n    balls = [...balls, make(balls)]\n  }\n\n  fn reset() {\n    balls = makeMany(5)\n    frames = 0\n  }\n\n  mount {\n    balls = makeMany(5)\n    frames = 0\n    raf = requestAnimationFrame(tick)\n    cleanup {\n      cancelAnimationFrame(raf)\n    }\n  }\n\n  column gap=2 pad=4 {\n    title \"Simulación de pelotas\"\n    canvas ref=cv id=\"sim\" width=400 height=300 style=\"border: 1px solid #ccc\"\n    row gap=4 {\n      text `Pelotas: ${balls.length}`\n      text `Cuadros: ${frames}`\n    }\n    row gap=2 {\n      button \"Agregar\" primary -> add()\n      button (paused ? \"Reanudar\" : \"Pausar\") -> paused = !paused\n      button \"Reiniciar\" -> reset()\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 14789,
+        "brotli": 5568
+      }
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "model": "claude-sonnet-5-5",
+  "effort": "medium",
+  "runs": 2,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 2,
+    "out": 10,
+    "cacheRead": 0.2,
+    "cacheWrite": 2.5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 1540,
+        "cacheRead": 0,
+        "cacheWrite": 2590
+      },
+      "usd": 0.022493,
+      "codeTokens": 1522,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "sim.ts": "export type Ball = { x: number; y: number; vx: number; vy: number; r: number };\n\nconst W = 400;\nconst H = 300;\nconst R = 10;\n\nexport function make(): Ball {\n  return {\n    x: R + Math.random() * (W - 2 * R),\n    y: R + Math.random() * (H - 2 * R),\n    vx: (Math.random() - 0.5) * 6,\n    vy: (Math.random() - 0.5) * 6,\n    r: R,\n  };\n}\n\nexport function step(balls: Ball[]): void {\n  for (const b of balls) {\n    b.vy += 0.2;\n    b.x += b.vx;\n    b.y += b.vy;\n    if (b.x < b.r) {\n      b.x = b.r;\n      b.vx = Math.abs(b.vx);\n    } else if (b.x > W - b.r) {\n      b.x = W - b.r;\n      b.vx = -Math.abs(b.vx);\n    }\n    if (b.y < b.r) {\n      b.y = b.r;\n      b.vy = Math.abs(b.vy);\n    } else if (b.y > H - b.r) {\n      b.y = H - b.r;\n      b.vy = -Math.abs(b.vy);\n    }\n  }\n\n  for (let i = 0; i < balls.length; i++) {\n    for (let j = i + 1; j < balls.length; j++) {\n      const a = balls[i];\n      const b = balls[j];\n      let dx = b.x - a.x;\n      let dy = b.y - a.y;\n      let dist = Math.sqrt(dx * dx + dy * dy);\n      const min = a.r + b.r;\n      if (dist < min) {\n        if (dist === 0) {\n          dx = 1;\n          dy = 0;\n          dist = 1;\n        }\n        const nx = dx / dist;\n        const ny = dy / dist;\n        // separar las pelotas superpuestas\n        const overlap = (min - dist) / 2;\n        a.x -= nx * overlap;\n        a.y -= ny * overlap;\n        b.x += nx * overlap;\n        b.y += ny * overlap;\n        // colisión elástica de igual masa: se intercambian las componentes normales\n        const va = a.vx * nx + a.vy * ny;\n        const vb = b.vx * nx + b.vy * ny;\n        if (va - vb > 0) {\n          const d = vb - va;\n          a.vx += d * nx;\n          a.vy += d * ny;\n          b.vx -= d * nx;\n          b.vy -= d * ny;\n        }\n        // mantener dentro del canvas tras la separación\n        for (const p of [a, b]) {\n          p.x = Math.min(W - p.r, Math.max(p.r, p.x));\n          p.y = Math.min(H - p.r, Math.max(p.r, p.y));\n        }\n      }\n    }\n  }\n}\n\nexport function draw(cv: HTMLCanvasElement | null, balls: Ball[]): void {\n  if (!cv) return;\n  const ctx = cv.getContext(\"2d\");\n  if (!ctx) return;\n  ctx.clearRect(0, 0, W, H);\n  ctx.fillStyle = \"#f5f5f5\";\n  ctx.fillRect(0, 0, W, H);\n  ctx.fillStyle = \"#3b82f6\";\n  for (const b of balls) {\n    ctx.beginPath();\n    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);\n    ctx.fill();\n  }\n}\n",
+            "app.art": "use \"./sim.ts\" { make, step, draw }\n\npage Sim \"/\" {\n  state balls: Any[] = []\n  state frames = 0\n  state paused = false\n  ref cv\n  fn tick() {\n    if !paused {\n      step(balls)\n      draw(cv, balls)\n      frames++\n    }\n    requestAnimationFrame(tick)\n  }\n  fn reset() {\n    balls = Array.from({ length: 5 }, () => make())\n    frames = 0\n  }\n  fn addBall() {\n    balls = [...balls, make()]\n  }\n  mount {\n    reset()\n    requestAnimationFrame(tick)\n  }\n\n  column gap=2 {\n    canvas ref=cv id=\"sim\" width=400 height=300\n    text `Pelotas: ${balls.length}`\n    text `Cuadros: ${frames}`\n    row gap=2 {\n      button \"Agregar\" -> addBall()\n      button paused ? \"Reanudar\" : \"Pausar\" -> paused = !paused\n      button \"Reiniciar\" -> reset()\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 14276,
+        "brotli": 5338
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 1573,
+        "cacheRead": 0,
+        "cacheWrite": 2590
+      },
+      "usd": 0.022823,
+      "codeTokens": 1555,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "sim.ts": "export interface Ball {\n  x: number;\n  y: number;\n  vx: number;\n  vy: number;\n  r: number;\n}\n\nconst W = 400;\nconst H = 300;\nconst R = 10;\nconst G = 0.2;\n\nexport function make(): Ball {\n  return {\n    x: R + Math.random() * (W - 2 * R),\n    y: R + Math.random() * (H - 2 * R),\n    vx: (Math.random() - 0.5) * 6,\n    vy: (Math.random() - 0.5) * 6,\n    r: R,\n  };\n}\n\nexport function step(balls: Ball[]): void {\n  for (const b of balls) {\n    b.vy += G;\n    b.x += b.vx;\n    b.y += b.vy;\n\n    if (b.x < b.r) {\n      b.x = b.r;\n      b.vx = Math.abs(b.vx);\n    } else if (b.x > W - b.r) {\n      b.x = W - b.r;\n      b.vx = -Math.abs(b.vx);\n    }\n    if (b.y < b.r) {\n      b.y = b.r;\n      b.vy = Math.abs(b.vy);\n    } else if (b.y > H - b.r) {\n      b.y = H - b.r;\n      b.vy = -Math.abs(b.vy);\n    }\n  }\n\n  for (let i = 0; i < balls.length; i++) {\n    for (let j = i + 1; j < balls.length; j++) {\n      const a = balls[i];\n      const b = balls[j];\n      let dx = b.x - a.x;\n      let dy = b.y - a.y;\n      let dist = Math.sqrt(dx * dx + dy * dy);\n      const min = a.r + b.r;\n      if (dist < min) {\n        if (dist === 0) {\n          dx = 1;\n          dy = 0;\n          dist = 1;\n        }\n        const nx = dx / dist;\n        const ny = dy / dist;\n\n        // separar para que no queden superpuestas\n        const overlap = (min - dist) / 2;\n        a.x -= nx * overlap;\n        a.y -= ny * overlap;\n        b.x += nx * overlap;\n        b.y += ny * overlap;\n\n        // mantener dentro del canvas tras separar\n        for (const p of [a, b]) {\n          p.x = Math.min(Math.max(p.x, p.r), W - p.r);\n          p.y = Math.min(Math.max(p.y, p.r), H - p.r);\n        }\n\n        // colisión elástica (masas iguales): intercambio de la componente normal\n        const va = a.vx * nx + a.vy * ny;\n        const vb = b.vx * nx + b.vy * ny;\n        const diff = vb - va;\n        if (diff < 0) {\n          a.vx += diff * nx;\n          a.vy += diff * ny;\n          b.vx -= diff * nx;\n          b.vy -= diff * ny;\n        }\n      }\n    }\n  }\n}\n\nexport function draw(cv: HTMLCanvasElement | null, balls: Ball[]): void {\n  if (!cv) return;\n  const ctx = cv.getContext(\"2d\");\n  if (!ctx) return;\n  ctx.clearRect(0, 0, W, H);\n  ctx.fillStyle = \"#f5f5f5\";\n  ctx.fillRect(0, 0, W, H);\n  ctx.fillStyle = \"#3b82f6\";\n  for (const b of balls) {\n    ctx.beginPath();\n    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);\n    ctx.fill();\n  }\n}\n",
+            "app.art": "use \"./sim.ts\" { make, step, draw }\n\npage Sim \"/\" {\n  state balls: Any[] = []\n  state frames = 0\n  state paused = false\n  ref cv\n  fn tick() {\n    if !paused {\n      step(balls)\n      draw(cv, balls)\n      frames++\n    }\n    requestAnimationFrame(tick)\n  }\n  fn add() {\n    balls = [...balls, make()]\n  }\n  fn reset() {\n    balls = Array.from({ length: 5 }, () => make())\n    frames = 0\n  }\n  mount {\n    balls = Array.from({ length: 5 }, () => make())\n    requestAnimationFrame(tick)\n  }\n\n  column gap=2 {\n    canvas ref=cv id=\"sim\" width=400 height=300\n    text `Pelotas: ${balls.length}`\n    text `Cuadros: ${frames}`\n    row gap=2 {\n      button \"Agregar\" -> add()\n      button paused ? \"Reanudar\" : \"Pausar\" -> paused = !paused\n      button \"Reiniciar\" -> reset()\n    }\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 14298,
+        "brotli": 5332
+      }
+    }
+  ]
+}

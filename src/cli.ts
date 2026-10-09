@@ -229,6 +229,7 @@ switch (cmd) {
     // npm doesn't publish files named .gitignore, so the template stores it as `gitignore`.
     renameSync(join(name, "gitignore"), join(name, ".gitignore"));
     cpSync(join(ROOT, "docs", "SPEC.md"), join(name, "ARTSCRIPT.md"));
+    cpSync(join(ROOT, "docs", "SPEC-CORE.md"), join(name, "ARTSCRIPT-CORE.md"));
     cpSync(join(ROOT, "docs", "SPEC-EDIT.md"), join(name, "ARTSCRIPT-EDIT.md"));
     // --template blog|notes|catalog|todo|users: start from a working app instead of the blank page.
     const template = flag("--template") as string | undefined;

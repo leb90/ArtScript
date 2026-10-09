@@ -4,6 +4,7 @@
 import readme from "../../README.md" with { type: "text" };
 import spec from "../../docs/SPEC.md" with { type: "text" };
 import editSpec from "../../docs/SPEC-EDIT.md" with { type: "text" };
+import coreSpec from "../../docs/SPEC-CORE.md" with { type: "text" };
 import deploy from "../../docs/DEPLOY.md" with { type: "text" };
 import security from "../../SECURITY.md" with { type: "text" };
 import status from "../../docs/STATUS.md" with { type: "text" };
@@ -85,6 +86,7 @@ export const DOCS: Doc[] = [
   doc("agents", "/ai/agents", "Working with AI agents", "For AI", "website/content/agents.md", agents),
   doc("spec", "/reference/spec", "Language spec", "Reference", "docs/SPEC.md", spec),
   doc("edit", "/reference/edit", "Edit spec", "Reference", "docs/SPEC-EDIT.md", editSpec),
+  doc("core", "/reference/core", "Core spec", "Reference", "docs/SPEC-CORE.md", coreSpec),
   doc("cli", "/reference/cli", "CLI", "Reference", "website/content/cli.md", cli),
   doc("security", "/reference/security", "Security", "Reference", "SECURITY.md", security),
   doc("status", "/status", "Status", "Project", "docs/STATUS.md", status),
@@ -96,7 +98,7 @@ export type NavSection = { title: string; items: NavItem[] };
 const item = (title: string, path: string): NavItem => ({ title, path });
 export const NAV: NavSection[] = [
   { title: "Learn", items: DOCS.filter((d) => d.section === "Learn").map((d) => item(d.title, d.path)) },
-  { title: "For AI", items: [item("Overview", "/ai"), item("Working with AI agents", "/ai/agents"), item("Edit spec", "/reference/edit")] },
+  { title: "For AI", items: [item("Overview", "/ai"), item("Working with AI agents", "/ai/agents"), item("Core spec", "/reference/core"), item("Edit spec", "/reference/edit")] },
   { title: "Reference", items: [item("Language spec", "/reference/spec"), item("UI elements", "/reference/elements"), item("Errors", "/reference/errors"), item("CLI", "/reference/cli"), item("Security", "/reference/security")] },
   { title: "Project", items: [item("Status", "/status"), item("Examples", "/examples"), item("Benchmarks", "/benchmarks"), item("Playground", "/playground"), item("This site's source", "/source")] },
 ];
@@ -119,6 +121,7 @@ export const nextPage = (path: string): NavItem | null => {
 export const tokens = (s: string) => Math.round(s.length / 4 / 100) * 100;
 export const specTokens = tokens(spec);
 export const editTokens = tokens(editSpec);
+export const coreTokens = tokens(coreSpec);
 export const specText = spec;
 
 // The one prompt to paste into any agent: it sets up a project and tells the model where the
@@ -129,11 +132,11 @@ Setup (skip what already exists):
 1. \`npm create artscript@latest my-app && cd my-app && npm install\`
 2. If you support MCP, register the server: \`claude mcp add artscript -- npx art mcp\` (Claude Code) or add {"command":"npx","args":["art","mcp"]} to your MCP config. It gives you art_spec, art_check, art_context and art_patch as tools.
 
-Before writing any .art code, read the language spec once: ARTSCRIPT.md in the project (or https://artscript.dev/md/SPEC.md, ~3K tokens). To change existing code, ARTSCRIPT-EDIT.md (~800 tokens) is enough.
+Before writing any .art code, read ARTSCRIPT-CORE.md in the project (or https://artscript.dev/md/SPEC-CORE.md, ~1,600 tokens: the structure with a whole app as the example); ARTSCRIPT.md (https://artscript.dev/md/SPEC.md) is the full reference when you need the backend, accounts or relations in detail. To change existing code, ARTSCRIPT-EDIT.md (~800 tokens) is enough.
 
 How to work:
 - Expressions are JavaScript; only the structure (page, component, model, api, state, computed, data, fn, the view) is ArtScript's own.
-- Heavy imperative code (a physics loop, a parser, canvas drawing) goes in a .ts or .js file imported with \`use "./engine.ts" { step }\`: plain JavaScript/TypeScript, no restrictions. Keep ArtScript for what it shortens: pages, state, the api, forms, lists and tests.
+- Heavy imperative code (a physics loop, a parser, canvas drawing) goes in a .ts file next to the .art files, imported with \`use "./sim.ts" { step, draw }\`: plain TypeScript, no restrictions. ArtScript is for the page, the state, the api, forms, lists and tests.
 - After every change run \`npx art check --ai\`: one JSON line per error, each with expected, actual and fixes. Apply the fix; don't guess.
 - Read \`npx art context <Component>\` instead of whole files; prefer a small \`npx art patch\` over rewriting files.
 - Write test "..." { } blocks for the main flows and run \`npx art test\`.
@@ -142,6 +145,7 @@ How to work:
 Now: `;
 export const AGENTS_MD = agentsTemplate;
 export const editText = editSpec;
+export const coreText = coreSpec;
 
 // ---------- benchmarks (from the README, written by the eval) ----------
 export type StackResult = { stack: string; solved: string; usd: number; vsReact: string; ours: boolean };

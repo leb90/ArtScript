@@ -66,12 +66,18 @@ const FORMAT = "Respondé SOLO con los archivos completos, cada uno en un bloque
 // Modification tasks get docs/SPEC-EDIT.md (the code shows the syntax); `--spec full` sends the full
 // spec instead. Creation tasks always get the full spec.
 const SPEC_MODE = opt("spec", "edit") as "full" | "edit";
+// Experiments: --spec-file <path> replaces the creation spec; --art-rules <path> appends project rules
+// (what a project's AGENTS.md says) to the ArtScript system prompt.
+const SPEC_FILE = opt("spec-file", "") as string;
+const ART_RULES = opt("art-rules", "") as string;
 
 function systemPrompt(stack: Stack, task?: Task): string {
   if (stack === "artscript") {
     const edit = SPEC_MODE === "edit" && !!(task?.base || task?.project);
-    const spec = readFileSync(join(REPO, "docs", edit ? "SPEC-EDIT.md" : "SPEC.md"), "utf8");
-    return `Sos un desarrollador web experto. Stack: ArtScript. Todo el código va en app.art. ${FORMAT}\n\n${edit ? "Spec de ArtScript para modificar código" : "Spec completa de ArtScript"}:\n\n${spec}`;
+    const spec = readFileSync(edit || !SPEC_FILE ? join(REPO, "docs", edit ? "SPEC-EDIT.md" : "SPEC.md") : SPEC_FILE, "utf8");
+    const rules = ART_RULES ? `\n\n${readFileSync(ART_RULES, "utf8").trim()}` : "";
+    const where = ART_RULES ? "El código ArtScript va en app.art." : "Todo el código va en app.art.";
+    return `Sos un desarrollador web experto. Stack: ArtScript. ${where} ${FORMAT}${rules}\n\n${edit ? "Spec de ArtScript para modificar código" : "Spec completa de ArtScript"}:\n\n${spec}`;
   }
   if (stack === "react") {
     return `Sos un desarrollador web experto. Stack: React 19 + TypeScript (TSX), componentes funcionales y hooks, estilos con clases de Tailwind. Todo en un solo archivo App.tsx con export default. ${FORMAT}`;

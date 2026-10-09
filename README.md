@@ -22,7 +22,7 @@ page Counter "/" {
 }
 ```
 
-Status: **0.2.9**, usable for prototypes and small or medium apps built with an AI agent; the syntax may still change before 1.0. What is measured, proven and not yet: [artscript.dev/status](https://artscript.dev/status). In the [official js-framework-benchmark results](https://krausest.github.io/js-framework-benchmark/2026/chrome154.html) since Chrome 154: between Svelte and Vue, ahead of React ([numbers](benchmarks/js-framework-benchmark/RESULTS.md)).
+Status: **0.2.10**, usable for prototypes and small or medium apps built with an AI agent; the syntax may still change before 1.0. What is measured, proven and not yet: [artscript.dev/status](https://artscript.dev/status). In the [official js-framework-benchmark results](https://krausest.github.io/js-framework-benchmark/2026/chrome154.html) since Chrome 154: between Svelte and Vue, ahead of React ([numbers](benchmarks/js-framework-benchmark/RESULTS.md)).
 
 Made by [Leandro Bisceglie](https://github.com/leb90). Issues and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -516,6 +516,8 @@ Run 2026-10-02: 26 tasks × 5 stacks × 2 runs, total $8.74, prices as of 2026-0
 One task where almost all the code is a physics loop (gravity, walls, elastic collisions, drawing): the kind of app where ArtScript is JavaScript with another syntax for statements. Reported apart from the tables above, which are apps of UI and data. USD per solved task (solved runs / runs):
 
 Two rounds of two runs per cell, pooled: four runs per cell. Between them, ArtScript's cells alone were re-run three times while the harness was being fixed (at first it rejected an answer that put the physics in a `.ts` module imported with `use`); those re-runs stay in the raw data and aren't in the table, so every stack has the same runs. No model moved the physics to a `.ts` file by itself, even with the spec suggesting it; Haiku's retries were its own errors (a typo, an effect that changed a state it read).
+
+**What closes the gap (measured, ArtScript only, two runs per cell, 2026-10-09):** the extra cost was the model deliberating in a less familiar syntax (650–1,600 output tokens of thinking per run, against ~10–600 in React) plus retries. With a project rule that puts the physics in a `.ts` file imported with `use` (what a new project's `AGENTS.md` says) and the core spec with a whole app as the example (`docs/SPEC-CORE.md`, ~1,600 tokens instead of 3,400), every model wrote `sim.ts` + `app.art` at the first attempt with React-level thinking: Sonnet $0.0227 (React $0.0209), Opus $0.0618 (React $0.0634), Haiku $0.0084 (React $0.0110). With the spec read from the prompt cache, as in a session: $0.0167, $0.049 and $0.0084. New projects now get that rule and the core spec; the 50-task tables above were measured with the full spec and are not re-measured.
 
 | Model | **ArtScript** | React + TS | Svelte 5 | Vue 3 | SolidJS | ArtScript vs React |
 |---|---|---|---|---|---|---|

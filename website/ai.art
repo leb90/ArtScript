@@ -1,4 +1,4 @@
-use "./lib/content.ts" { specText, editText, specTokens, editTokens, AGENTS_MD, AI_PROMPT }
+use "./lib/content.ts" { specText, editText, coreText, specTokens, editTokens, coreTokens, AGENTS_MD, AI_PROMPT }
 
 use "./lib/markdown.ts" { copyText }
 
@@ -19,7 +19,7 @@ page Ai "/ai" layout Docs {
     {
       n: "1",
       title: "Read the spec once",
-      body: "About 3K tokens describe the whole language. With prompt caching it is billed at the cache rate after the first request."
+      body: "About 1,600 tokens (the core spec) describe the structure with a whole app as the example; the full spec has every detail. With prompt caching it is billed at the cache rate after the first request."
     },
     {
       n: "2",
@@ -62,6 +62,15 @@ page Ai "/ai" layout Docs {
           row gap=2 wrap {
             link "Open llms.txt" href="/llms.txt" class="pill"
             link "llms-full.txt" href="/llms-full.txt" class="pill"
+          }
+        }
+        card class="feature" gap=2 {
+          text `Core spec · ~${coreTokens} tokens` class="h3" bold
+          text "The structure of the language with a whole app as the example: what an agent reads before its first line. Measured: with it and the project rule for heavy code, an agent writes ArtScript as fluently as React." class="body"
+          row gap=2 wrap {
+            button "Copy the core spec" small class="pill" -> copyText(coreText)
+            link "Markdown" href="/md/SPEC-CORE.md" class="pill"
+            link "Read it" to="/reference/core" class="pill"
           }
         }
         card class="feature" gap=2 {

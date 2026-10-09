@@ -1,0 +1,73 @@
+{
+  "model": "claude-sonnet-5-5",
+  "effort": "medium",
+  "runs": 2,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 2,
+    "out": 10,
+    "cacheRead": 0.2,
+    "cacheWrite": 2.5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 2263,
+        "cacheRead": 0,
+        "cacheWrite": 2461
+      },
+      "usd": 0.0294005,
+      "codeTokens": 1310,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Sim \"/\" {\n  state balls: Any[] = []\n  state frames = 0\n  state paused = false\n  ref cv\n  ref raf\n\n  fn make() {\n    return {\n      x: 10 + Math.random() * 380,\n      y: 10 + Math.random() * 280,\n      vx: (Math.random() - 0.5) * 6,\n      vy: (Math.random() - 0.5) * 6,\n      r: 10\n    }\n  }\n\n  fn step(list) {\n    const W = 400\n    const H = 300\n    for (const b of list) {\n      b.vy += 0.2\n      b.x += b.vx\n      b.y += b.vy\n      if (b.x < b.r) { b.x = b.r; b.vx = -b.vx }\n      if (b.x > W - b.r) { b.x = W - b.r; b.vx = -b.vx }\n      if (b.y < b.r) { b.y = b.r; b.vy = -b.vy }\n      if (b.y > H - b.r) { b.y = H - b.r; b.vy = -b.vy }\n    }\n    for (let i = 0; i < list.length; i++) {\n      for (let j = i + 1; j < list.length; j++) {\n        const a = list[i]\n        const c = list[j]\n        let dx = c.x - a.x\n        let dy = c.y - a.y\n        let dist = Math.sqrt(dx * dx + dy * dy)\n        const min = a.r + c.r\n        if (dist < min) {\n          if (dist == 0) { dx = 1; dy = 0; dist = 1 }\n          const nx = dx / dist\n          const ny = dy / dist\n          const overlap = (min - dist) / 2\n          a.x -= nx * overlap\n          a.y -= ny * overlap\n          c.x += nx * overlap\n          c.y += ny * overlap\n          const rel = (c.vx - a.vx) * nx + (c.vy - a.vy) * ny\n          if (rel < 0) {\n            const tvx = a.vx\n            const tvy = a.vy\n            a.vx = c.vx\n            a.vy = c.vy\n            c.vx = tvx\n            c.vy = tvy\n          }\n          for (const b of [a, c]) {\n            if (b.x < b.r) b.x = b.r\n            if (b.x > W - b.r) b.x = W - b.r\n            if (b.y < b.r) b.y = b.r\n            if (b.y > H - b.r) b.y = H - b.r\n          }\n        }\n      }\n    }\n  }\n\n  fn draw(list) {\n    if (!cv) { return }\n    const ctx = cv.getContext(\"2d\")\n    ctx.clearRect(0, 0, 400, 300)\n    ctx.fillStyle = \"#3b82f6\"\n    for (const b of list) {\n      ctx.beginPath()\n      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)\n      ctx.fill()\n    }\n  }\n\n  fn tick() {\n    if (!paused) {\n      step(balls)\n      frames++\n    }\n    draw(balls)\n    raf = requestAnimationFrame(tick)\n  }\n\n  fn add() {\n    balls = [...balls, make()]\n  }\n\n  fn reset() {\n    balls = Array.from({ length: 5 }, () => make())\n    frames = 0\n  }\n\n  mount {\n    balls = Array.from({ length: 5 }, () => make())\n    raf = requestAnimationFrame(tick)\n    cleanup { cancelAnimationFrame(raf) }\n  }\n\n  column gap=2 {\n    canvas ref=cv id=\"sim\" width=400 height=300\n    row gap=2 {\n      button \"Agregar\" -> add()\n      button paused ? \"Reanudar\" : \"Pausar\" -> paused = !paused\n      button \"Reiniciar\" -> reset()\n    }\n    text `Pelotas: ${balls.length}`\n    text `Cuadros: ${frames}`\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 14304,
+        "brotli": 5409
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 2023,
+        "cacheRead": 0,
+        "cacheWrite": 2461
+      },
+      "usd": 0.0270005,
+      "codeTokens": 1252,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Sim \"/\" {\n  state balls: Any[] = []\n  state frames = 0\n  state paused = false\n  ref cv\n  ref raf\n\n  fn make() {\n    return {\n      x: 10 + Math.random() * 380,\n      y: 10 + Math.random() * 280,\n      vx: (Math.random() - 0.5) * 6,\n      vy: (Math.random() - 0.5) * 6,\n      r: 10\n    }\n  }\n\n  fn step() {\n    for (const b of balls) {\n      b.vy += 0.2\n      b.x += b.vx\n      b.y += b.vy\n      if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx) }\n      if (b.x > 400 - b.r) { b.x = 400 - b.r; b.vx = -Math.abs(b.vx) }\n      if (b.y < b.r) { b.y = b.r; b.vy = Math.abs(b.vy) }\n      if (b.y > 300 - b.r) { b.y = 300 - b.r; b.vy = -Math.abs(b.vy) }\n    }\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        const a = balls[i]\n        const b = balls[j]\n        let dx = b.x - a.x\n        let dy = b.y - a.y\n        let d = Math.sqrt(dx * dx + dy * dy)\n        const min = a.r + b.r\n        if (d < min) {\n          if (d == 0) { dx = 1; dy = 0; d = 1 }\n          const nx = dx / d\n          const ny = dy / d\n          const push = (min - d) / 2\n          a.x -= nx * push\n          a.y -= ny * push\n          b.x += nx * push\n          b.y += ny * push\n          const tvx = a.vx\n          const tvy = a.vy\n          a.vx = b.vx\n          a.vy = b.vy\n          b.vx = tvx\n          b.vy = tvy\n          for (const p of [a, b]) {\n            p.x = Math.min(Math.max(p.x, p.r), 400 - p.r)\n            p.y = Math.min(Math.max(p.y, p.r), 300 - p.r)\n          }\n        }\n      }\n    }\n  }\n\n  fn draw() {\n    if (!cv) { return }\n    const ctx = cv.getContext(\"2d\")\n    ctx.clearRect(0, 0, 400, 300)\n    ctx.fillStyle = \"#3b82f6\"\n    for (const b of balls) {\n      ctx.beginPath()\n      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)\n      ctx.fill()\n    }\n  }\n\n  fn tick() {\n    if (!paused) {\n      step()\n      draw()\n      frames++\n    }\n    raf = requestAnimationFrame(tick)\n  }\n\n  fn add() {\n    balls = [...balls, make()]\n    draw()\n  }\n\n  fn reset() {\n    balls = Array.from({ length: 5 }, () => make())\n    frames = 0\n    draw()\n  }\n\n  mount {\n    balls = Array.from({ length: 5 }, () => make())\n    raf = requestAnimationFrame(tick)\n    cleanup { cancelAnimationFrame(raf) }\n  }\n\n  column gap=2 {\n    canvas ref=cv id=\"sim\" width=400 height=300\n    row gap=2 {\n      button \"Agregar\" primary -> add()\n      button paused ? \"Reanudar\" : \"Pausar\" -> paused = !paused\n      button \"Reiniciar\" -> reset()\n    }\n    text `Pelotas: ${balls.length}`\n    text `Cuadros: ${frames}`\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 14888,
+        "brotli": 5443
+      }
+    }
+  ]
+}
