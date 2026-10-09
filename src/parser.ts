@@ -735,6 +735,14 @@ class Parser {
   }
 
   arrowAhead(): boolean {
+    // `async x => ...` / `async (a) => ...`: the word is dropped (an arrow with `await` is async by itself).
+    if (this.is("async") && this.tok.t === "id") {
+      const save = this.i;
+      this.next();
+      const yes = this.arrowAhead();
+      if (!yes) this.i = save;
+      return yes;
+    }
     if (this.is("=>")) return true; // `=> save()`: no parameters
     if (this.tok.t === "id" && this.is("=>", this.peek())) return true;
     if (!this.is("(")) return false;

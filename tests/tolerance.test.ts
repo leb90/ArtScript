@@ -491,3 +491,11 @@ test("regular expressions, computed keys, a canvas, class after responsive props
     await GlobalRegistrator.unregister();
   }
 });
+
+test("tolerance: `async` before an arrow is accepted and dropped", () => {
+  const src = 'page P {\n  state n = 0\n  fn load() {\n    fetch("/x").then(async r => {\n      n = await r.json()\n    })\n  }\n  text n\n}\n';
+  const r = compile([{ file: "a.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  assert.match(r.js!, /then\(\(async \(r\) => \{/);
+  assert.equal(printProgram(parse(src, "a")), 'page P {\n  state n = 0\n  fn load() {\n    fetch("/x").then(r => { n = await r.json() })\n  }\n\n  text n\n}\n');
+});
