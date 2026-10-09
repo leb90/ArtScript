@@ -2,6 +2,11 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## Unreleased
+
+- Checker: an `api`, `server` or `auth` call inside `try` without `await` is the error NOT_AWAITED with the fix (its rejection would skip the `catch`). A page may name a state `query` or `params`. `input` takes `type=search|tel|url|color|range|time|datetime-local|month|week` too.
+- The core spec's main example is a plain app (local state), with the server version as the next step; it also spells out accounts (`api users` + `auth users`), `await` inside `try`, the test steps and what a `File` field holds. In the eval, an app that declares an `api` gets its server whether or not the task is full-stack, as `art dev` would.
+
 ## 0.2.10 (2026-10-09)
 
 - New projects get `ARTSCRIPT-CORE.md` (`docs/SPEC-CORE.md`, ~1,600 tokens): the structure of the language with a whole app as the example, what the agent instructions now say to read first; `ARTSCRIPT.md` stays the full reference. Together with an explicit rule in `AGENTS.md`, the Cursor rule and the Claude Code skill (heavy imperative code goes in a `.ts` file imported with `use`), the imperative task of the cost eval went from costing 37–83% more than React to parity or less with the three models, at the first attempt and with React-level thinking (see the benchmarks page). The 50-task tables were measured with the full spec and are not re-measured.

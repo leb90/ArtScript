@@ -264,6 +264,7 @@ class ComponentGen {
     // Pages read their route params and query string as props from the router.
     if (c.page) {
       for (const name of ["params", "query"]) {
+        if (c.members.some((m) => m.name === name) || c.params.some((p) => p.name === name)) continue; // the page's own
         scope.vars.set(name, { kind: "prop" });
         this.emit(`const ${name} = $p.${name} ?? (() => ({}));`);
       }

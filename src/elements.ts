@@ -64,7 +64,7 @@ for (const [name, spec] of Object.entries(ELEMENTS)) spec.props = [...spec.props
 export const ENUM_PROPS: Record<string, string[]> = {
   align: ["start", "center", "end", "stretch"],
   justify: ["start", "center", "end", "between", "around"],
-  type: ["text", "number", "email", "password", "checkbox", "date"],
+  type: ["text", "number", "email", "password", "checkbox", "date", "search", "tel", "url", "color", "range", "time", "datetime-local", "month", "week"],
 };
 
 // `md:cols=3`: applies from that screen width up (px). Only for these numeric props.

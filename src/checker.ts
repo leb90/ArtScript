@@ -821,6 +821,14 @@ class Checker {
         this.returns?.push(t);
       }
       else if (s.kind === "Try") {
+        // `try { api.x.create(o) } catch (e) { }`: without `await` the rejection skips the catch.
+        for (const b of s.body) {
+          const e = b.kind === "ExprStmt" ? b.expr : b.kind === "Let" ? b.init : null;
+          const root = (x: Expr): string | null => (x.kind === "Ident" ? x.name : x.kind === "Member" || x.kind === "Index" ? root(x.object) : x.kind === "Call" ? root(x.callee) : null);
+          if (e && e.kind === "Call" && ["api", "server", "auth"].includes(root(e) ?? "")) {
+            this.err("NOT_AWAITED", `\`${printExpr(e).slice(0, 40)}\` runs after the try: add \`await\` so its error reaches the catch`, e.loc, { expr: printExpr(e), fixes: [`await ${printExpr(e)}`] });
+          }
+        }
         this.stmts(s.body, new Scope(scope), inLoop);
         const h = new Scope(scope);
         // The caught error: `e.message` always exists; api errors also carry `status` and `details`.

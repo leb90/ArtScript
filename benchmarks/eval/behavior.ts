@@ -539,7 +539,9 @@ async function runCheck(task: Task, stack: Stack, files: Files): Promise<Checked
   if (!check) return { errors: [] };
   let app: Awaited<ReturnType<typeof launch>> | null = null;
   try {
-    app = await launch(stack, files, !!task.fullstack);
+    // An app that declares an api (or ships a server.ts) gets its server, as `art dev` would give it.
+    const declares = stack === "artscript" ? Object.entries(files).some(([n, s]) => n.endsWith(".art") && /^\s*(api|auth)\s+\w+/m.test(s)) : "server.ts" in files;
+    app = await launch(stack, files, !!task.fullstack || declares);
     await check(app.page);
     return { errors: [], size: app.size };
   } catch (e: any) {

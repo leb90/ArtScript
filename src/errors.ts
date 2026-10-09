@@ -29,6 +29,7 @@ export const CATALOG: Record<string, { code: string; desc: string }> = {
   MISSING_FIELD: { code: "E1012", desc: "A required model field is missing." },
   POSSIBLY_EMPTY: { code: "E1023", desc: "The value may be null; that case must be handled." },
   NOT_A_LIST: { code: "E1024", desc: "`for` needs a list." },
+  NOT_AWAITED: { code: "E1025", desc: "An api, server or auth call inside `try` must be awaited, or its error never reaches the `catch`." },
   // Assignment
   ASSIGN_READONLY: { code: "E1030", desc: "Only `state` and `let` variables can be assigned." },
   BREAK_OUTSIDE_LOOP: { code: "E1031", desc: "`break` and `continue` only work inside a `for` or `while` loop." },
