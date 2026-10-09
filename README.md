@@ -153,7 +153,7 @@ The website, [artscript.dev](https://artscript.dev/), is itself an ArtScript app
 
 Official components as source you can change (like shadcn/ui): `art add DataTable Pagination ConfirmButton SearchBox Stat EmptyState`.
 
-Editors: the [ArtScript extension](https://marketplace.visualstudio.com/items?itemName=artscript.artscript) for VS Code and Cursor ([source](editors/vscode)) gives `.art` files their icon, highlighting, snippets, live errors with the compiler's fixes, formatting, completion, go to definition, hover and rename; new projects recommend it. It runs `art lsp`, a language server for any editor with LSP, and [editors/tree-sitter-artscript](editors/tree-sitter-artscript) is a tree-sitter grammar (highlighting in Zed, Neovim and Helix). In `art dev`, Alt+A opens the dev tools: mounted components with their states, live.
+Editors: the [ArtScript extension](https://marketplace.visualstudio.com/items?itemName=LeandroBisceglie.artscript) for VS Code and Cursor ([source](editors/vscode)) gives `.art` files their icon, highlighting, snippets, live errors with the compiler's fixes, formatting, completion, go to definition, hover and rename; new projects recommend it. It runs `art lsp`, a language server for any editor with LSP, and [editors/tree-sitter-artscript](editors/tree-sitter-artscript) is a tree-sitter grammar (highlighting in Zed, Neovim and Helix). In `art dev`, Alt+A opens the dev tools: mounted components with their states, live.
 
 Other commands: `npm run art -- <command>` (for example `npm run art -- check examples/todo --ai`). Full list: `npm run art -- help`.
 

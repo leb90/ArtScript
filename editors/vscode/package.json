@@ -3,7 +3,7 @@
   "displayName": "ArtScript",
   "description": "ArtScript language support: file icons, highlighting, snippets, live errors with fixes, formatting, completion, go to definition, hover and rename (art lsp).",
   "version": "0.2.7",
-  "publisher": "artscript",
+  "publisher": "LeandroBisceglie",
   "license": "MIT",
   "repository": {
     "type": "git",

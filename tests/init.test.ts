@@ -16,6 +16,6 @@ test("starters are the examples, and init --template uses them", () => {
   assert.ok(existsSync(join(dir, "ARTSCRIPT.md")) && existsSync(join(dir, "ARTSCRIPT-EDIT.md")) && existsSync(join(dir, ".gitignore")));
   assert.match(readFileSync(join(dir, ".cursor", "rules", "artscript.mdc"), "utf8"), /globs: \*\*\/\*\.art/);
   assert.match(readFileSync(join(dir, ".claude", "skills", "artscript", "SKILL.md"), "utf8"), /^name: artscript$/m);
-  assert.deepEqual(JSON.parse(readFileSync(join(dir, ".vscode", "extensions.json"), "utf8")), { recommendations: ["artscript.artscript"] });
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, ".vscode", "extensions.json"), "utf8")), { recommendations: ["LeandroBisceglie.artscript"] });
   assert.throws(() => execFileSync(process.execPath, ["src/cli.ts", "init", dir + "2", "--template", "nope"], { stdio: "pipe" }), /unknown template 'nope'/);
 });

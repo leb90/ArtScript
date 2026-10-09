@@ -41,12 +41,7 @@ code --install-extension artscript-<version>.vsix   # VS Code
 cursor --install-extension artscript-<version>.vsix # Cursor (its CLI; or Extensions → ... → Install from VSIX)
 ```
 
-**Visual Studio Marketplace** (VS Code), once:
-1. Sign in at https://marketplace.visualstudio.com/manage with a Microsoft account and create the publisher `artscript` (the `publisher` field of `package.json`).
-2. Create a Personal Access Token at https://dev.azure.com (User settings → Personal access tokens: organization "All accessible organizations", scope Marketplace → Manage).
-3. `npx @vscode/vsce login artscript` and paste the token.
-
-Then, for every release: `npm run publish:vscode` (from `editors/vscode`).
+**Visual Studio Marketplace** (VS Code): the publisher is `LeandroBisceglie` (the `publisher` field of `package.json`; the two must match or the upload is refused). For every release, upload the `.vsix` by hand at https://marketplace.visualstudio.com/manage/publishers/LeandroBisceglie (New extension → Visual Studio Code → drag the file). No token needed. `npm run publish:vscode` does the same from the terminal, but needs a Personal Access Token from Azure DevOps, which asks for an organization.
 
 **Open VSX** (Cursor, VSCodium, Gitpod), once:
 1. Create an account at https://open-vsx.org (Eclipse account), sign the publisher agreement in your profile, and create the namespace: `npx ovsx create-namespace artscript -p <token>` (the token is made at https://open-vsx.org/user-settings/tokens).
