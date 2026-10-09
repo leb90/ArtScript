@@ -94,7 +94,7 @@ function flush() {
   flushing = true;
   try {
     for (let guard = 0; queue.size; guard++) {
-      if (guard > 1e4) throw new Error("ArtScript: infinite reactive loop");
+      if (guard > 1000) throw new Error("ArtScript: infinite reactive loop: an effect changes a state it reads (move the change to a fn, mount or a handler)");
       const list = [...queue];
       queue.clear();
       epoch++;

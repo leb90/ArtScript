@@ -11,3 +11,4 @@ If your tool supports MCP, `npx art mcp` gives you `art_spec`, `art_check`, `art
 - Ready-made components (as source): `npx art add DataTable Pagination ConfirmButton SearchBox Stat EmptyState`.
 - Behavior: write `test "..." { ... }` blocks (see the spec) and run `npx art test`.
 - Expressions are JavaScript; only the structure (`page`, `component`, `model`, `api`, `state`, `computed`, `data`, `fn`, the view) is ArtScript's own.
+- Heavy imperative code (a physics loop, a parser, canvas drawing) goes in a `.ts` or `.js` file next to the `.art` files, imported with `use "./engine.ts" { step, draw }`: plain JavaScript or TypeScript with no restrictions. Keep ArtScript for what it shortens: pages, state, the api, forms, lists and tests.

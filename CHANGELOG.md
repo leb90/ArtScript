@@ -2,6 +2,11 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## Unreleased
+
+- Guidance, in the spec, `AGENTS.md`, the Cursor rule, the Claude Code skill and the site's prompt: heavy imperative code (a physics loop, a parser, canvas drawing) goes in a `.ts` or `.js` file imported with `use`, where it is plain JavaScript with no restrictions; ArtScript is for what it shortens (pages, state, the api, forms, lists, tests). The status page says where the saving is and where it isn't.
+- The cost eval has an imperative task (`imp-particles`: a canvas with gravity, walls and elastic collisions), reported in its own table, so that case has a number too. The simulated browser now gives canvases a recording 2D context and paces `requestAnimationFrame` at 60 fps.
+
 ## 0.2.8 (2026-10-09)
 
 - Fixed: assigning a field of a `fn` parameter or of a computed's item (`fn move(d) { d.x++ }`) notified every state of the app on every assignment, which re-ran every effect; in a loop that runs per frame it froze the page. Now the runtime notifies only the states that hold the mutated object, once per flush, and an object no state holds (a local of a physics loop) notifies nothing.

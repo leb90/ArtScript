@@ -143,3 +143,7 @@ test("a new prop on a component suggests the exact signature to declare it", () 
   assert.equal(d.type, "UNKNOWN_PROP");
   assert.deepEqual(d.fixes, ["component Row(id: Number, onRemove: Fn)", "in a patch: set Row onRemove: Fn"]);
 });
+
+test("a let initialized with null takes any value later", () => {
+  assert.deepEqual(types('page P {\n  fn f() {\n    let b = null\n    for (let t = 0; t < 3; t++) {\n      b = { x: t }\n    }\n    return b\n  }\n  text "x"\n}'), []);
+});

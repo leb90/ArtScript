@@ -1,0 +1,102 @@
+page Sim "/" {
+  state balls: Any[] = []
+  state frames = 0
+  state paused = false
+  ref cv
+  fn make() {
+    return {
+      x: 10 + Math.random() * 380,
+      y: 10 + Math.random() * 280,
+      vx: (Math.random() - 0.5) * 6,
+      vy: (Math.random() - 0.5) * 6,
+      r: 10
+    }
+  }
+  fn reset() {
+    balls = Array.from({ length: 5 }, () => make())
+    frames = 0
+  }
+  fn step() {
+    for b in balls {
+      b.vy += 0.2
+      b.x += b.vx
+      b.y += b.vy
+      if b.x < b.r {
+        b.x = b.r
+        b.vx = -b.vx
+      }
+      if b.x > 400 - b.r {
+        b.x = 400 - b.r
+        b.vx = -b.vx
+      }
+      if b.y < b.r {
+        b.y = b.r
+        b.vy = -b.vy
+      }
+      if b.y > 300 - b.r {
+        b.y = 300 - b.r
+        b.vy = -b.vy
+      }
+    }
+    for (let i = 0; i < balls.length; i++) {
+      for (let j = i + 1; j < balls.length; j++) {
+        let a = balls[i]
+        let c = balls[j]
+        let dx = c.x - a.x
+        let dy = c.y - a.y
+        if dx * dx + dy * dy < (a.r + c.r) * (a.r + c.r) {
+          let vx = a.vx
+          let vy = a.vy
+          a.vx = c.vx
+          a.vy = c.vy
+          c.vx = vx
+          c.vy = vy
+          let d = Math.sqrt(dx * dx + dy * dy) || 1
+          let push = (a.r + c.r - d) / 2
+          a.x -= dx / d * push
+          a.y -= dy / d * push
+          c.x += dx / d * push
+          c.y += dy / d * push
+        }
+      }
+    }
+  }
+  fn draw() {
+    let ctx = cv.getContext("2d")
+    if !ctx {
+      return
+    }
+    ctx.clearRect(0, 0, 400, 300)
+    ctx.fillStyle = "#2563eb"
+    for b in balls {
+      ctx.beginPath()
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+  fn tick() {
+    if !paused {
+      step()
+      draw()
+      frames++
+    }
+    requestAnimationFrame(tick)
+  }
+  mount {
+    reset()
+    requestAnimationFrame(tick)
+  }
+
+  column gap=2 {
+    canvas ref=cv id="sim" width=400 height=300
+    row gap=3 {
+      text `Pelotas: ${balls.length}`
+      text `Cuadros: ${frames}`
+    }
+    row gap=2 {
+      button "Agregar" -> balls.push(make())
+      button paused ? "Reanudar" : "Pausar" -> paused = !paused
+      button "Reiniciar" -> reset()
+    }
+  }
+}

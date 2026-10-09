@@ -812,7 +812,9 @@ class Checker {
       else if (s.kind === "Let") {
         // `let tick = () => requestAnimationFrame(tick)`: the arrow may call itself.
         if (s.init.kind === "Arrow") scope.vars.set(s.name, { kind: "let", ty: ANY });
-        scope.vars.set(s.name, { kind: "let", ty: this.infer(s.init, scope) });
+        const ty = this.infer(s.init, scope);
+        // `let b = null` is a slot for a value that comes later: anything may be assigned to it.
+        scope.vars.set(s.name, { kind: "let", ty: ty.k === "null" ? ANY : ty });
       }
       else if (s.kind === "Return") {
         const t = s.value ? this.infer(s.value, scope) : { k: "void" as const };

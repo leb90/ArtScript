@@ -119,8 +119,26 @@ function comparable(results: Run[]): Run[] {
   return results.filter((r) => tasks.has(r.task));
 }
 
+// Imperative tasks ("imp-": a physics loop on a canvas) are reported apart: there a language for
+// UI and data has nothing to shorten, and the question is only whether it costs the same as JS.
+const imperative = (r: Run) => r.task.startsWith("imp-");
+function impTable(loaded: Loaded[]): string[] {
+  const rows = loaded.filter(({ data }) => data.results.some(imperative));
+  if (!rows.length) return [];
+  const out = ["### Imperative code: a canvas with animation and physics", "", "One task where almost all the code is a physics loop (gravity, walls, elastic collisions, drawing): the kind of app where ArtScript is JavaScript with another syntax for statements. Reported apart from the tables above, which are apps of UI and data. USD per solved task (solved runs / runs):", "", `| Model | ${ORDER.map((k) => NAMES[k]).join(" | ")} | ArtScript vs React |`, `|---|${ORDER.map(() => "---").join("|")}|---|`];
+  for (const { data } of rows) {
+    const rs = data.results.filter(imperative);
+    const cell = (k: string) => { const x = rs.filter((r) => r.stack === k), ok = x.filter((r) => r.ok).length; return { n: x.length, ok, per: ok ? x.reduce((a, r) => a + r.usd, 0) / ok : Infinity }; };
+    const art = cell("artscript"), react = cell("react");
+    out.push(`| ${data.model} | ${ORDER.map((k) => { const c = cell(k); return c.n ? `${k === "artscript" ? `**${usd(c.per)}**` : usd(c.per)} (${c.ok}/${c.n})` : "—"; }).join(" | ")} | **${pct(art.per, react.per)}** |`);
+  }
+  return [...out, ""];
+}
+
 function section(loaded: Loaded[]): string {
   const out: string[] = [START, "", "## Cost eval results", ""];
+  const imp = impTable(loaded);
+  for (const l of loaded) l.data = { ...l.data, results: l.data.results.filter((r) => !imperative(r)) };
   // Every task of each model in one table (the sections below split small apps from larger projects).
   out.push("All tasks, USD per solved task (solved runs / runs):", "", `| Model | ${ORDER.map((k) => NAMES[k]).join(" | ")} | ArtScript vs React |`, `|---|${ORDER.map(() => "---").join("|")}|---|`);
   for (const { data } of loaded) {
@@ -167,6 +185,7 @@ function section(loaded: Loaded[]): string {
     if (project.length) out.push(...projectTables(project));
     out.push(`Run ${date}: ${tasks.length} tasks × ${STACKS.length} stacks × ${f.runs} runs, total $${total.toFixed(2)}, prices as of ${f.pricesDate}.${rerun} Raw data: ${links}.`, "");
   }
+  out.push(...imp);
   out.push("### Methodology and limitations", "",
     "- **The 2026-10-02 measurement** (the numbers above): 50 tasks, three models, five stacks, two runs per task. Before it, a pilot ran ArtScript alone once per model (USD 2.34, files `2026-10-02T16-1*`); what the models tripped on was fixed in the compiler (accepting what they write, clearer errors, a `for` statement) and the measurement started from that version. Haiku then solved 76/100 ArtScript runs, against 86–89 in the other stacks; two more rounds of the same kind of fixes followed, and its ArtScript cells were run again each time (80/100, then 90/100, the one reported). React, Svelte, Vue and Solid ran once: their toolchains didn't change. Sonnet's and Opus's ArtScript cells ran once, between those rounds. Every answer of every run is in the raw data, and `--replay` re-checks them with the current compiler.",
     "- Each task is the same functional request for every stack: small apps created from scratch (some full-stack), small modifications, and modifications to larger generated projects (11, 42 and 102 components). Claude gets the task, returns files, and the harness validates them: ArtScript with its compiler, React and SolidJS with strict `tsc`, Svelte and Vue with their compilers. Errors are fed back, up to 3 attempts.",

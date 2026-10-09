@@ -99,6 +99,11 @@ export const TASKS: Task[] = [
     prompt: "Mostrá una tabla de empleados con las columnas 'Nombre' y 'Edad' y estas filas, en este orden inicial: Caro 35, Ana 30, Dani 28, Beto 25. Un botón 'Ordenar por nombre' ordena las filas alfabéticamente y un botón 'Ordenar por edad' las ordena de menor a mayor edad. Un input con placeholder 'Filtrar' deja solo las filas cuyo nombre contiene el texto (sin distinguir mayúsculas). Debajo, 'Empleados: N' con la cantidad de filas visibles.",
   },
   {
+    // Imperative code: the work is a physics loop on a canvas, where a language for UI has nothing to shorten.
+    id: "imp-particles",
+    prompt: "Creá una simulación de pelotas en un canvas de 400×300 con id 'sim'. Al iniciar hay 5 pelotas de radio 10 con posición y velocidad aleatorias. En cada cuadro (requestAnimationFrame): gravedad de 0.2 por cuadro en y, rebote contra los cuatro bordes (la pelota nunca sale del canvas), colisión elástica entre pelotas (al tocarse intercambian velocidades) y se dibujan como círculos. Botones: 'Agregar' suma una pelota, 'Pausar' detiene la animación y pasa a llamarse 'Reanudar' (que la continúa), 'Reiniciar' vuelve a 5 pelotas nuevas. Mostrar 'Pelotas: N' y 'Cuadros: F' (cuadros dibujados desde el inicio o el último reinicio).",
+  },
+  {
     id: "stopwatch",
     prompt: "Creá un cronómetro que muestra 'Tiempo: N' (empieza en 0). El botón 'Iniciar' hace que N aumente 1 cada 100 ms; 'Pausar' lo detiene conservando el valor; 'Reiniciar' lo detiene y vuelve a 0. Tocar 'Iniciar' dos veces no debe hacerlo avanzar más rápido.",
   },

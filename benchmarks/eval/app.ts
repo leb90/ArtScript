@@ -166,6 +166,30 @@ const visible = (el: Element | null): boolean => {
   return true;
 };
 
+// happy-dom has no canvas drawing: `getContext` gives a context that accepts every call and records
+// the circles drawn (`window.__canvas.arcs`), so a check can see what an animation draws.
+function canvasStub() {
+  const calls = { arcs: [] as { x: number; y: number; r: number }[], clears: 0 };
+  (window as any).__canvas = calls;
+  const ctx: any = {
+    canvas: null, fillStyle: "#000", strokeStyle: "#000", lineWidth: 1, font: "10px sans-serif", globalAlpha: 1, textAlign: "start", textBaseline: "alphabetic", lineCap: "butt", lineJoin: "miter", shadowBlur: 0, shadowColor: "#000",
+    arc(x: number, y: number, r: number) { calls.arcs.push({ x, y, r }); },
+    clearRect() { calls.clears++; },
+    measureText: () => ({ width: 0 }),
+    getImageData: () => ({ data: new Uint8ClampedArray(4), width: 1, height: 1 }),
+    createImageData: () => ({ data: new Uint8ClampedArray(4), width: 1, height: 1 }),
+    createLinearGradient: () => ({ addColorStop() {} }),
+    createRadialGradient: () => ({ addColorStop() {} }),
+    createPattern: () => null,
+    getTransform: () => ({}),
+  };
+  for (const m of ["fillRect", "strokeRect", "beginPath", "closePath", "ellipse", "moveTo", "lineTo", "arcTo", "rect", "quadraticCurveTo", "bezierCurveTo", "fill", "stroke", "clip", "save", "restore", "translate", "scale", "rotate", "transform", "setTransform", "resetTransform", "fillText", "strokeText", "drawImage", "putImageData", "setLineDash"]) ctx[m] = () => {};
+  (window as any).HTMLCanvasElement.prototype.getContext = function () { ctx.canvas = this; return ctx; };
+  // happy-dom runs requestAnimationFrame as fast as it can (~150,000 frames a second); a browser paces it.
+  (window as any).requestAnimationFrame = (cb: (t: number) => void) => setTimeout(() => cb(performance.now()), 16);
+  (window as any).cancelAnimationFrame = (id: number) => clearTimeout(id);
+}
+
 export class Page {
   private n = 0;
   private bundlePath: string;
@@ -180,6 +204,7 @@ export class Page {
     if (GlobalRegistrator.isRegistered) await GlobalRegistrator.unregister();
     GlobalRegistrator.register({ url: path ? new URL(path, this.url).href : this.url });
     document.body.innerHTML = '<div id="app"></div>';
+    canvasStub();
     try {
       await import(`${pathToFileURL(this.bundlePath).href}?mount=${this.n++}`);
     } catch (e: any) {

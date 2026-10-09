@@ -327,6 +327,35 @@ const CHECKS: Record<string, Check> = {
     await p.until(() => names() === "Beto,Dani,Ana,Caro" && has(p, "Empleados: 4"), "las 4 filas otra vez, todavía ordenadas por edad");
   },
 
+  async "imp-particles"(p) {
+    const frames = () => Number(/Cuadros: (\d+)/.exec(p.text())?.[1] ?? NaN);
+    const drawn = () => (window as any).__canvas as { arcs: { x: number; y: number; r: number }[] };
+    await p.until(() => document.querySelector("canvas#sim") !== null && has(p, "Pelotas: 5") && /Cuadros: \d+/.test(p.text()), 'un canvas con id "sim", "Pelotas: 5" y "Cuadros: N"');
+    const c = document.querySelector("canvas#sim")!;
+    await p.until(() => c.getAttribute("width") === "400" && c.getAttribute("height") === "300", "el canvas de 400×300 (atributos width y height)");
+    await p.settle(400);
+    await p.until(() => frames() >= 3, `que los cuadros avancen con requestAnimationFrame; hay ${frames()}`, 1);
+    await p.until(() => drawn().arcs.length >= 10, "que las pelotas se dibujen como círculos (arc) en cada cuadro", 1);
+    // A few pixels past the wall are fine (a collision push after the bounce); leaving the canvas isn't.
+    const out = drawn().arcs.filter((a) => a.x < a.r - 6 || a.x > 400 - a.r + 6 || a.y < a.r - 6 || a.y > 300 - a.r + 6);
+    if (out.length) throw new BehaviorError(`las pelotas deben rebotar sin salir del canvas; se dibujó una en (${out[0].x.toFixed(0)}, ${out[0].y.toFixed(0)})`);
+    const ys = new Set(drawn().arcs.map((a) => a.y.toFixed(1)));
+    if (ys.size < 10) throw new BehaviorError("las pelotas deben moverse (gravedad y velocidad): se dibujan siempre en el mismo lugar");
+    await p.click("Agregar");
+    await p.until(() => has(p, "Pelotas: 6"), '"Pelotas: 6" tras "Agregar"');
+    await p.click("Pausar");
+    await p.until(() => p.count("Reanudar") === 1 && p.count("Pausar") === 0, 'que "Pausar" pase a llamarse "Reanudar"');
+    await p.settle(100);
+    const stopped = frames();
+    await p.settle(300);
+    await p.until(() => frames() === stopped, `que en pausa los cuadros no avancen (${stopped} → ${frames()})`, 1);
+    await p.click("Reanudar");
+    await p.until(() => frames() > stopped, 'que "Reanudar" siga la animación');
+    const before = frames();
+    await p.click("Reiniciar");
+    await p.until(() => has(p, "Pelotas: 5") && frames() < before, '"Pelotas: 5" y los cuadros contados desde 0 tras "Reiniciar"');
+  },
+
   async stopwatch(p) {
     const n = () => Number(/Tiempo: (\d+)/.exec(p.text())?.[1] ?? NaN);
     await p.until(() => n() === 0, '"Tiempo: 0" al inicio');

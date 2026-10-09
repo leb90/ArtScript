@@ -133,6 +133,7 @@ Before writing any .art code, read the language spec once: ARTSCRIPT.md in the p
 
 How to work:
 - Expressions are JavaScript; only the structure (page, component, model, api, state, computed, data, fn, the view) is ArtScript's own.
+- Heavy imperative code (a physics loop, a parser, canvas drawing) goes in a .ts or .js file imported with \`use "./engine.ts" { step }\`: plain JavaScript/TypeScript, no restrictions. Keep ArtScript for what it shortens: pages, state, the api, forms, lists and tests.
 - After every change run \`npx art check --ai\`: one JSON line per error, each with expected, actual and fixes. Apply the fix; don't guess.
 - Read \`npx art context <Component>\` instead of whole files; prefer a small \`npx art patch\` over rewriting files.
 - Write test "..." { } blocks for the main flows and run \`npx art test\`.
