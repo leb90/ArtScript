@@ -2,6 +2,10 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## Unreleased
+
+- New projects recommend the ArtScript extension for VS Code and Cursor (`.vscode/extensions.json`): the editor offers to install it when the project is opened. The extension (0.2.7, `editors/vscode`) now has file icons for `.art`, snippets, and highlighting for every element.
+
 ## 0.2.7 (2026-10-07)
 
 - Lists render faster and use less memory. A `for` whose rows are elements, text and bindings (no `if`, nested list, component or icon inside) is compiled to a template built once and cloned per row, so rows share their attributes in the browser and cost one call instead of one per node. In the runtime: a row's effects keep their sources in a field instead of a Set, scopes link what they dispose instead of holding an array, single-element rows need no marker comments or fragment of their own, new rows next to each other go into the page in one insertion, text bindings are an effect with no closure around them, and click handlers are delegated to one listener on the document (a list of thousands of rows registers none; `event.currentTarget` is still the element). Measured with js-framework-benchmark's harness against Solid on the same machine: memory after creating 1,000 rows 3.39 → 2.7 MB (Solid 2.7), creating 10,000 rows 1.20× Solid → 1.05×, clearing rows now faster than Solid.
