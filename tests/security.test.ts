@@ -56,6 +56,22 @@ test("server: CSRF, body size, login rate limit, health, headers", async () => {
   assert.match(behindHttps.headers.get("strict-transport-security")!, /max-age=/);
 });
 
+test("server: a malformed URL answers 400 and the server keeps running", async () => {
+  const base = await start();
+  const { port } = new URL(base);
+  for (const path of ["/%E0%A4%A", "/%ff"]) assert.equal((await fetch(base + path)).status, 400, path);
+  assert.equal((await fetch(`${base}/api/%E0%A4%A`)).status, 404);
+  // A request line whose target isn't a URL at all.
+  const { connect } = await import("node:net");
+  const raw = await new Promise<string>((ok) => {
+    let out = "";
+    const socket = connect(Number(port), "localhost", () => socket.end("GET http://[x HTTP/1.1\r\nHost: x\r\n\r\n"));
+    socket.on("data", (d) => (out += d)).on("close", () => ok(out));
+  });
+  assert.match(raw, /^HTTP\/1\.1 400/);
+  assert.deepEqual(await (await fetch(`${base}/api/_health`)).json(), { ok: true });
+});
+
 test("runtime: URLs from data can't run code", async () => {
   GlobalRegistrator.register();
   try {
