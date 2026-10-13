@@ -552,7 +552,8 @@ async function runCheck(task: Task, stack: Stack, files: Files): Promise<Checked
     await check(app.page);
     return { errors: [], size: app.size };
   } catch (e: any) {
-    return { errors: [`Prueba de comportamiento: ${e instanceof BehaviorError ? e.message : `error en la app: ${String(e?.message ?? e).slice(0, 300)}`}`] };
+    const late = lateErrors.length ? ` Errores de la app: ${lateErrors.slice(0, 2).join(" || ").slice(0, 300)}` : "";
+    return { errors: [`Prueba de comportamiento: ${e instanceof BehaviorError ? e.message : `error en la app: ${String(e?.message ?? e).slice(0, 300)}`}${late}`] };
   } finally {
     await app?.close();
   }
@@ -561,6 +562,7 @@ async function runCheck(task: Task, stack: Stack, files: Files): Promise<Checked
 // Runs the check in a separate Node process, so the simulated browser's globals never touch the
 // eval's own fetch/timers and every run starts clean. Returns the failures (empty = it works) and,
 // when it works, the size of the app's JavaScript.
+const lateErrors: string[] = [];
 export function behaveMeasured(task: Task, stack: Stack, files: Files): Promise<Checked> {
   if (!checkFor(task)) return Promise.resolve({ errors: [] });
   return new Promise((resolve) => {
@@ -572,7 +574,11 @@ export function behaveMeasured(task: Task, stack: Stack, files: Files): Promise<
     child.on("close", () => {
       clearTimeout(timer);
       try { resolve(JSON.parse(out.trim().split("\n").pop()!)); }
-      catch { resolve({ errors: [`Prueba de comportamiento: la app colgó o terminó sin responder. ${err.slice(0, 200)}`] }); }
+      catch {
+        // Node prints the source line first; the error's own line says what happened.
+        const line = err.split("\n").find((l) => /^(\w*Error|Uncaught)\b/.test(l)) ?? err.slice(0, 200);
+        resolve({ errors: [`Prueba de comportamiento: la app colgó o terminó sin responder. ${line.slice(0, 300)}`] });
+      }
     });
     child.stdin.end(JSON.stringify({ task, stack, files }));
   });
@@ -584,6 +590,9 @@ if (process.argv.includes("--worker")) {
   // In a browser a rejected promise nobody awaits (a failed write without try/catch) is logged and
   // the page keeps working; in Node it would end this process and read as "the app hung".
   process.on("unhandledRejection", () => {});
+  // Likewise an exception in a timer or an event handler: the browser logs it and the page goes
+  // on. It is kept and reported if the check fails, so it isn't read as "the app hung".
+  process.on("uncaughtException", (e) => { lateErrors.push(String(e?.stack ?? e).split("\n").slice(0, 3).join(" | ")); });
   let input = "";
   for await (const chunk of process.stdin) input += chunk;
   const { task, stack, files } = JSON.parse(input);
