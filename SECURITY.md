@@ -10,7 +10,7 @@ Please report vulnerabilities privately through GitHub's **Report a vulnerabilit
 - **Sessions**: random tokens in `HttpOnly; SameSite=Lax` cookies (`Secure` over HTTPS), 30 days, expired on the server too; `auth.logoutAll()`; a new password ends the user's other sessions.
 - **Rate limit**: 600 api requests per address per minute (`ART_RATE_LIMIT`), then `429`.
 - **Login**: 10 failed attempts per email and address in 15 minutes, then `429`.
-- **Password reset and email verification**: single-use links valid for one hour, stored as SHA-256 hashes; a reset request answers the same whether the account exists or not (5 per email per hour), and a reset ends every session of the account. New accounts are always unverified.
+- **Password reset and email verification**: single-use links valid for one hour, stored as SHA-256 hashes, pointing to `ART_ORIGIN` (never to the address a request claims); a reset request answers the same whether the account exists or not (5 per email per hour), and a reset ends every session of the account. New accounts are always unverified.
 - **Sign-in with Google/GitHub**: the flow carries a random `state` checked against an `HttpOnly` cookie; only provider-verified emails are accepted.
 - **CSRF**: writes must be JSON and uploads must carry `x-file-name`, which a cross-site page can't send without a CORS preflight (never answered).
 - **Access control**: `login`, `private` (rows scoped to their owner) and `admin` apis; relations can only point to rows the writer can see.
