@@ -2,10 +2,13 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
-## 0.2.10 (2026-10-13)
+## 0.2.11 (2026-10-13)
 
 - Security (thanks to @hercase, #2): the links in verification and password-reset emails point to `ART_ORIGIN`, never to the `Origin`/`Host` a request claims (a request with a forged host could have made the token travel to another site); without `ART_ORIGIN` only a local address is used, with a warning. `ART_ORIGIN` is documented in the deploy guide.
 - Robustness (thanks to @hercase, #1): a malformed URL or escape (`GET http://[x`, `/%E0%A4%A`) answers 400 instead of ending the server; an error in one request answers 500 instead of ending the process. `art dev` too.
+
+## 0.2.10 (2026-10-09)
+
 - Tolerances from the measurements: `in` and `instanceof`; a `fn` declared inside a block (as models write inner helpers) is a `let` with an arrow; icon names as models write them (`"ArrowRight"`, `"arrow_right"`); a `let` named by a callback in its own initializer; `reveal { }` written as an element says it is a flag.
 - The eval's browser has a working IntersectionObserver (scroll reveals and count-ups run) and a motion-heavy landing task reported in its own table.
 - Motion without code, on every element: `reveal` (appears when scrolled into view, siblings one after another), `animate=rise|fade|zoom|slide-left|slide-right|pop` with `delay=` and `duration=` (ms), `stagger` on a container, `hover=lift|grow|glow`. Pure CSS plus one shared IntersectionObserver; reduced-motion settings are respected; a prerendered page shows everything without JavaScript. Bad values are errors with the fix. `art add MeshBackground Particles Marquee Counter`: an animated gradient, floating dots on a canvas, a scrolling strip and a count-up number, as source.

@@ -1,6 +1,6 @@
 {
   "name": "@artscript/core",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "description": "An AI-native web language that compiles to JavaScript: fewer tokens, less context, fewer errors.",
   "keywords": [
     "artscript",
