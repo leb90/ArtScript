@@ -63,6 +63,7 @@ class Parser {
   i = 0;
   errors: Diagnostic[] | null = null; // collecting (parseAll) instead of stopping at the first error
   hoisted: Decl[] = [];
+  extraStmts: Stmt[] = []; // the other names of `let a = 1, b = 2`, added after it by `block`
   members: Member[] = []; // of the component being parsed: a member written inside its view joins them
   loops = 0; // `for` blocks of the view around the current node // `server fn` written inside a component: it's a top-level declaration
   comments: Comment[];
@@ -330,6 +331,27 @@ class Parser {
   // A prop value: a literal, name, call or `(expr)`, and (as LLMs write) a comparison or other
   // binary expression right after it: `muted=error == ""`, `disabled=n > 3`.
   propValue(): Expr {
+    // `to={"/p/" + id}`, `style={`...`}` (JSX's braces): when the braces don't hold an object
+    // literal, they hold an expression. (`{ name }` is still an object.)
+    if (this.is("{")) {
+      const save = this.i;
+      try {
+        return this.propValueInner();
+      } catch (e) {
+        if (!(e instanceof CompileError)) throw e;
+        this.i = save;
+      }
+      this.next();
+      this.skipNl();
+      const inner = this.expr();
+      this.skipNl();
+      this.expect("}");
+      return inner;
+    }
+    return this.propValueInner();
+  }
+
+  propValueInner(): Expr {
     if (this.arrowAhead()) return this.arrow(); // `onAdd=(a, b) => add(a, b)` without parentheses around it
     const first = this.unary();
     const t = this.tok;
@@ -645,6 +667,7 @@ class Parser {
     while (!this.is("}")) {
       if (this.tok.t === "eof") this.fail("'}'");
       out.push(this.noted(() => this.stmt()));
+      out.push(...this.extraStmts.splice(0));
       this.skipSep();
     }
     this.closing(out);
@@ -665,7 +688,15 @@ class Parser {
       this.next();
       const name = this.binding();
       this.expect("=");
-      return { kind: "Let", name, init: this.expr(), loc: t.loc };
+      const first: Stmt = { kind: "Let", name, init: this.expr(), loc: t.loc };
+      // `const w = 400, h = 300`: one let per name (the block adds the others after this one).
+      while (this.is(",") && (this.peek().t === "id" || this.is("{", this.peek()) || this.is("[", this.peek()))) {
+        this.next();
+        const more = this.binding();
+        this.expect("=");
+        this.extraStmts.push({ kind: "Let", name: more, init: this.expr(), loc: t.loc });
+      }
+      return first;
     }
     if (this.is("if")) {
       this.next();

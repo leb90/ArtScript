@@ -533,3 +533,21 @@ test("tolerance: `use` of another .art file (a JavaScript habit) is accepted and
   const bad = compile([{ file: "data.art", src: data }, { file: "app.art", src: 'use "./data.art" { NOPE }\n\npage P {\n  text NOPE\n}\n' }]);
   assert.deepEqual(bad.diagnostics.map((d) => d.type), ["UNDEFINED_NAME"]);
 });
+
+test("tolerance: a prop value in JSX braces (`to={\"/p/\" + id}`) when it isn't an object literal", () => {
+  const src = 'page P {\n  state id = "1"\n  state c = "red"\n\n  link "x" to={"/p/" + id}\n  column style={`color: ${c}`} {\n    text "a" style={ ("color: " + c) }\n  }\n}\n';
+  const r = compile([{ file: "a.art", src }]);
+  assert.deepEqual(r.diagnostics.map((d) => d.msg), []);
+  assert.equal(printProgram(parse(src, "a")), 'page P {\n  state id = "1"\n  state c = "red"\n\n  link "x" to=("/p/" + id)\n  column style=`color: ${c}` {\n    text "a" style=("color: " + c)\n  }\n}\n');
+  // `{ name }` is still an object literal, as it always was.
+  const obj = compile([{ file: "a.art", src: 'component C(o: Any) {\n  text o.name\n}\n\npage P {\n  state name = "Ana"\n\n  C o={ name }\n}\n' }]);
+  assert.deepEqual(obj.diagnostics, []);
+  assert.match(obj.js!, /\{ "name": name\.v \}/);
+});
+
+test("tolerance: several declarations in one let/const (`const w = 400, h = 300`)", () => {
+  const src = 'page P {\n  state n = 0\n  fn size() {\n    const w = 400, h = 300\n    let a = 1, b = a + 1\n    n = w + h + b\n  }\n\n  text n\n}\n';
+  const r = compile([{ file: "a.art", src }]);
+  assert.deepEqual(r.diagnostics.map((d) => d.msg), []);
+  assert.equal(printProgram(parse(src, "a")), src.replace("const w = 400, h = 300", "let w = 400\n    let h = 300").replace("let a = 1, b = a + 1", "let a = 1\n    let b = a + 1"));
+});

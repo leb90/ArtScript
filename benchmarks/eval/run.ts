@@ -334,6 +334,8 @@ async function dryRun() {
   }
   const bad = applyEditAnswer(todoMod, "react", "```edit Todos.tsx\n<<<<<<< SEARCH\nno existe\n=======\nx\n>>>>>>> REPLACE\n```");
   console.log(`${bad && "errors" in bad ? "✓" : "✗"} catches a missing SEARCH text`);
+  const nested = await validate("artscript", { "app.art": 'use "./lib/data.ts" { a }\n\npage P {\n  text a\n}\n', "lib/data.ts": "export const a = 1;\n" });
+  console.log(`${nested.length ? "✗" : "✓"} an answer with a module in a folder (lib/data.ts)${nested.length ? ": " + nested[0] : ""}`);
   // Behavior checks against reference solutions: proves the harness itself works for every stack.
   const refs: [string, string, Stack][] = [];
   for (const t of ["counter", "todo"]) for (const st of STACK_IDS) refs.push([t, join(REPO, "benchmarks", "tasks", t, st), st]);

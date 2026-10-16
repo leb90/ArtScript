@@ -34,7 +34,11 @@ function validateArt(files: Files): string[] {
   const dir = join(WORK, `art-${process.pid}-${seq++}`);
   mkdirSync(dir, { recursive: true });
   try {
-    for (const n of Object.keys(files)) writeFileSync(join(dir, n), files[n]);
+    // Answers may put modules in folders (`lib/data.ts`).
+    for (const n of Object.keys(files)) {
+      mkdirSync(dirname(join(dir, n)), { recursive: true });
+      writeFileSync(join(dir, n), files[n]);
+    }
     const r = compile(names.map((n) => ({ file: join(dir, n), src: files[n] })));
     return r.diagnostics.map((d) => formatAI({ ...d, loc: { ...d.loc, file: d.loc.file.startsWith(dir) ? d.loc.file.slice(dir.length + 1) : d.loc.file } }));
   } finally { rmSync(dir, { recursive: true, force: true }); }
