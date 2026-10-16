@@ -35,10 +35,16 @@ page Users "/users" {
 ```
 use "date-fns" { format, addDays as plus } // npm package (install it with npm first)
 use "canvas-confetti" as confetti       // default export
-use "./lib/money.ts" { toUSD }          // your own JS/TS module: the way out for anything not built in
+use "./sim.ts" { step, draw }           // your own .ts: code that drives a canvas or runs every frame
+
+const TAX = 0.21                        // module level, shared by every component: constants,
+const PEOPLE = [{ name: "Ana" }]        // data (literals may span lines), caches (`const cache = new Map()`)
+fn toUSD(n) {                           // formatters and helpers are fns here, not a .ts module
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n)
+}
 ```
 
-- Imported names work in every component and server fn, typed `Any`.
+- Imported names work in every component and server fn, typed `Any`: the checker can't verify them, and it warns (`MODULE_COULD_BE_ART`) about a local module that only holds data and functions.
 
 ## Members (inside component/page, before the view)
 
@@ -56,7 +62,7 @@ fn add(x) {                      // function; body = JS statements
 - Assigning to a `state` updates the UI: `count++`, `name = "x"`, `users.push(u)`, `user.name = "x"`, also through a fn parameter (`fn sell(p) { p.stock-- }`).
 - A component that assigns its prop (`items = items.filter(...)`) changes the parent's state: pass a state (`List items=items`).
 - No hooks, setters or manual dependencies.
-- Statements: expression, `let x = ...`, `if cond { } else { }`, `for x in xs { }`, `for (let i = 0; i < n; i++) { }`, `while cond { }`, `break`, `continue`, `return`, `try { } catch (e) { } finally { }`. Operators are JavaScript's, bitwise ones included (`& | ^ ~ << >> >>>`), and `in` / `instanceof`. `fn`, `let` and `ref` compile to plain JavaScript (no overhead in a loop); a `let` or `const` written as a member is a `computed`. Heavy imperative code (a physics loop, a parser, canvas drawing) goes in a `.ts`/`.js` file imported with `use`: plain JavaScript with no restrictions; ArtScript is for what it shortens.
+- Statements: expression, `let x = ...`, `if cond { } else { }`, `for x in xs { }`, `for (let i = 0; i < n; i++) { }`, `while cond { }`, `break`, `continue`, `return`, `try { } catch (e) { } finally { }`. Operators are JavaScript's, bitwise ones included (`& | ^ ~ << >> >>>`), and `in` / `instanceof`. Destructuring works in parameters, `let` and `for`: `({ name }) => name`, `fn f({ a, b = 1 })`, `let [first, ...rest] = xs`, `for [k, v] in Object.entries(o)`, `for { name } in people` (defaults are literals). `fn`, `let` and `ref` compile to plain JavaScript (no overhead in a loop); a `let` or `const` written as a member is a `computed`. Heavy imperative code (a physics loop, a parser, canvas drawing) goes in a `.ts`/`.js` file imported with `use`: plain JavaScript with no restrictions; ArtScript is for what it shortens.
 - For DOM libraries (charts, maps), timers and subscriptions:
   ```
   ref box                          // the element marked `canvas ref=box` (set before mount runs)

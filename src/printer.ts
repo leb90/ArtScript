@@ -56,7 +56,7 @@ export function printExpr(e: Expr): string {
         return `${/^[A-Za-z_$][\w$]*$/.test(p.key) ? p.key : JSON.stringify(p.key)}: ${printExpr(p.value)}`;
       }).join(", ") + " }";
     case "Arrow": {
-      const ps = e.params.length === 1 ? e.params[0] : `(${e.params.join(", ")})`;
+      const ps = e.params.length === 1 && !/^[{[]/.test(e.params[0]) ? e.params[0] : `(${e.params.join(", ")})`;
       const body = Array.isArray(e.body) ? printBlockInline(e.body) : wrapArrowBody(e.body);
       return `${ps} => ${body}`;
     }
@@ -130,7 +130,7 @@ export function printExprLines(e: Expr, depth: number, force = false): string[] 
     return ["[", ...entries(e.items.map((it) => printExprLines(it, depth + 1))), pad + "]"];
   }
   if (e.kind === "Arrow") {
-    const ps = e.params.length === 1 ? e.params[0] : `(${e.params.join(", ")})`;
+    const ps = e.params.length === 1 && !/^[{[]/.test(e.params[0]) ? e.params[0] : `(${e.params.join(", ")})`;
     if (Array.isArray(e.body)) return [`${ps} => {`, ...printStmts(e.body, depth + 1), pad + "}"];
     const [first, ...rest] = printExprLines(e.body, depth, e.body.kind === "Object" && e.body.props.length > 0);
     return e.body.kind === "Object" && rest.length ? [`${ps} => (${first}`, ...rest.slice(0, -1), rest.at(-1) + ")"] : [`${ps} => ${e.body.kind === "Object" ? `(${first})` : first}`, ...rest];

@@ -11,6 +11,8 @@ export type Diagnostic = {
   expected?: string;
   actual?: string;
   fixes?: string[];
+  // A warning doesn't stop the build (absent: an error).
+  severity?: "warning";
 };
 
 // Single error catalog: source for the docs (`docs/errors`).
@@ -36,6 +38,8 @@ export const CATALOG: Record<string, { code: string; desc: string }> = {
   TEXT_BRACES: { code: "E1060", desc: "`{name}` inside a plain string isn't interpolated; use a template `${name}`." },
   UNKNOWN_MODULE: { code: "E1050", desc: "The module of a `use` can't be found (not installed, or a wrong path)." },
   UNKNOWN_EXPORT: { code: "E1051", desc: "The module doesn't export that name." },
+  // Warnings
+  MODULE_COULD_BE_ART: { code: "W1052", desc: "A local .ts/.js module only holds data and functions (no DOM, no frame loop, no class): it could be ArtScript, which the checker verifies." },
   AUTH_REQUIRED: { code: "E1040", desc: "`login` and `private` need an `auth` declaration." },
   // View
   UNKNOWN_ELEMENT: { code: "E2001", desc: "Unknown UI element or component." },
@@ -75,7 +79,7 @@ export function fmtLoc(l: Loc): string {
 
 // Human-readable output.
 export function formatHuman(d: Diagnostic): string {
-  let s = `${fmtLoc(d.loc)} error ${d.code} ${d.type}: ${d.msg}`;
+  let s = `${fmtLoc(d.loc)} ${d.severity ?? "error"} ${d.code} ${d.type}: ${d.msg}`;
   if (d.expected) s += `\n  expected: ${d.expected}`;
   if (d.actual) s += `\n  actual:   ${d.actual}`;
   if (d.fixes?.length) s += `\n  fix:      ${d.fixes.join("  |  ")}`;
@@ -84,7 +88,7 @@ export function formatHuman(d: Diagnostic): string {
 
 // AI output: one JSON line per error, only non-empty fields, no redundant prose.
 export function formatAI(d: Diagnostic): string {
-  const o: Record<string, unknown> = { code: d.code, type: d.type, loc: fmtLoc(d.loc) };
+  const o: Record<string, unknown> = { code: d.code, type: d.type, ...(d.severity ? { severity: d.severity } : {}), loc: fmtLoc(d.loc) };
   if (d.at) o.at = d.at;
   if (d.expr) o.expr = d.expr;
   if (d.expected) o.expected = d.expected;

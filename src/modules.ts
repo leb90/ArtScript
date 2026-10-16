@@ -22,6 +22,16 @@ function loadEsbuild() {
 
 export const isLocal = (source: string) => source.startsWith(".") || isAbsolute(source);
 
+// The local files a module pulls in (itself and what it imports or re-exports), once
+// `inspectModule` has resolved it; null when unknown (no bundler, or not resolved).
+export function moduleFiles(source: string, fromFile: string): string[] | null {
+  return cache.get(`${dirname(resolve(fromFile))}\0${source}`)?.files.map(([f]) => f) ?? null;
+}
+
+export function readText(file: string): string {
+  try { return fs?.readFileSync(file, "utf8") ?? ""; } catch { return ""; }
+}
+
 // The specifier to emit in generated code: local modules become absolute paths (the generated
 // code doesn't live next to the source file), packages stay as they are.
 export function specifier(source: string, fromFile: string): string {

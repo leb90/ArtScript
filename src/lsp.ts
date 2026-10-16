@@ -50,13 +50,14 @@ export class LanguageServer {
   diagnose(uri: string) {
     const file = fileURLToPath(uri);
     const { program, diagnostics } = parseProject(this.sources(file));
-    const all: Diagnostic[] = diagnostics.length ? diagnostics : analyze(program).diagnostics;
+    const a = diagnostics.length ? null : analyze(program);
+    const all: Diagnostic[] = a ? [...a.diagnostics, ...a.warnings] : diagnostics;
     const lines = (this.docs.get(uri) ?? "").split("\n");
     const items = all.filter((d) => resolve(d.loc.file) === resolve(file)).map((d) => {
       const line = Math.max(0, d.loc.line - 1), col = Math.max(0, d.loc.col - 1);
       const len = d.expr && lines[line]?.slice(col).startsWith(d.expr) ? d.expr.length : Math.max(1, (lines[line]?.length ?? col + 1) - col);
       const fix = d.fixes?.length ? `\nfix: ${d.fixes.slice(0, 3).join(" | ")}` : "";
-      return { range: { start: { line, character: col }, end: { line, character: col + len } }, severity: 1, source: "artscript", code: d.code, message: `${d.msg}${fix}` };
+      return { range: { start: { line, character: col }, end: { line, character: col + len } }, severity: d.severity === "warning" ? 2 : 1, source: "artscript", code: d.code, message: `${d.msg}${fix}` };
     });
     this.send({ jsonrpc: "2.0", method: "textDocument/publishDiagnostics", params: { uri, diagnostics: items } });
   }

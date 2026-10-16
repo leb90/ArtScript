@@ -43,12 +43,15 @@ export function mcpTools(root: string, specDir: string): Tool[] {
     },
     {
       name: "art_check",
-      description: "Type-checks the project. Returns `ok` or the errors as JSON lines with code, location, expected/actual and fixes.",
+      description: "Type-checks the project. Returns `ok` or the errors as JSON lines with code, location, expected/actual and fixes; warnings (`\"severity\":\"warning\"`) don't stop the build.",
       inputSchema: { type: "object", properties: dirProp },
       run: (a) => {
         const { program, diagnostics } = parseProject(sources(dirOf(a)));
-        const errs = diagnostics.length ? diagnostics : analyze(program).diagnostics;
-        return errs.length ? fail(errs.map(formatAI).join("\n")) : ok("ok");
+        const an = diagnostics.length ? null : analyze(program);
+        const errs = an ? an.diagnostics : diagnostics;
+        const warns = an?.warnings ?? [];
+        if (errs.length) return fail([...errs, ...warns].map(formatAI).join("\n"));
+        return ok(warns.length ? [...warns.map(formatAI), "ok"].join("\n") : "ok");
       },
     },
     {

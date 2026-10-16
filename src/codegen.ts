@@ -1,6 +1,7 @@
 // Generates an ES module that builds the DOM directly (no virtual DOM) using runtime.js.
 import type { ApiAccess, ComponentDecl, FieldRules, Element, Expr, Loc, Member, Program, ServerFnDecl, Stmt, ViewNode } from "./ast.ts";
 import { specifier } from "./modules.ts";
+import { boundNames, isPattern } from "./patterns.ts";
 import { printDecl, printType } from "./printer.ts";
 import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
 import { slotNames, twoWayProps } from "./checker.ts";
@@ -13,7 +14,9 @@ let twoWay = new Map<string, Set<string>>();
 let slotsOf = new Map<string, Set<string>>();
 
 type Kind = "state" | "data" | "computed" | "prop" | "fn" | "let" | "loop" | "param";
-type Sym = { kind: Kind; sig?: string }; // sig: signal to notify on mutation (loops over a state)
+// sig: signal to notify on mutation (loops over a state). access: the JS a name reads as (a name a
+// view `for` destructures from its row: `for { name } in people`).
+type Sym = { kind: Kind; sig?: string; access?: string };
 
 class Scope {
   vars = new Map<string, Sym>();
@@ -195,7 +198,7 @@ function serverFnsModule(program: Program, fns: ServerFnDecl[]): string {
     const g = new ComponentGen(host);
     g.ind = 2;
     const scope = new Scope(null);
-    for (const name of ["db", "me", "fail", "email", ...f.params]) scope.vars.set(name, { kind: "param" });
+    for (const name of ["db", "me", "fail", "email", ...f.params.flatMap(boundNames)]) scope.vars.set(name, { kind: "param" });
     g.stmts(f.body, scope);
     return { g, scope };
   };
@@ -204,7 +207,7 @@ function serverFnsModule(program: Program, fns: ServerFnDecl[]): string {
     const g = new ComponentGen(host);
     g.ind = 2;
     const scope = new Scope(null);
-    for (const name of ["db", "me", "fail", "email", ...f.params]) scope.vars.set(name, { kind: "param" });
+    for (const name of ["db", "me", "fail", "email", ...f.params.flatMap(boundNames)]) scope.vars.set(name, { kind: "param" });
     g.stmts(f.body, scope);
     out.push(`  async ${f.name}({ db, me, fail, email }${f.params.map((p, i) => `, ${p}${f.defaults?.[i] ? ` = ${g.expr(f.defaults[i]!, scope)}` : ""}`).join("")}) {`, ...g.lines, "  },");
   }
@@ -313,7 +316,7 @@ class ComponentGen {
         if (m.live) this.emit("$.$live();");
       } else if (m.kind === "Fn") {
         const fs = scope.child();
-        for (const p of m.params) fs.vars.set(p, { kind: "param" });
+        for (const p of m.params.flatMap(boundNames)) fs.vars.set(p, { kind: "param" });
         const ps = m.params.map((p, i) => (m.defaults?.[i] ? `${p} = ${this.expr(m.defaults[i]!, scope)}` : p));
         this.emit(`${hasAwait(m.body) ? "async " : ""}function ${m.name}(${ps.join(", ")}) {`);
         this.ind++;
@@ -340,13 +343,17 @@ class ComponentGen {
       } else if (node.kind === "ForView") {
         const f = this.v("f");
         const s = scope.child();
-        s.vars.set(node.item, { kind: "loop", sig: this.signalOf(node.list, scope) });
+        const sig = this.signalOf(node.list, scope);
+        // A destructured row (`for { name, city } in people`) is a hidden signal read through its pattern.
+        const item = isPattern(node.item) ? this.v("row") : node.item;
+        s.vars.set(item, { kind: "loop", sig });
+        if (item !== node.item) for (const n of boundNames(node.item)) s.vars.set(n, { kind: "let", sig, access: `((${node.item}) => ${n})(${item}.v)` });
         if (node.index) s.vars.set(node.index, { kind: "loop" });
-        const params = [f, node.item, ...(node.index ? [node.index] : [])].join(", ");
+        const params = [f, item, ...(node.index ? [node.index] : [])].join(", ");
         let key = "";
         if (node.key) {
           const ks = scope.child();
-          ks.vars.set(node.item, { kind: "param" });
+          for (const n of boundNames(node.item)) ks.vars.set(n, { kind: "param" });
           if (node.index) ks.vars.set(node.index, { kind: "param" });
           key = `, (${node.item}${node.index ? `, ${node.index}` : ""}) => ${this.expr(node.key, ks)}`;
         }
@@ -707,7 +714,8 @@ class ComponentGen {
       else if (s.kind === "Let") {
         this.emit(`let ${s.name} = ${this.expr(s.init, scope)};`);
         // `let found = cart.find(...)`: mutating `found` must still notify `cart`.
-        scope.vars.set(s.name, { kind: "let", sig: this.signalOf(s.init, scope) });
+        const sig = this.signalOf(s.init, scope);
+        for (const n of boundNames(s.name)) scope.vars.set(n, { kind: "let", sig });
       } else if (s.kind === "Return") this.emit(s.value ? `return ${this.expr(s.value, scope)};` : "return;");
       else if (s.kind === "Break") this.emit("break;");
       else if (s.kind === "Continue") this.emit("continue;");
@@ -721,7 +729,8 @@ class ComponentGen {
       else if (s.kind === "For") {
         const body = scope.child();
         // Changing an item in place (`for t in todos { t.done = true }`) notifies the list's state.
-        body.vars.set(s.item, { kind: "let", sig: this.signalOf(s.list, scope) });
+        const sig = this.signalOf(s.list, scope);
+        for (const n of boundNames(s.item)) body.vars.set(n, { kind: "let", sig });
         if (s.index) body.vars.set(s.index, { kind: "let" });
         const list = this.expr(s.list, scope);
         this.emit(s.index ? `for (const [${s.index}, ${s.item}] of (${list}).entries()) {` : `for (const ${s.item} of ${list}) {`);
@@ -786,6 +795,7 @@ class ComponentGen {
       case "Null": return "null";
       case "Ident": {
         const sym = scope.get(e.name);
+        if (sym?.access) return sym.access;
         if (sym?.kind === "state" || sym?.kind === "data" || sym?.kind === "computed" || sym?.kind === "loop") return `${e.name}.v`;
         if (sym?.kind === "prop") return `${e.name}()`;
         return e.name;
@@ -837,7 +847,7 @@ class ComponentGen {
   // `itemSig`: the signal that owns the first parameter (the callback of `state.forEach(...)`).
   arrow(e: Expr & { kind: "Arrow" }, scope: Scope, itemSig?: string): string {
     const s = scope.child();
-    e.params.forEach((p, i) => s.vars.set(p, i === 0 && itemSig ? { kind: "let", sig: itemSig } : { kind: "param" }));
+    e.params.forEach((p, i) => { for (const n of boundNames(p)) s.vars.set(n, i === 0 && itemSig ? { kind: "let", sig: itemSig } : { kind: "param" }); });
     const asyncKw = (Array.isArray(e.body) ? hasAwait(e.body) : exprHasAwait(e.body)) ? "async " : "";
     if (!Array.isArray(e.body)) {
       const b = this.expr(e.body, s);

@@ -316,3 +316,107 @@ page P {
                 (call
                   (identifier)
                   (arguments))))))))))
+
+====================
+Destructuring in parameters, let and for
+====================
+
+fn label({ name, city = "?" }, [first, ...rest]) {
+  let { length } = rest
+  for [k, v] in Object.entries(city) {
+    length += v
+  }
+  return name
+}
+
+page P {
+  state people = []
+
+  text people.map(({ name }) => name).join(",")
+  for { name, n }, i in people {
+    text name
+  }
+}
+
+---
+
+(source_file
+  (function
+    (identifier)
+    (parameters
+      (parameter
+        (object_pattern
+          (pattern_property
+            (identifier))
+          (pattern_property
+            (identifier)
+            (string
+              (string_content)))))
+      (parameter
+        (array_pattern
+          (array_pattern_item
+            (identifier))
+          (rest_pattern
+            (identifier)))))
+    (block
+      (let_statement
+        (object_pattern
+          (pattern_property
+            (identifier)))
+        (identifier))
+      (for_statement
+        (array_pattern
+          (array_pattern_item
+            (identifier))
+          (array_pattern_item
+            (identifier)))
+        (call
+          (member
+            (identifier)
+            (property_identifier))
+          (arguments
+            (identifier)))
+        (block
+          (expression_statement
+            (assignment
+              (identifier)
+              (identifier)))))
+      (return_statement
+        (identifier))))
+  (page
+    (type_identifier)
+    (body
+      (state
+        (identifier)
+        (array))
+      (element
+        (tag)
+        (call
+          (member
+            (call
+              (member
+                (identifier)
+                (property_identifier))
+              (arguments
+                (arrow_function
+                  (arrow_parameter
+                    (object_pattern
+                      (pattern_property
+                        (identifier))))
+                  (identifier))))
+            (property_identifier))
+          (arguments
+            (string
+              (string_content)))))
+      (for_view
+        (object_pattern
+          (pattern_property
+            (identifier))
+          (pattern_property
+            (identifier)))
+        (identifier)
+        (identifier)
+        (children
+          (element
+            (tag)
+            (identifier)))))))

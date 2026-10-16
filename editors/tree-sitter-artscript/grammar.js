@@ -29,7 +29,11 @@ module.exports = grammar({
   supertypes: ($) => [$._declaration, $._member, $._view_node],
 
   conflicts: ($) => [
-    [$._primary, $.arrow_parameter],
+    [$._primary, $._binding],
+    [$.object, $.object_pattern],
+    [$.shorthand_property, $.pattern_property],
+    [$.array, $.array_pattern],
+    [$._primary, $.rest_pattern],
     [$.object, $.block],
     [$.object, $.children],
   ],
@@ -76,7 +80,15 @@ module.exports = grammar({
     server_job: ($) => seq("server", "job", field("name", $.identifier), "every", field("every", $.string), field("body", $.block)),
 
     parameters: ($) => seq("(", commaSep($.parameter), ")"),
-    parameter: ($) => seq(field("name", $.identifier), optional(seq(":", field("type", $.type))), optional(seq("=", field("default", $._expression)))),
+    parameter: ($) => seq(field("name", $._binding), optional(seq(":", field("type", $.type))), optional(seq("=", field("default", $._expression)))),
+
+    // A name, or a destructuring pattern (`{ name, city = "?" }`, `[first, ...rest]`).
+    _binding: ($) => choice($.identifier, $.object_pattern, $.array_pattern),
+    object_pattern: ($) => seq("{", commaSep(choice($.pattern_property, $.rest_pattern)), "}"),
+    pattern_property: ($) => seq(field("key", $.identifier), optional(seq(":", field("value", $._binding))), optional(seq("=", field("default", $._expression)))),
+    array_pattern: ($) => seq("[", commaSep(choice($.array_pattern_item, $.rest_pattern)), "]"),
+    array_pattern_item: ($) => seq($._binding, optional(seq("=", field("default", $._expression)))),
+    rest_pattern: ($) => seq("...", $.identifier),
 
     component: ($) => seq("component", field("name", typeName($)), optional($.parameters), $.body),
     page: ($) => seq(
@@ -115,7 +127,7 @@ module.exports = grammar({
       optional(seq("else", field("else", choice($.if_view, $.children)))),
     )),
     for_view: ($) => seq(
-      "for", field("item", $.identifier), optional(seq(",", field("index", $.identifier))), "in", field("list", $._expression),
+      "for", field("item", $._binding), optional(seq(",", field("index", $.identifier))), "in", field("list", $._expression),
       optional(seq("key", field("key", $._expression))),
       field("body", $.children),
     ),
@@ -156,7 +168,7 @@ module.exports = grammar({
       $.try_statement,
       $.cleanup_statement,
     ),
-    let_statement: ($) => seq(choice("let", "const"), field("name", $.identifier), "=", field("value", $._expression)),
+    let_statement: ($) => seq(choice("let", "const"), field("name", $._binding), "=", field("value", $._expression)),
     return_statement: ($) => prec.right(seq("return", optional($._expression))),
     break_statement: ($) => "break",
     continue_statement: ($) => "continue",
@@ -166,7 +178,7 @@ module.exports = grammar({
       optional(seq("else", field("else", choice($.if_statement, $.block)))),
     )),
     for_statement: ($) => seq(
-      "for", field("item", $.identifier), optional(seq(",", field("index", $.identifier))), "in", field("list", $._expression), field("body", $.block),
+      "for", field("item", $._binding), optional(seq(",", field("index", $.identifier))), "in", field("list", $._expression), field("body", $.block),
     ),
     loop_statement: ($) => seq(
       "for", "(", "let", field("name", $.identifier), "=", field("start", $._expression), ";",
@@ -201,7 +213,7 @@ module.exports = grammar({
       "=>",
       field("body", choice($.block, $._expression)),
     )),
-    arrow_parameter: ($) => seq(field("name", $.identifier), optional(seq(":", field("type", $.type)))),
+    arrow_parameter: ($) => seq(field("name", $._binding), optional(seq(":", field("type", $.type)))),
 
     ternary: ($) => prec.right(PREC.ternary, seq(
       field("condition", $._value), "?", field("then", $._expression), ":", field("else", $._expression),

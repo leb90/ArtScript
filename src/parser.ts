@@ -4,6 +4,7 @@ import type {
 import { ELEMENTS } from "./elements.ts";
 import { CompileError, diag, type Diagnostic } from "./errors.ts";
 import { lex, type Comment, type Token } from "./lexer.ts";
+import { printExpr } from "./printer.ts";
 
 const BINARY_PREC: Record<string, number> = {
   "??": 1, "||": 2, "&&": 3, "|": 3.2, "^": 3.4, "&": 3.6,
@@ -181,9 +182,9 @@ class Parser {
       if (this.is("server")) return this.serverFn();
       if (this.is("component") || this.is("page") || this.is("layout")) return this.component();
       if (this.is("test") && this.peek().t === "str") return this.test();
-      // `state`, `computed` and `fn` outside a component are shared by all of them.
+      // `state`, `computed`, `fn`, `const` and `ref` outside a component are shared by all of them.
       if (this.is("async") && this.is("fn", this.peek())) this.next(); // `async fn`: a fn with await is async by itself
-      if ((this.is("state") || this.is("computed") || this.is("fn") || this.is("let") || this.is("const")) && this.peek().t === "id") {
+      if ((this.is("state") || this.is("computed") || this.is("fn") || this.is("let") || this.is("const") || this.is("ref")) && this.peek().t === "id") {
         const loc = this.tok.loc;
         const member = this.member() as SharedDecl["member"];
         return { kind: "Shared", name: member.name, member, loc };
@@ -315,7 +316,7 @@ class Parser {
     this.expect("(");
     const params: string[] = [], defaults: (Expr | null)[] = [];
     while (!this.is(")")) {
-      params.push(this.ident("a parameter name").v);
+      params.push(this.binding("a parameter name"));
       if (this.eat(":")) this.type();
       defaults.push(this.eat("=") ? this.ternary() : null);
       if (!this.eat(",")) break;
@@ -544,7 +545,7 @@ class Parser {
     }
     if (this.is("for")) {
       this.next();
-      const item = this.ident("a loop variable").v;
+      const item = this.binding("a loop variable");
       const index = this.eat(",") ? this.ident("an index variable").v : null;
       this.expect("in");
       const list = this.expr();
@@ -660,7 +661,7 @@ class Parser {
     }
     if (this.is("let") || this.is("const")) {
       this.next();
-      const name = this.ident().v;
+      const name = this.binding();
       this.expect("=");
       return { kind: "Let", name, init: this.expr(), loc: t.loc };
     }
@@ -681,7 +682,7 @@ class Parser {
       // JavaScript's forms are accepted too: `for (const x of xs)`, `for (let i = 0; i < n; i++)`.
       const paren = this.eat("(");
       if (this.is("let") || this.is("const")) this.next();
-      const item = this.ident("a loop variable").v;
+      const item = this.binding("a loop variable");
       if (this.eat("=")) {
         const init = this.expr();
         this.expect(";");
@@ -747,6 +748,45 @@ class Parser {
     return left;
   }
 
+  // A name, or a destructuring pattern kept as its canonical text (see src/patterns.ts).
+  binding(what = "a name"): string {
+    return this.is("{") || this.is("[") ? this.pattern() : this.ident(what).v;
+  }
+
+  pattern(): string {
+    const obj = this.is("{");
+    this.next();
+    const close = obj ? "}" : "]";
+    const parts: string[] = [];
+    this.skipNl();
+    while (!this.is(close)) {
+      if (!obj && this.is(",")) { parts.push(""); this.next(); this.skipNl(); continue; } // `[, second]`
+      let part: string;
+      if (this.eat("...")) part = "..." + this.ident("a name").v;
+      else if (obj) {
+        const key = this.ident("a property name").v;
+        part = this.eat(":") ? `${key}: ${this.binding()}` : key;
+      } else part = this.binding();
+      if (this.eat("=")) {
+        const d = this.unary();
+        const literal = d.kind === "Num" || d.kind === "Str" || d.kind === "Bool" || d.kind === "Null" || (d.kind === "Unary" && d.op === "-" && d.arg.kind === "Num");
+        if (!literal) {
+          const name = part.split(":").pop()!.trim();
+          throw new CompileError(diag("UNEXPECTED_TOKEN", `a default inside a destructuring pattern must be a literal, not \`${printExpr(d)}\``, d.loc, {
+            expected: "a number, text, true, false or null", actual: printExpr(d), fixes: [`drop \`= ${printExpr(d)}\` and write \`${name} = ${name} ?? ${printExpr(d)}\` in the body`],
+          }));
+        }
+        part += ` = ${printExpr(d)}`;
+      }
+      parts.push(part);
+      this.skipNl();
+      if (!this.eat(",")) break;
+      this.skipNl();
+    }
+    this.expect(close);
+    return obj ? `{ ${parts.join(", ")} }` : `[${parts.join(", ")}]`;
+  }
+
   arrowAhead(): boolean {
     // `async x => ...` / `async (a) => ...`: the word is dropped (an arrow with `await` is async by itself).
     if (this.is("async") && this.tok.t === "id") {
@@ -773,7 +813,7 @@ class Parser {
     const params: string[] = [];
     if (this.eat("(")) {
       while (!this.is(")")) {
-        params.push(this.ident("a parameter").v);
+        params.push(this.binding("a parameter"));
         if (this.eat(":")) this.type(); // `(p: Product) => ...`: annotation dropped
         if (!this.eat(",")) break;
       }

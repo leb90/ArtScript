@@ -3,7 +3,8 @@ import type { ComponentDecl, Element, Expr, Field, Loc, ModelDecl, Program, Serv
 import { ANIMATIONS, BREAKPOINTS, ELEMENTS, ENUM_PROPS, HOVERS, RESPONSIVE_PROPS, TAGS } from "./elements.ts";
 import { ICONS, iconName } from "./icons.ts";
 import { CATALOG, diag, suggest, type Diagnostic } from "./errors.ts";
-import { inspectModule, isLocal, packageName } from "./modules.ts";
+import { inspectModule, isLocal, moduleFiles, packageName, readText } from "./modules.ts";
+import { boundNames } from "./patterns.ts";
 import { printDecl, printExpr, printType } from "./printer.ts";
 
 export type Ty =
@@ -168,12 +169,28 @@ export function slotNames(nodes: ViewNode[], out = new Set<string>()): Set<strin
   return out;
 }
 
-export type Analysis = { diagnostics: Diagnostic[]; models: ModelInfo; comps: CompInfo; symbols: Map<string, Map<string, Sym>> };
+// `diagnostics` are errors; `warnings` don't stop the build.
+export type Analysis = { diagnostics: Diagnostic[]; warnings: Diagnostic[]; models: ModelInfo; comps: CompInfo; symbols: Map<string, Map<string, Sym>> };
+
+// What makes a local module worth being TypeScript (see `couldBeArt`).
+const IMPERATIVE = /\b(document|window|requestAnimationFrame|cancelAnimationFrame|getContext|OffscreenCanvas|WebGL\w*|HTML\w*Element|SVG\w*Element|Element|Node|addEventListener|appendChild|createElement|querySelector(All)?|ResizeObserver|IntersectionObserver|MutationObserver|Worker|AudioContext|container)\b|\bclass\s+[A-Za-z_$]/;
+
+// A module that imports from a package and re-exports it configures that library (Chart.js with the
+// pieces an app draws): its place is a module.
+function reexportsPackage(text: string): boolean {
+  if (/export\s*(\*|\{[^}]*\})\s*from\s*["'][^./"']/.test(text)) return true;
+  const fromPackages = new Set<string>();
+  for (const m of text.matchAll(/import\s+(?:(\w+)\s*,?\s*)?(?:\{([^}]*)\})?\s*from\s*["'][^./"'][^"']*["']/g)) {
+    if (m[1]) fromPackages.add(m[1]);
+    for (const n of (m[2] ?? "").split(",")) if (n.trim()) fromPackages.add(n.trim().split(/\s+as\s+/).pop()!);
+  }
+  return [...text.matchAll(/export\s*\{([^}]*)\}(?!\s*from)/g)].some((m) => m[1].split(",").some((n) => fromPackages.has(n.trim().split(/\s+as\s+/)[0])));
+}
 
 export function analyze(program: Program): Analysis {
   const c = new Checker(program);
   const diagnostics = c.run();
-  return { diagnostics, models: c.models, comps: c.comps, symbols: c.symbols };
+  return { diagnostics, warnings: c.warns, models: c.models, comps: c.comps, symbols: c.symbols };
 }
 
 export function check(program: Program): Diagnostic[] {
@@ -183,6 +200,7 @@ export function check(program: Program): Diagnostic[] {
 class Checker {
   program: Program;
   diags: Diagnostic[] = [];
+  warns: Diagnostic[] = [];
   models: ModelInfo = new Map();
   comps: CompInfo = new Map();
   at = "";
@@ -209,6 +227,10 @@ class Checker {
 
   err(type: keyof typeof CATALOG, msg: string, loc: Loc, extra: Partial<Diagnostic> = {}) {
     this.diags.push(diag(type, msg, loc, { at: this.at || undefined, ...extra }));
+  }
+
+  warn(type: keyof typeof CATALOG, msg: string, loc: Loc, extra: Partial<Diagnostic> = {}) {
+    this.warns.push(diag(type, msg, loc, { at: this.at || undefined, severity: "warning", ...extra }));
   }
 
   run(): Diagnostic[] {
@@ -448,6 +470,7 @@ class Checker {
         expr: `as ${d.default}`, fixes: named.length ? [`use "${d.source}" { ${(suggest(d.default, named)[0] ?? named[0])} }`] : [],
       });
     }
+    if (isLocal(d.source)) this.couldBeArt(d);
     if (!info.exports) return; // CommonJS: names can't be known statically
     for (const local of d.names) {
       const name = d.renames?.[local] ?? local;
@@ -455,6 +478,25 @@ class Checker {
         this.err("UNKNOWN_EXPORT", `'${d.source}' doesn't export '${name}'`, d.loc, { expr: name, fixes: suggest(name, info.exports) });
       }
     }
+  }
+
+  // A .ts/.js file earns its place when its code drives the DOM, runs every frame or defines classes
+  // (an engine, a canvas, a library that owns its element). Data, constants and formatters belong in
+  // .art, where the checker verifies them; what comes from a module is Any.
+  couldBeArt(d: UseDecl) {
+    const files = moduleFiles(d.source, d.loc.file);
+    if (!files?.length) return;
+    const texts = files.map(readText);
+    if (texts.some((t) => IMPERATIVE.test(t) || reexportsPackage(t))) return;
+    // A server fn can't call a top-level fn (yet): code it shares with the page has to be a module.
+    const serverCode = this.program.decls.filter((x) => x.kind === "ServerFn").map((x) => printDecl(x)).join("\n");
+    if ([d.default, ...d.names].some((n) => n && new RegExp(`\\b${n}\\b`).test(serverCode))) return;
+    this.warn("MODULE_COULD_BE_ART", `'${d.source}' only holds data and functions: it could be ArtScript`, d.loc, {
+      expr: d.source,
+      expected: "a .ts file only for code that drives the DOM, runs every frame or defines classes",
+      actual: "data, constants or functions",
+      fixes: [`move its constants and functions into a .art file (\`const X = ...\`, \`fn name(a) { ... }\`, \`use "pkg" { x }\` for npm) and remove this \`use\``],
+    });
   }
 
   // Imported names are visible in every component and server fn.
@@ -479,7 +521,7 @@ class Checker {
     scope.vars.set("email", { kind: "global", ty: fn({ k: "async", of: { k: "void" } }) }); // email(to, subject, text)
     // Node's globals: secrets come from `process.env`.
     for (const g of ["process", "Buffer"]) scope.vars.set(g, { kind: "global", ty: ANY });
-    for (const p of d.params) scope.vars.set(p, { kind: "param", ty: ANY });
+    for (const p of d.params.flatMap(boundNames)) scope.vars.set(p, { kind: "param", ty: ANY });
     this.returns = [];
     this.stmts(d.body, scope);
     const rs = this.returns.filter((t) => t.k !== "void");
@@ -579,7 +621,7 @@ class Checker {
         else if (t.k !== "any") this.err("TYPE_MISMATCH", "`data` needs an api call", m.expr.loc, { expr: printExpr(m.expr), expected: "api.<name>.list() | get(id)", actual: show(t) });
       } else if (m.kind === "Fn") {
         const fs = new Scope(scope);
-        for (const p of m.params) fs.vars.set(p, { kind: "param", ty: ANY });
+        for (const p of m.params.flatMap(boundNames)) fs.vars.set(p, { kind: "param", ty: ANY });
         for (const d of m.defaults ?? []) if (d) this.infer(d, scope);
         this.stmts(m.body, fs);
       }
@@ -610,7 +652,7 @@ class Checker {
         if (lt.k === "list") elem = lt.of;
         else if (lt.k !== "any") this.err("NOT_A_LIST", "`for` needs a list", n.list.loc, { expr: printExpr(n.list), expected: "T[]", actual: show(lt) });
         const s = new Scope(scope);
-        s.vars.set(n.item, { kind: "loop", ty: elem });
+        for (const name of boundNames(n.item)) s.vars.set(name, { kind: "loop", ty: name === n.item ? elem : ANY });
         if (n.index) s.vars.set(n.index, { kind: "loop", ty: NUM });
         if (n.key) this.infer(n.key, s);
         this.view(n.body, s);
@@ -826,10 +868,11 @@ class Checker {
       else if (s.kind === "Let") {
         // `let tick = () => requestAnimationFrame(tick)`, `let io = new IntersectionObserver(() => io.disconnect())`:
         // a callback in the initializer may name the variable.
-        scope.vars.set(s.name, { kind: "let", ty: ANY });
+        const names = boundNames(s.name);
+        for (const n of names) scope.vars.set(n, { kind: "let", ty: ANY });
         const ty = this.infer(s.init, scope);
         // `let b = null` is a slot for a value that comes later: anything may be assigned to it.
-        scope.vars.set(s.name, { kind: "let", ty: ty.k === "null" ? ANY : ty });
+        if (names[0] === s.name) scope.vars.set(s.name, { kind: "let", ty: ty.k === "null" ? ANY : ty });
       }
       else if (s.kind === "Return") {
         const t = s.value ? this.infer(s.value, scope) : { k: "void" as const };
@@ -864,7 +907,7 @@ class Checker {
         if (lt.k === "opt") lt = lt.of;
         if (lt.k !== "list" && lt.k !== "any") this.err("NOT_A_LIST", "`for` needs a list", s.list.loc, { expr: printExpr(s.list), expected: "T[]", actual: show(lt) });
         const body = new Scope(scope);
-        body.vars.set(s.item, { kind: "let", ty: lt.k === "list" ? lt.of : ANY });
+        for (const name of boundNames(s.item)) body.vars.set(name, { kind: "let", ty: name === s.item && lt.k === "list" ? lt.of : ANY });
         if (s.index) body.vars.set(s.index, { kind: "let", ty: NUM });
         this.stmts(s.body, body, true);
       } else if (s.kind === "Cleanup") {
@@ -1163,7 +1206,7 @@ class Checker {
         // Passed where a typed callback goes (`onSave=(u => ...)` for `Fn(User)`): its params are typed.
         const hint = this.arrowHint;
         this.arrowHint = null;
-        e.params.forEach((p, i) => s.vars.set(p, { kind: "param", ty: hint?.k === "fn" ? hint.params?.[i] ?? ANY : ANY }));
+        e.params.forEach((p, i) => { for (const n of boundNames(p)) s.vars.set(n, { kind: "param", ty: n === p && hint?.k === "fn" ? hint.params?.[i] ?? ANY : ANY }); });
         if (Array.isArray(e.body)) {
           // Returns inside a callback belong to the callback, not to the enclosing server fn.
           const outer = this.returns;

@@ -7,7 +7,7 @@ ArtScript covers the UI, the data and the server. For anything else (dates, char
 ```art
 use "date-fns" { format, addDays }
 use "canvas-confetti" as confetti
-use "./lib/money.ts" { toUSD }
+use "./sim.ts" { step, draw }
 ```
 
 - `{ a, b }` imports named exports (`{ a as b }` renames one); `as name` imports the default export.
@@ -17,25 +17,68 @@ use "./lib/money.ts" { toUSD }
 
 The compiler checks that the module exists and that it exports every name you import, so a typo is an error at compile time with the list of real exports. `art build` bundles everything into one minified file; only what you use is included.
 
-## Your own TypeScript
+## Data, constants and helpers: in `.art`
 
-The way out for anything the language doesn't have is a plain module:
-
-```ts
-// src/lib/money.ts
-export const toUSD = (cents: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
-```
+Mock data, constants, caches and formatters are ArtScript, written at the top level of any `.art` file and shared by every component. The checker verifies them; what a `.ts` module exports arrives as `Any`.
 
 ```art
-use "./lib/money.ts" { toUSD }
+use "date-fns" { formatDistanceToNow }
 
-component Price(cents: Number) {
-  text toUSD(cents) bold
+const TAX = 0.21
+const PEOPLE = [
+  { name: "Ana", city: "Lima", joined: "2024-03-01" },
+  { name: "Bea", city: "Quito", joined: "2025-07-15" }
+]
+const avatars = new Map()
+
+fn money(n) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n)
+}
+
+fn since(iso) {
+  return formatDistanceToNow(new Date(iso))
+}
+
+component Person(name: String, joined: String) {
+  text `${name}, member for ${since(joined)}`
 }
 ```
 
-This website does the same: its pages are ArtScript, and two small TypeScript modules render the repository's Markdown and run the compiler in the playground.
+## When a `.ts` file earns its place
+
+Code that drives the DOM imperatively or runs every frame: an animation loop, canvas or WebGL drawing, a parser, or the wrapper of a library that owns its element (a map, a chart). There it's plain TypeScript with no restrictions:
+
+```ts
+// src/sim.ts
+export function step(balls: Ball[], dt: number) { /* physics */ }
+export function draw(ctx: CanvasRenderingContext2D, balls: Ball[]) { /* canvas */ }
+```
+
+```art
+use "./sim.ts" { step, draw }
+
+page Sim "/" {
+  ref canvas
+  state balls = []
+
+  mount {
+    let ctx = canvas.getContext("2d")
+    let frame = 0
+    let tick = () => {
+      step(balls, 1 / 60)
+      draw(ctx, balls)
+      frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    cleanup {
+      cancelAnimationFrame(frame)
+    }
+  }
+  canvas ref=canvas width=400 height=300
+}
+```
+
+`art check` warns (`MODULE_COULD_BE_ART`) when a local module only holds data and functions, with the fix. This website follows the same split: its pages are ArtScript, and TypeScript modules render the repository's Markdown and run the compiler in the playground.
 
 ## DOM libraries: charts, maps, editors
 

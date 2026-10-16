@@ -24,7 +24,7 @@ test("website: the ArtScript code in every guide is valid", () => {
     for (const m of md.matchAll(/```art\n([\s\S]*?)```/g)) {
       const code = m[1];
       // A whole program, a component body (members and view), or statements of a fn.
-      const tries = /^((page|component|layout|model|use|server|test)\b|api \w+:|auth \w)/.test(code) ? [code] : [`page W "/w" {\n${code}\n}`, `page W "/w" {\n  fn w() {\n${code}\n  }\n}`];
+      const tries = /^((page|component|layout|model|use|server|test|const|fn)\b|api \w+:|auth \w)/.test(code) ? [code] : [`page W "/w" {\n${code}\n}`, `page W "/w" {\n  fn w() {\n${code}\n  }\n}`];
       const errors = tries.map((src) => compile([{ file: "snippet.art", src }]).diagnostics.filter((d) => !CONTEXT.has(d.type) && !(d.type === "UNKNOWN_ELEMENT" && /component/.test(d.msg))));
       const best = errors.reduce((a, b) => (b.length < a.length ? b : a));
       for (const d of best) problems.push(`${f}: ${d.type}: ${d.msg}\n${code.split("\n").slice(0, 2).join("\n")}`);

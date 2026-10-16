@@ -367,8 +367,16 @@ Install it first: `npm install chart.js`.
 
 ## Format dates and money
 
+Formatters are `fn`s at the top level of a `.art` file: every component can call them, and the checker verifies them.
+
 ```art
-use "./lib/format.ts" { day, money }
+fn day(ms) {
+  return new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(ms)
+}
+
+fn money(n) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n)
+}
 
 page Invoice "/" {
   state issued = Date.now()
@@ -377,12 +385,6 @@ page Invoice "/" {
   text `Issued ${day(issued)}` muted
   text money(total) bold large
 }
-```
-
-```ts
-// src/lib/format.ts
-export const day = (ms: number) => new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(ms);
-export const money = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 ```
 
 ## An admin area

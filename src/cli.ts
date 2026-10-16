@@ -348,9 +348,11 @@ switch (cmd) {
     const ai = flags.has("--ai");
     const src = sources(pos[0] ?? defaultTarget());
     const { program, diagnostics } = parseProject(src);
-    const diags = diagnostics.length ? diagnostics : analyze(program).diagnostics;
-    report(diags, ai);
-    if (!diags.length) console.log(ai ? '{"ok":true}' : `ok: ${src.length} file(s), ${program.decls.length} declarations`);
+    const a = diagnostics.length ? null : analyze(program);
+    const diags = a ? a.diagnostics : diagnostics;
+    const warns = a?.warnings ?? [];
+    report([...diags, ...warns], ai);
+    if (!diags.length) console.log(ai ? '{"ok":true}' : `ok: ${src.length} file(s), ${program.decls.length} declarations${warns.length ? `, ${warns.length} warning(s)` : ""}`);
     process.exit(diags.length ? 1 : 0);
   }
 

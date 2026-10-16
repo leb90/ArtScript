@@ -126,7 +126,7 @@ Any npm package or JS/TS module of your own can be used with `use`; the compiler
 
 ```
 use "date-fns" { format }
-use "./lib/money.ts" { toUSD }
+use "./sim.ts" { step, draw }   // your own TypeScript, for code that drives a canvas or runs every frame
 ```
 
 To change existing code, an AI can send a small `art patch` instead of rewriting files; the whole patch is typechecked and applied atomically:
