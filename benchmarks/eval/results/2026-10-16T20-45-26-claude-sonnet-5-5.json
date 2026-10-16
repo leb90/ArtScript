@@ -1,0 +1,173 @@
+{
+  "model": "claude-sonnet-5-5",
+  "effort": "medium",
+  "runs": 2,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 2,
+    "out": 10,
+    "cacheRead": 0.2,
+    "cacheWrite": 2.5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 2190,
+        "cacheRead": 0,
+        "cacheWrite": 6473
+      },
+      "usd": 0.0387005,
+      "codeTokens": 1258,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Sim \"/\" {\n  ref box\n  ref balls\n  ref raf\n  ref running\n  state n = 5\n  state frames = 0\n  state paused = false\n\n  fn make() {\n    return {\n      x: 10 + Math.random() * 380,\n      y: 10 + Math.random() * 280,\n      vx: (Math.random() - 0.5) * 6,\n      vy: (Math.random() - 0.5) * 6\n    }\n  }\n\n  fn clamp(b) {\n    if b.x < 10 { b.x = 10; b.vx = Math.abs(b.vx) }\n    if b.x > 390 { b.x = 390; b.vx = -Math.abs(b.vx) }\n    if b.y < 10 { b.y = 10; b.vy = Math.abs(b.vy) }\n    if b.y > 290 { b.y = 290; b.vy = -Math.abs(b.vy) }\n  }\n\n  fn step() {\n    for b in balls {\n      b.vy += 0.2\n      b.x += b.vx\n      b.y += b.vy\n      clamp(b)\n    }\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        let a = balls[i]\n        let c = balls[j]\n        let dx = c.x - a.x\n        let dy = c.y - a.y\n        let dist = Math.sqrt(dx * dx + dy * dy)\n        if dist < 20 {\n          if dist == 0 { dx = 1; dy = 0; dist = 1 }\n          let nx = dx / dist\n          let ny = dy / dist\n          let push = (20 - dist) / 2\n          a.x -= nx * push\n          a.y -= ny * push\n          c.x += nx * push\n          c.y += ny * push\n          let tvx = a.vx\n          let tvy = a.vy\n          a.vx = c.vx\n          a.vy = c.vy\n          c.vx = tvx\n          c.vy = tvy\n          clamp(a)\n          clamp(c)\n        }\n      }\n    }\n  }\n\n  fn draw() {\n    let ctx = box.getContext(\"2d\")\n    ctx.clearRect(0, 0, 400, 300)\n    ctx.fillStyle = \"#3b82f6\"\n    for b in balls {\n      ctx.beginPath()\n      ctx.arc(b.x, b.y, 10, 0, Math.PI * 2)\n      ctx.fill()\n    }\n  }\n\n  fn loop() {\n    if !running { return }\n    step()\n    draw()\n    frames++\n    raf = requestAnimationFrame(loop)\n  }\n\n  fn reset() {\n    balls = Array.from({ length: 5 }, () => make())\n    n = 5\n    frames = 0\n    draw()\n  }\n\n  fn add() {\n    balls.push(make())\n    n = balls.length\n  }\n\n  fn toggle() {\n    paused = !paused\n    running = !paused\n    if running {\n      raf = requestAnimationFrame(loop)\n    } else {\n      cancelAnimationFrame(raf)\n    }\n  }\n\n  mount {\n    running = true\n    reset()\n    raf = requestAnimationFrame(loop)\n    cleanup {\n      running = false\n      cancelAnimationFrame(raf)\n    }\n  }\n\n  column gap=3 pad=4 {\n    title \"Simulación de pelotas\"\n    canvas ref=box id=\"sim\" width=400 height=300 style=\"border:1px solid #888\"\n    row gap=2 {\n      button \"Agregar\" primary -> add()\n      button `${paused ? \"Reanudar\" : \"Pausar\"}` -> toggle()\n      button \"Reiniciar\" danger -> reset()\n    }\n    text `Pelotas: ${n}`\n    text `Cuadros: ${frames}`\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 16804,
+        "brotli": 5915
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 2212,
+        "cacheRead": 0,
+        "cacheWrite": 6473
+      },
+      "usd": 0.0389205,
+      "codeTokens": 1444,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "page Simulacion \"/\" {\n  state count = 5\n  state frames = 0\n  state paused = false\n  ref box\n  ref ctx\n  ref balls\n  ref raf\n\n  fn makeBall() {\n    return {\n      x: 10 + Math.random() * 380,\n      y: 10 + Math.random() * 280,\n      vx: (Math.random() - 0.5) * 6,\n      vy: (Math.random() - 0.5) * 6,\n      r: 10\n    }\n  }\n\n  fn makeBalls(n) {\n    let list = []\n    for (let i = 0; i < n; i++) {\n      list.push(makeBall())\n    }\n    return list\n  }\n\n  fn step() {\n    let list = balls\n    for (let i = 0; i < list.length; i++) {\n      let b = list[i]\n      b.vy += 0.2\n      b.x += b.vx\n      b.y += b.vy\n      if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx) }\n      if (b.x > 400 - b.r) { b.x = 400 - b.r; b.vx = -Math.abs(b.vx) }\n      if (b.y < b.r) { b.y = b.r; b.vy = Math.abs(b.vy) }\n      if (b.y > 300 - b.r) { b.y = 300 - b.r; b.vy = -Math.abs(b.vy) }\n    }\n    for (let i = 0; i < list.length; i++) {\n      for (let j = i + 1; j < list.length; j++) {\n        let a = list[i]\n        let c = list[j]\n        let dx = c.x - a.x\n        let dy = c.y - a.y\n        let dist = Math.sqrt(dx * dx + dy * dy)\n        let min = a.r + c.r\n        if (dist < min) {\n          let nx = dist == 0 ? 1 : dx / dist\n          let ny = dist == 0 ? 0 : dy / dist\n          let push = (min - dist) / 2\n          a.x -= nx * push\n          a.y -= ny * push\n          c.x += nx * push\n          c.y += ny * push\n          a.x = Math.min(Math.max(a.x, a.r), 400 - a.r)\n          a.y = Math.min(Math.max(a.y, a.r), 300 - a.r)\n          c.x = Math.min(Math.max(c.x, c.r), 400 - c.r)\n          c.y = Math.min(Math.max(c.y, c.r), 300 - c.r)\n          let tx = a.vx\n          let ty = a.vy\n          a.vx = c.vx\n          a.vy = c.vy\n          c.vx = tx\n          c.vy = ty\n        }\n      }\n    }\n  }\n\n  fn draw() {\n    ctx.clearRect(0, 0, 400, 300)\n    ctx.fillStyle = \"#e11d48\"\n    for (let i = 0; i < balls.length; i++) {\n      let b = balls[i]\n      ctx.beginPath()\n      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)\n      ctx.fill()\n    }\n  }\n\n  fn tick() {\n    if (!paused) {\n      step()\n      draw()\n      frames++\n    }\n    raf = requestAnimationFrame(tick)\n  }\n\n  fn addBall() {\n    balls.push(makeBall())\n    count = balls.length\n  }\n\n  fn togglePause() {\n    paused = !paused\n  }\n\n  fn reset() {\n    balls = makeBalls(5)\n    count = 5\n    frames = 0\n    draw()\n  }\n\n  mount {\n    ctx = box.getContext(\"2d\")\n    balls = makeBalls(5)\n    count = 5\n    raf = requestAnimationFrame(tick)\n    cleanup { cancelAnimationFrame(raf) }\n  }\n\n  column gap=3 pad=4 {\n    title \"Simulación de pelotas\"\n    canvas ref=box id=\"sim\" width=400 height=300 style=\"border:1px solid #888\"\n    row gap=2 {\n      button \"Agregar\" primary -> addBall()\n      button `${paused ? \"Reanudar\" : \"Pausar\"}` -> togglePause()\n      button \"Reiniciar\" -> reset()\n    }\n    text `Pelotas: ${count}`\n    text `Cuadros: ${frames}`\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 16402,
+        "brotli": 5850
+      }
+    },
+    {
+      "task": "exp-travelers",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 2,
+      "usage": {
+        "input": 4410,
+        "output": 3798,
+        "cacheRead": 6473,
+        "cacheWrite": 6473
+      },
+      "usd": 0.0642771,
+      "codeTokens": 1379,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "data.art": "const TRAVELERS = [\n  { id: 1, name: \"Ana Rojas\", country: \"Perú\", city: \"Lima\", arrival: \"2026-03-12\", budget: 1200 },\n  { id: 2, name: \"Bruno Díaz\", country: \"México\", city: \"Oaxaca\", arrival: \"2026-01-05\", budget: 850 },\n  { id: 3, name: \"Carla Gómez\", country: \"Perú\", city: \"Cusco\", arrival: \"2026-02-20\", budget: 2300 },\n  { id: 4, name: \"Diego Silva\", country: \"Chile\", city: \"Valparaíso\", arrival: \"2026-04-02\", budget: 640 },\n  { id: 5, name: \"Elena Ruiz\", country: \"México\", city: \"Mérida\", arrival: \"2026-03-01\", budget: 1500 },\n  { id: 6, name: \"Facundo Paz\", country: \"Argentina\", city: \"Salta\", arrival: \"2026-02-11\", budget: 990 },\n  { id: 7, name: \"Gabriela Luna\", country: \"Chile\", city: \"Santiago\", arrival: \"2026-01-28\", budget: 1750 },\n  { id: 8, name: \"Hugo Vera\", country: \"Argentina\", city: \"Mendoza\", arrival: \"2026-03-30\", budget: 1100 }\n]\n\nconst COUNTRY_OPTIONS = [\"Todos\", \"Argentina\", \"Chile\", \"México\", \"Perú\"]\n",
+            "format.art": "fn formatDate(iso) {\n  const [y, m, d] = iso.split(\"-\")\n  return `${d}/${m}/${y}`\n}\n\nfn formatUSD(n) {\n  return \"US$ \" + String(Math.round(n)).replace(/\\B(?=(\\d{3})+(?!\\d))/g, \".\")\n}\n\nfn initials(name) {\n  return name.split(\" \").filter(w => w.length > 0).slice(0, 2).map(w => w[0]).join(\"\").toUpperCase()\n}\n\nfn avatarColor(name) {\n  let h = 0\n  for (let i = 0; i < name.length; i++) {\n    h = (h * 31 + name.charCodeAt(i)) % 360\n  }\n  return `hsl(${h}, 55%, 45%)`\n}\n\nfn avatarStyle(name) {\n  return `background:${avatarColor(name)};color:#fff;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0`\n}\n",
+            "app.art": "use \"./data.art\" { TRAVELERS, COUNTRY_OPTIONS }\nuse \"./format.art\" { formatDate, formatUSD, initials, avatarStyle }\n\npage Home \"/\" {\n  meta title=\"Viajeros\"\n  state country = \"Todos\"\n  computed visible = TRAVELERS\n    .filter(t => country == \"Todos\" || t.country == country)\n    .slice()\n    .sort((a, b) => a.arrival < b.arrival ? -1 : a.arrival > b.arrival ? 1 : 0)\n\n  column gap=4 pad=4 {\n    title \"Viajeros\" tag=h1\n    text `${visible.length} viajeros`\n    select country options=COUNTRY_OPTIONS label=\"País\"\n    column gap=3 {\n      for t in visible key t.id {\n        card {\n          row gap=3 align=center {\n            row style=(avatarStyle(t.name)) {\n              text initials(t.name)\n            }\n            column gap=1 {\n              link t.name to=(`/viajero/${t.id}`)\n              text `${t.city}, ${t.country}` muted\n              text `Llega el ${formatDate(t.arrival)}` small\n              text formatUSD(t.budget)\n            }\n          }\n        }\n      }\n    }\n  }\n}\n\npage Traveler \"/viajero/:id\" {\n  computed t = TRAVELERS.find(x => String(x.id) == params.id)\n\n  column gap=3 pad=4 {\n    if t {\n      title t.name tag=h1\n      text `${t.city}, ${t.country}`\n      text `Llega el ${formatDate(t.arrival)}`\n      text `Presupuesto: ${formatUSD(t.budget)}`\n    } else {\n      text \"Viajero no encontrado\"\n    }\n    link \"Volver\" to=\"/\"\n  }\n}\n"
+          },
+          "errors": [
+            "{\"code\":\"E1002\",\"type\":\"DUPLICATE_NAME\",\"loc\":\"app.art:1:1\",\"at\":\"use ./data.art\",\"expr\":\"TRAVELERS\",\"msg\":\"'TRAVELERS' is already declared\"}",
+            "{\"code\":\"E1002\",\"type\":\"DUPLICATE_NAME\",\"loc\":\"app.art:1:1\",\"at\":\"use ./data.art\",\"expr\":\"COUNTRY_OPTIONS\",\"msg\":\"'COUNTRY_OPTIONS' is already declared\"}",
+            "{\"code\":\"E1050\",\"type\":\"UNKNOWN_MODULE\",\"loc\":\"app.art:1:1\",\"at\":\"use ./data.art\",\"expr\":\"./data.art\",\"fixes\":[\"check the path (relative to /Users/leandrobisceglie/Artscript/benchmarks/eval/.work/art-87738-2/app.art)\"]}",
+            "{\"code\":\"E1002\",\"type\":\"DUPLICATE_NAME\",\"loc\":\"app.art:2:1\",\"at\":\"use ./format.art\",\"expr\":\"formatDate\",\"msg\":\"'formatDate' is already declared\"}",
+            "{\"code\":\"E1002\",\"type\":\"DUPLICATE_NAME\",\"loc\":\"app.art:2:1\",\"at\":\"use ./format.art\",\"expr\":\"formatUSD\",\"msg\":\"'formatUSD' is already declared\"}",
+            "{\"code\":\"E1002\",\"type\":\"DUPLICATE_NAME\",\"loc\":\"app.art:2:1\",\"at\":\"use ./format.art\",\"expr\":\"initials\",\"msg\":\"'initials' is already declared\"}",
+            "{\"code\":\"E1002\",\"type\":\"DUPLICATE_NAME\",\"loc\":\"app.art:2:1\",\"at\":\"use ./format.art\",\"expr\":\"avatarStyle\",\"msg\":\"'avatarStyle' is already declared\"}",
+            "{\"code\":\"E1050\",\"type\":\"UNKNOWN_MODULE\",\"loc\":\"app.art:2:1\",\"at\":\"use ./format.art\",\"expr\":\"./format.art\",\"fixes\":[\"check the path (relative to /Users/leandrobisceglie/Artscript/benchmarks/eval/.work/art-87738-2/app.art)\"]}"
+          ]
+        },
+        {
+          "files": {
+            "data.art": "const TRAVELERS = [\n  { id: 1, name: \"Ana Rojas\", country: \"Perú\", city: \"Lima\", arrival: \"2026-03-12\", budget: 1200 },\n  { id: 2, name: \"Bruno Díaz\", country: \"México\", city: \"Oaxaca\", arrival: \"2026-01-05\", budget: 850 },\n  { id: 3, name: \"Carla Gómez\", country: \"Perú\", city: \"Cusco\", arrival: \"2026-02-20\", budget: 2300 },\n  { id: 4, name: \"Diego Silva\", country: \"Chile\", city: \"Valparaíso\", arrival: \"2026-04-02\", budget: 640 },\n  { id: 5, name: \"Elena Ruiz\", country: \"México\", city: \"Mérida\", arrival: \"2026-03-01\", budget: 1500 },\n  { id: 6, name: \"Facundo Paz\", country: \"Argentina\", city: \"Salta\", arrival: \"2026-02-11\", budget: 990 },\n  { id: 7, name: \"Gabriela Luna\", country: \"Chile\", city: \"Santiago\", arrival: \"2026-01-28\", budget: 1750 },\n  { id: 8, name: \"Hugo Vera\", country: \"Argentina\", city: \"Mendoza\", arrival: \"2026-03-30\", budget: 1100 }\n]\n\nconst COUNTRY_OPTIONS = [\"Todos\", \"Argentina\", \"Chile\", \"México\", \"Perú\"]\n",
+            "format.art": "fn formatDate(iso) {\n  const [y, m, d] = iso.split(\"-\")\n  return `${d}/${m}/${y}`\n}\n\nfn formatUSD(n) {\n  return \"US$ \" + String(Math.round(n)).replace(/\\B(?=(\\d{3})+(?!\\d))/g, \".\")\n}\n\nfn initials(name) {\n  return name.split(\" \").filter(w => w.length > 0).slice(0, 2).map(w => w[0]).join(\"\").toUpperCase()\n}\n\nfn avatarColor(name) {\n  let h = 0\n  for (let i = 0; i < name.length; i++) {\n    h = (h * 31 + name.charCodeAt(i)) % 360\n  }\n  return `hsl(${h}, 55%, 45%)`\n}\n\nfn avatarStyle(name) {\n  return `background:${avatarColor(name)};color:#fff;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0`\n}\n",
+            "app.art": "page Home \"/\" {\n  meta title=\"Viajeros\"\n  state country = \"Todos\"\n  computed visible = TRAVELERS\n    .filter(t => country == \"Todos\" || t.country == country)\n    .slice()\n    .sort((a, b) => a.arrival < b.arrival ? -1 : a.arrival > b.arrival ? 1 : 0)\n\n  column gap=4 pad=4 {\n    title \"Viajeros\" tag=h1\n    text `${visible.length} viajeros`\n    select country options=COUNTRY_OPTIONS label=\"País\"\n    column gap=3 {\n      for t in visible key t.id {\n        card {\n          row gap=3 align=center {\n            row style=(avatarStyle(t.name)) {\n              text initials(t.name)\n            }\n            column gap=1 {\n              link t.name to=(`/viajero/${t.id}`)\n              text `${t.city}, ${t.country}` muted\n              text `Llega el ${formatDate(t.arrival)}` small\n              text formatUSD(t.budget)\n            }\n          }\n        }\n      }\n    }\n  }\n}\n\npage Traveler \"/viajero/:id\" {\n  computed t = TRAVELERS.find(x => String(x.id) == params.id)\n\n  column gap=3 pad=4 {\n    if t {\n      title t.name tag=h1\n      text `${t.city}, ${t.country}`\n      text `Llega el ${formatDate(t.arrival)}`\n      text `Presupuesto: ${formatUSD(t.budget)}`\n    } else {\n      text \"Viajero no encontrado\"\n    }\n    link \"Volver\" to=\"/\"\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 22672,
+        "brotli": 7888
+      }
+    },
+    {
+      "task": "exp-travelers",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 2,
+      "usage": {
+        "input": 4766,
+        "output": 3822,
+        "cacheRead": 6473,
+        "cacheWrite": 6473
+      },
+      "usd": 0.0652291,
+      "codeTokens": 1328,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "data.art": "const TRAVELERS = [\n  { id: \"1\", name: \"Ana Rojas\", country: \"Perú\", city: \"Lima\", arrival: \"2026-03-12\", budget: 1200 },\n  { id: \"2\", name: \"Bruno Díaz\", country: \"México\", city: \"Oaxaca\", arrival: \"2026-01-05\", budget: 850 },\n  { id: \"3\", name: \"Carla Gómez\", country: \"Perú\", city: \"Cusco\", arrival: \"2026-02-20\", budget: 2300 },\n  { id: \"4\", name: \"Diego Silva\", country: \"Chile\", city: \"Valparaíso\", arrival: \"2026-04-02\", budget: 640 },\n  { id: \"5\", name: \"Elena Ruiz\", country: \"México\", city: \"Mérida\", arrival: \"2026-03-01\", budget: 1500 },\n  { id: \"6\", name: \"Facundo Paz\", country: \"Argentina\", city: \"Salta\", arrival: \"2026-02-11\", budget: 990 },\n  { id: \"7\", name: \"Gabriela Luna\", country: \"Chile\", city: \"Santiago\", arrival: \"2026-01-28\", budget: 1750 },\n  { id: \"8\", name: \"Hugo Vera\", country: \"Argentina\", city: \"Mendoza\", arrival: \"2026-03-30\", budget: 1100 }\n]\n\nconst COUNTRIES = [\"Todos\", \"Argentina\", \"Chile\", \"México\", \"Perú\"]\n",
+            "format.art": "fn formatDate(iso) {\n  const [y, m, d] = iso.split(\"-\")\n  return `${d}/${m}/${y}`\n}\n\nfn formatUSD(n) {\n  return \"US$ \" + String(Math.round(n)).replace(/\\B(?=(\\d{3})+(?!\\d))/g, \".\")\n}\n\nfn initials(name) {\n  return name.split(\" \").filter(w => w.length > 0).slice(0, 2).map(w => w[0].toUpperCase()).join(\"\")\n}\n\nfn nameColor(name) {\n  let h = 0\n  for (let i = 0; i < name.length; i++) {\n    h = (h * 31 + name.charCodeAt(i)) % 360\n  }\n  return `hsl(${h}, 55%, 45%)`\n}\n",
+            "avatar.art": "use \"./format.art\" { initials, nameColor }\n\ncomponent Avatar(name: String) {\n  column align=center justify=center style=(`width:40px;height:40px;border-radius:50%;background:${nameColor(name)};color:#fff;font-weight:700;flex-shrink:0`) {\n    text initials(name) bold\n  }\n}\n",
+            "app.art": "use \"./data.art\" { TRAVELERS, COUNTRIES }\nuse \"./format.art\" { formatDate, formatUSD }\nuse \"./avatar.art\" { Avatar }\n\npage Home \"/\" {\n  state country = \"Todos\"\n  computed shown = TRAVELERS\n    .filter(t => country == \"Todos\" || t.country == country)\n    .sort((a, b) => a.arrival < b.arrival ? -1 : a.arrival > b.arrival ? 1 : 0)\n\n  column gap=4 pad=4 {\n    title \"Viajeros\" tag=h1\n    text `${shown.length} viajeros`\n    select country options=COUNTRIES label=\"País\"\n    column gap=3 {\n      for t in shown key t.id {\n        card {\n          row gap=3 align=center {\n            Avatar name=t.name\n            column gap=1 {\n              link t.name to=`/viajero/${t.id}`\n              text `${t.city}, ${t.country}` muted\n              text `Llega el ${formatDate(t.arrival)}` small\n              text formatUSD(t.budget) small\n            }\n          }\n        }\n      }\n    }\n  }\n}\n\npage Traveler \"/viajero/:id\" {\n  computed t = TRAVELERS.find(x => x.id == params.id)\n\n  column gap=3 pad=4 {\n    if t {\n      title t.name tag=h1\n      text `${t.city}, ${t.country}`\n      text `Llega el ${formatDate(t.arrival)}`\n      text `Presupuesto: ${formatUSD(t.budget)}`\n    } else {\n      text \"Viajero no encontrado\"\n    }\n    link \"Volver\" to=\"/\"\n  }\n}\n"
+          },
+          "errors": [
+            "{\"code\":\"E1002\",\"type\":\"DUPLICATE_NAME\",\"loc\":\"avatar.art:1:1\",\"at\":\"use ./format.art\",\"expr\":\"initials\",\"msg\":\"'initials' is already declared\"}",
+            "{\"code\":\"E1002\",\"type\":\"DUPLICATE_NAME\",\"loc\":\"avatar.art:1:1\",\"at\":\"use ./format.art\",\"expr\":\"nameColor\",\"msg\":\"'nameColor' is already declared\"}",
+            "{\"code\":\"E1050\",\"type\":\"UNKNOWN_MODULE\",\"loc\":\"avatar.art:1:1\",\"at\":\"use ./format.art\",\"expr\":\"./format.art\",\"fixes\":[\"check the path (relative to /Users/leandrobisceglie/Artscript/benchmarks/eval/.work/art-87738-3/avatar.art)\"]}",
+            "{\"code\":\"E1002\",\"type\":\"DUPLICATE_NAME\",\"loc\":\"app.art:1:1\",\"at\":\"use ./data.art\",\"expr\":\"TRAVELERS\",\"msg\":\"'TRAVELERS' is already declared\"}",
+            "{\"code\":\"E1002\",\"type\":\"DUPLICATE_NAME\",\"loc\":\"app.art:1:1\",\"at\":\"use ./data.art\",\"expr\":\"COUNTRIES\",\"msg\":\"'COUNTRIES' is already declared\"}",
+            "{\"code\":\"E1050\",\"type\":\"UNKNOWN_MODULE\",\"loc\":\"app.art:1:1\",\"at\":\"use ./data.art\",\"expr\":\"./data.art\",\"fixes\":[\"check the path (relative to /Users/leandrobisceglie/Artscript/benchmarks/eval/.work/art-87738-3/app.art)\"]}",
+            "{\"code\":\"E1002\",\"type\":\"DUPLICATE_NAME\",\"loc\":\"app.art:2:1\",\"at\":\"use ./format.art\",\"expr\":\"formatDate\",\"msg\":\"'formatDate' is already declared\"}",
+            "{\"code\":\"E1002\",\"type\":\"DUPLICATE_NAME\",\"loc\":\"app.art:2:1\",\"at\":\"use ./format.art\",\"expr\":\"formatUSD\",\"msg\":\"'formatUSD' is already declared\"}",
+            "{\"code\":\"E1050\",\"type\":\"UNKNOWN_MODULE\",\"loc\":\"app.art:2:1\",\"at\":\"use ./format.art\",\"expr\":\"./format.art\",\"fixes\":[\"check the path (relative to /Users/leandrobisceglie/Artscript/benchmarks/eval/.work/art-87738-3/app.art)\"]}",
+            "{\"code\":\"E1002\",\"type\":\"DUPLICATE_NAME\",\"loc\":\"app.art:3:1\",\"at\":\"use ./avatar.art\",\"expr\":\"Avatar\",\"msg\":\"'Avatar' is already declared\"}"
+          ]
+        },
+        {
+          "files": {
+            "data.art": "const TRAVELERS = [\n  { id: \"1\", name: \"Ana Rojas\", country: \"Perú\", city: \"Lima\", arrival: \"2026-03-12\", budget: 1200 },\n  { id: \"2\", name: \"Bruno Díaz\", country: \"México\", city: \"Oaxaca\", arrival: \"2026-01-05\", budget: 850 },\n  { id: \"3\", name: \"Carla Gómez\", country: \"Perú\", city: \"Cusco\", arrival: \"2026-02-20\", budget: 2300 },\n  { id: \"4\", name: \"Diego Silva\", country: \"Chile\", city: \"Valparaíso\", arrival: \"2026-04-02\", budget: 640 },\n  { id: \"5\", name: \"Elena Ruiz\", country: \"México\", city: \"Mérida\", arrival: \"2026-03-01\", budget: 1500 },\n  { id: \"6\", name: \"Facundo Paz\", country: \"Argentina\", city: \"Salta\", arrival: \"2026-02-11\", budget: 990 },\n  { id: \"7\", name: \"Gabriela Luna\", country: \"Chile\", city: \"Santiago\", arrival: \"2026-01-28\", budget: 1750 },\n  { id: \"8\", name: \"Hugo Vera\", country: \"Argentina\", city: \"Mendoza\", arrival: \"2026-03-30\", budget: 1100 }\n]\n\nconst COUNTRIES = [\"Todos\", \"Argentina\", \"Chile\", \"México\", \"Perú\"]\n",
+            "format.art": "fn formatDate(iso) {\n  const [y, m, d] = iso.split(\"-\")\n  return `${d}/${m}/${y}`\n}\n\nfn formatUSD(n) {\n  return \"US$ \" + String(Math.round(n)).replace(/\\B(?=(\\d{3})+(?!\\d))/g, \".\")\n}\n\nfn initials(name) {\n  return name.split(\" \").filter(w => w.length > 0).slice(0, 2).map(w => w[0].toUpperCase()).join(\"\")\n}\n\nfn nameColor(name) {\n  let h = 0\n  for (let i = 0; i < name.length; i++) {\n    h = (h * 31 + name.charCodeAt(i)) % 360\n  }\n  return `hsl(${h}, 55%, 45%)`\n}\n",
+            "avatar.art": "component Avatar(name: String) {\n  column align=center justify=center style=(`width:40px;height:40px;border-radius:50%;background:${nameColor(name)};color:#fff;font-weight:700;flex-shrink:0`) {\n    text initials(name) bold\n  }\n}\n",
+            "app.art": "page Home \"/\" {\n  state country = \"Todos\"\n  computed shown = TRAVELERS\n    .filter(t => country == \"Todos\" || t.country == country)\n    .sort((a, b) => a.arrival < b.arrival ? -1 : a.arrival > b.arrival ? 1 : 0)\n\n  column gap=4 pad=4 {\n    title \"Viajeros\" tag=h1\n    text `${shown.length} viajeros`\n    select country options=COUNTRIES label=\"País\"\n    column gap=3 {\n      for t in shown key t.id {\n        card {\n          row gap=3 align=center {\n            Avatar name=t.name\n            column gap=1 {\n              link t.name to=`/viajero/${t.id}`\n              text `${t.city}, ${t.country}` muted\n              text `Llega el ${formatDate(t.arrival)}` small\n              text formatUSD(t.budget) small\n            }\n          }\n        }\n      }\n    }\n  }\n}\n\npage Traveler \"/viajero/:id\" {\n  computed t = TRAVELERS.find(x => x.id == params.id)\n\n  column gap=3 pad=4 {\n    if t {\n      title t.name tag=h1\n      text `${t.city}, ${t.country}`\n      text `Llega el ${formatDate(t.arrival)}`\n      text `Presupuesto: ${formatUSD(t.budget)}`\n    } else {\n      text \"Viajero no encontrado\"\n    }\n    link \"Volver\" to=\"/\"\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 22220,
+        "brotli": 7789
+      }
+    }
+  ]
+}

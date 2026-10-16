@@ -1,0 +1,141 @@
+{
+  "model": "claude-haiku-4-5",
+  "effort": "medium",
+  "runs": 2,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 1,
+    "out": 5,
+    "cacheRead": 0.1,
+    "cacheWrite": 1.25
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 2,
+      "usage": {
+        "input": 2172,
+        "output": 3261,
+        "cacheRead": 4610,
+        "cacheWrite": 4610
+      },
+      "usd": 0.0247005,
+      "codeTokens": 1614,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "use \"./sim.ts\" { Ball, step, draw }\n\ncomponent BallSimulation {\n  ref canvas\n  ref simulationRef\n  \n  state paused = false\n  state ballCount = 5\n  state frameCount = 0\n  \n  fn initSimulation() {\n    frameCount = 0\n    const balls = []\n    for (let i = 0; i < 5; i++) {\n      balls.push(new Ball(\n        Math.random() * 380 + 10,\n        Math.random() * 280 + 10,\n        (Math.random() - 0.5) * 4,\n        (Math.random() - 0.5) * 4,\n        10\n      ))\n    }\n    simulationRef = { balls, animationId: null }\n    ballCount = 5\n    startAnimation()\n  }\n  \n  fn startAnimation() {\n    if simulationRef.animationId != null { return }\n    \n    const animate = () => {\n      if !paused {\n        step(simulationRef.balls, 0.2, 400, 300)\n        const ctx = canvas.getContext(\"2d\")\n        ctx.fillStyle = \"#ffffff\"\n        ctx.fillRect(0, 0, 400, 300)\n        draw(ctx, simulationRef.balls)\n        frameCount++\n      }\n      simulationRef.animationId = requestAnimationFrame(animate)\n    }\n    simulationRef.animationId = requestAnimationFrame(animate)\n  }\n  \n  fn stopAnimation() {\n    if simulationRef.animationId != null {\n      cancelAnimationFrame(simulationRef.animationId)\n      simulationRef.animationId = null\n    }\n  }\n  \n  fn togglePause() {\n    paused = !paused\n    if !paused && simulationRef.animationId == null {\n      startAnimation()\n    }\n  }\n  \n  fn addBall() {\n    simulationRef.balls.push(new Ball(\n      Math.random() * 380 + 10,\n      Math.random() * 280 + 10,\n      (Math.random() - 0.5) * 4,\n      (Math.random() - 0.5) * 4,\n      10\n    ))\n    ballCount++\n  }\n  \n  mount {\n    initSimulation()\n    cleanup {\n      stopAnimation()\n    }\n  }\n  \n  column gap=4 pad=4 {\n    row gap=2 {\n      button \"Agregar\" primary -> addBall()\n      button (paused ? \"Reanudar\" : \"Pausar\") -> togglePause()\n      button \"Reiniciar\" -> initSimulation()\n    }\n    row gap=4 {\n      text `Pelotas: ${ballCount}`\n      text `Cuadros: ${frameCount}`\n    }\n    canvas id=sim ref=canvas width=400 height=300 style=\"border: 1px solid #ccc; background: white; display: block;\"\n  }\n}\n\npage Home \"/\" {\n  column gap=6 pad=6 align=center {\n    title \"Simulación de Pelotas\"\n    BallSimulation\n  }\n}\n",
+            "sim.ts": "export class Ball {\n  x: number;\n  y: number;\n  vx: number;\n  vy: number;\n  r: number;\n\n  constructor(x: number, y: number, vx: number, vy: number, r: number) {\n    this.x = x;\n    this.y = y;\n    this.vx = vx;\n    this.vy = vy;\n    this.r = r;\n  }\n}\n\nexport function step(balls: Ball[], gravity: number, w: number, h: number) {\n  // Apply gravity\n  for (const b of balls) {\n    b.vy += gravity;\n  }\n\n  // Update positions\n  for (const b of balls) {\n    b.x += b.vx;\n    b.y += b.vy;\n  }\n\n  // Bounce off walls\n  for (const b of balls) {\n    if (b.x - b.r < 0) {\n      b.x = b.r;\n      b.vx = -b.vx;\n    }\n    if (b.x + b.r > w) {\n      b.x = w - b.r;\n      b.vx = -b.vx;\n    }\n    if (b.y - b.r < 0) {\n      b.y = b.r;\n      b.vy = -b.vy;\n    }\n    if (b.y + b.r > h) {\n      b.y = h - b.r;\n      b.vy = -b.vy;\n    }\n  }\n\n  // Elastic collision between balls\n  for (let i = 0; i < balls.length; i++) {\n    for (let j = i + 1; j < balls.length; j++) {\n      const b1 = balls[i];\n      const b2 = balls[j];\n      const dx = b2.x - b1.x;\n      const dy = b2.y - b1.y;\n      const dist = Math.sqrt(dx * dx + dy * dy);\n\n      if (dist < b1.r + b2.r) {\n        // Exchange velocities (simplified elastic collision for equal mass)\n        const temp_vx = b1.vx;\n        const temp_vy = b1.vy;\n        b1.vx = b2.vx;\n        b1.vy = b2.vy;\n        b2.vx = temp_vx;\n        b2.vy = temp_vy;\n\n        // Separate balls to prevent overlap\n        const overlap = (b1.r + b2.r - dist) / 2;\n        const nx = dx / dist;\n        const ny = dy / dist;\n        b1.x -= nx * overlap;\n        b1.y -= ny * overlap;\n        b2.x += nx * overlap;\n        b2.y += ny * overlap;\n      }\n    }\n  }\n}\n\nexport function draw(ctx: CanvasRenderingContext2D, balls: Ball[]) {\n  ctx.fillStyle = \"#e11d48\";\n  for (const b of balls) {\n    ctx.beginPath();\n    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);\n    ctx.fill();\n  }\n}\n"
+          },
+          "errors": [
+            "{\"code\":\"E1001\",\"type\":\"UNDEFINED_NAME\",\"loc\":\"app.art:87:15\",\"at\":\"BallSimulation\",\"expr\":\"sim\",\"msg\":\"'sim' is not defined\"}"
+          ]
+        },
+        {
+          "files": {
+            "app.art": "use \"./sim.ts\" { Ball, step, draw }\n\ncomponent BallSimulation {\n  ref canvas\n  ref simulationRef\n  \n  state paused = false\n  state ballCount = 5\n  state frameCount = 0\n  \n  fn initSimulation() {\n    frameCount = 0\n    const balls = []\n    for (let i = 0; i < 5; i++) {\n      balls.push(new Ball(\n        Math.random() * 380 + 10,\n        Math.random() * 280 + 10,\n        (Math.random() - 0.5) * 4,\n        (Math.random() - 0.5) * 4,\n        10\n      ))\n    }\n    simulationRef = { balls, animationId: null }\n    ballCount = 5\n    startAnimation()\n  }\n  \n  fn startAnimation() {\n    if simulationRef.animationId != null { return }\n    \n    const animate = () => {\n      if !paused {\n        step(simulationRef.balls, 0.2, 400, 300)\n        const ctx = canvas.getContext(\"2d\")\n        ctx.fillStyle = \"#ffffff\"\n        ctx.fillRect(0, 0, 400, 300)\n        draw(ctx, simulationRef.balls)\n        frameCount++\n      }\n      simulationRef.animationId = requestAnimationFrame(animate)\n    }\n    simulationRef.animationId = requestAnimationFrame(animate)\n  }\n  \n  fn stopAnimation() {\n    if simulationRef.animationId != null {\n      cancelAnimationFrame(simulationRef.animationId)\n      simulationRef.animationId = null\n    }\n  }\n  \n  fn togglePause() {\n    paused = !paused\n    if !paused && simulationRef.animationId == null {\n      startAnimation()\n    }\n  }\n  \n  fn addBall() {\n    simulationRef.balls.push(new Ball(\n      Math.random() * 380 + 10,\n      Math.random() * 280 + 10,\n      (Math.random() - 0.5) * 4,\n      (Math.random() - 0.5) * 4,\n      10\n    ))\n    ballCount++\n  }\n  \n  mount {\n    initSimulation()\n    cleanup {\n      stopAnimation()\n    }\n  }\n  \n  column gap=4 pad=4 {\n    row gap=2 {\n      button \"Agregar\" primary -> addBall()\n      button (paused ? \"Reanudar\" : \"Pausar\") -> togglePause()\n      button \"Reiniciar\" -> initSimulation()\n    }\n    row gap=4 {\n      text `Pelotas: ${ballCount}`\n      text `Cuadros: ${frameCount}`\n    }\n    canvas ref=canvas width=400 height=300 id=\"sim\" style=\"border: 1px solid #ccc; background: white; display: block;\"\n  }\n}\n\npage Home \"/\" {\n  column gap=6 pad=6 align=center {\n    title \"Simulación de Pelotas\"\n    BallSimulation\n  }\n}\n",
+            "sim.ts": "export class Ball {\n  x: number;\n  y: number;\n  vx: number;\n  vy: number;\n  r: number;\n\n  constructor(x: number, y: number, vx: number, vy: number, r: number) {\n    this.x = x;\n    this.y = y;\n    this.vx = vx;\n    this.vy = vy;\n    this.r = r;\n  }\n}\n\nexport function step(balls: Ball[], gravity: number, w: number, h: number) {\n  // Apply gravity\n  for (const b of balls) {\n    b.vy += gravity;\n  }\n\n  // Update positions\n  for (const b of balls) {\n    b.x += b.vx;\n    b.y += b.vy;\n  }\n\n  // Bounce off walls\n  for (const b of balls) {\n    if (b.x - b.r < 0) {\n      b.x = b.r;\n      b.vx = -b.vx;\n    }\n    if (b.x + b.r > w) {\n      b.x = w - b.r;\n      b.vx = -b.vx;\n    }\n    if (b.y - b.r < 0) {\n      b.y = b.r;\n      b.vy = -b.vy;\n    }\n    if (b.y + b.r > h) {\n      b.y = h - b.r;\n      b.vy = -b.vy;\n    }\n  }\n\n  // Elastic collision between balls\n  for (let i = 0; i < balls.length; i++) {\n    for (let j = i + 1; j < balls.length; j++) {\n      const b1 = balls[i];\n      const b2 = balls[j];\n      const dx = b2.x - b1.x;\n      const dy = b2.y - b1.y;\n      const dist = Math.sqrt(dx * dx + dy * dy);\n\n      if (dist < b1.r + b2.r) {\n        // Exchange velocities (simplified elastic collision for equal mass)\n        const temp_vx = b1.vx;\n        const temp_vy = b1.vy;\n        b1.vx = b2.vx;\n        b1.vy = b2.vy;\n        b2.vx = temp_vx;\n        b2.vy = temp_vy;\n\n        // Separate balls to prevent overlap\n        const overlap = (b1.r + b2.r - dist) / 2;\n        const nx = dx / dist;\n        const ny = dy / dist;\n        b1.x -= nx * overlap;\n        b1.y -= ny * overlap;\n        b2.x += nx * overlap;\n        b2.y += ny * overlap;\n      }\n    }\n  }\n}\n\nexport function draw(ctx: CanvasRenderingContext2D, balls: Ball[]) {\n  ctx.fillStyle = \"#e11d48\";\n  for (const b of balls) {\n    ctx.beginPath();\n    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);\n    ctx.fill();\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 16679,
+        "brotli": 5884
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 3,
+      "usage": {
+        "input": 5107,
+        "output": 4062,
+        "cacheRead": 9220,
+        "cacheWrite": 4610
+      },
+      "usd": 0.0321015,
+      "codeTokens": 1348,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "use \"./sim.ts\" { step, draw, init, Balls }\n\ncomponent SimulationPage {\n  state balls: Balls = []\n  state isRunning = false\n  state frameCount = 0\n  ref canvas\n\n  fn start() {\n    balls = init(5)\n    frameCount = 0\n    isRunning = true\n    animate()\n  }\n\n  fn add() {\n    balls = [...balls, {\n      x: Math.random() * 380 + 10,\n      y: Math.random() * 280 + 10,\n      vx: (Math.random() - 0.5) * 4,\n      vy: (Math.random() - 0.5) * 4,\n      r: 10\n    }]\n  }\n\n  fn toggle() {\n    isRunning = !isRunning\n    if isRunning { animate() }\n  }\n\n  fn reset() {\n    start()\n  }\n\n  fn animate() {\n    if !isRunning { return }\n    \n    step(balls, 0.2)\n    draw(canvas, balls)\n    frameCount++\n    \n    requestAnimationFrame(animate)\n  }\n\n  mount {\n    start()\n  }\n\n  column gap=4 pad=4 {\n    row gap=2 {\n      button \"Agregar\" primary -> add()\n      button (isRunning ? \"Pausar\" : \"Reanudar\") -> toggle()\n      button \"Reiniciar\" -> reset()\n    }\n    row gap=4 {\n      text `Pelotas: ${balls.length}`\n      text `Cuadros: ${frameCount}`\n    }\n    canvas ref=canvas width=400 height=300 style=\"border: 1px solid #ccc;\"\n  }\n}\n\npage Simulation \"/sim\" {\n  SimulationPage\n}\n",
+            "sim.ts": "export type Ball = {\n  x: number\n  y: number\n  vx: number\n  vy: number\n  r: number\n}\n\nexport type Balls = Ball[]\n\nexport function init(count: number): Balls {\n  const balls: Balls = []\n  for (let i = 0; i < count; i++) {\n    balls.push({\n      x: Math.random() * 380 + 10,\n      y: Math.random() * 280 + 10,\n      vx: (Math.random() - 0.5) * 4,\n      vy: (Math.random() - 0.5) * 4,\n      r: 10\n    })\n  }\n  return balls\n}\n\nexport function step(balls: Balls, gravity: number): void {\n  // Apply gravity\n  for (let b of balls) {\n    b.vy += gravity\n  }\n\n  // Update positions\n  for (let b of balls) {\n    b.x += b.vx\n    b.y += b.vy\n  }\n\n  // Bounce off walls\n  for (let b of balls) {\n    if (b.x - b.r < 0) {\n      b.x = b.r\n      b.vx = -b.vx\n    }\n    if (b.x + b.r > 400) {\n      b.x = 400 - b.r\n      b.vx = -b.vx\n    }\n    if (b.y - b.r < 0) {\n      b.y = b.r\n      b.vy = -b.vy\n    }\n    if (b.y + b.r > 300) {\n      b.y = 300 - b.r\n      b.vy = -b.vy\n    }\n  }\n\n  // Elastic collision between balls\n  for (let i = 0; i < balls.length; i++) {\n    for (let j = i + 1; j < balls.length; j++) {\n      const b1 = balls[i]\n      const b2 = balls[j]\n      const dx = b2.x - b1.x\n      const dy = b2.y - b1.y\n      const dist = Math.sqrt(dx * dx + dy * dy)\n\n      if (dist < b1.r + b2.r) {\n        // Collision: exchange velocities\n        const temp = b1.vx\n        b1.vx = b2.vx\n        b2.vx = temp\n\n        const temp2 = b1.vy\n        b1.vy = b2.vy\n        b2.vy = temp2\n\n        // Separate balls to prevent overlap\n        const overlap = b1.r + b2.r - dist\n        const nx = dx / dist\n        const ny = dy / dist\n        b1.x -= nx * overlap / 2\n        b1.y -= ny * overlap / 2\n        b2.x += nx * overlap / 2\n        b2.y += ny * overlap / 2\n      }\n    }\n  }\n}\n\nexport function draw(canvas: HTMLCanvasElement, balls: Balls): void {\n  const ctx = canvas.getContext('2d')!\n  ctx.fillStyle = '#fff'\n  ctx.fillRect(0, 0, 400, 300)\n  ctx.fillStyle = '#3b82f6'\n  for (let b of balls) {\n    ctx.beginPath()\n    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)\n    ctx.fill()\n  }\n}\n"
+          },
+          "errors": [
+            "{\"code\":\"E1051\",\"type\":\"UNKNOWN_EXPORT\",\"loc\":\"app.art:1:1\",\"at\":\"use ./sim.ts\",\"expr\":\"Balls\",\"msg\":\"'./sim.ts' doesn't export 'Balls'\"}",
+            "{\"code\":\"E1003\",\"type\":\"UNKNOWN_TYPE\",\"loc\":\"app.art:4:16\",\"at\":\"SimulationPage\",\"expr\":\"Balls\",\"msg\":\"unknown type 'Balls'\"}"
+          ]
+        },
+        {
+          "files": {
+            "app.art": "use \"./sim.ts\" { step, draw, init }\n\ncomponent SimulationPage {\n  state balls: Any = []\n  state isRunning = false\n  state frameCount = 0\n  ref canvas\n\n  fn start() {\n    balls = init(5)\n    frameCount = 0\n    isRunning = true\n    animate()\n  }\n\n  fn add() {\n    balls = [...balls, {\n      x: Math.random() * 380 + 10,\n      y: Math.random() * 280 + 10,\n      vx: (Math.random() - 0.5) * 4,\n      vy: (Math.random() - 0.5) * 4,\n      r: 10\n    }]\n  }\n\n  fn toggle() {\n    isRunning = !isRunning\n    if isRunning { animate() }\n  }\n\n  fn reset() {\n    start()\n  }\n\n  fn animate() {\n    if !isRunning { return }\n    \n    step(balls, 0.2)\n    draw(canvas, balls)\n    frameCount++\n    \n    requestAnimationFrame(animate)\n  }\n\n  mount {\n    start()\n  }\n\n  column gap=4 pad=4 {\n    row gap=2 {\n      button \"Agregar\" primary -> add()\n      button (isRunning ? \"Pausar\" : \"Reanudar\") -> toggle()\n      button \"Reiniciar\" -> reset()\n    }\n    row gap=4 {\n      text `Pelotas: ${balls.length}`\n      text `Cuadros: ${frameCount}`\n    }\n    canvas ref=canvas width=400 height=300 style=\"border: 1px solid #ccc;\"\n  }\n}\n\npage Simulation \"/sim\" {\n  SimulationPage\n}\n",
+            "sim.ts": "export type Ball = {\n  x: number\n  y: number\n  vx: number\n  vy: number\n  r: number\n}\n\nexport function init(count: number): Ball[] {\n  const balls: Ball[] = []\n  for (let i = 0; i < count; i++) {\n    balls.push({\n      x: Math.random() * 380 + 10,\n      y: Math.random() * 280 + 10,\n      vx: (Math.random() - 0.5) * 4,\n      vy: (Math.random() - 0.5) * 4,\n      r: 10\n    })\n  }\n  return balls\n}\n\nexport function step(balls: Ball[], gravity: number): void {\n  // Apply gravity\n  for (let b of balls) {\n    b.vy += gravity\n  }\n\n  // Update positions\n  for (let b of balls) {\n    b.x += b.vx\n    b.y += b.vy\n  }\n\n  // Bounce off walls\n  for (let b of balls) {\n    if (b.x - b.r < 0) {\n      b.x = b.r\n      b.vx = -b.vx\n    }\n    if (b.x + b.r > 400) {\n      b.x = 400 - b.r\n      b.vx = -b.vx\n    }\n    if (b.y - b.r < 0) {\n      b.y = b.r\n      b.vy = -b.vy\n    }\n    if (b.y + b.r > 300) {\n      b.y = 300 - b.r\n      b.vy = -b.vy\n    }\n  }\n\n  // Elastic collision between balls\n  for (let i = 0; i < balls.length; i++) {\n    for (let j = i + 1; j < balls.length; j++) {\n      const b1 = balls[i]\n      const b2 = balls[j]\n      const dx = b2.x - b1.x\n      const dy = b2.y - b1.y\n      const dist = Math.sqrt(dx * dx + dy * dy)\n\n      if (dist < b1.r + b2.r) {\n        // Collision: exchange velocities\n        const temp = b1.vx\n        b1.vx = b2.vx\n        b2.vx = temp\n\n        const temp2 = b1.vy\n        b1.vy = b2.vy\n        b2.vy = temp2\n\n        // Separate balls to prevent overlap\n        const overlap = b1.r + b2.r - dist\n        const nx = dx / dist\n        const ny = dy / dist\n        b1.x -= nx * overlap / 2\n        b1.y -= ny * overlap / 2\n        b2.x += nx * overlap / 2\n        b2.y += ny * overlap / 2\n      }\n    }\n  }\n}\n\nexport function draw(canvas: HTMLCanvasElement, balls: Ball[]): void {\n  const ctx = canvas.getContext('2d')!\n  ctx.fillStyle = '#fff'\n  ctx.fillRect(0, 0, 400, 300)\n  ctx.fillStyle = '#3b82f6'\n  for (let b of balls) {\n    ctx.beginPath()\n    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)\n    ctx.fill()\n  }\n}\n"
+          },
+          "errors": [
+            "Prueba de comportamiento: se esperaba un canvas con id \"sim\", \"Pelotas: 5\" y \"Cuadros: N\". La pantalla muestra: \"Agregar Pausar Reiniciar Pelotas: 5 Cuadros: 153\""
+          ]
+        },
+        {
+          "files": {
+            "app.art": "use \"./sim.ts\" { step, draw, init }\n\ncomponent SimulationPage {\n  state balls: Any = []\n  state isRunning = false\n  state frameCount = 0\n  ref sim\n\n  fn start() {\n    balls = init(5)\n    frameCount = 0\n    isRunning = true\n    animate()\n  }\n\n  fn add() {\n    balls = [...balls, {\n      x: Math.random() * 380 + 10,\n      y: Math.random() * 280 + 10,\n      vx: (Math.random() - 0.5) * 4,\n      vy: (Math.random() - 0.5) * 4,\n      r: 10\n    }]\n  }\n\n  fn toggle() {\n    isRunning = !isRunning\n    if isRunning { animate() }\n  }\n\n  fn reset() {\n    start()\n  }\n\n  fn animate() {\n    if !isRunning { return }\n    \n    step(balls, 0.2)\n    draw(sim, balls)\n    frameCount++\n    \n    requestAnimationFrame(animate)\n  }\n\n  mount {\n    start()\n    cleanup {\n      isRunning = false\n    }\n  }\n\n  column gap=4 pad=4 {\n    row gap=2 {\n      button \"Agregar\" primary -> add()\n      button (isRunning ? \"Pausar\" : \"Reanudar\") -> toggle()\n      button \"Reiniciar\" -> reset()\n    }\n    row gap=4 {\n      text `Pelotas: ${balls.length}`\n      text `Cuadros: ${frameCount}`\n    }\n    canvas ref=sim id=\"sim\" width=400 height=300 style=\"border: 1px solid #ccc;\"\n  }\n}\n\npage Simulation \"/sim\" {\n  SimulationPage\n}\n",
+            "sim.ts": "export type Ball = {\n  x: number\n  y: number\n  vx: number\n  vy: number\n  r: number\n}\n\nexport function init(count: number): Ball[] {\n  const balls: Ball[] = []\n  for (let i = 0; i < count; i++) {\n    balls.push({\n      x: Math.random() * 380 + 10,\n      y: Math.random() * 280 + 10,\n      vx: (Math.random() - 0.5) * 4,\n      vy: (Math.random() - 0.5) * 4,\n      r: 10\n    })\n  }\n  return balls\n}\n\nexport function step(balls: Ball[], gravity: number): void {\n  // Apply gravity\n  for (let b of balls) {\n    b.vy += gravity\n  }\n\n  // Update positions\n  for (let b of balls) {\n    b.x += b.vx\n    b.y += b.vy\n  }\n\n  // Bounce off walls\n  for (let b of balls) {\n    if (b.x - b.r < 0) {\n      b.x = b.r\n      b.vx = -b.vx\n    }\n    if (b.x + b.r > 400) {\n      b.x = 400 - b.r\n      b.vx = -b.vx\n    }\n    if (b.y - b.r < 0) {\n      b.y = b.r\n      b.vy = -b.vy\n    }\n    if (b.y + b.r > 300) {\n      b.y = 300 - b.r\n      b.vy = -b.vy\n    }\n  }\n\n  // Elastic collision between balls\n  for (let i = 0; i < balls.length; i++) {\n    for (let j = i + 1; j < balls.length; j++) {\n      const b1 = balls[i]\n      const b2 = balls[j]\n      const dx = b2.x - b1.x\n      const dy = b2.y - b1.y\n      const dist = Math.sqrt(dx * dx + dy * dy)\n\n      if (dist < b1.r + b2.r && dist > 0) {\n        // Collision: exchange velocities\n        const temp = b1.vx\n        b1.vx = b2.vx\n        b2.vx = temp\n\n        const temp2 = b1.vy\n        b1.vy = b2.vy\n        b2.vy = temp2\n\n        // Separate balls to prevent overlap\n        const overlap = b1.r + b2.r - dist\n        const nx = dx / dist\n        const ny = dy / dist\n        b1.x -= nx * overlap / 2\n        b1.y -= ny * overlap / 2\n        b2.x += nx * overlap / 2\n        b2.y += ny * overlap / 2\n      }\n    }\n  }\n}\n\nexport function draw(canvas: HTMLCanvasElement, balls: Ball[]): void {\n  const ctx = canvas.getContext('2d')!\n  ctx.fillStyle = '#fff'\n  ctx.fillRect(0, 0, 400, 300)\n  ctx.fillStyle = '#3b82f6'\n  for (let b of balls) {\n    ctx.beginPath()\n    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)\n    ctx.fill()\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 16203,
+        "brotli": 5735
+      }
+    },
+    {
+      "task": "exp-travelers",
+      "stack": "artscript",
+      "run": 1,
+      "ok": false,
+      "attempts": 0,
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0,
+      "codeTokens": null,
+      "errors": [
+        "Error: ENOENT: no such file or directory, open '/Users/leandrobisceglie/Artscript/benchmarks/eval/.work/art-88287-2/data/travelers.ts'"
+      ],
+      "history": []
+    },
+    {
+      "task": "exp-travelers",
+      "stack": "artscript",
+      "run": 2,
+      "ok": false,
+      "attempts": 0,
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "usd": 0,
+      "codeTokens": null,
+      "errors": [
+        "Error: ENOENT: no such file or directory, open '/Users/leandrobisceglie/Artscript/benchmarks/eval/.work/art-88287-0/lib/travelers.ts'"
+      ],
+      "history": []
+    }
+  ]
+}

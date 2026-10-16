@@ -551,3 +551,9 @@ test("tolerance: several declarations in one let/const (`const w = 400, h = 300`
   assert.deepEqual(r.diagnostics.map((d) => d.msg), []);
   assert.equal(printProgram(parse(src, "a")), src.replace("const w = 400, h = 300", "let w = 400\n    let h = 300").replace("let a = 1, b = a + 1", "let a = 1\n    let b = a + 1"));
 });
+
+test("link takes the bold flag (measured: models write `link t.name to=... bold`)", () => {
+  const r = compile([{ file: "a.art", src: 'page P {\n  link "Ana" to="/a" bold\n}\n' }]);
+  assert.deepEqual(r.diagnostics.map((d) => d.msg), []);
+  assert.match(r.js!, /a-bold/);
+});

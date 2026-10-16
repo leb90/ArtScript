@@ -1,0 +1,134 @@
+{
+  "model": "claude-sonnet-5-5",
+  "effort": "medium",
+  "runs": 2,
+  "maxAttempts": 3,
+  "prices": {
+    "in": 2,
+    "out": 10,
+    "cacheRead": 0.2,
+    "cacheWrite": 2.5
+  },
+  "pricesDate": "2026-09-25",
+  "results": [
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 2412,
+        "cacheRead": 0,
+        "cacheWrite": 6537
+      },
+      "usd": 0.0410805,
+      "codeTokens": 1700,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "use \"./sim.ts\" { createSim }\n\npage Home \"/\" {\n  state count = 5\n  state frames = 0\n  state paused = false\n  ref box\n  ref sim\n\n  mount {\n    sim = createSim(box, (n, f) => { count = n; frames = f })\n    cleanup { sim.destroy() }\n  }\n\n  fn toggle() {\n    if paused {\n      sim.resume()\n    } else {\n      sim.pause()\n    }\n    paused = !paused\n  }\n\n  fn restart() {\n    sim.reset()\n    paused = false\n  }\n\n  column gap=3 pad=4 align=center {\n    title \"Simulación de pelotas\"\n    canvas ref=box id=\"sim\" width=400 height=300 style=\"border:1px solid #888\"\n    row gap=2 {\n      button \"Agregar\" primary -> sim.add()\n      button (paused ? \"Reanudar\" : \"Pausar\") -> toggle()\n      button \"Reiniciar\" danger -> restart()\n    }\n    row gap=4 {\n      text `Pelotas: ${count}`\n      text `Cuadros: ${frames}`\n    }\n  }\n}\n",
+            "sim.ts": "const W = 400\nconst H = 300\nconst R = 10\nconst G = 0.2\n\ntype Ball = { x: number; y: number; vx: number; vy: number }\n\nfunction makeBall(): Ball {\n  return {\n    x: R + Math.random() * (W - 2 * R),\n    y: R + Math.random() * (H - 2 * R),\n    vx: (Math.random() - 0.5) * 6,\n    vy: (Math.random() - 0.5) * 6,\n  }\n}\n\nexport function createSim(canvas: HTMLCanvasElement, onChange: (n: number, f: number) => void) {\n  const ctx = canvas.getContext(\"2d\") as CanvasRenderingContext2D\n  let balls: Ball[] = []\n  let frames = 0\n  let raf = 0\n  let running = false\n\n  function init() {\n    balls = []\n    for (let i = 0; i < 5; i++) balls.push(makeBall())\n    frames = 0\n  }\n\n  function step() {\n    for (const b of balls) {\n      b.vy += G\n      b.x += b.vx\n      b.y += b.vy\n      if (b.x < R) { b.x = R; b.vx = Math.abs(b.vx) }\n      if (b.x > W - R) { b.x = W - R; b.vx = -Math.abs(b.vx) }\n      if (b.y < R) { b.y = R; b.vy = Math.abs(b.vy) }\n      if (b.y > H - R) { b.y = H - R; b.vy = -Math.abs(b.vy) }\n    }\n    for (let i = 0; i < balls.length; i++) {\n      for (let j = i + 1; j < balls.length; j++) {\n        const a = balls[i]\n        const b = balls[j]\n        let dx = b.x - a.x\n        let dy = b.y - a.y\n        let d = Math.sqrt(dx * dx + dy * dy)\n        if (d >= 2 * R) continue\n        if (d === 0) { dx = 1; dy = 0; d = 1 }\n        const nx = dx / d\n        const ny = dy / d\n        const overlap = 2 * R - d\n        a.x -= (nx * overlap) / 2\n        a.y -= (ny * overlap) / 2\n        b.x += (nx * overlap) / 2\n        b.y += (ny * overlap) / 2\n        const rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny\n        if (rel > 0) {\n          a.vx -= rel * nx\n          a.vy -= rel * ny\n          b.vx += rel * nx\n          b.vy += rel * ny\n        }\n        for (const p of [a, b]) {\n          p.x = Math.min(W - R, Math.max(R, p.x))\n          p.y = Math.min(H - R, Math.max(R, p.y))\n        }\n      }\n    }\n  }\n\n  function draw() {\n    ctx.clearRect(0, 0, W, H)\n    ctx.fillStyle = \"#3b82f6\"\n    for (const b of balls) {\n      ctx.beginPath()\n      ctx.arc(b.x, b.y, R, 0, Math.PI * 2)\n      ctx.fill()\n    }\n  }\n\n  function loop() {\n    if (!running) return\n    step()\n    draw()\n    frames++\n    onChange(balls.length, frames)\n    raf = requestAnimationFrame(loop)\n  }\n\n  function resume() {\n    if (running) return\n    running = true\n    raf = requestAnimationFrame(loop)\n  }\n\n  function pause() {\n    running = false\n    cancelAnimationFrame(raf)\n  }\n\n  init()\n  draw()\n  onChange(balls.length, frames)\n  resume()\n\n  return {\n    add() {\n      balls.push(makeBall())\n      draw()\n      onChange(balls.length, frames)\n    },\n    reset() {\n      init()\n      draw()\n      onChange(balls.length, frames)\n      resume()\n    },\n    pause,\n    resume,\n    destroy() {\n      pause()\n    },\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 16536,
+        "brotli": 5916
+      }
+    },
+    {
+      "task": "imp-particles",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 309,
+        "output": 2338,
+        "cacheRead": 0,
+        "cacheWrite": 6537
+      },
+      "usd": 0.0403405,
+      "codeTokens": 1437,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "const W = 400\nconst H = 300\nconst R = 10\nconst G = 0.2\n\nfn makeBall() {\n  return {\n    x: R + Math.random() * (W - 2 * R),\n    y: R + Math.random() * (H - 2 * R),\n    vx: (Math.random() - 0.5) * 6,\n    vy: (Math.random() - 0.5) * 6\n  }\n}\n\nfn makeBalls(n) {\n  let out = []\n  for (let i = 0; i < n; i++) {\n    out.push(makeBall())\n  }\n  return out\n}\n\nfn stepBalls(balls) {\n  for (let i = 0; i < balls.length; i++) {\n    let b = balls[i]\n    b.vy += G\n    b.x += b.vx\n    b.y += b.vy\n    if (b.x < R) { b.x = R; b.vx = Math.abs(b.vx) }\n    if (b.x > W - R) { b.x = W - R; b.vx = -Math.abs(b.vx) }\n    if (b.y < R) { b.y = R; b.vy = Math.abs(b.vy) }\n    if (b.y > H - R) { b.y = H - R; b.vy = -Math.abs(b.vy) }\n  }\n  for (let i = 0; i < balls.length; i++) {\n    for (let j = i + 1; j < balls.length; j++) {\n      let a = balls[i]\n      let b = balls[j]\n      let dx = b.x - a.x\n      let dy = b.y - a.y\n      let dist = Math.sqrt(dx * dx + dy * dy)\n      if (dist < 2 * R) {\n        if (dist == 0) {\n          dx = 1\n          dy = 0\n          dist = 1\n        }\n        let nx = dx / dist\n        let ny = dy / dist\n        let overlap = 2 * R - dist\n        a.x -= nx * overlap / 2\n        a.y -= ny * overlap / 2\n        b.x += nx * overlap / 2\n        b.y += ny * overlap / 2\n        a.x = Math.min(Math.max(a.x, R), W - R)\n        a.y = Math.min(Math.max(a.y, R), H - R)\n        b.x = Math.min(Math.max(b.x, R), W - R)\n        b.y = Math.min(Math.max(b.y, R), H - R)\n        let rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny\n        if (rel > 0) {\n          a.vx -= rel * nx\n          a.vy -= rel * ny\n          b.vx += rel * nx\n          b.vy += rel * ny\n        }\n      }\n    }\n  }\n}\n\nfn drawBalls(ctx, balls) {\n  ctx.clearRect(0, 0, W, H)\n  ctx.fillStyle = \"#3b82f6\"\n  for (let i = 0; i < balls.length; i++) {\n    ctx.beginPath()\n    ctx.arc(balls[i].x, balls[i].y, R, 0, Math.PI * 2)\n    ctx.fill()\n  }\n}\n\npage Sim \"/\" {\n  state count = 5\n  state frames = 0\n  state paused = false\n  ref box\n  ref balls\n  ref raf\n  ref ctx\n\n  fn loop() {\n    if !paused {\n      stepBalls(balls)\n      frames++\n    }\n    drawBalls(ctx, balls)\n    raf = requestAnimationFrame(loop)\n  }\n\n  fn add() {\n    balls.push(makeBall())\n    count = balls.length\n  }\n\n  fn restart() {\n    balls = makeBalls(5)\n    count = 5\n    frames = 0\n  }\n\n  mount {\n    ctx = box.getContext(\"2d\")\n    balls = makeBalls(5)\n    loop()\n    cleanup { cancelAnimationFrame(raf) }\n  }\n\n  column gap=3 pad=4 {\n    canvas ref=box id=\"sim\" width=400 height=300 style=\"border:1px solid #888\"\n    row gap=2 {\n      button \"Agregar\" primary -> add()\n      button `${paused ? \"Reanudar\" : \"Pausar\"}` -> paused = !paused\n      button \"Reiniciar\" danger -> restart()\n    }\n    text `Pelotas: ${count}`\n    text `Cuadros: ${frames}`\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 16966,
+        "brotli": 5921
+      }
+    },
+    {
+      "task": "exp-travelers",
+      "stack": "artscript",
+      "run": 1,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 671,
+        "output": 2148,
+        "cacheRead": 6537,
+        "cacheWrite": 0
+      },
+      "usd": 0.024129400000000002,
+      "codeTokens": 1447,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "app.art": "// ───────── Datos ─────────\nconst TRAVELERS = [\n  { id: 1, name: \"Ana Rojas\", country: \"Perú\", city: \"Lima\", arrival: \"2026-03-12\", budget: 1200 },\n  { id: 2, name: \"Bruno Díaz\", country: \"México\", city: \"Oaxaca\", arrival: \"2026-01-05\", budget: 850 },\n  { id: 3, name: \"Carla Gómez\", country: \"Perú\", city: \"Cusco\", arrival: \"2026-02-20\", budget: 2300 },\n  { id: 4, name: \"Diego Silva\", country: \"Chile\", city: \"Valparaíso\", arrival: \"2026-04-02\", budget: 640 },\n  { id: 5, name: \"Elena Ruiz\", country: \"México\", city: \"Mérida\", arrival: \"2026-03-01\", budget: 1500 },\n  { id: 6, name: \"Facundo Paz\", country: \"Argentina\", city: \"Salta\", arrival: \"2026-02-11\", budget: 990 },\n  { id: 7, name: \"Gabriela Luna\", country: \"Chile\", city: \"Santiago\", arrival: \"2026-01-28\", budget: 1750 },\n  { id: 8, name: \"Hugo Vera\", country: \"Argentina\", city: \"Mendoza\", arrival: \"2026-03-30\", budget: 1100 }\n]\n\nconst COUNTRIES = [\"Todos\", \"Argentina\", \"Chile\", \"México\", \"Perú\"]\n\n// ───────── Utilidades de formato ─────────\nfn formatDate(iso) {\n  const parts = iso.split(\"-\")\n  return `${parts[2]}/${parts[1]}/${parts[0]}`\n}\n\nfn formatBudget(n) {\n  return \"US$ \" + String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g, \".\")\n}\n\nfn initials(name) {\n  return name.split(\" \").filter(p => p.length > 0).slice(0, 2).map(p => p[0].toUpperCase()).join(\"\")\n}\n\nfn avatarColor(name) {\n  let h = 0\n  for (let i = 0; i < name.length; i++) {\n    h = (h * 31 + name.charCodeAt(i)) % 360\n  }\n  return `hsl(${h}, 55%, 45%)`\n}\n\nfn avatarStyle(name) {\n  return `background:${avatarColor(name)};color:#fff;width:44px;height:44px;border-radius:50%;flex-shrink:0`\n}\n\nfn place(t) {\n  return `${t.city}, ${t.country}`\n}\n\n// ───────── Componentes ─────────\ncomponent Avatar(name: String) {\n  row style=(avatarStyle(name)) align=center justify=center {\n    text initials(name) bold\n  }\n}\n\ncomponent TravelerRow(t: Any) {\n  row gap=3 align=center {\n    Avatar name=t.name\n    column gap=1 {\n      link t.name to=`/viajero/${t.id}`\n      text place(t) muted\n      text `Llega el ${formatDate(t.arrival)}` small\n      text formatBudget(t.budget) small\n    }\n  }\n}\n\n// ───────── Páginas ─────────\npage Home \"/\" {\n  state country = \"Todos\"\n  computed shown = TRAVELERS\n    .filter(t => country == \"Todos\" || t.country == country)\n    .slice()\n    .sort((a, b) => a.arrival < b.arrival ? -1 : a.arrival > b.arrival ? 1 : 0)\n\n  column gap=4 pad=4 {\n    title \"Viajeros\" tag=h1\n    text `${shown.length} viajeros`\n    select country options=COUNTRIES label=\"País\"\n    column gap=3 {\n      for t in shown key t.id {\n        TravelerRow t=t\n      }\n    }\n  }\n}\n\npage Traveler \"/viajero/:id\" {\n  computed t = TRAVELERS.find(x => String(x.id) == params.id)\n\n  column gap=3 pad=4 {\n    if t {\n      title t.name tag=h1\n      text place(t)\n      text `Llega el ${formatDate(t.arrival)}`\n      text `Presupuesto: ${formatBudget(t.budget)}`\n    } else {\n      title \"Viajero no encontrado\"\n    }\n    link \"Volver\" to=\"/\"\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 22270,
+        "brotli": 7770
+      }
+    },
+    {
+      "task": "exp-travelers",
+      "stack": "artscript",
+      "run": 2,
+      "ok": true,
+      "attempts": 1,
+      "usage": {
+        "input": 671,
+        "output": 2178,
+        "cacheRead": 0,
+        "cacheWrite": 6537
+      },
+      "usd": 0.0394645,
+      "codeTokens": 1277,
+      "errors": [],
+      "stop": "end_turn",
+      "history": [
+        {
+          "files": {
+            "data.art": "const TRAVELERS = [\n  { id: 1, name: \"Ana Rojas\", country: \"Perú\", city: \"Lima\", arrival: \"2026-03-12\", budget: 1200 },\n  { id: 2, name: \"Bruno Díaz\", country: \"México\", city: \"Oaxaca\", arrival: \"2026-01-05\", budget: 850 },\n  { id: 3, name: \"Carla Gómez\", country: \"Perú\", city: \"Cusco\", arrival: \"2026-02-20\", budget: 2300 },\n  { id: 4, name: \"Diego Silva\", country: \"Chile\", city: \"Valparaíso\", arrival: \"2026-04-02\", budget: 640 },\n  { id: 5, name: \"Elena Ruiz\", country: \"México\", city: \"Mérida\", arrival: \"2026-03-01\", budget: 1500 },\n  { id: 6, name: \"Facundo Paz\", country: \"Argentina\", city: \"Salta\", arrival: \"2026-02-11\", budget: 990 },\n  { id: 7, name: \"Gabriela Luna\", country: \"Chile\", city: \"Santiago\", arrival: \"2026-01-28\", budget: 1750 },\n  { id: 8, name: \"Hugo Vera\", country: \"Argentina\", city: \"Mendoza\", arrival: \"2026-03-30\", budget: 1100 }\n]\n\nconst COUNTRIES = [\"Todos\", \"Argentina\", \"Chile\", \"México\", \"Perú\"]\n",
+            "format.art": "fn initials(name) {\n  return name.split(\" \").filter(w => w.length > 0).slice(0, 2).map(w => w[0].toUpperCase()).join(\"\")\n}\n\nfn avatarColor(name) {\n  let h = 0\n  for (let i = 0; i < name.length; i++) {\n    h = (h * 31 + name.charCodeAt(i)) % 360\n  }\n  return `hsl(${h}, 60%, 45%)`\n}\n\nfn usd(n) {\n  return \"US$ \" + String(Math.round(n)).replace(/\\B(?=(\\d{3})+(?!\\d))/g, \".\")\n}\n\nfn dateES(iso) {\n  const p = iso.split(\"-\")\n  return `${p[2]}/${p[1]}/${p[0]}`\n}\n\nfn place(t) {\n  return `${t.city}, ${t.country}`\n}\n",
+            "app.art": "page Home \"/\" {\n  state country = \"Todos\"\n  computed shown = [...TRAVELERS]\n    .filter(t => country == \"Todos\" || t.country == country)\n    .sort((a, b) => a.arrival.localeCompare(b.arrival))\n\n  column gap=4 pad=4 {\n    title \"Viajeros\" tag=h1\n    text `${shown.length} viajeros`\n    select country options=COUNTRIES label=\"País\"\n    column gap=3 {\n      for t in shown key t.id {\n        row gap=3 align=center {\n          column align=center justify=center style=(`background:${avatarColor(t.name)};color:#fff;width:48px;height:48px;border-radius:50%;font-weight:700`) {\n            text initials(t.name) bold\n          }\n          column gap=1 {\n            link t.name to=`/viajero/${t.id}`\n            text place(t) muted\n            text `Llega el ${dateES(t.arrival)}` small\n            text usd(t.budget)\n          }\n        }\n      }\n    }\n  }\n}\n\npage Traveler \"/viajero/:id\" {\n  computed t = TRAVELERS.find(x => String(x.id) == params.id)\n\n  column gap=3 pad=4 {\n    if t {\n      title t.name tag=h1\n      text place(t)\n      text `Llega el ${dateES(t.arrival)}`\n      text `Presupuesto: ${usd(t.budget)}`\n    } else {\n      title \"Viajero no encontrado\"\n    }\n    link \"Volver\" to=\"/\"\n  }\n}\n"
+          },
+          "errors": []
+        }
+      ],
+      "size": {
+        "raw": 21930,
+        "brotli": 7661
+      }
+    }
+  ]
+}
