@@ -407,6 +407,22 @@ const CHECKS: Record<string, Check> = {
     await p.until(() => has(p, "Mesa") && !has(p, "Silla") && has(p, "Resultados: 1"), 'que abrir "/?q=mesa" muestre solo Mesa y "Resultados: 1"');
   },
 
+  async "exp-travelers"(p) {
+    const order = ["Bruno Díaz", "Gabriela Luna", "Facundo Paz", "Carla Gómez", "Elena Ruiz", "Ana Rojas", "Hugo Vera", "Diego Silva"];
+    await p.until(() => has(p, "Viajeros") && has(p, "8 viajeros") && order.every((n) => has(p, n)), '"Viajeros", "8 viajeros" y los 8 nombres');
+    const at = order.map((n) => p.text().indexOf(n));
+    if (!at.every((x, i) => i === 0 || x > at[i - 1])) throw new BehaviorError(`los viajeros ordenados por llegada (${order.join(", ")}); el orden en pantalla es otro`);
+    await p.until(() => has(p, "Llega el 05/01/2026") && has(p, "US$ 850") && has(p, "US$ 2.300") && has(p, "BD") && has(p, "Oaxaca, México"), '"Llega el 05/01/2026", "US$ 850", "US$ 2.300", las iniciales "BD" y "Oaxaca, México"');
+    await p.select(0, "Chile");
+    await p.until(() => has(p, "2 viajeros") && has(p, "Diego Silva") && has(p, "Gabriela Luna") && !has(p, "Ana Rojas"), 'que "Chile" deje solo a Diego y Gabriela y "2 viajeros"');
+    await p.select(0, "Todos");
+    await p.until(() => has(p, "8 viajeros"), 'que "Todos" vuelva a "8 viajeros"');
+    await p.link("Ana Rojas");
+    await p.until(() => p.path() === "/viajero/1" && has(p, "Lima, Perú") && has(p, "Llega el 12/03/2026") && has(p, "Presupuesto: US$ 1.200"), `"/viajero/1" (ahora: "${p.path()}") con "Lima, Perú", "Llega el 12/03/2026" y "Presupuesto: US$ 1.200"`);
+    await p.link("Volver");
+    await p.until(() => p.path() === "/" && has(p, "Viajeros"), 'que "Volver" lleve a "/"');
+  },
+
   async wizard(p) {
     await p.until(() => has(p, "Paso 1 de 3"), '"Paso 1 de 3"');
     await p.click("Siguiente");

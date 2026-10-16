@@ -5,8 +5,10 @@
 // `project`: a multi-file project in benchmarks/eval/projects/<name>/<stack> to modify. `context`:
 // "full" sends the whole project; "focus" sends what a good agent would read (ArtScript: `art context`
 // of the relevant components; React/Svelte: the file list plus the relevant files), listed in `focus`.
+// `stacks`: the only stacks it runs in. Tasks named "exp-..." are experiments: they run only when
+// named with --tasks and the report leaves them out.
 export type Task = {
-  id: string; prompt: string; base?: string; fullstack?: boolean;
+  id: string; prompt: string; base?: string; fullstack?: boolean; stacks?: ("artscript" | "react" | "svelte" | "vue" | "solid")[];
   project?: string; context?: "full" | "focus"; focus?: Partial<Record<"artscript" | "react" | "svelte" | "vue" | "solid", string[]>>;
 };
 
@@ -102,6 +104,13 @@ export const TASKS: Task[] = [
     // Imperative code: the work is a physics loop on a canvas, where a language for UI has nothing to shorten.
     id: "imp-particles",
     prompt: "Creá una simulación de pelotas en un canvas de 400×300 con id 'sim'. Al iniciar hay 5 pelotas de radio 10 con posición y velocidad aleatorias. En cada cuadro (requestAnimationFrame): gravedad de 0.2 por cuadro en y, rebote contra los cuatro bordes (la pelota nunca sale del canvas), colisión elástica entre pelotas (al tocarse intercambian velocidades) y se dibujan como círculos. Botones: 'Agregar' suma una pelota, 'Pausar' detiene la animación y pasa a llamarse 'Reanudar' (que la continúa), 'Reiniciar' vuelve a 5 pelotas nuevas. Mostrar 'Pelotas: N' y 'Cuadros: F' (cuadros dibujados desde el inicio o el último reinicio).",
+  },
+  {
+    // Experiment: where an agent puts sample data, formatters and helpers (.art or .ts files),
+    // measured before and after a wording change of the project rules (benchmarks/eval/rules).
+    id: "exp-travelers",
+    stacks: ["artscript"],
+    prompt: "Creá un directorio de viajeros. Los datos de ejemplo son fijos (id, nombre, país, ciudad, llegada, presupuesto en USD): 1 Ana Rojas, Perú, Lima, 2026-03-12, 1200; 2 Bruno Díaz, México, Oaxaca, 2026-01-05, 850; 3 Carla Gómez, Perú, Cusco, 2026-02-20, 2300; 4 Diego Silva, Chile, Valparaíso, 2026-04-02, 640; 5 Elena Ruiz, México, Mérida, 2026-03-01, 1500; 6 Facundo Paz, Argentina, Salta, 2026-02-11, 990; 7 Gabriela Luna, Chile, Santiago, 2026-01-28, 1750; 8 Hugo Vera, Argentina, Mendoza, 2026-03-30, 1100. En '/': el título 'Viajeros', el texto 'N viajeros' con la cantidad que se ve, un select de país con las opciones 'Todos', 'Argentina', 'Chile', 'México' y 'Perú' que filtra la lista, y la lista ordenada por fecha de llegada (la más temprana primero). Cada viajero muestra un avatar con sus iniciales (por ejemplo 'AR') sobre un color que depende del nombre, su nombre como link a '/viajero/<id>', 'Ciudad, País', 'Llega el DD/MM/AAAA' y el presupuesto como 'US$ 1.200' (punto de miles, sin decimales). En '/viajero/<id>': el nombre como título, 'Ciudad, País', 'Llega el DD/MM/AAAA', 'Presupuesto: US$ 1.200' y un link 'Volver' a '/'. El proyecto tiene datos de ejemplo, utilidades de formato y páginas: organizalo en archivos como en un proyecto real.",
   },
   {
     // Motion-heavy design: entrances, scroll reveals, hover, an animated background, a count-up.

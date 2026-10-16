@@ -1,0 +1,39 @@
+component Avatar(name: String) {
+  text initials(name) style=`background: hsl(${hue(name)} 60% 45%); color: white; padding: 6px; border-radius: 50%`
+}
+
+page Home "/" {
+  state country = "Todos"
+  computed shown = TRAVELERS.filter(t => country == "Todos" || t.country == country).sort((a, b) => a.arrives.localeCompare(b.arrives))
+
+  column gap=3 {
+    title "Viajeros"
+    text `${shown.length} viajeros` muted
+    select country options=["Todos", "Argentina", "Chile", "México", "Perú"]
+    for { id, name, city, country, arrives, budget } in shown key id {
+      row gap=3 {
+        Avatar name=name
+        column gap=1 {
+          link name to=`/viajero/${id}`
+          text `${city}, ${country}`
+          text `Llega el ${day(arrives)}`
+          text money(budget)
+        }
+      }
+    }
+  }
+}
+
+page Traveler "/viajero/:id" {
+  computed t = TRAVELERS.find(x => x.id == params.id)
+
+  column gap=2 {
+    if t {
+      title t.name
+      text `${t.city}, ${t.country}`
+      text `Llega el ${day(t.arrives)}`
+      text `Presupuesto: ${money(t.budget)}`
+    }
+    link "Volver" to="/"
+  }
+}

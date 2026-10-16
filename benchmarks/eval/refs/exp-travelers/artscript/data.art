@@ -1,0 +1,83 @@
+computed TRAVELERS = [
+  {
+    id: "1",
+    name: "Ana Rojas",
+    country: "Perú",
+    city: "Lima",
+    arrives: "2026-03-12",
+    budget: 1200
+  },
+  {
+    id: "2",
+    name: "Bruno Díaz",
+    country: "México",
+    city: "Oaxaca",
+    arrives: "2026-01-05",
+    budget: 850
+  },
+  {
+    id: "3",
+    name: "Carla Gómez",
+    country: "Perú",
+    city: "Cusco",
+    arrives: "2026-02-20",
+    budget: 2300
+  },
+  {
+    id: "4",
+    name: "Diego Silva",
+    country: "Chile",
+    city: "Valparaíso",
+    arrives: "2026-04-02",
+    budget: 640
+  },
+  {
+    id: "5",
+    name: "Elena Ruiz",
+    country: "México",
+    city: "Mérida",
+    arrives: "2026-03-01",
+    budget: 1500
+  },
+  {
+    id: "6",
+    name: "Facundo Paz",
+    country: "Argentina",
+    city: "Salta",
+    arrives: "2026-02-11",
+    budget: 990
+  },
+  {
+    id: "7",
+    name: "Gabriela Luna",
+    country: "Chile",
+    city: "Santiago",
+    arrives: "2026-01-28",
+    budget: 1750
+  },
+  {
+    id: "8",
+    name: "Hugo Vera",
+    country: "Argentina",
+    city: "Mendoza",
+    arrives: "2026-03-30",
+    budget: 1100
+  }
+]
+
+fn money(n) {
+  return `US$ ${n.toLocaleString("es-AR")}`
+}
+
+fn day(iso) {
+  let [y, m, d] = iso.split("-")
+  return `${d}/${m}/${y}`
+}
+
+fn initials(name) {
+  return name.split(" ").map(w => w[0]).join("")
+}
+
+fn hue(name) {
+  return [...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 0)
+}

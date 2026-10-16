@@ -51,7 +51,7 @@ const RUNS = Number(opt("runs", "3"));
 const MAX_ATTEMPTS = Number(opt("attempts", "3"));
 const MAX_USD = Number(opt("max-usd", "10"));
 const CONCURRENCY = Number(opt("concurrency", "4"));
-const TASK_IDS = opt("tasks", TASKS.map((t) => t.id).join(",")).split(",");
+const TASK_IDS = opt("tasks", TASKS.filter((t) => !t.id.startsWith("exp-")).map((t) => t.id).join(",")).split(",");
 const STACK_IDS = opt("stacks", STACKS.join(",")).split(",") as Stack[];
 // Paid runs aren't lost if the process dies or the budget runs out: with --checkpoint <name> each
 // finished run is appended to results/<name>.jsonl, and a later run with the same name skips them.
@@ -456,7 +456,7 @@ async function main() {
     }
     console.log(`checkpoint ${CHECKPOINT}: ${saved.size} runs already done`);
   }
-  const jobs = tasks.flatMap((t) => STACK_IDS.flatMap((s) => Array.from({ length: RUNS }, (_, r) => async () => {
+  const jobs = tasks.flatMap((t) => STACK_IDS.filter((s) => !t.stacks || t.stacks.includes(s)).flatMap((s) => Array.from({ length: RUNS }, (_, r) => async () => {
     const before = saved.get(`${t.id}/${s}#${r + 1}`);
     if (before) return before;
     try {
