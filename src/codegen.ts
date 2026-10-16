@@ -1,10 +1,10 @@
 // Generates an ES module that builds the DOM directly (no virtual DOM) using runtime.js.
-import type { ApiAccess, ComponentDecl, FieldRules, Element, Expr, Loc, Member, Program, ServerFnDecl, Stmt, ViewNode } from "./ast.ts";
+import type { ApiAccess, ComponentDecl, ComputedDecl, FieldRules, Element, Expr, Loc, Member, Program, ServerFnDecl, Stmt, ViewNode } from "./ast.ts";
 import { specifier } from "./modules.ts";
 import { boundNames, isPattern } from "./patterns.ts";
 import { printDecl, printType } from "./printer.ts";
 import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
-import { slotNames, twoWayProps } from "./checker.ts";
+import { serverShared, slotNames, twoWayProps } from "./checker.ts";
 import { ICONS, iconName } from "./icons.ts";
 import { scopeCss } from "./css.ts";
 
@@ -39,14 +39,16 @@ const MUTATORS = new Set(["push", "pop", "shift", "unshift", "splice", "sort", "
 const ALIGN: Record<string, string> = { start: "flex-start", end: "flex-end", center: "center", stretch: "stretch", between: "space-between", around: "space-around" };
 const JS_OPS: Record<string, string> = { "==": "===", "!=": "!==" };
 
-// `use` declarations as ES imports; only those whose names appear in `onlyFor` when given.
-function importLines(program: Program, onlyFor?: string): string[] {
+// `use` declarations as ES imports; only those whose names appear in `onlyFor` when given, and none
+// of those whose names appear in `skip`.
+function importLines(program: Program, onlyFor?: string, skip?: string): string[] {
   const out: string[] = [];
   // Several files may `use` the same names: each is imported once (they're global to the project).
   const seen = new Set<string>();
   for (const d of program.decls) {
     if (d.kind !== "Use") continue;
-    const used = (n: string) => !seen.has(n) && (onlyFor === undefined || new RegExp(`\\b${n}\\b`).test(onlyFor));
+    const mentions = (text: string, n: string) => new RegExp(`\\b${n}\\b`).test(text);
+    const used = (n: string) => !seen.has(n) && (onlyFor === undefined || mentions(onlyFor, n)) && !(skip !== undefined && mentions(skip, n));
     const def = d.default && used(d.default) ? d.default : null;
     const names = d.names.filter(used);
     for (const n of [def, ...names]) if (n) seen.add(n);
@@ -75,7 +77,12 @@ export function generate(program: Program): string {
 export function generateMapped(program: Program, dev = false): { js: string; marks: (Loc | undefined)[] } {
   const marks: (Loc | undefined)[] = [];
   devMode = dev;
-  const out: string[] = ['import * as $ from "./runtime.js";', ...(dev ? ['import { $inspect } from "./devtools.js";'] : []), ...importLines(program), "const navigate = $.navigate, notify = $.notify, setTheme = $.setTheme, theme = $.theme;", ""];
+  // A name only server code uses (a Node-only package in a server fn) stays out of the browser bundle;
+  // the rest are imported as written (a module may be there for its side effects).
+  const text = (kinds: string[]) => program.decls.filter((d) => kinds.includes(d.kind)).map((d) => printDecl(d)).join("\n");
+  const client = text(["Component", "Shared", "Test"]);
+  const serverOnly = text(["ServerFn"]).split(/\W+/).filter((w) => w && !new RegExp(`\\b${w}\\b`).test(client)).join(" ");
+  const out: string[] = ['import * as $ from "./runtime.js";', ...(dev ? ['import { $inspect } from "./devtools.js";'] : []), ...importLines(program, undefined, serverOnly), "const navigate = $.navigate, notify = $.notify, setTheme = $.setTheme, theme = $.theme;", ""];
   const apis = program.decls.filter((d) => d.kind === "Api");
   // Typed REST client: one entry per `api` declaration.
   if (apis.length) out.push(`const api = { ${apis.map((a) => `${a.name}: $.$api(${JSON.stringify(a.name)})`).join(", ")} };`, "");
@@ -192,8 +199,41 @@ export function serverSchema(program: Program): ServerSchema | null {
 // Each server fn becomes `async name({ db, me, fail }, ...params)`.
 function serverFnsModule(program: Program, fns: ServerFnDecl[]): string {
   const host: ComponentDecl = { kind: "Component", page: false, name: "server", path: null, params: [], members: [], view: [], loc: { file: "", line: 0, col: 0 } };
-  // Server fns import only the `use` names they mention (client-only libraries stay out).
-  const out = [...importLines(program, fns.map((f) => printDecl(f)).join("\n")), "export const fns = {"];
+  // Top-level fns and consts the server fns use (and what those use), when they don't touch the page.
+  const { safe, uses } = serverShared(program);
+  const needed = new Set<string>();
+  const want = (names: Iterable<string>) => { for (const n of names) if (safe.has(n) && !needed.has(n)) { needed.add(n); want(uses.get(n)!); } };
+  for (const f of fns) { const names = new Set<string>(); walkIdents(f.body, names); for (const d of f.defaults ?? []) if (d) walkIdents(d, names); want(names); }
+  const consts: string[] = [];
+  const seen = new Set<string>();
+  const order = (n: string) => { // a const after the consts it reads
+    if (seen.has(n)) return;
+    seen.add(n);
+    for (const u of uses.get(n)!) if (needed.has(u) && safe.get(u)!.member.kind === "Computed") order(u);
+    if (safe.get(n)!.member.kind === "Computed") consts.push(n);
+  };
+  for (const n of needed) order(n);
+  const sharedCode: string[] = [];
+  for (const n of consts) {
+    const m = safe.get(n)!.member as ComputedDecl;
+    const g = new ComponentGen(host);
+    sharedCode.push(`const ${n} = ${g.expr(m.expr, new Scope(null))};`);
+  }
+  for (const n of needed) {
+    const m = safe.get(n)!.member;
+    if (m.kind !== "Fn") continue;
+    const g = new ComponentGen(host);
+    g.ind = 1;
+    const scope = new Scope(null);
+    for (const p of m.params.flatMap(boundNames)) scope.vars.set(p, { kind: "param" });
+    g.stmts(m.body, scope);
+    const ps = m.params.map((p, i) => (m.defaults?.[i] ? `${p} = ${g.expr(m.defaults[i]!, scope)}` : p));
+    sharedCode.push(`${hasAwait(m.body) ? "async " : ""}function ${n}(${ps.join(", ")}) {`, ...g.lines, "}");
+  }
+  // Server fns import only the `use` names they (and that shared code) mention: client-only
+  // libraries stay out.
+  const serverText = [...fns.map((f) => printDecl(f)), ...[...needed].map((n) => printDecl(safe.get(n)!))].join("\n");
+  const out = [...importLines(program, serverText), ...sharedCode, "export const fns = {"];
   const body = (f: ServerFnDecl) => {
     const g = new ComponentGen(host);
     g.ind = 2;
@@ -902,6 +942,14 @@ class ComponentGen {
       e = e.kind === "Call" ? (e.callee as Expr & { kind: "Member" }).object : e.object;
     }
     return e.kind === "Ident" && scope.get(e.name)?.kind === "param" ? "$.$all" : undefined;
+  }
+}
+
+function walkIdents(x: unknown, out: Set<string>) {
+  if (Array.isArray(x)) for (const y of x) walkIdents(y, out);
+  else if (x && typeof x === "object") {
+    if ((x as Expr).kind === "Ident") out.add((x as Expr & { kind: "Ident" }).name);
+    for (const [k, v] of Object.entries(x)) if (k !== "loc") walkIdents(v, out);
   }
 }
 

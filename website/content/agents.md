@@ -17,7 +17,7 @@ Agents that crawl the web can start from [llms.txt](/llms.txt) or read everythin
 
 ## Instructions file
 
-A division of work that keeps the saving: ArtScript for pages, state, the api, forms, lists and tests; heavy imperative code (a physics loop, a parser, canvas drawing) in a `.ts` or `.js` file imported with `use "./engine.ts" { step }`, where the agent has plain JavaScript or TypeScript with no restrictions and nothing to learn. There ArtScript saves nothing, and it shouldn't try to.
+Everything goes in `.art` (data, constants, helpers, formatting, calls to npm packages), where the checker verifies it. A `.ts` or `.js` file imported with `use "./engine.ts" { step }` is only for imperative code: the DOM or a canvas, heavy loops (an animation or physics loop, a parser), or a library that owns its element. There the agent has plain TypeScript and ArtScript saves nothing, so it shouldn't try to. `art check` warns (`MODULE_COULD_BE_ART`) about a module that only holds data and functions.
 
 `art init` writes `AGENTS.md` and `CLAUDE.md` into each project. Agents that read instruction files (Claude Code, Cursor, Codex, Windsurf...) pick it up by themselves. It tells them to:
 

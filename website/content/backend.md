@@ -155,7 +155,7 @@ server fn restock(id, amount) {
 }
 ```
 
-Inside: `db.<api>` (synchronous, not scoped to the user), `me` (the signed-in user or `null`), `fail(message, status)` and `await email(to, subject, text)`.
+Inside: `db.<api>` (synchronous, not scoped to the user), `me` (the signed-in user or `null`), `fail(message, status)` and `await email(to, subject, text)`. A top-level `fn` or `const` that doesn't touch the page (a state, `api`, `navigate`, the DOM) works here too, so the page and the server share one price or validation function; one that does is an error that says what it reads. A `use` that only server fns mention (a Node-only package like `pg`) stays out of the browser's bundle.
 
 ## Jobs
 

@@ -44,21 +44,24 @@ test("module rule: no warning for code that drives the DOM, runs every frame or 
     "engine.ts": "export class World { bodies: number[] = []; }\n",
     "map.ts": "export function mount(container: HTMLElement) { const o = new ResizeObserver(() => null); o.observe(container); }\n",
     "index.ts": 'export * from "./canvas.ts";\n',
+    // Heavy loops: a physics step and a parser are imperative code too, with no DOM.
+    "physics.ts": "export function step(xs: number[], dt: number) { for (let i = 0; i < xs.length; i++) xs[i] += dt; }\n",
+    "parse.ts": "export function words(s: string) { const out: string[] = []; let i = 0; while (i < s.length) { out.push(s[i]); i++; } return out; }\n",
   });
-  for (const [mod, name] of [["canvas.ts", "draw"], ["loop.ts", "start"], ["dom.js", "focus"], ["engine.ts", "World"], ["map.ts", "mount"], ["index.ts", "draw"]]) {
+  for (const [mod, name] of [["canvas.ts", "draw"], ["loop.ts", "start"], ["dom.js", "focus"], ["engine.ts", "World"], ["map.ts", "mount"], ["index.ts", "draw"], ["physics.ts", "step"], ["parse.ts", "words"]]) {
     assert.deepEqual(warnings(dir, `use "./${mod}" { ${name} }\n\npage P {\n  text "x"\n}\n`), [], mod);
   }
   // npm packages are never flagged.
   assert.deepEqual(warnings(dir, 'use "esbuild" { version }\n\npage P {\n  text version\n}\n'), []);
 });
 
-test("module rule: no warning for a module a server fn uses, or one that configures a package and re-exports it", () => {
+test("module rule: a module a server fn uses is flagged too (top-level fns run there); one configuring a package isn't", () => {
   const dir = project({
     "pricing.ts": "export const total = (xs: number[]) => xs.reduce((a, b) => a + b, 0);\n",
     "lib.ts": 'import { transform } from "esbuild";\nexport const ready = true;\nexport { transform };\n',
   });
-  // A server fn can't call a top-level fn yet: for code it shares, .ts is the way.
-  assert.deepEqual(warnings(dir, 'use "./pricing.ts" { total }\n\nserver fn quote(xs) {\n  return total(xs)\n}\n\npage P {\n  text "x"\n}\n'), []);
+  // Code a server fn shares with the page can be a top-level fn: it runs on both sides.
+  assert.deepEqual(warnings(dir, 'use "./pricing.ts" { total }\n\nserver fn quote(xs) {\n  return total(xs)\n}\n\npage P {\n  text "x"\n}\n'), ["MODULE_COULD_BE_ART"]);
   assert.deepEqual(warnings(dir, 'use "./lib.ts" { transform }\n\npage P {\n  text "x"\n}\n'), []);
 });
 

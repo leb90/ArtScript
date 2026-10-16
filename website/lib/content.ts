@@ -136,7 +136,7 @@ Before writing any .art code, read the language spec once: ARTSCRIPT.md in the p
 
 How to work:
 - Expressions are JavaScript; only the structure (page, component, model, api, state, computed, data, fn, the view) is ArtScript's own.
-- Heavy imperative code (a physics loop, a parser, canvas drawing) goes in a .ts file next to the .art files, imported with \`use "./sim.ts" { step, draw }\`: plain TypeScript, no restrictions. ArtScript is for the page, the state, the api, forms, lists and tests.
+- Write everything in \`.art\`: data, constants, helpers, formatting and calls to npm packages (\`use "pkg" { x }\`). Use a \`.ts\` file only for imperative code: code that drives the DOM or a canvas, or runs heavy loops (an animation or physics loop, canvas or WebGL drawing, a parser), and the wrapper of a library that owns its DOM (a map, a chart). Not in \`.ts\`: mock data, constants, date or money formatters, small wrappers around npm functions. What you import from \`.ts\` arrives as \`Any\`: the checker can't verify it, and \`art check\` warns (\`MODULE_COULD_BE_ART\`) when a module could be ArtScript.
 - After every change run \`npx art check --ai\`: one JSON line per error, each with expected, actual and fixes. Apply the fix; don't guess.
 - Read \`npx art context <Component>\` instead of whole files; prefer a small \`npx art patch\` over rewriting files.
 - Write test "..." { } blocks for the main flows and run \`npx art test\`.

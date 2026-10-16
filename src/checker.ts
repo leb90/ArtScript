@@ -1,5 +1,5 @@
 // Type checker: small type system, null safety and errors with fixes.
-import type { ComponentDecl, Element, Expr, Field, Loc, ModelDecl, Program, ServerFnDecl, Stmt, TestDecl, TypeRef, UseDecl, ViewNode } from "./ast.ts";
+import type { ComponentDecl, Element, Expr, Field, Loc, ModelDecl, Program, ServerFnDecl, SharedDecl, Stmt, TestDecl, TypeRef, UseDecl, ViewNode } from "./ast.ts";
 import { ANIMATIONS, BREAKPOINTS, ELEMENTS, ENUM_PROPS, HOVERS, RESPONSIVE_PROPS, TAGS } from "./elements.ts";
 import { ICONS, iconName } from "./icons.ts";
 import { CATALOG, diag, suggest, type Diagnostic } from "./errors.ts";
@@ -132,6 +132,37 @@ function walkNodes(x: unknown, fn: (n: any) => void) {
   }
 }
 
+// Top-level `fn`s and `const`s that server fns can use too: those that don't touch the page (a state,
+// the api client, navigation, the DOM), directly or through another top-level member. `why` says
+// what keeps each of the others on the client.
+const CLIENT_ONLY = new Set(["navigate", "notify", "setTheme", "theme", "api", "auth", "server", "document", "window", "localStorage", "sessionStorage", "location", "history", "alert", "confirm", "prompt", "navigator", "requestAnimationFrame", "matchMedia"]);
+export function serverShared(program: Program): { safe: Map<string, SharedDecl>; why: Map<string, string>; uses: Map<string, Set<string>> } {
+  const shared = program.decls.filter((d): d is SharedDecl => d.kind === "Shared");
+  const kindOf = new Map(shared.map((d) => [d.name, d.member.kind]));
+  const uses = new Map(shared.map((d) => {
+    const names = new Set<string>();
+    walkNodes(d.member, (n) => { if (n.kind === "Ident") names.add(n.name); });
+    return [d.name, names] as const;
+  }));
+  const why = new Map<string, string>();
+  for (const d of shared) if (d.member.kind !== "Fn" && d.member.kind !== "Computed") why.set(d.name, "is a state");
+  const safe = new Set(shared.filter((d) => !why.has(d.name)).map((d) => d.name));
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const name of [...safe]) {
+      for (const u of uses.get(name)!) {
+        const reason = CLIENT_ONLY.has(u) ? `uses '${u}'` : kindOf.get(u) === "State" ? `reads the state '${u}'` : kindOf.has(u) && u !== name && !safe.has(u) ? `calls '${u}', which ${why.get(u)}` : null;
+        if (!reason) continue;
+        safe.delete(name);
+        why.set(name, reason);
+        changed = true;
+        break;
+      }
+    }
+  }
+  return { safe: new Map(shared.filter((d) => safe.has(d.name)).map((d) => [d.name, d])), why, uses };
+}
+
 // Props a component assigns (`items = items.filter(...)`), directly or by passing them on to a
 // child that does: these are bound two-way, so the parent must pass something assignable.
 export function twoWayProps(program: Program): Map<string, Set<string>> {
@@ -172,8 +203,9 @@ export function slotNames(nodes: ViewNode[], out = new Set<string>()): Set<strin
 // `diagnostics` are errors; `warnings` don't stop the build.
 export type Analysis = { diagnostics: Diagnostic[]; warnings: Diagnostic[]; models: ModelInfo; comps: CompInfo; symbols: Map<string, Map<string, Sym>> };
 
-// What makes a local module worth being TypeScript (see `couldBeArt`).
-const IMPERATIVE = /\b(document|window|requestAnimationFrame|cancelAnimationFrame|getContext|OffscreenCanvas|WebGL\w*|HTML\w*Element|SVG\w*Element|Element|Node|addEventListener|appendChild|createElement|querySelector(All)?|ResizeObserver|IntersectionObserver|MutationObserver|Worker|AudioContext|container)\b|\bclass\s+[A-Za-z_$]/;
+// What makes a local module worth being TypeScript (see `couldBeArt`): the DOM or a canvas, a frame
+// loop, a class, or loops (a physics step, a parser).
+const IMPERATIVE = /\b(document|window|requestAnimationFrame|cancelAnimationFrame|getContext|OffscreenCanvas|WebGL\w*|HTML\w*Element|SVG\w*Element|Element|Node|addEventListener|appendChild|createElement|querySelector(All)?|ResizeObserver|IntersectionObserver|MutationObserver|Worker|AudioContext|container)\b|\bclass\s+[A-Za-z_$]|\b(for|while)\s*\(|\bdo\s*\{/;
 
 // A module that imports from a package and re-exports it configures that library (Chart.js with the
 // pieces an app draws): its place is a module.
@@ -480,20 +512,18 @@ class Checker {
     }
   }
 
-  // A .ts/.js file earns its place when its code drives the DOM, runs every frame or defines classes
-  // (an engine, a canvas, a library that owns its element). Data, constants and formatters belong in
-  // .art, where the checker verifies them; what comes from a module is Any.
+  // A .ts/.js file earns its place with imperative code: it drives the DOM or a canvas, runs heavy
+  // loops (an animation or physics loop, a parser), defines classes, or wraps a library that owns its
+  // element. Data, constants, formatters and small wrappers belong in .art, where the checker
+  // verifies them; what comes from a module is Any.
   couldBeArt(d: UseDecl) {
     const files = moduleFiles(d.source, d.loc.file);
     if (!files?.length) return;
     const texts = files.map(readText);
     if (texts.some((t) => IMPERATIVE.test(t) || reexportsPackage(t))) return;
-    // A server fn can't call a top-level fn (yet): code it shares with the page has to be a module.
-    const serverCode = this.program.decls.filter((x) => x.kind === "ServerFn").map((x) => printDecl(x)).join("\n");
-    if ([d.default, ...d.names].some((n) => n && new RegExp(`\\b${n}\\b`).test(serverCode))) return;
     this.warn("MODULE_COULD_BE_ART", `'${d.source}' only holds data and functions: it could be ArtScript`, d.loc, {
       expr: d.source,
-      expected: "a .ts file only for code that drives the DOM, runs every frame or defines classes",
+      expected: "a .ts file only for imperative code: the DOM or a canvas, heavy loops, classes, a library that owns its element",
       actual: "data, constants or functions",
       fixes: [`move its constants and functions into a .art file (\`const X = ...\`, \`fn name(a) { ... }\`, \`use "pkg" { x }\` for npm) and remove this \`use\``],
     });
@@ -522,8 +552,18 @@ class Checker {
     // Node's globals: secrets come from `process.env`.
     for (const g of ["process", "Buffer"]) scope.vars.set(g, { kind: "global", ty: ANY });
     for (const p of d.params.flatMap(boundNames)) scope.vars.set(p, { kind: "param", ty: ANY });
+    // Top-level fns and consts that don't touch the page run here too (copied into the server module).
+    const { safe, why } = serverShared(this.program);
+    for (const [name, s] of safe) if (!scope.vars.has(name)) scope.vars.set(name, s.member.kind === "Fn" ? { kind: "fn", ty: fn(ANY) } : { kind: "let", ty: ANY });
+    const before = this.diags.length;
     this.returns = [];
     this.stmts(d.body, scope);
+    for (const x of this.diags.slice(before)) {
+      const name = x.type === "UNDEFINED_NAME" ? x.expr : undefined;
+      if (!name || !why.has(name)) continue;
+      x.msg = `'${name}' can't run on the server: it ${why.get(name)}`;
+      x.fixes = [`pass what '${name}' reads as a parameter of the server fn, or move the code that needs the server into it`];
+    }
     const rs = this.returns.filter((t) => t.k !== "void");
     this.returns = null;
     if (d.every) return; // a job isn't callable from the client

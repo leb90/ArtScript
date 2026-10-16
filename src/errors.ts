@@ -39,7 +39,7 @@ export const CATALOG: Record<string, { code: string; desc: string }> = {
   UNKNOWN_MODULE: { code: "E1050", desc: "The module of a `use` can't be found (not installed, or a wrong path)." },
   UNKNOWN_EXPORT: { code: "E1051", desc: "The module doesn't export that name." },
   // Warnings
-  MODULE_COULD_BE_ART: { code: "W1052", desc: "A local .ts/.js module only holds data and functions (no DOM, no frame loop, no class): it could be ArtScript, which the checker verifies." },
+  MODULE_COULD_BE_ART: { code: "W1052", desc: "A local .ts/.js module only holds data and functions (no DOM or canvas, no loops, no class): it could be ArtScript, which the checker verifies." },
   AUTH_REQUIRED: { code: "E1040", desc: "`login` and `private` need an `auth` declaration." },
   // View
   UNKNOWN_ELEMENT: { code: "E2001", desc: "Unknown UI element or component." },
