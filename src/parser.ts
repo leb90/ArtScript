@@ -155,7 +155,9 @@ class Parser {
         if (!decls.some((x) => x.kind === "Api" && x.name === d.api)) decls.push({ kind: "Api", name: d.api, model: d.model, access: "public", modelLoc: d.loc, loc: d.loc });
         delete d.model;
       }
-      if (d) decls.push(d);
+      // `use "./data.art" { X }` (importing between files, as in JavaScript): every declaration of
+      // a .art file is already visible from the others, so it's dropped.
+      if (d && !(d.kind === "Use" && d.source.endsWith(".art"))) decls.push(d);
       this.skipNl();
     }
     decls.push(...this.hoisted);
@@ -266,7 +268,7 @@ class Parser {
       }
       this.expect("}");
     }
-    if (!def && !names.length) this.fail("`as name` or `{ names }` after the module");
+    if (!def && !names.length && !source.endsWith(".art")) this.fail("`as name` or `{ names }` after the module");
     return { kind: "Use", name: `use ${source}`, source, default: def, names, ...(Object.keys(renames).length ? { renames } : {}), loc };
   }
 

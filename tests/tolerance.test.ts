@@ -521,3 +521,15 @@ test("tolerance: `in` and `instanceof`, and a nested fn inside a block", () => {
   assert.match(r.js!, /let inner = \(\(x\) => \{/);
   assert.equal(printProgram(parse(src, "a")), src.replace("    fn inner(x) {\n      return x * 2\n    }", "    let inner = x => { return x * 2 }"));
 });
+
+test("tolerance: `use` of another .art file (a JavaScript habit) is accepted and dropped", () => {
+  const data = 'const TRAVELERS = [{ name: "Ana" }]\n\nfn initials(name) {\n  return name[0]\n}\n\ncomponent Avatar(name: String) {\n  text initials(name)\n}\n';
+  const app = 'use "./data.art" { TRAVELERS, initials }\nuse "./data.art" { Avatar }\nuse "./data.art"\n\npage Home "/" {\n  for t in TRAVELERS {\n    Avatar name=t.name\n  }\n}\n';
+  const r = compile([{ file: "data.art", src: data }, { file: "app.art", src: app }]);
+  assert.deepEqual(r.diagnostics.map((d) => d.msg), []);
+  assert.doesNotMatch(r.js!, /data\.art/);
+  assert.equal(printProgram(parse(app, "app.art")), 'page Home "/" {\n  for t in TRAVELERS {\n    Avatar name=t.name\n  }\n}\n');
+  // A name no .art file declares is still an error where it's used.
+  const bad = compile([{ file: "data.art", src: data }, { file: "app.art", src: 'use "./data.art" { NOPE }\n\npage P {\n  text NOPE\n}\n' }]);
+  assert.deepEqual(bad.diagnostics.map((d) => d.type), ["UNDEFINED_NAME"]);
+});
