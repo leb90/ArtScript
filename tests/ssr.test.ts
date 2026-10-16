@@ -70,3 +70,34 @@ test("ssr: ART_SSR=off serves the app shell", async () => {
   assert.match(html, /<div id="app"><\/div>/);
   assert.doesNotMatch(html, /art-data/);
 });
+
+test("ssr: renderRequest from a custom server whose apiFetch uses the global fetch doesn't hang", async () => {
+  const out = mkdtempSync(join(tmpdir(), "art-ssr-own-"));
+  execFileSync(process.execPath, ["src/cli.ts", "build", FIXTURE, "--out", out], { stdio: "pipe" });
+  const { createApi } = await import("../runtime/server.js" as string);
+  const { renderRequest } = await import("../runtime/ssr.js" as string);
+  const { createServer } = await import("node:http");
+  const schema = compile([{ file: FIXTURE, src: readFileSync(FIXTURE, "utf8") }]).server!;
+  const api = createApi(schema, mkdtempSync(join(tmpdir(), "art-ssr-own-data-")));
+  const server = createServer(async (req: any, res: any) => { if (!(await api(req, res))) res.writeHead(404).end(); });
+  servers.push(server as unknown as Server);
+  await new Promise<void>((ok) => server.listen(0, ok));
+  const origin = `http://localhost:${(server.address() as AddressInfo).port}`;
+  await fetch(`${origin}/api/products`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "Green lamp" }) });
+
+  // What a custom server writes naturally: the global fetch, also after an await.
+  const page = await renderRequest(pathToFileURL(join(out, "app.js")).href, "/", "/", async (url: string, init: RequestInit) => {
+    await new Promise((ok) => setTimeout(ok, 1));
+    return fetch(new URL(url, origin), init);
+  });
+  assert.match(page.html, /Green lamp/);
+
+  // apiFetch also gets the original fetch as its third argument.
+  let third: unknown;
+  const again = await renderRequest(pathToFileURL(join(out, "app.js")).href, "/", "/", (url: string, init: RequestInit, nativeFetch: typeof fetch) => {
+    third = nativeFetch;
+    return nativeFetch(new URL(url, origin), init);
+  });
+  assert.equal(third, globalThis.fetch);
+  assert.match(again.html, /Green lamp/);
+});

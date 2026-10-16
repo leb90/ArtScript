@@ -15,7 +15,10 @@ import { parse } from "./parser.ts";
 import { applyPatch } from "./patch.ts";
 // @ts-ignore: the runtime is plain JavaScript
 import { CSS } from "../runtime/runtime.js";
+// @ts-ignore: runtime is plain JS
+import { TYPES } from "../runtime/mime.js";
 import { printProgram } from "./printer.ts";
+import { liftAtRules } from "./css.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const RUNTIME = join(ROOT, "runtime", "runtime.js");
@@ -83,6 +86,21 @@ function findFiles(dir: string, ext: string): string[] {
     else if (extname(e.name) === ext) out.push(p);
   }
   return out.sort();
+}
+
+// The .css files of an app: every one in the folder of its .art files (`src/` and below) and the
+// ones at the project root. Without a `src/`, the whole project except public/ and the native
+// projects that hold copies of the build (Capacitor's ios/ and android/).
+function projectCss(target: string): string[] {
+  const root = projectRoot(target);
+  const dir = isDir(target) ? resolve(target) : dirname(resolve(target));
+  const sources = dir === resolve(root) && isDir(join(root, "src")) ? resolve(root, "src") : dir;
+  if (sources !== resolve(root)) {
+    const top = readdirSync(root, { withFileTypes: true }).filter((e) => e.isFile() && extname(e.name) === ".css").map((e) => join(root, e.name));
+    return [...top.sort(), ...findFiles(sources, ".css")];
+  }
+  const skip = new Set(["public", "ios", "android"]);
+  return findFiles(root, ".css").filter((f) => !skip.has(relative(root, f).split(/[\\/]/)[0]));
 }
 
 function findArt(dir: string): string[] {
@@ -172,10 +190,13 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
     // app.css: the runtime's styles (in their cascade layer, so what follows always wins) and every
     // .css file of the project (outside dist/public). A file, not inline styles: a strict CSP works.
     const root = projectRoot(target);
-    const cssFiles = findFiles(root, ".css").filter((f) => !relative(root, f).startsWith("public"));
     // `@import` (fonts) and `@charset` must come before any rule: they're lifted to the top.
     const heads: string[] = [];
-    const body = cssFiles.map((f) => `/* ${relative(root, f)} */\n${readFileSync(f, "utf8").replace(/^\s*@(import|charset)\b[^;]*;/gm, (m) => { heads.push(m.trim()); return ""; })}`);
+    const body = projectCss(target).map((f) => {
+      const lifted = liftAtRules(readFileSync(f, "utf8"));
+      heads.push(...lifted.heads);
+      return `/* ${relative(root, f)} */\n${lifted.rest}`;
+    });
     const css = [...heads, `@layer art{${CSS}}`, ...body].join("\n");
     // A favicon in public/ is linked from every page.
     const icon = ["favicon.svg", "favicon.png", "favicon.ico"].find((f) => existsSync(join(root, "public", f)));
@@ -487,7 +508,7 @@ switch (cmd) {
     };
     await rebuild();
 
-    const types: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".ico": "image/x-icon" };
+    const types: Record<string, string> = TYPES;
     const respond = async (req: IncomingMessage, res: ServerResponse) => {
       if (api && (await api(req, res))) return;
       let url: string;

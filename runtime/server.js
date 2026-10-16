@@ -9,6 +9,7 @@ import { basename, extname, join, resolve, sep } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { renderRequest } from "./ssr.js";
+import { TYPES } from "./mime.js";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const COOKIE = "art_session";
@@ -848,7 +849,6 @@ export function createApi(schema, dataDir, fns = {}, jobs = {}) {
   return handler;
 }
 
-const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".ico": "image/x-icon" };
 const PRIVATE = new Set(["server.js", "server-runtime.js"]);
 
 // Production server: the apis plus the built static files. Data lives in ART_DATA_DIR (default ./data).

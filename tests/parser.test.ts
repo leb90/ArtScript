@@ -165,6 +165,23 @@ test("fmt: long objects, arrays, arrow blocks and calls break over lines; short 
   assert.equal(printProgram(parse(src, "f")), src);
 });
 
+test("fmt: an arrow returning an object that fits once the arrow breaks never loses code", () => {
+  // The object alone fits in 100 columns but not with `(p, i) => (` before it: one and two params.
+  const cases = [
+    'fn long(activity, name) {\n  return [1].map((p, i) => ({ id: activity, name: p, kind: p, mine: i, theirs: i, who: name, more: "xxxxxxxxxxxxxxxxxxxxx" }))\n}',
+    'fn long(activity) {\n  return [1].map(p => ({ id: activity, name: p, kind: p, mine: p, theirs: p, who: activity, more: "xxxxxxxxxxxxxxxxxxxxxx" }))\n}',
+    'fn long(activity) {\n  return [1].map(p => ({ id: activity, name: p, kind: p, mine: p, theirs: p, who: activity, more: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }))\n}',
+  ];
+  for (const fn of cases) {
+    const src = `${fn}\n\npage Home "/" {\n  text long("a", "b").length\n}\n`;
+    const once = printProgram(parse(src, "f"));
+    assert.doesNotMatch(once, /undefined|defined\)/);
+    assert.deepEqual(compile([{ file: "f.art", src: once }]).diagnostics, [], once);
+    assert.equal(printProgram(parse(once, "f")), once, "formatting again changes nothing");
+    assert.deepEqual(noLoc(parse(once, "f").decls[0]), noLoc(parse(src, "f").decls[0]), "same program");
+  }
+});
+
 test("break, continue and bitwise operators: parsed, canonical, compiled; break outside a loop is an error", () => {
   const src = `page P {
   state n = 0

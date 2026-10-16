@@ -1,7 +1,7 @@
 // `use`: npm packages and local JS/TS modules, checked at compile time and bundled by `art build`.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -92,4 +92,25 @@ test("art build: import() in a use module becomes a chunk loaded on demand", () 
   const chunk = /import\("\.\/(chunks\/[\w-]+\.js)"\)/.exec(app)?.[1];
   assert.ok(chunk, "app.js imports the chunk");
   assert.match(readFileSync(join(out, chunk!), "utf8"), /HEAVY-MODULE-TEXT/);
+});
+
+test("use: a local module's exports are read again when the file changes (art dev keeps the process)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "art-use-cache-"));
+  const lib = join(dir, "lib.ts");
+  const file = join(dir, "app.art");
+  const src = 'use "./lib.ts" { a, b }\n\npage P {\n  text `${a} ${b}`\n}\n';
+  writeFileSync(lib, "export const a = 1;\n");
+  assert.deepEqual(check(parse(src, file)).map((d) => d.type), ["UNKNOWN_EXPORT"]);
+  writeFileSync(lib, "export const a = 1;\nexport const b = 2;\n");
+  utimesSync(lib, new Date(), new Date(Date.now() + 5000)); // a later mtime even on coarse clocks
+  assert.deepEqual(check(parse(src, file)).map((d) => d.type), []);
+  // A module it re-exports from changes too.
+  writeFileSync(join(dir, "inner.ts"), "export const c = 3;\n");
+  writeFileSync(lib, 'export const a = 1;\nexport const b = 2;\nexport * from "./inner.ts";\n');
+  utimesSync(lib, new Date(), new Date(Date.now() + 10000));
+  const src2 = 'use "./lib.ts" { d }\n\npage P {\n  text d\n}\n';
+  assert.deepEqual(check(parse(src2, file)).map((d) => d.type), ["UNKNOWN_EXPORT"]);
+  writeFileSync(join(dir, "inner.ts"), "export const c = 3;\nexport const d = 4;\n");
+  utimesSync(join(dir, "inner.ts"), new Date(), new Date(Date.now() + 15000));
+  assert.deepEqual(check(parse(src2, file)).map((d) => d.type), []);
 });

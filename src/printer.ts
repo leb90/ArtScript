@@ -97,10 +97,11 @@ export function printStmt(s: Stmt): string {
 const WIDTH = 100;
 // An arrow whose block has several statements (or a control statement) always breaks.
 const multi = (e: Expr): boolean => e.kind === "Arrow" && Array.isArray(e.body) && (e.body.length > 1 || e.body.some((s) => s.kind !== "ExprStmt" && s.kind !== "Return"));
-export function printExprLines(e: Expr, depth: number): string[] {
+// `force`: break it even if it fits (an arrow that didn't fit breaks the object it returns).
+export function printExprLines(e: Expr, depth: number, force = false): string[] {
   const one = printExpr(e);
   const pad = IND.repeat(depth);
-  const breaks = multi(e) || (e.kind === "Call" && e.args.length > 0 && multi(e.args[e.args.length - 1])) || (e.kind === "Assign" && multi(e.value));
+  const breaks = force || multi(e) || (e.kind === "Call" && e.args.length > 0 && multi(e.args[e.args.length - 1])) || (e.kind === "Assign" && multi(e.value));
   if (!breaks && pad.length + one.length <= WIDTH) return [one];
   const inner = IND.repeat(depth + 1);
   const entries = (items: string[][]) => items.flatMap((ls, i) => ls.map((l, j) => (j === 0 ? inner + l : l) + (j === ls.length - 1 && i < items.length - 1 ? "," : "")));
@@ -131,8 +132,8 @@ export function printExprLines(e: Expr, depth: number): string[] {
   if (e.kind === "Arrow") {
     const ps = e.params.length === 1 ? e.params[0] : `(${e.params.join(", ")})`;
     if (Array.isArray(e.body)) return [`${ps} => {`, ...printStmts(e.body, depth + 1), pad + "}"];
-    const [first, ...rest] = printExprLines(e.body, depth);
-    return e.body.kind === "Object" ? [`${ps} => (${first}`, ...rest.slice(0, -1), rest.at(-1) + ")"] : [`${ps} => ${first}`, ...rest];
+    const [first, ...rest] = printExprLines(e.body, depth, e.body.kind === "Object" && e.body.props.length > 0);
+    return e.body.kind === "Object" && rest.length ? [`${ps} => (${first}`, ...rest.slice(0, -1), rest.at(-1) + ")"] : [`${ps} => ${e.body.kind === "Object" ? `(${first})` : first}`, ...rest];
   }
   if (e.kind === "Call" && e.args.length) {
     const last = e.args[e.args.length - 1];

@@ -257,7 +257,20 @@ export async function prerender(bundleUrl, path) {
 let appModule = null;
 let queue = Promise.resolve();
 
-// `apiFetch(path, init)`: the server's own api. Returns { html, head, title, seed, redirect }.
+// While a page renders, the app's `fetch` is replaced (globalThis.fetch) so its api calls go to
+// `apiFetch`. Code running inside `apiFetch` (a custom server's own fetch to its api, also after an
+// `await`) gets the real fetch: it's told apart with AsyncLocalStorage, so it can't call itself.
+const nativeFetch = globalThis.fetch;
+const { AsyncLocalStorage } = globalThis.process?.getBuiltinModule?.("node:async_hooks") ?? {};
+const insideApi = AsyncLocalStorage ? new AsyncLocalStorage() : null;
+
+// Renders `url` of the app built at `bundleUrl` (dist/app.js) and resolves to
+// { html, head, title, seed, redirect }: the #app content, the <head> additions, the page title,
+// the GET responses it was rendered with (embed them as <script type="application/json"
+// id="art-data">) and, when a guard navigated away, the path to redirect to.
+// `apiFetch(url, init, nativeFetch)` answers the app's api calls ("/api/..."): pass the visitor's
+// cookies along. The global `fetch` inside it is the real one; `nativeFetch` is the same, given
+// explicitly. Renders run one at a time; one taking longer than `timeout` ms rejects.
 export function renderRequest(bundleUrl, url, base, apiFetch, timeout = 2000) {
   const job = queue.then(() => renderOnce(bundleUrl, url, base, apiFetch, timeout));
   queue = job.catch(() => {});
@@ -274,9 +287,11 @@ async function renderOnce(bundleUrl, url, base, apiFetch, timeout) {
   const seed = {};
   const pending = new Set();
   const fetch = (input, init = {}) => {
+    if (insideApi?.getStore()) return nativeFetch(input, init);
     const key = String(input);
     const method = (init.method ?? "GET").toUpperCase();
-    const p = apiFetch(key, init).then(async (res) => {
+    const call = () => apiFetch(key, init, nativeFetch);
+    const p = Promise.resolve(insideApi ? insideApi.run(true, call) : call()).then(async (res) => {
       const text = await res.text();
       if (method === "GET") seed[key] = [res.status, text ? JSON.parse(text) : null];
       return new Response(text || null, { status: res.status, headers: { "content-type": "application/json" } });

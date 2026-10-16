@@ -34,7 +34,11 @@ export function packageName(source: string): string {
   return source.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
 }
 
-const cache = new Map<string, ModuleInfo>();
+// Each entry remembers the local files esbuild read for it (the module and what it re-exports) and
+// their modification times: `art dev` keeps this process alive while those files are edited.
+const fs = builtin<typeof import("node:fs")>("node:fs");
+const mtime = (f: string) => { try { return fs?.statSync(f).mtimeMs ?? 0; } catch { return -1; } };
+const cache = new Map<string, { info: ModuleInfo; files: [string, number][] }>();
 
 export function inspectModule(source: string, fromFile: string): ModuleInfo | null {
   const eb = loadEsbuild();
@@ -42,7 +46,7 @@ export function inspectModule(source: string, fromFile: string): ModuleInfo | nu
   const dir = dirname(resolve(fromFile));
   const key = `${dir}\0${source}`;
   const cached = cache.get(key);
-  if (cached) return cached;
+  if (cached && cached.files.every(([f, t]) => mtime(f) === t)) return cached.info;
   // Browser first; Node-only packages (used from server fns) resolve with the Node platform.
   const buildFor = (platform: "browser" | "node", contents: string) =>
     eb.buildSync({
@@ -53,8 +57,10 @@ export function inspectModule(source: string, fromFile: string): ModuleInfo | nu
     try { return buildFor("browser", contents); } catch { return buildFor("node", contents); }
   };
   let info: ModuleInfo;
+  let files: [string, number][] = [];
   try {
     const out = build(`export * from ${JSON.stringify(source)};`);
+    files = Object.keys(out.metafile!.inputs).filter((f) => f !== "<stdin>" && !/(^|[\\/])node_modules[\\/]/.test(f)).map((f) => [resolve(f), mtime(resolve(f))]);
     const names = Object.values(out.metafile!.outputs)[0].exports;
     let hasDefault = true;
     try { build(`export { default } from ${JSON.stringify(source)};`); } catch { hasDefault = false; }
@@ -67,7 +73,9 @@ export function inspectModule(source: string, fromFile: string): ModuleInfo | nu
     // The failure is inside the module (a file other than our stdin): report what it couldn't import.
     const inner = err?.location?.file && /Could not resolve "([^"]+)"/.exec(text);
     if (inner) info.missing = { source: inner[1], file: err.location.file };
+    // A local file that doesn't resolve yet may exist on the next check.
+    if (isLocal(source)) return info;
   }
-  cache.set(key, info);
+  cache.set(key, { info, files });
   return info;
 }

@@ -56,9 +56,12 @@ class Page {
   }
   private buttons() { return [...document.querySelectorAll<HTMLElement>("button, [role=button], [role=tab]")].filter(visible); }
   async click(label: string, index = 0) {
-    // By its text, or by its accessible name when it has no text (an icon button).
-    const b = this.buttons().filter((x) => (norm(x.textContent ?? "") || x.getAttribute("aria-label") || x.querySelector("[aria-label]")?.getAttribute("aria-label")) === label)[index];
-    if (!b) throw new StepError(`no button "${label}"${index ? ` #${index + 1}` : ""}; buttons: ${this.buttons().map((x) => `"${norm(x.textContent ?? "")}"`).join(", ") || "none"}`);
+    // By its text or by its accessible name (aria-label, also on an icon inside): a button whose
+    // text changes can be found by a fixed aria-label.
+    const aria = (x: HTMLElement) => x.getAttribute("aria-label") ?? x.querySelector("[aria-label]")?.getAttribute("aria-label") ?? null;
+    const b = this.buttons().filter((x) => norm(x.textContent ?? "") === label || aria(x) === label)[index];
+    const names = this.buttons().map((x) => `"${norm(x.textContent ?? "")}"${aria(x) ? ` (aria-label "${aria(x)}")` : ""}`);
+    if (!b) throw new StepError(`no button "${label}"${index ? ` #${index + 1}` : ""}; buttons: ${names.join(", ") || "none"}`);
     b.click();
     await this.settle();
   }

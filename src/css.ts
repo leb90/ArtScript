@@ -38,3 +38,30 @@ export function scopeCss(css: string, component: string): string {
   }
   return out;
 }
+
+// `@import` and `@charset` statements must come before any rule, so `art build` lifts them to the
+// top of app.css. A statement ends at the first `;` outside quotes and parentheses: a font URL
+// like `family=Fraunces:wght@400;500` keeps its `;`.
+export function liftAtRules(css: string): { heads: string[]; rest: string } {
+  const heads: string[] = [];
+  const start = /^[ \t]*@(import|charset)\b/gm;
+  let rest = "", from = 0;
+  for (let m = start.exec(css); m; m = start.exec(css)) {
+    let i = m.index + m[0].length, quote = "", depth = 0;
+    for (; i < css.length; i++) {
+      const c = css[i];
+      if (quote) {
+        if (c === "\\") i++;
+        else if (c === quote) quote = "";
+      } else if (c === '"' || c === "'") quote = c;
+      else if (c === "(") depth++;
+      else if (c === ")") depth = Math.max(0, depth - 1);
+      else if (c === ";" && depth === 0) break;
+    }
+    heads.push(css.slice(m.index, i + 1).trim());
+    rest += css.slice(from, m.index);
+    from = i + 1;
+    start.lastIndex = from;
+  }
+  return { heads, rest: rest + css.slice(from) };
+}

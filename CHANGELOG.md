@@ -2,6 +2,19 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## Unreleased
+
+Fixes from an app built with 0.2.11 (Node server + Postgres of its own, server rendering with `renderRequest`, Capacitor):
+
+- `app.css`: an `@import` whose URL has a `;` (Google Fonts weights, `family=Fraunces:wght@400;500`) was cut at that `;` and broke the whole stylesheet without an error. The statement now ends at the first `;` outside quotes and parentheses.
+- `app.css` takes the `.css` files of the folder holding the `.art` files (`src/` and below) and those at the project root, instead of every `.css` in the project: copies of the build inside native projects (Capacitor's `ios/` and `android/`) were bundled again (an `app.css` of 896 KB). Without a `src/` folder, the whole project as before, minus `public/`, `ios/` and `android/`.
+- `use` of a local module: its exports are read again when it (or a module it re-exports from) changes. In `art dev`, adding an export to a `.ts` file gave a false E1051 UNKNOWN_EXPORT until the server restarted.
+- `art fmt`: an arrow returning an object, in a line too long for 100 columns, lost its code (`... }` and `defined))` on the next line) when the object alone fitted; it now breaks the object over lines.
+- `renderRequest` (server rendering from your own server): `apiFetch` can use the global `fetch` (also after an `await`): it gets the real one, not the page's, which made every render hang. `apiFetch(url, init, nativeFetch)` also receives the original fetch, and `renderRequest` documents its arguments and result.
+- `art test`: `click "Label"` finds a button by its text or by its `aria-label`, also when it has text (a button whose text changes can be clicked by a fixed `aria-label`). The error lists both.
+- Static files: `.mjs` (and `.map`, `.webmanifest`, fonts, `.avif`, `.gif`, audio, video, `.wasm`) are served with their content type, by `art dev` and by `dist/server.js`, from one map (`runtime/mime.js`).
+- `live`: after sign-up, login or logout the event stream is opened again with the new session, so a server that sends each user only their events keeps working. ArtScript's own server sends every stream the name of the api that changed and each page reloads with its current session, so it wasn't affected.
+
 ## 0.2.11 (2026-10-13)
 
 - Security (thanks to @hercase, #2): the links in verification and password-reset emails point to `ART_ORIGIN`, never to the `Origin`/`Host` a request claims (a request with a forged host could have made the token travel to another site); without `ART_ORIGIN` only a local address is used, with a warning. `ART_ORIGIN` is documented in the deploy guide.

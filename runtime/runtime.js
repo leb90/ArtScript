@@ -694,13 +694,15 @@ export function $api(name) {
   };
 }
 
-// `auth`: email + password accounts with a cookie session.
+// `auth`: email + password accounts with a cookie session. A new session also reopens the live
+// stream, so a server that scopes events to the signed-in user sends the right ones.
+const session = (v) => { liveRestart?.(); return bump(v); };
 export function $auth() {
   return {
-    signup: (obj) => request("POST", "_auth/signup", obj).then(bump),
-    login: (email, password) => request("POST", "_auth/login", { email, password }).then(bump),
-    logout: () => request("POST", "_auth/logout").then(bump),
-    logoutAll: () => request("POST", "_auth/logout-all").then(bump),
+    signup: (obj) => request("POST", "_auth/signup", obj).then(session),
+    login: (email, password) => request("POST", "_auth/login", { email, password }).then(session),
+    logout: () => request("POST", "_auth/logout").then(session),
+    logoutAll: () => request("POST", "_auth/logout-all").then(session),
     requestReset: (email) => request("POST", "_auth/reset-request", { email }),
     resetPassword: (token, password) => request("POST", "_auth/reset", { token, password }).then(bump),
     verifyEmail: (token) => request("POST", "_auth/verify", { token }).then(bump),
@@ -726,12 +728,16 @@ export function $server() {
 // `data x = ... live`: one stream of server-sent events per page; each event names an api that
 // changed, and every `data` reloads (they reload after this client's writes anyway). Reconnects.
 let live = false;
+// Ends the open stream; the next one goes out with the current session (see `$auth`).
+let liveRestart = null;
 export function $live() {
   if (live || typeof fetch === "undefined" || globalThis.__artSSR) return;
   live = true;
   const connect = async (wait) => {
+    const stop = new AbortController();
+    liveRestart = () => stop.abort();
     try {
-      const res = await fetch(`${apiBase}/api/_events`, { credentials: "same-origin" });
+      const res = await fetch(`${apiBase}/api/_events`, { credentials: "same-origin", signal: stop.signal });
       const reader = res.body.getReader();
       const text = new TextDecoder();
       let buf = "";
@@ -745,6 +751,7 @@ export function $live() {
         if (events.some((e) => e.startsWith("data:"))) bump();
       }
     } catch { /* retried below */ }
+    if (stop.signal.aborted) return connect(500); // the session changed: reconnect now
     // `unref`: in Node (tests, server rendering) a retry doesn't keep the process alive.
     setTimeout(() => connect(Math.min(wait * 2, 10000)), wait)?.unref?.();
   };

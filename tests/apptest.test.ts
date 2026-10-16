@@ -27,3 +27,26 @@ test("art test: runs the examples' tests (one with a server and accounts)", asyn
   const bad = await runTests([{ file: "app.art", src: 'page P {\n  text "hi"\n}\n\ntest "wrong" {\n  see "bye"\n}\n' }]);
   assert.match((bad as any[])[0].error, /line 6: see: expected "bye"; the screen shows: "hi"/);
 });
+
+test("art test: click finds a button by its text or by its aria-label, even when it has text", async () => {
+  const src = `page P "/" {
+  state n = 0
+
+  button \`Liked \${n} times\` aria-label="Like" -> n++
+  text \`n=\${n}\`
+}
+
+test "by aria-label" {
+  open "/"
+  click "Like"
+  click "Like"
+  see "n=2"
+  click "Liked 2 times"
+  see "n=3"
+}
+`;
+  const r = await runTests([{ file: "app.art", src }]);
+  assert.deepEqual(r, [{ name: 'test "by aria-label"', ok: true }]);
+  const bad = await runTests([{ file: "app.art", src: src.replace(/test "by aria-label"[\s\S]*$/, 'test "missing" {\n  open "/"\n  click "Dislike"\n}\n') }]);
+  assert.match((bad as any[])[0].error, /no button "Dislike"; buttons: "Liked 0 times" \(aria-label "Like"\)/);
+});
