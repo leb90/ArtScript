@@ -523,7 +523,7 @@ class Checker {
     if (texts.some((t) => IMPERATIVE.test(t) || reexportsPackage(t))) return;
     this.warn("MODULE_COULD_BE_ART", `'${d.source}' only holds data and functions: it could be ArtScript`, d.loc, {
       expr: d.source,
-      expected: "a .ts file only for imperative code: the DOM or a canvas, heavy loops, classes, a library that owns its element",
+      expected: "imperative code in a .ts file: the DOM or a canvas, heavy loops, classes, a library that owns its element",
       actual: "data, constants or functions",
       fixes: [`move its constants and functions into a .art file (\`const X = ...\`, \`fn name(a) { ... }\`, \`use "pkg" { x }\` for npm) and remove this \`use\``],
     });

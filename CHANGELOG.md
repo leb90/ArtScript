@@ -2,7 +2,7 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
-## Unreleased
+## 0.2.12 (2026-10-16)
 
 Fixes from an app built with 0.2.11 (Node server + Postgres of its own, server rendering with `renderRequest`, Capacitor):
 
