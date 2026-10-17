@@ -2,7 +2,7 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
-## Unreleased
+## 0.2.13 (2026-10-17)
 
 From the same app, after updating to 0.2.12:
 
