@@ -30,6 +30,18 @@ export const STEPS: Record<string, string> = {
 // Each mount imports the bundle under a new URL, so the app runs again from scratch.
 let mounts = 0;
 
+// A request art test stops (the page is left or the test ends) fails with this: as in a browser
+// leaving a page, it's neither the page's error nor worth printing.
+const stopped = (e: unknown) => /The operation was aborted/.test(String((e as Error)?.message ?? e));
+
+// Leaves the current page: what's still running stops while the DOM is there (once it's gone,
+// its code would fail), then the page goes.
+async function leave(reg: any) {
+  if (!reg.isRegistered) return;
+  await (globalThis as any).happyDOM?.abort?.();
+  await reg.unregister();
+}
+
 class Page {
   bundle: string;
   url: string;
@@ -41,7 +53,7 @@ class Page {
   }
 
   async open(path?: string) {
-    if (this.reg.isRegistered) await this.reg.unregister();
+    await leave(this.reg);
     this.reg.register({ url: path ? new URL(path, this.url).href : this.url });
     document.body.innerHTML = '<div id="app"></div>';
     await import(`${pathToFileURL(this.bundle).href}?run=${mounts++}`);
@@ -193,15 +205,19 @@ export async function runTests(sources: Source[], options: TestOptions = {}): Pr
   // What the page throws without catching it (a failed request in an event handler) fails the test
   // it happens in; once that test is over, its page's late errors are ignored, not a crash.
   let thrown: string[] | null = null;
-  const onError = (e: unknown) => void thrown?.push((e as Error)?.message ?? String(e));
+  const onError = (e: unknown) => void (stopped(e) || thrown?.push((e as Error)?.message ?? String(e)));
   process.on("unhandledRejection", onError);
   process.on("uncaughtException", onError);
+  // happy-dom prints every request it stops; the page shares this console.
+  const error = console.error;
+  console.error = (...args: unknown[]) => void (stopped(args[0]) || error.apply(console, args));
   try {
     for (const t of tests) results.push(await runOne(t));
   } finally {
     await new Promise((r) => setImmediate(r)); // the last page's aborted requests settle here
     process.off("unhandledRejection", onError);
     process.off("uncaughtException", onError);
+    console.error = error;
     rmSync(dir, { recursive: true, force: true });
   }
   return results;
@@ -253,10 +269,7 @@ export async function runTests(sources: Source[], options: TestOptions = {}): Pr
       return error ? { name: t.name, ok: false, error } : { name: t.name, ok: true };
     } finally {
       thrown = null;
-      // What's still running stops while the DOM is there: once it's gone, its code would fail.
-      const win = (globalThis as any).window;
-      if (reg.isRegistered) await win?.happyDOM?.abort?.();
-      if (reg.isRegistered) await reg.unregister();
+      await leave(reg);
       server?.closeAllConnections();
       server?.close();
     }

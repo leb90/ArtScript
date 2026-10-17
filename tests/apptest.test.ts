@@ -181,6 +181,13 @@ test "an error in the page" {
   see "Add"
 }
 
+test "opens a page while a request runs" {
+  open "/"
+  click "Add"
+  open "/"
+  see "Add"
+}
+
 test "the next one runs" {
   open "/"
   see "Add"
@@ -194,8 +201,10 @@ test "the next one runs" {
     const code = await new Promise((done) => run.on("exit", done));
     assert.match(output, /✓ "leaves a request running"/, output);
     assert.match(output, /✗ "an error in the page"[\s\S]*the page threw: broken/, output);
+    assert.match(output, /✓ "opens a page while a request runs"/, output);
     assert.match(output, /✓ "the next one runs"/, output);
-    assert.match(output, /2 passed, 1 failed/);
+    assert.match(output, /3 passed, 1 failed/);
+    assert.doesNotMatch(output, /aborted/i, "the requests art test stops aren't reported");
     assert.equal(code, 1);
   } finally {
     own.close();

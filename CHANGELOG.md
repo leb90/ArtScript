@@ -2,6 +2,10 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## Unreleased
+
+- `art test`: leaving a page (`open` in the middle of a test, or the end of a test) stops its pending requests while the page is still there, as a browser does. A stopped request is no longer counted as the page's error (`open` right after a click that saves something failed with `the page threw: ... The operation was aborted`), and happy-dom's report of each one (`DOMException [AbortError]` with its stack) is no longer printed.
+
 ## 0.2.13 (2026-10-17)
 
 From the same app, after updating to 0.2.12:
