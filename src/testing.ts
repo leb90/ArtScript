@@ -143,10 +143,11 @@ export type TestResult = { name: string; ok: boolean; error?: string };
 // server's answers. `reset`: a path of it that gets a POST before each test (a clean database).
 export type TestOptions = { api?: string; reset?: string };
 
-// Forwards a request to `target` as is (method, headers, body) and its answer back.
+// Forwards a request to `target` as is (method, headers, body) and its answer back. The Host stays
+// the page's, so the server's same-site checks (Origin or Referer against Host) see one site.
 function forward(req: IncomingMessage, res: ServerResponse, target: string) {
   const url = new URL(req.url ?? "/", target);
-  const out = httpRequest(url, { method: req.method, headers: { ...req.headers, host: url.host } }, (answer) => {
+  const out = httpRequest(url, { method: req.method, headers: req.headers }, (answer) => {
     res.writeHead(answer.statusCode ?? 502, answer.headers);
     answer.pipe(res);
   });
@@ -189,7 +190,23 @@ export async function runTests(sources: Source[], options: TestOptions = {}): Pr
     try { fns = await import(pathToFileURL(file).href); } finally { rmSync(file, { force: true }); }
   }
   const results: TestResult[] = [];
-  for (const t of tests) {
+  // What the page throws without catching it (a failed request in an event handler) fails the test
+  // it happens in; once that test is over, its page's late errors are ignored, not a crash.
+  let thrown: string[] | null = null;
+  const onError = (e: unknown) => void thrown?.push((e as Error)?.message ?? String(e));
+  process.on("unhandledRejection", onError);
+  process.on("uncaughtException", onError);
+  try {
+    for (const t of tests) results.push(await runOne(t));
+  } finally {
+    await new Promise((r) => setImmediate(r)); // the last page's aborted requests settle here
+    process.off("unhandledRejection", onError);
+    process.off("uncaughtException", onError);
+    rmSync(dir, { recursive: true, force: true });
+  }
+  return results;
+
+  async function runOne(t: TestDecl): Promise<TestResult> {
     // A fresh server and database per test (or the app's own server, reset first when asked).
     let server: Server | null = null;
     let url = "http://localhost:3999/";
@@ -217,22 +234,31 @@ export async function runTests(sources: Source[], options: TestOptions = {}): Pr
       url = `http://localhost:${(server.address() as AddressInfo).port}/`;
     }
     const page = new Page(bundle, url, reg);
+    let error: string | null = null;
+    thrown = [];
     try {
-      if (setup) throw new Error(setup);
-      await page.open();
-      await run(page, t.body);
-      results.push({ name: t.name, ok: true });
-    } catch (e) {
-      results.push({ name: t.name, ok: false, error: (e as Error).message });
-    } finally {
-      // Let pending requests and updates finish first: they can't run once the DOM is gone.
+      try {
+        if (setup) throw new Error(setup);
+        await page.open();
+        await run(page, t.body);
+      } catch (e) {
+        error = (e as Error).message;
+      }
+      // Pending requests and updates get a second to finish; what they throw still counts.
       const win = (globalThis as any).window;
       if (reg.isRegistered) await Promise.race([win?.happyDOM?.waitUntilComplete?.(), new Promise((r) => setTimeout(r, 1000))]);
+      await new Promise((r) => setImmediate(r));
+      const first = thrown[0];
+      if (first !== undefined) error = error ? `${error} (the page threw: ${first})` : `the page threw: ${first}`;
+      return error ? { name: t.name, ok: false, error } : { name: t.name, ok: true };
+    } finally {
+      thrown = null;
+      // What's still running stops while the DOM is there: once it's gone, its code would fail.
+      const win = (globalThis as any).window;
+      if (reg.isRegistered) await win?.happyDOM?.abort?.();
       if (reg.isRegistered) await reg.unregister();
       server?.closeAllConnections();
       server?.close();
     }
   }
-  rmSync(dir, { recursive: true, force: true });
-  return results;
 }

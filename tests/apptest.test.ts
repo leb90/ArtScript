@@ -60,6 +60,9 @@ test("art test --api: the tests talk to the app's own server (its messages), res
     req.on("data", (c) => (body += c));
     req.on("end", () => {
       const send = (status: number, value: unknown) => res.writeHead(status, { "content-type": "application/json" }).end(JSON.stringify(value));
+      // A usual CSRF check: a write must come from the site the request was sent to.
+      const from = req.headers.origin ?? req.headers.referer;
+      if (req.method === "POST" && from && new URL(from).host !== req.headers.host) return send(403, { message: "Origen no permitido" });
       if (req.url === "/api/_test/reset" && req.method === "POST") { resets++; items = []; return send(200, { ok: true }); }
       if (req.url?.startsWith("/api/items") && req.method === "GET") return send(200, items);
       if (req.url === "/api/items" && req.method === "POST") {
@@ -123,6 +126,77 @@ test "starts from an empty server" {
     // Without --api, ArtScript's own server answers (its own validation message).
     const plain = await runTests([{ file: "app.art", src }]);
     assert.equal((plain as any[])[0].ok, false);
+  } finally {
+    own.close();
+  }
+});
+
+test("art test: a request still running when a test ends doesn't crash the run; an error during a test fails it", async () => {
+  const { spawn } = await import("node:child_process");
+  const { mkdtempSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { createServer } = await import("node:http");
+  // Slower than what art test waits for when a test ends.
+  const own = createServer((req, res) => {
+    const send = (status: number, value: unknown) => res.writeHead(status, { "content-type": "application/json" }).end(JSON.stringify(value));
+    if (req.url === "/api/items" && req.method === "POST") return setTimeout(() => send(201, { id: "1", name: "x" }), 1500);
+    if (req.url === "/api/items" && req.method === "GET") return send(500, { message: "broken" });
+    send(404, { message: "no" });
+  });
+  await new Promise<void>((ok) => own.listen(0, ok));
+  const dir = mkdtempSync(join(tmpdir(), "art-late-"));
+  writeFileSync(join(dir, "app.art"), `model Item {
+  id: ID
+  name: String
+}
+
+api items: Item
+
+page P "/" {
+  fn add() {
+    await api.items.create({ name: "x" })
+    navigate("/done")
+  }
+  fn load() {
+    await api.items.list()
+  }
+
+  button "Add" -> add()
+  button "Load" -> load()
+}
+
+page Done "/done" {
+  text "done"
+}
+
+test "leaves a request running" {
+  open "/"
+  click "Add"
+}
+
+test "an error in the page" {
+  open "/"
+  click "Load"
+  see "Add"
+}
+
+test "the next one runs" {
+  open "/"
+  see "Add"
+}
+`);
+  try {
+    const run = spawn(process.execPath, ["src/cli.ts", "test", dir, "--api", `http://localhost:${(own.address() as any).port}`]);
+    let output = "";
+    run.stdout.on("data", (c) => (output += c));
+    run.stderr.on("data", (c) => (output += c));
+    const code = await new Promise((done) => run.on("exit", done));
+    assert.match(output, /✓ "leaves a request running"/, output);
+    assert.match(output, /✗ "an error in the page"[\s\S]*the page threw: broken/, output);
+    assert.match(output, /✓ "the next one runs"/, output);
+    assert.match(output, /2 passed, 1 failed/);
+    assert.equal(code, 1);
   } finally {
     own.close();
   }

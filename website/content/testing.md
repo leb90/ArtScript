@@ -49,7 +49,7 @@ One step per line:
 | `select 0 "Option"` | Picks an option in the first select |
 | `check 0` | Toggles the first checkbox |
 
-Steps wait for the page to settle (pending api calls, re-renders) before the next one, so there are no sleeps or retries to write.
+Steps wait for the page to settle (pending api calls, re-renders) before the next one, so there are no sleeps or retries to write. An error the page doesn't catch (a failed request in an event handler without `try`) fails the test with `the page threw: ...`.
 
 ## Full-stack tests
 
@@ -76,7 +76,9 @@ If the app runs on a server of its own (another database, your own messages), po
 npx art test --api http://localhost:8787 --reset /api/_test/reset
 ```
 
-`--reset` names a path of your server that gets a `POST` before each test, to start from clean data; without it, the tests share that server's data.
+`--reset` names a path of your server that gets a `POST` before each test, to start from clean data; without it, the tests share that server's data. That route empties a database, so make it exist only when the server runs for the tests (an environment variable and a database of its own), never in production.
+
+The requests reach your server as the page sent them, with the page's `Host`, so checks that compare `Origin` or `Referer` with `Host` let the page's writes through.
 
 ## Why tests matter more with AI
 

@@ -9,6 +9,8 @@ From the same app, after updating to 0.2.12:
 - `art upgrade`: refreshes the agent instructions `art init` copied into a project (the three specs, the Claude Code skill, the Cursor rule and `AGENTS.md`), so an update reaches projects that already exist. `AGENTS.md` now has its ArtScript part between `<!-- artscript:start -->` and `<!-- artscript:end -->`: only that block is replaced and what the project wrote outside it stays. An `AGENTS.md` from before the markers is replaced; if the project had edited it, the previous one is kept as `AGENTS.md.old`. `art check` (and `art_check`) warns `INSTRUCTIONS_OUTDATED` (W1053) while a copy is older than the installed package, with the fix.
 - `art fmt` keeps a page's `meta` at the top (it used to go below the members) and keeps the parentheses of a ternary used as content (`button (busy ? "Saving" : "Save")`).
 - `art test --api <url> [--reset <path>]`: tests for an app with a server of its own. The page's api requests go to that server, from the page's origin so sessions work, and the tests see its answers and messages; `--reset` is POSTed before each test.
+- `art test` no longer stops the whole run when the page throws: an error the page doesn't catch (a failed request in an event handler without `try`) fails the test it happens in, as `the page threw: ...`, and a request still running when a test ends is stopped while the page is there, instead of failing later without a DOM (`history is not defined`).
+- `art test --api` forwards the requests with the page's `Host`, so a server that checks `Origin` or `Referer` against `Host` (CSRF) accepts the page's writes.
 
 ## 0.2.12 (2026-10-16)
 
