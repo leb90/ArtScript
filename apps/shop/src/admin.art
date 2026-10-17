@@ -1,4 +1,5 @@
 page Admin "/admin" requires admin {
+  meta title="Admin · Fernwood"
   data products = api.products.list({ sort: "name" })
   data orders = server.allOrders()
   state tab = "Products"
@@ -82,7 +83,6 @@ page Admin "/admin" requires admin {
     notify(`Order marked as ${status.toLowerCase()}`, "success")
   }
 
-  meta title="Admin · Fernwood"
   column gap=5 class="fade-in" {
     row justify=between gap=3 wrap {
       title "Admin" class="page-title" tag=h1
@@ -201,7 +201,7 @@ page Admin "/admin" requires admin {
       }
     }
     modal editing gap=3 class="editor" {
-      text editId == "" ? "New product" : "Edit product" bold large
+      text (editId == "" ? "New product" : "Edit product") bold large
       form gap=3 -> save() {
         input name label="Name" placeholder="Product name" required
         row gap=3 class="field-row" {
@@ -218,7 +218,7 @@ page Admin "/admin" requires admin {
         }
         row gap=2 justify=end {
           button "Cancel" -> editing = false
-          button saving ? "Saving..." : "Save product" primary disabled=saving
+          button (saving ? "Saving..." : "Save product") primary disabled=saving
         }
       }
     }

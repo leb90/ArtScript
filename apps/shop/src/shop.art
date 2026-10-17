@@ -30,6 +30,7 @@ component ProductCard(p: Product) {
 }
 
 page Home "/" {
+  meta title="Fernwood · Goods for slow days" description="A small shop of well-made things for home, desk and travel."
   state search = ""
   state category = "All"
   state seeding = false
@@ -46,7 +47,6 @@ page Home "/" {
     }
   }
 
-  meta title="Fernwood · Goods for slow days" description="A small shop of well-made things for home, desk and travel."
   column gap=6 class="fade-in" {
     column gap=2 class="hero" {
       text "New season" class="eyebrow"
@@ -62,7 +62,7 @@ page Home "/" {
         icon "package" size=40 muted
         title "The shelves are empty"
         text "Load a few sample products to see the shop in action." muted
-        button seeding ? "Loading..." : "Load sample products" primary disabled=seeding -> loadSamples()
+        button (seeding ? "Loading..." : "Load sample products") primary disabled=seeding -> loadSamples()
       }
     } else {
       row gap=3 wrap justify=between class="filters" {
@@ -93,6 +93,7 @@ page Home "/" {
 }
 
 page ProductPage "/products/:id" {
+  meta title=(p ? `${p.name} · Fernwood` : "Fernwood")
   data p = api.products.get(params.id)
   state qty = 1
   computed inCart = cart.find(i => i.id == params.id)?.qty ?? 0
@@ -109,7 +110,6 @@ page ProductPage "/products/:id" {
     }
   }
 
-  meta title=(p ? `${p.name} · Fernwood` : "Fernwood")
   column gap=4 class="fade-in" {
     link to="/" class="back" {
       icon "arrow-left" size=16

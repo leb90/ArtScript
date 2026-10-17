@@ -46,9 +46,16 @@ Compact context for a model. Without names, the project map (models, apis, compo
 
 Copies official components into the project as source: `DataTable`, `Pagination`, `ConfirmButton`, `SearchBox`, `Stat`, `EmptyState`.
 
-### `art test [path]`
+### `art test [path] [--api url [--reset /path]]`
 
 Runs every `test "..." { }` block in a simulated browser, with the real api and a fresh database for each test.
+
+- `--api http://localhost:8787`: for an app with a server of its own. The page's `/api/...` requests go to that server (from the page's origin, so sessions work), and the tests see its answers and messages.
+- `--reset /api/_test/reset`: a path of that server that gets a `POST` before each test, so each one starts from clean data.
+
+### `art upgrade [path]`
+
+After updating `@artscript/core`, refreshes the agent instructions `art init` copied into the project, so the agent reads this version's rules: `ARTSCRIPT.md`, `ARTSCRIPT-CORE.md`, `ARTSCRIPT-EDIT.md`, the Claude Code skill, the Cursor rule and the ArtScript block of `AGENTS.md` (between its `artscript:start` and `artscript:end` markers; what the project wrote outside them stays). Missing ones are added. An `AGENTS.md` from before the markers that the project had edited is kept as `AGENTS.md.old`. `art check` warns (`INSTRUCTIONS_OUTDATED`) while any copy is older than the installed package.
 
 ## Tools
 

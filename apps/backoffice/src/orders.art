@@ -1,4 +1,5 @@
 page Orders "/orders" layout Shell requires login {
+  meta title="Orders · Northwind Backoffice"
   state search = ""
   state status = "all"
   state sort = "-createdAt"
@@ -22,7 +23,6 @@ page Orders "/orders" layout Shell requires login {
     showing = true
   }
 
-  meta title="Orders · Northwind Backoffice"
   row class="page-head" justify=between gap=3 wrap {
     column {
       title "Orders" tag=h1

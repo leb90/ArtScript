@@ -43,7 +43,7 @@ page Users "/" {
             text u.email muted small
           }
           row gap=2 {
-            button u.admin ? "Remove admin" : "Make admin" small -> api.users.update(u.id, { admin: !u.admin })
+            button (u.admin ? "Remove admin" : "Make admin") small -> api.users.update(u.id, { admin: !u.admin })
             button "x" danger small -> api.users.remove(u.id)
           }
         }

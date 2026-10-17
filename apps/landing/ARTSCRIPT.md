@@ -35,10 +35,16 @@ page Users "/users" {
 ```
 use "date-fns" { format, addDays as plus } // npm package (install it with npm first)
 use "canvas-confetti" as confetti       // default export
-use "./lib/money.ts" { toUSD }          // your own JS/TS module: the way out for anything not built in
+use "./sim.ts" { step, draw }           // your own .ts: code that drives a canvas or runs every frame
+
+const TAX = 0.21                        // module level, shared by every component: constants,
+const PEOPLE = [{ name: "Ana" }]        // data (literals may span lines), caches (`const cache = new Map()`)
+fn toUSD(n) {                           // formatters and helpers are fns here, not a .ts module
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n)
+}
 ```
 
-- Imported names work in every component and server fn, typed `Any`.
+- Imported names work in every component and server fn, typed `Any`: the checker can't verify them, and it warns (`MODULE_COULD_BE_ART`) about a local module that only holds data and functions.
 
 ## Members (inside component/page, before the view)
 
@@ -52,11 +58,11 @@ fn add(x) {                      // function; body = JS statements
 }
 ```
 
-- `state`, `computed` and `fn` written outside any component are shared by all of them (`state cart: Item[] = []`: one cart for every page).
+- `state`, `computed` and `fn` written outside any component are shared by all of them (`state cart: Item[] = []`: one cart for every page). A top-level `fn` or `const` that doesn't touch the page (a state, `api`, `navigate`, the DOM) also runs in `server fn`s: one price function for the page and the server.
 - Assigning to a `state` updates the UI: `count++`, `name = "x"`, `users.push(u)`, `user.name = "x"`, also through a fn parameter (`fn sell(p) { p.stock-- }`).
 - A component that assigns its prop (`items = items.filter(...)`) changes the parent's state: pass a state (`List items=items`).
 - No hooks, setters or manual dependencies.
-- Statements: expression, `let x = ...`, `if cond { } else { }`, `for x in xs { }`, `while cond { }`, `return`, `try { } catch (e) { } finally { }`.
+- Statements: expression, `let x = ...`, `if cond { } else { }`, `for x in xs { }`, `for (let i = 0; i < n; i++) { }`, `while cond { }`, `break`, `continue`, `return`, `try { } catch (e) { } finally { }`. Operators are JavaScript's, bitwise ones included (`& | ^ ~ << >> >>>`), and `in` / `instanceof`. Destructuring works in parameters, `let` and `for`: `({ name }) => name`, `fn f({ a, b = 1 })`, `let [first, ...rest] = xs`, `for [k, v] in Object.entries(o)`, `for { name } in people` (defaults are literals). `fn`, `let` and `ref` compile to plain JavaScript (no overhead in a loop); a `let` or `const` written as a member is a `computed`. Write everything in `.art`: data, constants, helpers and formatting (`Intl`, `Date` and string methods cover most of it); when you do need an npm package, call it from `.art` too (`use "pkg" { x }`). Imperative code goes in a `.ts` file instead: code that drives the DOM or a canvas, or runs heavy loops (an animation or physics loop, canvas or WebGL drawing, a parser), and the wrapper of a library that owns its DOM (a map, a chart). Not in `.ts`: mock data, constants, date or money formatters, small wrappers around npm functions. What you import from `.ts` arrives as `Any`: the checker can't verify it, and `art check` warns (`MODULE_COULD_BE_ART`) when a module could be ArtScript.
 - For DOM libraries (charts, maps), timers and subscriptions:
   ```
   ref box                          // the element marked `canvas ref=box` (set before mount runs)
@@ -122,7 +128,7 @@ column gap=4 align=center {
 | `modal` | Bool state (open) | — | gap pad align justify | |
 | `image` | src | — | alt width height | |
 | `video` `audio` | src | — | video: width height poster | controls autoplay loop muted |
-| `link` | text | — | to href | muted |
+| `link` | text | — | to href target | muted bold |
 | `badge` | text | — | | primary success danger |
 | `icon` | Lucide name (`"check" "trash" "edit" "search" "user" "home"`...) | — | size label | muted primary success danger |
 | `spinner` `divider` | — | — | | |
@@ -134,6 +140,15 @@ column gap=4 align=center {
 | `table` > `tr` > `th` `td` | th/td: text | tr: click | | td: muted |
 
 - All take `class style id role aria-* data-*` (`button "Menu" aria-expanded=open`); texts and containers take `tag=` for the HTML element (`title "Plans" tag=h1`, `column tag=nav`; default: `title` is an h2, `text` a span); a field without `label=` is named by its `placeholder`. `style { .box { ... } }` in a component: CSS only for its elements. `.css` files in the project are bundled; theme: `:root { --a-primary: #e11d48; --a-radius: 4px; --a-font: Inter }` (also `--a-bg --a-fg --a-surface --a-border --a-muted --a-danger --a-success`).
+- Motion without code, as flags and props on any element (reduced-motion respected; a prerendered page shows everything without JavaScript):
+  ```
+  title "Nimbus" animate=rise                 // on mount: rise fade zoom slide-left slide-right pop
+  button "Start" primary animate=pop delay=240 hover=grow     // delay/duration in ms; hover: lift grow glow
+  grid cols=3 stagger {                       // children one after another
+    card reveal hover=lift { text "Fast" }    // appears when scrolled into view
+  }
+  ```
+  An animated background or a count-up are components added as source: `art add MeshBackground Particles Marquee Counter`; in a single file, write a `style { }` block with `@keyframes`.
 - Conditional flag: `text t.title muted=t.done`.
 - `gap=4` and `pad=4`: 1 unit = 4px. `align=start|center|end|stretch`. `justify=start|center|end|between|around`. `cols=3`.
 - `type=text|number|email|password|checkbox|date`. With `type=checkbox`, `input` binds a Bool.

@@ -1,4 +1,5 @@
 page Customers "/customers" layout Shell requires login {
+  meta title="Customers · Northwind Backoffice"
   state search = ""
   state page = 0
   state editing = false
@@ -93,7 +94,6 @@ page Customers "/customers" layout Shell requires login {
     asking = false
   }
 
-  meta title="Customers · Northwind Backoffice"
   row class="page-head" justify=between gap=3 wrap {
     column {
       title "Customers" tag=h1
@@ -157,7 +157,7 @@ page Customers "/customers" layout Shell requires login {
     Pager page=page size=10 total=total
   }
   modal editing gap=4 class="sheet" {
-    title editId == "" ? "New customer" : "Edit customer"
+    title (editId == "" ? "New customer" : "Edit customer")
     form gap=3 novalidate -> save() {
       column gap=1 {
         input name label="Name" placeholder="Full name" class=(errors.name ? "invalid" : "")
@@ -183,7 +183,7 @@ page Customers "/customers" layout Shell requires login {
       }
       row gap=2 justify=end {
         button "Cancel" -> editing = false
-        button saving ? "Saving…" : "Save customer" primary disabled=saving
+        button (saving ? "Saving…" : "Save customer") primary disabled=saving
       }
     }
   }

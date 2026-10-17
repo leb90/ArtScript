@@ -2,6 +2,14 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## Unreleased
+
+From the same app, after updating to 0.2.12:
+
+- `art upgrade`: refreshes the agent instructions `art init` copied into a project (the three specs, the Claude Code skill, the Cursor rule and `AGENTS.md`), so an update reaches projects that already exist. `AGENTS.md` now has its ArtScript part between `<!-- artscript:start -->` and `<!-- artscript:end -->`: only that block is replaced and what the project wrote outside it stays. An `AGENTS.md` from before the markers is replaced; if the project had edited it, the previous one is kept as `AGENTS.md.old`. `art check` (and `art_check`) warns `INSTRUCTIONS_OUTDATED` (W1053) while a copy is older than the installed package, with the fix.
+- `art fmt` keeps a page's `meta` at the top (it used to go below the members) and keeps the parentheses of a ternary used as content (`button (busy ? "Saving" : "Save")`).
+- `art test --api <url> [--reset <path>]`: tests for an app with a server of its own. The page's api requests go to that server, from the page's origin so sessions work, and the tests see its answers and messages; `--reset` is POSTed before each test.
+
 ## 0.2.12 (2026-10-16)
 
 Fixes from an app built with 0.2.11 (Node server + Postgres of its own, server rendering with `renderRequest`, Capacitor):

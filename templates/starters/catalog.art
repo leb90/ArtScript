@@ -46,7 +46,7 @@ page Catalog "/" {
     }
     row gap=2 {
       input search placeholder="Search"
-      button sort == "name" ? "Sort: name" : "Sort: price" small -> sort = sort == "name" ? "-price" : "name"
+      button (sort == "name" ? "Sort: name" : "Sort: price") small -> sort = sort == "name" ? "-price" : "name"
     }
     text `${total} products` muted
     for p in products {

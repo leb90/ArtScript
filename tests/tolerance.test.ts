@@ -464,7 +464,7 @@ test("regular expressions, computed keys, a canvas, class after responsive props
   }
 
   grid cols=1 md:cols=3 gap=2 class=(big ? "kpis big" : "kpis") id="grid" {
-    text ok ? "valid" : "invalid" id="ok"
+    text (ok ? "valid" : "invalid") id="ok"
     text errors("name").name id="err"
   }
   canvas ref=chart width=200

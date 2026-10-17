@@ -1,9 +1,9 @@
 use "./lib/content.ts" { DEMOS, EXAMPLES, REPO, lines }
 
 page Examples "/examples" {
+  meta title="Examples · ArtScript" description="Complete ArtScript apps, from a counter to a CRM with relations, uploads and live data."
   state open = "counter"
 
-  meta title="Examples · ArtScript" description="Complete ArtScript apps, from a counter to a CRM with relations, uploads and live data."
   column class="container page-pad" gap=8 {
     column gap=3 {
       text "Examples" class="crumb"
@@ -43,7 +43,7 @@ page Examples "/examples" {
             }
           }
           row gap=2 wrap {
-            button open == ex.name ? "Hide code" : "Show code" small class="pill" -> open = open == ex.name ? "" : ex.name
+            button (open == ex.name ? "Hide code" : "Show code") small class="pill" -> open = open == ex.name ? "" : ex.name
             if ex.runs {
               link "Open in playground" to=`/playground?example=${ex.name}` class="pill"
             } else {

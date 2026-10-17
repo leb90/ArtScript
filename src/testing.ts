@@ -2,7 +2,7 @@
 // an optional dependency) against a real server when the app has apis. Each test starts from a
 // fresh database. Steps use what a person sees: texts, buttons, placeholders, labels, links.
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { createServer, type Server } from "node:http";
+import { createServer, request as httpRequest, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -138,7 +138,31 @@ async function run(page: Page, steps: Stmt[]) {
 
 export type TestResult = { name: string; ok: boolean; error?: string };
 
-export async function runTests(sources: Source[]): Promise<TestResult[] | { diagnostics: string[] }> {
+// `api`: the app's own server (`art test --api http://localhost:8787`): the page's `/api/...`
+// requests go there, from the page's own origin so its cookies work, and the tests see that
+// server's answers. `reset`: a path of it that gets a POST before each test (a clean database).
+export type TestOptions = { api?: string; reset?: string };
+
+// Forwards a request to `target` as is (method, headers, body) and its answer back.
+function forward(req: IncomingMessage, res: ServerResponse, target: string) {
+  const url = new URL(req.url ?? "/", target);
+  const out = httpRequest(url, { method: req.method, headers: { ...req.headers, host: url.host } }, (answer) => {
+    res.writeHead(answer.statusCode ?? 502, answer.headers);
+    answer.pipe(res);
+  });
+  out.on("error", (e) => res.writeHead(502, { "content-type": "application/json" }).end(JSON.stringify({ message: `art test --api: can't reach ${target} (${e.message})` })));
+  req.pipe(out);
+}
+
+function post(url: URL): Promise<number> {
+  return new Promise((ok, fail) => {
+    const r = httpRequest(url, { method: "POST", headers: { "content-type": "application/json", "content-length": 2 } }, (res) => { res.resume(); ok(res.statusCode ?? 0); });
+    r.on("error", fail);
+    r.end("{}");
+  });
+}
+
+export async function runTests(sources: Source[], options: TestOptions = {}): Promise<TestResult[] | { diagnostics: string[] }> {
   const r = compile(sources);
   if (!r.js) return { diagnostics: r.diagnostics.map((d) => `${d.loc.file}:${d.loc.line}:${d.loc.col} ${d.type}: ${d.msg}`) };
   const tests = (r.program as Program).decls.filter((d): d is TestDecl => d.kind === "Test");
@@ -166,10 +190,27 @@ export async function runTests(sources: Source[]): Promise<TestResult[] | { diag
   }
   const results: TestResult[] = [];
   for (const t of tests) {
-    // A fresh server and database per test.
+    // A fresh server and database per test (or the app's own server, reset first when asked).
     let server: Server | null = null;
     let url = "http://localhost:3999/";
-    if (r.server) {
+    let setup: string | null = null; // why the test can't start
+    if (options.api) {
+      const target = options.api;
+      if (options.reset) {
+        try {
+          const status = await post(new URL(options.reset, target));
+          if (status >= 300) setup = `art test --reset: POST ${options.reset} answered ${status}`;
+        } catch (e) {
+          setup = `art test --reset: can't reach ${target} (${(e as Error).message})`;
+        }
+      }
+      server = createServer((req, res) => {
+        if ((req.url ?? "").startsWith("/api/")) forward(req, res, target);
+        else res.writeHead(404).end();
+      });
+      await new Promise<void>((ok) => server!.listen(0, ok));
+      url = `http://localhost:${(server.address() as AddressInfo).port}/`;
+    } else if (r.server) {
       const api = createApi(r.server, mkdtempSync(join(dir, "data-")), fns.fns);
       server = createServer(async (req, res) => { if (!(await api(req, res))) res.writeHead(404).end(); });
       await new Promise<void>((ok) => server!.listen(0, ok));
@@ -177,6 +218,7 @@ export async function runTests(sources: Source[]): Promise<TestResult[] | { diag
     }
     const page = new Page(bundle, url, reg);
     try {
+      if (setup) throw new Error(setup);
       await page.open();
       await run(page, t.body);
       results.push({ name: t.name, ok: true });

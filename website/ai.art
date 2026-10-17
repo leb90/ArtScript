@@ -3,6 +3,7 @@ use "./lib/content.ts" { specText, editText, coreText, specTokens, editTokens, c
 use "./lib/markdown.ts" { copyText }
 
 page Ai "/ai" layout Docs {
+  meta title="ArtScript for AI agents" description="How to give an AI agent ArtScript: llms.txt, the spec, the MCP server, the instructions file and the build-check-patch loop."
   state tools = [
     { name: "art_spec", what: "The language spec (full, or the short edit version)." },
     {
@@ -43,7 +44,6 @@ page Ai "/ai" layout Docs {
     }
   ]
 
-  meta title="ArtScript for AI agents" description="How to give an AI agent ArtScript: llms.txt, the spec, the MCP server, the instructions file and the build-check-patch loop."
   DocShell path="/ai" section="For AI" heading="ArtScript for AI agents" {
     column gap=6 class="prose" {
       text "ArtScript is designed around one number: what it costs a model to build an app and to keep changing it. This page is what you give your agent, and what it can read by itself." class="page-lead"

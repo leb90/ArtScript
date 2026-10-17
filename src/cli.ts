@@ -10,7 +10,7 @@ import { analyze } from "./checker.ts";
 import { compile, parseProject, type Source } from "./compile.ts";
 import { htmlShell, serverEntry, type ServerSchema } from "./codegen.ts";
 import { declContexts, projectMap } from "./context.ts";
-import { formatAI, formatHuman, type Diagnostic } from "./errors.ts";
+import { diag, formatAI, formatHuman, type Diagnostic } from "./errors.ts";
 import { parse } from "./parser.ts";
 import { applyPatch } from "./patch.ts";
 // @ts-ignore: the runtime is plain JavaScript
@@ -19,6 +19,7 @@ import { CSS } from "../runtime/runtime.js";
 import { TYPES } from "../runtime/mime.js";
 import { printProgram } from "./printer.ts";
 import { liftAtRules } from "./css.ts";
+import { staleInstructions, upgradeInstructions } from "./upgrade.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const RUNTIME = join(ROOT, "runtime", "runtime.js");
@@ -45,12 +46,16 @@ const HELP = `art ${PKG.version} — the ArtScript compiler
   art build [path] [--out dist] [--sourcemap] [--base /sub] [--prerender [--site url]] [--demo]
                                     build for production (prerender: HTML per route; site: sitemap.xml)
   art check [path] [--ai]           typecheck; --ai = one JSON line per error
+  art upgrade [path]                refresh the agent instructions (specs, AGENTS.md, skill, Cursor rule)
+                                    after updating @artscript/core
   art fmt [path] [--write]          canonical format (without --write it only prints)
   art patch [file|-] [--dir path] [--dry-run] [--ai]
                                     apply structured edits (reads stdin without a file)
   art add <Component...>            add official components as source: DataTable, Pagination,
                                     ConfirmButton, SearchBox, Stat, EmptyState
-  art test [path]                   run the project's test "..." { } blocks (needs happy-dom)
+  art test [path] [--api url [--reset /path]]
+                                    run the project's test "..." { } blocks (needs happy-dom);
+                                    --api: against the app's own server, --reset: POSTed before each test
   art lsp                           language server (stdio): live errors, formatting, completion
   art mcp [--dir path]               MCP server (stdio) with art_spec, art_check, art_context, art_patch
   art context [Name...] [--dir path] [--budget N]
@@ -70,7 +75,7 @@ for (let i = 1; i < argv.length; i++) {
   const a = argv[i];
   if (a.startsWith("--")) {
     const next = argv[i + 1];
-    if (next !== undefined && !next.startsWith("--") && ["--out", "--port", "--dir", "--budget", "--template", "--site", "--base"].includes(a)) { flags.set(a, next); i++; }
+    if (next !== undefined && !next.startsWith("--") && ["--out", "--port", "--dir", "--budget", "--template", "--site", "--base", "--api", "--reset"].includes(a)) { flags.set(a, next); i++; }
     else flags.set(a, true);
   } else pos.push(a);
 }
@@ -239,6 +244,15 @@ async function offerExtension() {
   } finally { rl.close(); }
 }
 
+// The agent instructions in the project are older than this package (see src/upgrade.ts).
+function instructionsWarning(dir: string): Diagnostic[] {
+  const stale = staleInstructions(dir);
+  if (!stale.length) return [];
+  return [diag("INSTRUCTIONS_OUTDATED", `the agent instructions in ${stale.join(", ")} are older than @artscript/core ${PKG.version}`, { file: relative(process.cwd(), join(dir, stale[0])) || stale[0], line: 1, col: 1 }, {
+    severity: "warning", expected: `the instructions of @artscript/core ${PKG.version}`, actual: stale.join(", "), fixes: ["npx art upgrade"],
+  })];
+}
+
 // ---------- commands ----------
 switch (cmd) {
   case "init": {
@@ -350,10 +364,25 @@ switch (cmd) {
     const { program, diagnostics } = parseProject(src);
     const a = diagnostics.length ? null : analyze(program);
     const diags = a ? a.diagnostics : diagnostics;
-    const warns = a?.warnings ?? [];
+    const warns = [...(a?.warnings ?? []), ...instructionsWarning(projectRoot(pos[0] ?? defaultTarget()))];
     report([...diags, ...warns], ai);
     if (!diags.length) console.log(ai ? '{"ok":true}' : `ok: ${src.length} file(s), ${program.decls.length} declarations${warns.length ? `, ${warns.length} warning(s)` : ""}`);
     process.exit(diags.length ? 1 : 0);
+  }
+
+  case "upgrade": {
+    // After updating @artscript/core: refresh the spec copies, AGENTS.md's ArtScript block, the skill
+    // and the Cursor rule, so the agent reads this version's rules.
+    const dir = projectRoot(pos[0] ?? defaultTarget());
+    const r = upgradeInstructions(dir);
+    if (!r.updated.length && !r.added.length) console.log(`agent instructions are up to date (@artscript/core ${PKG.version})`);
+    else {
+      console.log(`agent instructions for @artscript/core ${PKG.version}:`);
+      for (const f of r.updated) console.log(`  updated ${f}${r.notes[f] ? ` (${r.notes[f]})` : ""}`);
+      for (const f of r.added) console.log(`  added   ${f}`);
+      for (const f of r.setAside) console.log(`  ${f}: the previous AGENTS.md, from before the managed block; copy back anything you had added (below the end marker)`);
+    }
+    break;
   }
 
   case "fmt": {
@@ -406,7 +435,8 @@ switch (cmd) {
   case "test": {
     // Runs every `test "..." { }` of the project in a simulated browser (fresh database each).
     const { runTests } = await import("./testing.ts");
-    const r = await runTests(sources(pos[0] ?? defaultTarget()));
+    // --api http://localhost:8787: against the app's own server; --reset /path: POSTed before each test.
+    const r = await runTests(sources(pos[0] ?? defaultTarget()), { api: flag("--api") as string | undefined, reset: flag("--reset") as string | undefined });
     if ("diagnostics" in r) { console.log(r.diagnostics.join("\n")); process.exit(1); }
     for (const t of r) console.log(`${t.ok ? "✓" : "✗"} ${t.name.replace(/^test /, "")}${t.ok ? "" : `\n    ${t.error}`}`);
     const failed = r.filter((t) => !t.ok).length;

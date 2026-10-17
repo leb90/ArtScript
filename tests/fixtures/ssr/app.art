@@ -25,9 +25,9 @@ page Home "/" {
 }
 
 page ProductPage "/products/:id" {
+  meta title="A product" description="One product."
   data product = api.products.get(params.id)
 
-  meta title="A product" description="One product."
   if product {
     title product.name
   } else {

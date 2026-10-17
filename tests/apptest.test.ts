@@ -50,3 +50,80 @@ test "by aria-label" {
   const bad = await runTests([{ file: "app.art", src: src.replace(/test "by aria-label"[\s\S]*$/, 'test "missing" {\n  open "/"\n  click "Dislike"\n}\n') }]);
   assert.match((bad as any[])[0].error, /no button "Dislike"; buttons: "Liked 0 times" \(aria-label "Like"\)/);
 });
+
+test("art test --api: the tests talk to the app's own server (its messages), resetting it before each one", async () => {
+  const { createServer } = await import("node:http");
+  let resets = 0;
+  let items: { id: string; name: string }[] = [];
+  const own = createServer((req, res) => {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", () => {
+      const send = (status: number, value: unknown) => res.writeHead(status, { "content-type": "application/json" }).end(JSON.stringify(value));
+      if (req.url === "/api/_test/reset" && req.method === "POST") { resets++; items = []; return send(200, { ok: true }); }
+      if (req.url?.startsWith("/api/items") && req.method === "GET") return send(200, items);
+      if (req.url === "/api/items" && req.method === "POST") {
+        const { name } = JSON.parse(body || "{}");
+        if (!name) return send(400, { error: "VALIDATION", message: "El nombre es obligatorio" });
+        const item = { id: String(items.length + 1), name };
+        items.push(item);
+        return send(201, item);
+      }
+      send(404, { message: "no" });
+    });
+  });
+  await new Promise<void>((ok) => own.listen(0, ok));
+  const api = `http://localhost:${(own.address() as any).port}`;
+  const src = `model Item {
+  id: ID
+  name: String min=1
+}
+
+api items: Item
+
+page P "/" {
+  data items = api.items.list()
+  state name = ""
+  state problem = ""
+  fn add() {
+    try {
+      await api.items.create({ name })
+      problem = ""
+    } catch (e) {
+      problem = e.message
+    }
+  }
+
+  input name placeholder="Nombre"
+  button "Agregar" -> add()
+  text problem
+  for i in items {
+    text i.name
+  }
+}
+
+test "the server's own message" {
+  open "/"
+  click "Agregar"
+  see "El nombre es obligatorio"
+  fill "Nombre" "Mate"
+  click "Agregar"
+  see "Mate"
+}
+
+test "starts from an empty server" {
+  open "/"
+  notSee "Mate"
+}
+`;
+  try {
+    const r = await runTests([{ file: "app.art", src }], { api, reset: "/api/_test/reset" });
+    assert.deepEqual((r as any[]).map((t) => [t.name, t.ok, t.error ?? ""]), [['test "the server\'s own message"', true, ""], ['test "starts from an empty server"', true, ""]]);
+    assert.equal(resets, 2, "reset before each test");
+    // Without --api, ArtScript's own server answers (its own validation message).
+    const plain = await runTests([{ file: "app.art", src }]);
+    assert.equal((plain as any[])[0].ok, false);
+  } finally {
+    own.close();
+  }
+});

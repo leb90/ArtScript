@@ -3,12 +3,12 @@ use "./lib/content.ts" { COMPARE, stackByName, resultFor, barWidth, specTokens, 
 use "./lib/markdown.ts" { copyText }
 
 page Home "/" {
+  meta title="ArtScript: the web framework built for AI" description="A full-stack web language designed so AI models build and change apps with fewer tokens, retries and dollars than React, Svelte or Vue." image="/og.png"
   state other = "React"
   computed art = COMPARE[0]
   computed them = stackByName(other)
   computed sonnet = resultFor("claude-sonnet-5-5")
 
-  meta title="ArtScript: the web framework built for AI" description="A full-stack web language designed so AI models build and change apps with fewer tokens, retries and dollars than React, Svelte or Vue." image="/og.png"
   column gap=0 {
     column class="hero" {
       column class="container" align=center gap=0 {

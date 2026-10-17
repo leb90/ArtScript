@@ -7,7 +7,8 @@ import { createInterface } from "node:readline";
 import { analyze } from "./checker.ts";
 import { parseProject, type Source } from "./compile.ts";
 import { declContexts, projectMap } from "./context.ts";
-import { formatAI } from "./errors.ts";
+import { diag, formatAI } from "./errors.ts";
+import { staleInstructions } from "./upgrade.ts";
 import { applyPatch } from "./patch.ts";
 
 type Tool = { name: string; description: string; inputSchema: object; run: (args: Record<string, unknown>) => { text: string; ok: boolean } };
@@ -49,7 +50,9 @@ export function mcpTools(root: string, specDir: string): Tool[] {
         const { program, diagnostics } = parseProject(sources(dirOf(a)));
         const an = diagnostics.length ? null : analyze(program);
         const errs = an ? an.diagnostics : diagnostics;
-        const warns = an?.warnings ?? [];
+        const dir = dirOf(a);
+        const stale = staleInstructions(dir.endsWith("/src") ? dirname(dir) : dir);
+        const warns = [...(an?.warnings ?? []), ...(stale.length ? [diag("INSTRUCTIONS_OUTDATED", `the agent instructions in ${stale.join(", ")} are older than the installed @artscript/core`, { file: stale[0], line: 1, col: 1 }, { severity: "warning", actual: stale.join(", "), fixes: ["npx art upgrade"] })] : [])];
         if (errs.length) return fail([...errs, ...warns].map(formatAI).join("\n"));
         return ok(warns.length ? [...warns.map(formatAI), "ok"].join("\n") : "ok");
       },

@@ -35,6 +35,7 @@ component ChartCard(heading: String, hint: String) {
 }
 
 page Dashboard "/" layout Shell requires login {
+  meta title="Dashboard · Northwind Backoffice"
   state days = 30
   state seeding = false
   data stats = server.stats(days)
@@ -53,7 +54,6 @@ page Dashboard "/" layout Shell requires login {
     }
   }
 
-  meta title="Dashboard · Northwind Backoffice"
   row class="page-head" justify=between gap=3 wrap {
     column {
       title "Dashboard" tag=h1
@@ -88,7 +88,7 @@ page Dashboard "/" layout Shell requires login {
       }
       text "No data yet" large bold
       text "Load a sample store (40 customers, 12 products, 300 orders over the last 90 days) to see the dashboard at work." muted
-      button seeding ? "Loading sample data…" : "Load sample data" primary disabled=seeding -> loadSample()
+      button (seeding ? "Loading sample data…" : "Load sample data") primary disabled=seeding -> loadSample()
     }
   } else {
     grid class="kpis" cols=2 xl:cols=4 gap=3 md:gap=4 {

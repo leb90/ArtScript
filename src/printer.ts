@@ -219,7 +219,11 @@ export function printDecl(d: Decl): string {
   if ((d.page || d.layout) && d.layoutName) head += ` layout ${d.layoutName}`;
   if (d.page && d.requires) head += ` requires ${d.requires}`;
   if (d.params.length) head += `(${d.params.map((p) => `${p.name}: ${printType(p.type)}${p.default ? ` = ${printExpr(p.default)}` : ""}`).join(", ")})`;
-  const out: string[] = [];
+  // `meta` (the page's title and tags) goes first: it draws nothing, and it's what a reader looks
+  // for at the top of a page.
+  const isMeta = (n: ViewNode) => n.kind === "Element" && n.tag === "meta";
+  const out: string[] = printView(d.view.filter(isMeta), 1);
+  const view = d.view.filter((n) => !isMeta(n));
   for (const m of d.members) {
     const lines: string[] = [];
     const init = (head: string, e: Expr, tail = "") => { const [first, ...rest] = printExprLines(e, 1); lines.push(IND + head + first + (rest.length ? "" : tail), ...(rest.length ? [...rest.slice(0, -1), rest.at(-1) + tail] : [])); };
@@ -232,8 +236,8 @@ export function printDecl(d: Decl): string {
     else if (m.kind === "Style") lines.push(`${IND}style {`, ...cssLines(m.css, IND.repeat(2)), `${IND}}`);
     out.push(...withComments(m, IND, lines));
   }
-  if (d.members.length && d.view.length) out.push("");
-  out.push(...printView(d.view, 1));
+  if (out.length && view.length) out.push("");
+  out.push(...printView(view, 1));
   return `${head} {\n${out.join("\n")}\n}`;
 }
 
@@ -289,7 +293,8 @@ function propValue(e: Expr): string {
 
 export function printElementHead(el: Element): string {
   let s = el.tag;
-  if (el.content) s += " " + (prec(el.content) >= 0.5 ? printExpr(el.content) : `(${printExpr(el.content)})`);
+  // A ternary keeps its parentheses (`button (busy ? "Saving" : "Save") primary`): easier to read.
+  if (el.content) s += " " + (prec(el.content) >= 0.5 && el.content.kind !== "Cond" ? printExpr(el.content) : `(${printExpr(el.content)})`);
   for (const p of el.props) s += " " + (p.value ? `${p.name}=${propValue(p.value)}` : p.name);
   return s;
 }

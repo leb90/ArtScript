@@ -27,6 +27,8 @@ Everything goes in `.art` (data, constants, helpers, formatting, calls to npm pa
 - prefer a small `art patch` to rewriting files;
 - write `test` blocks and run `npx art test`.
 
+After updating `@artscript/core`, run `npx art upgrade`: it refreshes these copies (the specs, the skill, the Cursor rule and the ArtScript block of `AGENTS.md`, keeping what you wrote outside it), and `art check` warns while they're older than the package.
+
 Cursor also gets `.cursor/rules/artscript.mdc`, a rule attached to every `.art` file, and Claude Code gets the skill `.claude/skills/artscript/SKILL.md`, loaded when it works on `.art` files. The project also recommends the ArtScript extension for VS Code and Cursor (`.vscode/extensions.json`): file icons, highlighting, snippets and live errors with fixes for the person reviewing the agent's work. If your agent uses another file (`.github/copilot-instructions.md`, `.windsurfrules`), copy the same text there.
 
 ## MCP

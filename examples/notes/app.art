@@ -64,7 +64,7 @@ page Notes "/" {
       text `${stats?.done ?? 0} of ${stats?.total ?? 0} done` muted
       for n in notes {
         row gap=2 {
-          button n.done ? "✓" : "○" small -> api.notes.update(n.id, { done: !n.done })
+          button (n.done ? "✓" : "○") small -> api.notes.update(n.id, { done: !n.done })
           text n.text muted=n.done
           button "x" danger small -> api.notes.remove(n.id)
         }

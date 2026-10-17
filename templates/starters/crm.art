@@ -82,6 +82,7 @@ component Login {
 }
 
 page Contacts "/" {
+  meta title="Contacts" description="Everyone you're talking to."
   data contacts = api.contacts.list({ sort: "name" }) live
   data companies = api.companies.list()
   state stage = "all"
@@ -103,7 +104,6 @@ page Contacts "/" {
     }
   }
 
-  meta title="Contacts" description="Everyone you're talking to."
   row justify=between {
     tabs stage options=["all", "lead", "customer"]
     button "New contact" primary -> adding = true
@@ -148,6 +148,7 @@ page Contacts "/" {
 }
 
 page Companies "/companies" {
+  meta title="Companies"
   data companies = api.companies.list({ sort: "name" })
   state name = ""
   state logo = null
@@ -163,7 +164,6 @@ page Companies "/companies" {
     }
   }
 
-  meta title="Companies"
   row gap=2 {
     input name placeholder="Company"
     file logo accept="image/*"

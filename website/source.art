@@ -1,10 +1,10 @@
 use "./lib/content.ts" { SOURCE, artFiles, artLines, lines, sourceByFile, REPO }
 
 page Source "/source" {
+  meta title="This site's source · ArtScript" description="The ArtScript website is an ArtScript app. Here is every file it is made of."
   state file = "website/site.art"
   computed current = sourceByFile(file)
 
-  meta title="This site's source · ArtScript" description="The ArtScript website is an ArtScript app. Here is every file it is made of."
   column class="container page-pad" gap=8 {
     column gap=3 {
       text "Built with ArtScript" class="crumb"

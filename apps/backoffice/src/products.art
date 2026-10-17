@@ -1,4 +1,5 @@
 page Products "/products" layout Shell requires login {
+  meta title="Products · Northwind Backoffice"
   state editing = false
   state editId = ""
   state name = ""
@@ -81,7 +82,6 @@ page Products "/products" layout Shell requires login {
     asking = false
   }
 
-  meta title="Products · Northwind Backoffice"
   row class="page-head" justify=between gap=3 wrap {
     column {
       title "Products" tag=h1
@@ -143,7 +143,7 @@ page Products "/products" layout Shell requires login {
     }
   }
   modal editing gap=4 class="sheet" {
-    title editId == "" ? "New product" : "Edit product"
+    title (editId == "" ? "New product" : "Edit product")
     form gap=3 novalidate -> save() {
       column gap=1 {
         input name label="Name" placeholder="Product name" class=(errors.name ? "invalid" : "")
@@ -171,7 +171,7 @@ page Products "/products" layout Shell requires login {
       }
       row gap=2 justify=end {
         button "Cancel" -> editing = false
-        button saving ? "Saving…" : "Save product" primary disabled=saving
+        button (saving ? "Saving…" : "Save product") primary disabled=saving
       }
     }
   }

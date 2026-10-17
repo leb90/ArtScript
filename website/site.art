@@ -28,9 +28,9 @@ layout Site {
         }
         row gap=2 {
           link "Built with ArtScript" to="/source" class="badge-built"
-          button dark ? "Light" : "Dark" small class="ghost" -> setTheme(dark ? "light" : "dark")
+          button (dark ? "Light" : "Dark") small class="ghost" -> setTheme(dark ? "light" : "dark")
           link "GitHub" href=REPO class="pill"
-          button menu ? "Close" : "Menu" small class="ghost menu-btn" -> menu = !menu
+          button (menu ? "Close" : "Menu") small class="ghost menu-btn" -> menu = !menu
         }
       }
     }
@@ -116,7 +116,7 @@ layout Docs layout Site {
 
   grid class="container docs" {
     column class="docs-nav" gap=0 {
-      button open ? "Hide menu" : "All pages" small class="ghost docs-toggle" -> open = !open
+      button (open ? "Hide menu" : "All pages") small class="ghost docs-toggle" -> open = !open
       column gap=0 class=(open ? "sidebar open" : "sidebar") {
         for s in NAV {
           text s.title class="group"
@@ -174,6 +174,7 @@ component DocPage(slug: String) {
 
 page NotFound "*" {
   meta title="Not found · ArtScript"
+
   column class="container page-pad" gap=4 align=start {
     text "404" class="crumb"
     title "This page doesn't exist" class="page-title"

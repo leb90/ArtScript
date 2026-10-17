@@ -6,6 +6,7 @@ use "./lib/content.ts" { EXAMPLES, exampleByName, prefersDark }
 use "./lib/markdown.ts" { copyText }
 
 page Playground "/playground" {
+  meta title="Playground · ArtScript" description="Write ArtScript and see the app run: the real compiler, in your browser."
   state example = query.example ?? "counter"
   state code = decode(query.code ?? "") ?? exampleByName(example).src
   state shared = false
@@ -34,7 +35,6 @@ page Playground "/playground" {
     run()
   }
 
-  meta title="Playground · ArtScript" description="Write ArtScript and see the app run: the real compiler, in your browser."
   column class="pg" gap=0 {
     textarea code placeholder="Write ArtScript here" class="pg-editor" on:keydown=onEditorKey(event, () => run(0))
     column class="pg-side" gap=0 {
@@ -42,7 +42,7 @@ page Playground "/playground" {
         row gap=2 {
           select example placeholder="Example" options=EXAMPLES.filter(e => e.runs).map(e => ({ value: e.name, label: e.title })) -> load()
           button "Run" primary small -> run(0)
-          button shared ? "Link copied" : "Share" small class="ghost" -> share()
+          button (shared ? "Link copied" : "Share") small class="ghost" -> share()
         }
         if !ready {
           text "Loading the compiler…" muted small

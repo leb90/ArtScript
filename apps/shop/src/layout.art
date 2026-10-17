@@ -68,11 +68,12 @@ component Price(value: Number) {
 }
 
 component ProductArt(src: String, name: String) {
-  image src != "" ? src : "/products/placeholder.svg" alt=name class="art"
+  image (src != "" ? src : "/products/placeholder.svg") alt=name class="art"
 }
 
 page NotFound "*" {
   meta title="Page not found · Fernwood"
+
   column gap=3 align=center class="empty fade-in" {
     icon "help" size=40 muted
     title "We couldn't find that page" tag=h1

@@ -91,6 +91,7 @@ component Footer {
 }
 
 page Home "/" {
+  meta title="Brisa — Small-batch coffee, roasted to order" description="Single-origin beans from small farms, roasted on Monday and at your door by Thursday. Flexible plans from $13 a month. Skip or cancel anytime." image="/og.png"
   mount {
     syncEntrance()
     let stop = reveal()
@@ -99,7 +100,6 @@ page Home "/" {
     }
   }
 
-  meta title="Brisa — Small-batch coffee, roasted to order" description="Single-origin beans from small farms, roasted on Monday and at your door by Thursday. Flexible plans from $13 a month. Skip or cancel anytime." image="/og.png"
   column class="home" {
     Hero
     Press
@@ -364,7 +364,7 @@ component Pricing {
               text `$${yearly ? p.yearly : p.monthly}` class="price" data-swap=(yearly ? "a" : "b")
               text "/ month" class="soft per"
             }
-            text yearly ? `Billed $${p.yearly * 12} once a year` : "Billed monthly, cancel anytime" class="billed soft"
+            text (yearly ? `Billed $${p.yearly * 12} once a year` : "Billed monthly, cancel anytime") class="billed soft"
             link `Start with ${p.name}` href="#start" class="btn plan-btn"
             column class="perks" gap=2 {
               row class="perk" gap=2 align=start {
@@ -565,11 +565,11 @@ component Signup {
 }
 
 page Privacy "/privacy" {
+  meta title="Privacy — Brisa" description="What Brisa collects, why, and how to have it deleted. Short version: as little as possible." image="/og.png"
   mount {
     syncEntrance()
   }
 
-  meta title="Privacy — Brisa" description="What Brisa collects, why, and how to have it deleted. Short version: as little as possible." image="/og.png"
   column class="prose-page" {
     column class="wrap prose" {
       text "Legal" class="kicker enter" style="--d: 40ms"
@@ -596,11 +596,11 @@ page Privacy "/privacy" {
 }
 
 page NotFound "*" {
+  meta title="Page not found — Brisa" description="This page doesn't exist."
   mount {
     syncEntrance()
   }
 
-  meta title="Page not found — Brisa" description="This page doesn't exist."
   column class="lost" align=center {
     text "404" class="lost-code" aria-hidden="true"
     column tag=h1 class="display small-display enter" style="--d: 130ms" {

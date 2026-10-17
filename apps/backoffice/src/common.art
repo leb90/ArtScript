@@ -3,7 +3,7 @@ component Pager(page: Number, size: Number, total: Number) {
   computed pages = Math.max(1, Math.ceil(total / size))
 
   row class="pager" justify=between gap=3 wrap {
-    text total == 0 ? "No results" : `${page * size + 1}–${Math.min(total, (page + 1) * size)} of ${formatNumber(total)}` small muted
+    text (total == 0 ? "No results" : `${page * size + 1}–${Math.min(total, (page + 1) * size)} of ${formatNumber(total)}`) small muted
     row gap=2 {
       button "Previous" small disabled=(page <= 0) -> page = page - 1
       text `Page ${page + 1} of ${pages}` small muted

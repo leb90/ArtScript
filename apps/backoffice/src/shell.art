@@ -39,7 +39,7 @@ layout Shell {
           text initials(me.name) class="avatar"
           column class="user-name" {
             text me.name small bold
-            text me.role == "admin" ? "Admin" : "Member" small muted
+            text (me.role == "admin" ? "Admin" : "Member") small muted
           }
         }
         button "Log out" small class="logout" -> logout()
@@ -83,6 +83,7 @@ layout Plain {
 }
 
 page Login "/login" layout Plain {
+  meta title="Log in · Northwind Backoffice"
   data me = auth.me()
   state mode = "login"
   state name = ""
@@ -137,7 +138,6 @@ page Login "/login" layout Plain {
     }
   }
 
-  meta title="Log in · Northwind Backoffice"
   card class="login-card" gap=4 {
     row gap=2 {
       row class="brand-mark" {
@@ -147,8 +147,8 @@ page Login "/login" layout Plain {
       badge "Backoffice"
     }
     column gap=1 {
-      title mode == "signup" ? "Create your account" : "Welcome back" tag=h1
-      text mode == "signup" ? "The first account becomes the admin." : "Log in to manage orders, customers and products." muted small
+      title (mode == "signup" ? "Create your account" : "Welcome back") tag=h1
+      text (mode == "signup" ? "The first account becomes the admin." : "Log in to manage orders, customers and products.") muted small
     }
     tabs mode options=[{ value: "login", label: "Log in" }, { value: "signup", label: "Sign up" }]
     form gap=3 -> submit() {
@@ -160,7 +160,7 @@ page Login "/login" layout Plain {
       if error != "" {
         text error danger small class="form-error" role="alert"
       }
-      button busy ? "One moment…" : mode == "signup" ? "Create account" : "Log in" primary disabled=busy
+      button (busy ? "One moment…" : mode == "signup" ? "Create account" : "Log in") primary disabled=busy
     }
   }
 }

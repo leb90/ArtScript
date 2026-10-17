@@ -182,6 +182,24 @@ test("fmt: an arrow returning an object that fits once the arrow breaks never lo
   }
 });
 
+test("fmt: meta stays at the top of a page, and a ternary as content keeps its parentheses", () => {
+  const src = `page Home "/" {
+  meta title="Home" description="The first page."
+  state busy = false
+  fn save() {
+    busy = true
+  }
+
+  button (busy ? "Saving" : "Save") primary -> save()
+  text (busy ? "wait" : "ready") muted
+}
+`;
+  assert.equal(printProgram(parse(src, "f")), src);
+  // Written after the members, meta moves up; without parentheses, they're added.
+  const loose = src.replace('  meta title="Home" description="The first page."\n', "").replace("\n  button (busy", '\n  meta title="Home" description="The first page."\n  button (busy').replace('text (busy ? "wait" : "ready")', 'text busy ? "wait" : "ready"');
+  assert.equal(printProgram(parse(loose, "f")), src);
+});
+
 test("break, continue and bitwise operators: parsed, canonical, compiled; break outside a loop is an error", () => {
   const src = `page P {
   state n = 0

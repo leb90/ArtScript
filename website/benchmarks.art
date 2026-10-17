@@ -2,9 +2,9 @@
 use "./lib/content.ts" { RESULTS, IMPERATIVE, barWidth, resultsHtml, methodologyHtml }
 
 page Benchmarks "/benchmarks" {
+  meta title="Benchmarks · ArtScript" description="What it costs Claude Opus, Sonnet and Haiku to build and change the same apps in ArtScript, React, Svelte, Vue and SolidJS."
   state detail = false
 
-  meta title="Benchmarks · ArtScript" description="What it costs Claude Opus, Sonnet and Haiku to build and change the same apps in ArtScript, React, Svelte, Vue and SolidJS."
   column class="container page-pad" gap=8 {
     column gap=3 {
       text "Benchmarks" class="crumb"
@@ -77,7 +77,7 @@ page Benchmarks "/benchmarks" {
       Markdown html=methodologyHtml
     }
     column gap=3 align=start {
-      button detail ? "Hide the full tables" : "Show every table, per task and per project" class="ghost" -> detail = !detail
+      button (detail ? "Hide the full tables" : "Show every table, per task and per project") class="ghost" -> detail = !detail
       if detail {
         Markdown html=resultsHtml
       }

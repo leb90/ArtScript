@@ -68,6 +68,16 @@ test "keeps notes after reloading" {
 }
 ```
 
+## With a server of your own
+
+If the app runs on a server of its own (another database, your own messages), point the tests at it: the page's api requests go there, and the tests check what that server answers.
+
+```sh
+npx art test --api http://localhost:8787 --reset /api/_test/reset
+```
+
+`--reset` names a path of your server that gets a `POST` before each test, to start from clean data; without it, the tests share that server's data.
+
 ## Why tests matter more with AI
 
 A test is the cheapest way to tell a model what "done" means, and to know that a later change didn't break it. A failing step says what it expected and what the screen shows (or which buttons and inputs exist), which is usually enough for the agent to fix it in one step. Ask your agent to write tests for the main flows and to run `art test` after each change.
