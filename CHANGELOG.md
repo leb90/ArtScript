@@ -2,8 +2,11 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
-## Unreleased
+## 0.2.14 (2026-10-20)
 
+- `art build --prerender --site <url>`: every page gets its canonical address, `og:url`, `og:type` and a `twitter:card` (large when the page has an image); the sitemap lists addresses ending in `/` (the form static hosts serve without a redirect; before, every sitemap URL answered 301 on GitHub Pages) with the build date as `lastmod`; the not-found page is not given a canonical address.
+- Fixed: a literal `tabindex=` compiled to `el.tabindex = ...`, a property browsers ignore (it's `tabIndex`): it never reached the page. It is now an attribute.
+- The default `success` color meets WCAG AA contrast for text: `#15803d` on light (5.0:1, was 3.3:1), `#22c55e` on dark; success toasts take their text color from `--a-on-success`.
 - `art test`: leaving a page (`open` in the middle of a test, or the end of a test) stops its pending requests while the page is still there, as a browser does. A stopped request is no longer counted as the page's error (`open` right after a click that saves something failed with `the page threw: ... The operation was aborted`), and happy-dom's report of each one (`DOMException [AbortError]` with its stack) is no longer printed.
 
 ## 0.2.13 (2026-10-17)
@@ -36,12 +39,6 @@ Fixes from an app built with 0.2.11 (Node server + Postgres of its own, server r
 - A top-level `fn` or `const` that doesn't touch the page (a state, `api`, `navigate`, the DOM) runs in `server fn`s too: the page and the server share one price or validation function. One that does touch the page is an error that says what it reads. A `use` whose names only server fns mention (a Node-only package like `pg` or `node:crypto`) stays out of the browser bundle, which it used to break.
 - Docs: the spec's `use` example is a module that earns its place (`use "./sim.ts" { step, draw }`) and the spec shows what goes at the top level of a `.art` file (constants, data, a cache, formatters as `fn`); the JavaScript libraries guide and the dates-and-money recipe write formatters in `.art`.
 - `live`: after sign-up, login or logout the event stream is opened again with the new session, so a server that sends each user only their events keeps working. ArtScript's own server sends every stream the name of the api that changed and each page reloads with its current session, so it wasn't affected.
-
-## Unreleased
-
-- `art build --prerender --site <url>`: every page gets its canonical address, `og:url`, `og:type` and a `twitter:card` (large when the page has an image); the sitemap lists addresses ending in `/` (the form static hosts serve without a redirect; before, every sitemap URL answered 301 on GitHub Pages) with the build date as `lastmod`; the not-found page is not given a canonical address.
-- Fixed: a literal `tabindex=` compiled to `el.tabindex = ...`, a property browsers ignore (it's `tabIndex`): it never reached the page. It is now an attribute.
-- The default `success` color meets WCAG AA contrast for text: `#15803d` on light (5.0:1, was 3.3:1), `#22c55e` on dark; success toasts take their text color from `--a-on-success`.
 
 ## 0.2.11 (2026-10-13)
 
