@@ -8,7 +8,7 @@ page Source "/source" {
   column class="container page-pad" gap=8 {
     column gap=3 {
       text "Built with ArtScript" class="crumb"
-      title "This website is an ArtScript app" class="page-title"
+      title "This website is an ArtScript app" class="page-title" tag=h1
       text `It is ${artFiles.length} .art files with ${artLines} lines, plus a stylesheet. The build compiles them, prerenders every page to HTML and copies the Markdown for AI agents: npm run site. Small TypeScript helpers, imported with use, render the repository's Markdown and run the compiler in the playground.` class="page-lead"
       row gap=3 wrap {
         link "Browse it on GitHub" href=`${REPO}/tree/main/website` class="btn primary"

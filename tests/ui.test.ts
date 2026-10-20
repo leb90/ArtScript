@@ -576,3 +576,11 @@ test("icons: names as models write them (PascalCase, snake) resolve; a flag writ
   assert.equal(e.type, "UNKNOWN_ELEMENT");
   assert.deepEqual(e.fixes, ["card reveal { ... }", "column reveal { ... }"]);
 });
+
+test("tabindex is written as an attribute, literal or dynamic", () => {
+  const r = compile([{ file: "t.art", src: 'page P {\n  state n = 0\n  column tabindex="-1" id="main" {\n    text "a"\n  }\n  card tabindex=n {\n    text "b"\n  }\n}' }]);
+  assert.deepEqual(r.diagnostics, []);
+  assert.match(r.js!, /setAttribute\("tabindex", "-1"\)/);
+  assert.match(r.js!, /\$\.\$attr\(e\d+, "tabindex", \(\) => n\.v\)/);
+  assert.doesNotMatch(r.js!, /\.tabindex = /);
+});

@@ -157,6 +157,6 @@ The responses the page was rendered with go in the HTML, so the browser doesn't 
 art build --prerender --site https://example.com
 ```
 
-Every page without params becomes an HTML file with its content, title and meta tags, readable by search engines and AI crawlers without JavaScript. `--site` also writes `sitemap.xml` and `robots.txt`. Pages with params (`/products/:id`) are served an empty shell (`_app.html`) that the app fills in.
+Every page without params becomes an HTML file with its content, title and meta tags, readable by search engines and AI crawlers without JavaScript. `--site https://example.com` also writes `sitemap.xml` (with the date of the build) and `robots.txt`, and gives every page its canonical address, `og:url`, `og:type` and a `twitter:card`; addresses end in `/`, the form static hosts serve without a redirect. Pages with params (`/products/:id`) are served an empty shell (`_app.html`) that the app fills in.
 
-To serve the app under a subpath (a GitHub Pages project site, or a proxy prefix), add `--base /docs`: links, `navigate` and asset URLs get the prefix, and your code keeps writing `/products`. This website is built with `--base /ArtScript`.
+To serve the app under a subpath (a GitHub Pages project site, or a proxy prefix), add `--base /docs`: links, `navigate` and asset URLs get the prefix, and your code keeps writing `/products`. A GitHub Pages project site is served under its repository name: `--base /my-repo`.

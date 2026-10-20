@@ -1,6 +1,6 @@
 # ArtScript
 
-**Paste one prompt; your agent builds the app for half the cost.** Measured: over 50 tasks, Claude built and changed the same apps in ArtScript for 50% less than in React + TypeScript (Sonnet 5.5), 45% less (Opus 5.5) and 40% less (Haiku 4.5), with the same results. ArtScript is a full-stack web language that compiles to small, dependency-free JavaScript plus a Node server; the website, the docs and the demos at [artscript.dev](https://artscript.dev) are built with it.
+**Paste one prompt; your agent builds the app for half the cost.** ArtScript (also written Art Script) is an open-source web framework and language for AI agents. Measured: over 50 tasks, Claude built and changed the same apps in ArtScript for 50% less than in React + TypeScript (Sonnet 5.5), 45% less (Opus 5.5) and 40% less (Haiku 4.5), with the same results. ArtScript is a full-stack web language that compiles to small, dependency-free JavaScript plus a Node server; the website, the docs and the demos at [artscript.dev](https://artscript.dev) are built with it.
 
 ```
 npm create artscript@latest my-app

@@ -1,6 +1,6 @@
 # Introduction
 
-ArtScript is a web language and framework for building full-stack apps with AI. You describe the data, the pages and the behavior in `.art` files; the compiler turns them into a small JavaScript app and a Node server with a database.
+ArtScript (sometimes written *Art Script*) is an open-source web language and framework for building full-stack apps with AI. You describe the data, the pages and the behavior in `.art` files; the compiler turns them into a small JavaScript app and a Node server with a database.
 
 It exists for one reason: **an AI model should be able to build and change a web app for fewer dollars than with React, Svelte or Vue**, counting everything it costs (the docs it reads, the code it writes, the mistakes it makes and the retries that follow).
 

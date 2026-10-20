@@ -1,20 +1,26 @@
 {
   "name": "@artscript/core",
   "version": "0.2.13",
-  "description": "An AI-native web language that compiles to JavaScript: fewer tokens, less context, fewer errors.",
+  "description": "ArtScript (Art Script): a full-stack web framework and language for AI agents. Apps built and changed for half the cost of React, with 5 KB of JavaScript.",
   "keywords": [
     "artscript",
+    "art script",
+    "web framework",
+    "framework",
     "language",
     "compiler",
     "web",
+    "fullstack",
     "ai",
+    "ai agents",
     "llm",
+    "claude",
     "reactive",
     "signals"
   ],
   "author": "Leandro Bisceglie",
   "license": "MIT",
-  "homepage": "https://github.com/leb90/ArtScript#readme",
+  "homepage": "https://artscript.dev",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/leb90/ArtScript.git"

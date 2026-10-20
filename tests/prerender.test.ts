@@ -28,7 +28,10 @@ test("prerender: static routes get their HTML and tags; the live app takes over 
   assert.match(home, /<meta name="description" content="Notes about ArtScript.">/);
   assert.match(home, /<a href="\/posts\/hello">Hello, ArtScript<\/a>/);
   assert.ok(existsSync(join(dist, "about", "index.html")));
-  assert.match(readFileSync(join(dist, "sitemap.xml"), "utf8"), /<loc>https:\/\/blog.example\/<\/loc>[\s\S]*<loc>https:\/\/blog.example\/about<\/loc>/);
+  assert.match(readFileSync(join(dist, "sitemap.xml"), "utf8"), /<loc>https:\/\/blog.example\/<\/loc><lastmod>\d{4}-\d\d-\d\d<\/lastmod>[\s\S]*<loc>https:\/\/blog.example\/about\/<\/loc>/);
+  // The address a static host serves without a redirect, for search engines and link previews.
+  assert.match(home, /<link rel="canonical" href="https:\/\/blog.example\/"><meta property="og:url" content="https:\/\/blog.example\/"><meta property="og:type" content="website"><meta name="twitter:card" content="summary">/);
+  assert.match(readFileSync(join(dist, "about", "index.html"), "utf8"), /<link rel="canonical" href="https:\/\/blog.example\/about\/">/);
   assert.match(readFileSync(join(dist, "robots.txt"), "utf8"), /Sitemap: https:\/\/blog.example\/sitemap.xml/);
   assert.doesNotMatch(readFileSync(join(dist, "_app.html"), "utf8"), /Hello, ArtScript/, "the fallback shell is empty");
 
@@ -85,6 +88,8 @@ page Missing "*" {
   assert.match(home, /<link rel="icon" href="\/favicon.svg">/);
   assert.match(home, /property="og:image" content="https:\/\/x.example\/og.png"/);
   assert.match(readFileSync(join(dir, "dist", "404.html"), "utf8"), /Nothing here/);
+  assert.doesNotMatch(readFileSync(join(dir, "dist", "404.html"), "utf8"), /rel="canonical"/, "the not-found page isn't indexed as an address");
+  assert.match(home, /<meta name="twitter:card" content="summary_large_image">/);
   // The mount's async failure and browser-only calls didn't stop the build; @import comes first in app.css.
   assert.match(readFileSync(join(dir, "dist", "app.css"), "utf8"), /^@import url\("https:\/\/fonts.example[^\n]*;\n@layer art\{/);
 });

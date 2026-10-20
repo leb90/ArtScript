@@ -36,6 +36,7 @@ page Playground "/playground" {
   }
 
   column class="pg" gap=0 {
+    title "ArtScript playground" tag=h1 class="visually-hidden"
     textarea code placeholder="Write ArtScript here" class="pg-editor" on:keydown=onEditorKey(event, () => run(0))
     column class="pg-side" gap=0 {
       row class="pg-bar" gap=2 justify=between wrap {

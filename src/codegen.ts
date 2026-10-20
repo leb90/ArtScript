@@ -738,7 +738,8 @@ class ComponentGen {
   attr(v: string, name: string, val: Expr, scope: Scope, wrap = (s: string) => s) {
     const lit = literal(val);
     // ARIA attributes are set as attributes (not every browser reflects them as properties).
-    if (lit !== null && (name === "role" || name.startsWith("aria-") || name.startsWith("data-"))) return this.emit(`${v}.setAttribute(${JSON.stringify(name)}, ${JSON.stringify(String(lit))});`);
+    // ARIA, data and tabindex are written as attributes (`tabindex` is no DOM property: it's `tabIndex`).
+    if (lit !== null && (name === "role" || name === "tabindex" || name.startsWith("aria-") || name.startsWith("data-"))) return this.emit(`${v}.setAttribute(${JSON.stringify(name)}, ${JSON.stringify(String(lit))});`);
     // Added to the element's own styles (`gap`, `pad`...), not instead of them.
     if (lit !== null && name === "style") return this.emit(`${v}.style.cssText += ${JSON.stringify(";" + lit)};`);
     // A root-relative URL gets the app's base path (`art build --base`).

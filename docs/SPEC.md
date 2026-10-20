@@ -139,7 +139,7 @@ column gap=4 align=center {
 | `list` > `item` | item: text | item: click | | item: muted |
 | `table` > `tr` > `th` `td` | th/td: text | tr: click | | td: muted |
 
-- All take `class style id role aria-* data-*` (`button "Menu" aria-expanded=open`); texts and containers take `tag=` for the HTML element (`title "Plans" tag=h1`, `column tag=nav`; default: `title` is an h2, `text` a span); a field without `label=` is named by its `placeholder`. `style { .box { ... } }` in a component: CSS only for its elements. `.css` files in the project are bundled; theme: `:root { --a-primary: #e11d48; --a-radius: 4px; --a-font: Inter }` (also `--a-bg --a-fg --a-surface --a-border --a-muted --a-danger --a-success`).
+- All take `class style id role aria-* data-*` (`button "Menu" aria-expanded=open`); texts and containers take `tag=` for the HTML element (`title "Plans" tag=h1`, `column tag=nav`; default: `title` is an h2, `text` a span); a field without `label=` is named by its `placeholder`. `style { .box { ... } }` in a component: CSS only for its elements. `.css` files in the project are bundled; theme: `:root { --a-primary: #e11d48; --a-radius: 4px; --a-font: Inter }` (also `--a-bg --a-fg --a-surface --a-border --a-muted --a-danger --a-success`; the defaults meet WCAG AA contrast in light and dark).
 - Motion without code, as flags and props on any element (reduced-motion respected; a prerendered page shows everything without JavaScript):
   ```
   title "Nimbus" animate=rise                 // on mount: rise fade zoom slide-left slide-right pop

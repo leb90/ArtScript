@@ -8,7 +8,7 @@ page Benchmarks "/benchmarks" {
   column class="container page-pad" gap=8 {
     column gap=3 {
       text "Benchmarks" class="crumb"
-      title "What an app costs to build with AI" class="page-title"
+      title "What an app costs to build with AI" class="page-title" tag=h1
       text "Claude built the same apps in each stack: small apps from scratch, full-stack apps, and changes to existing projects of 11, 42 and 102 components. Every app was run and used in a simulated browser. The cost is the real API bill: the spec in the prompt, every retry and the thinking tokens." class="page-lead"
     }
     grid cols=1 lg:cols=3 gap=5 {

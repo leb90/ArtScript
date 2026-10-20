@@ -308,9 +308,19 @@ switch (cmd) {
       // --site https://example.com: sitemap.xml with those routes, robots.txt pointing to it, and
       // an absolute og:image (crawlers need the full URL).
       const site = (flag("--site") as string | undefined)?.replace(/\/+$/, "");
-      const render = async (path: string) => {
+      // A page is written as <path>/index.html, which static hosts serve at <path>/ (and redirect
+      // <path> there): the canonical address, the sitemap and og:url use that form, so no crawler
+      // is sent through a redirect.
+      const urlOf = (path: string) => `${site}${path === "/" ? "/" : path.replace(/\/?$/, "/")}`;
+      const render = async (path: string, indexed = true) => {
         const page = await prerender(pathToFileURL(join(outDir, "app.js")).href, base.slice(0, -1) + path);
-        const head = site ? page.head.replace(/(property="og:image" content=")(\/[^"]*)/, `$1${site}$2`) : page.head;
+        let head = site ? page.head.replace(/(property="og:image" content=")(\/[^"]*)/, `$1${site}$2`) : page.head;
+        if (site && indexed) {
+          const url = urlOf(path).replace(/"/g, "%22");
+          const card = /property="og:image"/.test(head) ? "summary_large_image" : "summary";
+          head += `<link rel="canonical" href="${url}"><meta property="og:url" content="${url}"><meta property="og:type" content="website">`;
+          if (!/name="twitter:card"/.test(head)) head += `<meta name="twitter:card" content="${card}">`;
+        }
         return htmlShell(page.title || "ArtScript", shellHead + head, page.html, true, base);
       };
       for (const path of paths) {
@@ -322,10 +332,11 @@ switch (cmd) {
       }
       // 404.html, which static hosts serve for unknown paths: the `"*"` page when there is one
       // (the app then takes over and shows the right page for routes with params).
-      writeFileSync(join(outDir, "404.html"), program.decls.some((d) => d.kind === "Component" && d.path === "*") ? await render("/404") : r.files["index.html"]);
+      writeFileSync(join(outDir, "404.html"), program.decls.some((d) => d.kind === "Component" && d.path === "*") ? await render("/404", false) : r.files["index.html"]);
       console.log(`prerendered: ${paths.join(" ")}`);
       if (site) {
-        const urls = paths.map((p) => `  <url><loc>${site}${p}</loc></url>`).join("\n");
+        const today = new Date().toISOString().slice(0, 10);
+        const urls = paths.map((p) => `  <url><loc>${urlOf(p)}</loc><lastmod>${today}</lastmod></url>`).join("\n");
         writeFileSync(join(outDir, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
         writeFileSync(join(outDir, "robots.txt"), `User-agent: *\nAllow: /\nSitemap: ${site}/sitemap.xml\n`);
         console.log(`sitemap: ${site}/sitemap.xml`);

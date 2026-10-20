@@ -37,6 +37,12 @@ Fixes from an app built with 0.2.11 (Node server + Postgres of its own, server r
 - Docs: the spec's `use` example is a module that earns its place (`use "./sim.ts" { step, draw }`) and the spec shows what goes at the top level of a `.art` file (constants, data, a cache, formatters as `fn`); the JavaScript libraries guide and the dates-and-money recipe write formatters in `.art`.
 - `live`: after sign-up, login or logout the event stream is opened again with the new session, so a server that sends each user only their events keeps working. ArtScript's own server sends every stream the name of the api that changed and each page reloads with its current session, so it wasn't affected.
 
+## Unreleased
+
+- `art build --prerender --site <url>`: every page gets its canonical address, `og:url`, `og:type` and a `twitter:card` (large when the page has an image); the sitemap lists addresses ending in `/` (the form static hosts serve without a redirect; before, every sitemap URL answered 301 on GitHub Pages) with the build date as `lastmod`; the not-found page is not given a canonical address.
+- Fixed: a literal `tabindex=` compiled to `el.tabindex = ...`, a property browsers ignore (it's `tabIndex`): it never reached the page. It is now an attribute.
+- The default `success` color meets WCAG AA contrast for text: `#15803d` on light (5.0:1, was 3.3:1), `#22c55e` on dark; success toasts take their text color from `--a-on-success`.
+
 ## 0.2.11 (2026-10-13)
 
 - Security (thanks to @hercase, #2): the links in verification and password-reset emails point to `ART_ORIGIN`, never to the `Origin`/`Host` a request claims (a request with a forged host could have made the token travel to another site); without `ART_ORIGIN` only a local address is used, with a warning. `ART_ORIGIN` is documented in the deploy guide.

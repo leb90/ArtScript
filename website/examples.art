@@ -7,7 +7,7 @@ page Examples "/examples" {
   column class="container page-pad" gap=8 {
     column gap=3 {
       text "Examples" class="crumb"
-      title "Complete apps, short files" class="page-title"
+      title "Complete apps, short files" class="page-title" tag=h1
       text "Each example is one .art file from the repository. The client-side ones run in the playground; the full-stack ones run with art dev, which also serves their api and database." class="page-lead"
     }
     column gap=3 {

@@ -13,11 +13,12 @@ layout Site {
   }
 
   column gap=0 {
-    column class="site-header" {
+    link "Skip to content" href="#main" class="skip-link"
+    column class="site-header" tag=header {
       row class="container bar" justify=between gap=4 {
         row gap=6 {
-          link "ArtScript" to="/" class="logo"
-          row gap=1 class=(menu ? "nav open" : "nav") {
+          link "ArtScript" to="/" class="logo" aria-label="ArtScript home"
+          row gap=1 class=(menu ? "nav open" : "nav") tag=nav aria-label="Main" {
             link "Learn" to="/learn" on:click=(menu = false)
             link "Reference" to="/reference/spec" on:click=(menu = false)
             link "For AI" to="/ai" on:click=(menu = false)
@@ -34,7 +35,7 @@ layout Site {
         }
       }
     }
-    column role="main" gap=0 {
+    column tag=main id="main" tabindex="-1" gap=0 {
       slot
     }
     Footer
@@ -42,7 +43,7 @@ layout Site {
 }
 
 component Footer {
-  column class="footer" {
+  column class="footer" tag=footer {
     column class="container" gap=8 {
       grid cols=2 md:cols=4 gap=6 {
         column gap=2 align=start {
@@ -117,7 +118,7 @@ layout Docs layout Site {
   grid class="container docs" {
     column class="docs-nav" gap=0 {
       button (open ? "Hide menu" : "All pages") small class="ghost docs-toggle" -> open = !open
-      column gap=0 class=(open ? "sidebar open" : "sidebar") {
+      column gap=0 class=(open ? "sidebar open" : "sidebar") tag=nav aria-label="Documentation" {
         for s in NAV {
           text s.title class="group"
           for it in s.items {
@@ -137,7 +138,7 @@ component DocShell(path: String, section: String, heading: String, slug: String 
 
   column class="doc-main" gap=0 {
     text section class="crumb"
-    title heading class="doc-title"
+    title heading class="doc-title" tag=h1
     slot
     row gap=4 class="pager" {
       if prev {
@@ -149,7 +150,7 @@ component DocShell(path: String, section: String, heading: String, slug: String 
     }
   }
   if slug != "" {
-    column class="toc" gap=0 {
+    column class="toc" gap=0 tag=nav aria-label="On this page" {
       text "On this page" class="group"
       for h in docHeadings(slug) {
         link h.text href=`#${h.id}` class=(h.level == 3 ? "sub" : "")
@@ -177,7 +178,7 @@ page NotFound "*" {
 
   column class="container page-pad" gap=4 align=start {
     text "404" class="crumb"
-    title "This page doesn't exist" class="page-title"
+    title "This page doesn't exist" class="page-title" tag=h1
     text "It may have moved. The docs start here:" class="page-lead"
     row gap=3 {
       link "Learn ArtScript" to="/learn" class="btn primary"

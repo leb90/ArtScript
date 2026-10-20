@@ -1,6 +1,6 @@
 # ArtScript
 
-> A web language and framework designed so that AI models build and change full-stack web apps with fewer tokens, retries and dollars than React, Svelte or Vue. `.art` files compile to small, dependency-free JavaScript (signals, direct DOM) plus a Node server (REST apis from models, SQLite, auth). This website is itself an ArtScript app.
+> ArtScript (also written Art Script) is an open-source web language and framework designed so that AI models build and change full-stack web apps with fewer tokens, retries and dollars than React, Svelte or Vue. `.art` files compile to small, dependency-free JavaScript (signals, direct DOM) plus a Node server (REST apis from models, SQLite, auth). This website is itself an ArtScript app.
 
 Read the spec before writing code; read the edit spec when only changing existing code.
 

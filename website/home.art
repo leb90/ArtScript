@@ -3,7 +3,7 @@ use "./lib/content.ts" { COMPARE, stackByName, resultFor, barWidth, specTokens, 
 use "./lib/markdown.ts" { copyText }
 
 page Home "/" {
-  meta title="ArtScript: the web framework built for AI" description="A full-stack web language designed so AI models build and change apps with fewer tokens, retries and dollars than React, Svelte or Vue." image="/og.png"
+  meta title="ArtScript (Art Script): the web framework built for AI agents" description="ArtScript, or Art Script, is an open-source full-stack web framework and language for AI agents: measured over 50 tasks, Claude builds and changes the same apps for half the cost of React, and they ship 5 KB of JavaScript." image="/og.png"
   state other = "React"
   computed art = COMPARE[0]
   computed them = stackByName(other)
@@ -13,7 +13,7 @@ page Home "/" {
     column class="hero" {
       column class="container" align=center gap=0 {
         link "Version 0.2 · Measured against React, Svelte, Vue and SolidJS →" to="/benchmarks" class="eyebrow"
-        title "Paste one prompt. Your agent builds the app for half the cost." class="hero-title"
+        title "Paste one prompt. Your agent builds the app for half the cost." class="hero-title" tag=h1
         text "ArtScript is a full-stack web language designed for AI agents: measured over 50 tasks, Claude builds and changes the same apps for 50% less than in React. Your agent writes a third of the code, the compiler catches its mistakes, and the app ships about 5 KB of JavaScript." class="lead"
         row gap=3 wrap justify=center class="cta" {
           link "Get started" to="/learn/quick-start" class="btn primary"

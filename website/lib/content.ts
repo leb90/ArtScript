@@ -262,6 +262,39 @@ export function setupHead() {
     document.head.appendChild(l);
   };
   const base = (p: string) => withBase(p);
-  link("site-icon", { rel: "icon", type: "image/svg+xml", href: base("/favicon.svg") });
+  link("site-icon", { rel: "alternate", type: "text/markdown", title: "ArtScript spec", href: base("/md/SPEC.md") });
   link("site-llms", { rel: "alternate", type: "text/plain", title: "llms.txt", href: base("/llms.txt") });
+  // Structured data for search engines, on the home page: the site's name (and how people also
+  // write it) and what ArtScript is. A data block, never run, so a strict CSP doesn't apply to it.
+  if (location.pathname.replace(/\/+$/, "") === base("/").replace(/\/+$/, "")) {
+    const s = document.createElement("script");
+    s.setAttribute("type", "application/ld+json");
+    s.innerHTML = JSON.stringify(SCHEMA).replace(/</g, "\\u003c");
+    document.head.appendChild(s);
+  }
 }
+
+const SCHEMA = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      name: "ArtScript",
+      alternateName: ["Art Script", "ArtScript framework", "artscript.dev"],
+      url: "https://artscript.dev/",
+    },
+    {
+      "@type": "SoftwareApplication",
+      name: "ArtScript",
+      alternateName: "Art Script",
+      description: "An open-source full-stack web framework and language designed for AI agents: apps built and changed for half the cost of React, with about 5 KB of JavaScript.",
+      url: "https://artscript.dev/",
+      applicationCategory: "DeveloperApplication",
+      operatingSystem: "Node.js 24, any modern browser",
+      license: "https://opensource.org/licenses/MIT",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      author: { "@type": "Person", name: "Leandro Bisceglie", url: "https://github.com/leb90" },
+      sameAs: ["https://github.com/leb90/ArtScript", "https://www.npmjs.com/package/@artscript/core", "https://marketplace.visualstudio.com/items?itemName=LeandroBisceglie.artscript"],
+    },
+  ],
+};
