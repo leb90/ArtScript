@@ -82,7 +82,7 @@ export const ENUM_PROPS: Record<string, string[]> = {
 // server rendering must see: always written with setAttribute.
 export const ATTRIBUTES = new Set(["tabindex", "inputmode", "autocomplete", "fetchpriority", "loading", "decoding", "srcset", "sizes"]);
 // `meta` props: the page's title, description, Open Graph tags, language and structured data.
-export const META_PROPS = ["title", "description", "image", "imageAlt", "siteName", "locale", "lang", "themeColor", "jsonld"];
+export const META_PROPS = ["title", "description", "image", "imageAlt", "siteName", "locale", "lang", "theme", "themeColor", "jsonld"];
 
 // `md:cols=3`: applies from that screen width up (px). Only for these numeric props.
 export const BREAKPOINTS: Record<string, number> = { sm: 640, md: 768, lg: 1024, xl: 1280 };

@@ -210,3 +210,31 @@ test "the next one runs" {
     own.close();
   }
 });
+
+test("art test: requests to other sites need a respond step; labels match with Intl's no-break space", async () => {
+  const app = `page Home "/" {
+  state sent = ""
+  fn send() {
+    let res = await fetch("https://forms.example/submit", { method: "POST" })
+    let body = await res.json()
+    sent = body.ok ? "Sent" : "Failed"
+  }
+  button \`Pay · \${new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(10)}\` -> send()
+  text sent
+}
+`;
+  const stubbed = `test "stubbed" {\n  respond "https://forms.example/*" 200 { "ok": true }\n  click "Pay · 10,00 €"\n  see "Sent"\n}\n`;
+  const unstubbed = `test "unstubbed" {\n  click "Pay · 10,00 €"\n  see "Sent"\n}\n`;
+  const [ok] = (await runTests([{ file: "app.art", src: app + "\n" + stubbed }])) as any[];
+  assert.deepEqual(ok, { name: 'test "stubbed"', ok: true });
+  // The refused request is the page's error: through the CLI, as a user runs it.
+  const { spawnSync } = await import("node:child_process");
+  const { mkdtempSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const dir = mkdtempSync(join(tmpdir(), "art-respond-"));
+  writeFileSync(join(dir, "app.art"), app + "\n" + unstubbed);
+  const run = spawnSync(process.execPath, ["src/cli.ts", "test", dir], { encoding: "utf8" });
+  assert.equal(run.status, 1);
+  assert.match(run.stdout + run.stderr, /✗ "unstubbed"[\s\S]*doesn't reach other sites: add `respond "https:\/\/forms.example\/\*" 200 \{ \}`/);
+});

@@ -304,12 +304,12 @@ class Parser {
     this.skipSep();
     while (!this.is("}")) {
       if (this.tok.t === "eof") this.fail("'}'");
-      const step = this.ident("a test step (open, see, notSee, click, link, fill, press, select, check)");
+      const step = this.ident("a test step (open, see, notSee, click, link, fill, press, select, check, respond)");
       const args: Expr[] = [];
       if (this.eat("(")) {
         while (!this.is(")")) { args.push(this.unary()); if (!this.eat(",")) break; }
         this.expect(")");
-      } else while (this.tok.t === "str" || this.tok.t === "num") args.push(this.unary());
+      } else while (this.tok.t === "str" || this.tok.t === "num" || this.is("{") || this.is("[")) args.push(this.unary());
       const callee: Expr = { kind: "Ident", name: step.v, loc: step.loc };
       body.push({ kind: "ExprStmt", expr: { kind: "Call", callee, args, optional: false, loc: step.loc }, loc: step.loc });
       this.skipSep();

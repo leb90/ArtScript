@@ -101,7 +101,7 @@ app.example.com {
 | `ART_DATA_DIR` | Data directory (database, uploads, outbox). |
 | `ART_LOG=json` | One JSON log line per request. |
 | `ART_SSR=off` | Don't render pages on the server (they're rendered per request by default, with their data). |
-| `ART_CSP` | Replaces the Content-Security-Policy, or `off`. |
+| `ART_CSP` | Replaces the Content-Security-Policy, or `off`. The default lets the page request and load styles only from its own origin: a `fetch` to another site or a remote `@import` (Google Fonts) is blocked, and `art check` warns about both (`CSP_BLOCKS`). Call other sites from a `server fn`, and serve fonts from `public/`. |
 | `ART_MAX_JSON`, `ART_MAX_UPLOAD` | Body limits in bytes (1 MB, 10 MB). |
 | `ART_RATE_LIMIT` | Api requests per address per minute (600; 0 = off). |
 | `ART_ORIGIN` | The app's public address (`https://app.example.com`), for the links in verification and password reset emails and the Google/GitHub callback. Required for those emails outside localhost. |

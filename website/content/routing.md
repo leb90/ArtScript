@@ -55,7 +55,7 @@ fn saved(id) {
 }
 ```
 
-`href="https://..."` links to other sites. `notify(message, kind)` shows a short message (`info`, `success`, `danger`).
+A link or `navigate` to a section of the current page (`to="#plans"`, or `"/#plans"` from the home page) scrolls to the element with `id="plans"` and moves the focus there; the page stays mounted, its state included. `href="https://..."` links to other sites. `notify(message, kind)` shows a short message (`info`, `success`, `danger`).
 
 ## Layouts
 
@@ -128,7 +128,7 @@ page Pricing "/pricing" {
 }
 ```
 
-It also takes `imageAlt=` (what the shared preview shows to screen readers), `siteName=`, `locale="es_ES"`, `themeColor=` and `lang="es"`: the page's language, written on `<html lang>` in the prerendered page and set again as the visitor moves between pages; when a layout sets it, it is the default of every page. A prerendered page also gets the image's width and height (`og:image:width`, read from the file in `public/`).
+It also takes `imageAlt=` (what the shared preview shows to screen readers), `siteName=`, `locale="es_ES"`, `themeColor=`, `theme="light"` (the page's colors whatever the system's dark setting says) and `lang="es"`: the page's language, written on `<html lang>` in the prerendered page and set again as the visitor moves between pages; when a layout sets it, it is the default of every page. A prerendered page also gets the image's width and height (`og:image:width`, read from the file in `public/`).
 
 `jsonld=` writes structured data for search engines, built from the app's own data so it can't drift from what the page shows:
 
@@ -177,4 +177,4 @@ art build --prerender --site https://example.com
 
 Every page without params becomes an HTML file with its content, title and meta tags, readable by search engines and AI crawlers without JavaScript. `--site https://example.com` also writes `sitemap.xml` (with the date of the build) and `robots.txt`, and gives every page its canonical address, `og:url`, `og:type` and a `twitter:card`; addresses end in `/`, the form static hosts serve without a redirect. Pages with params (`/products/:id`) are served an empty shell (`_app.html`) that the app fills in.
 
-To serve the app under a subpath (a GitHub Pages project site, or a proxy prefix), add `--base /docs`: links, `navigate` and asset URLs get the prefix, and your code keeps writing `/products`. A GitHub Pages project site is served under its repository name: `--base /my-repo`.
+To serve the app under a subpath (a GitHub Pages project site, or a proxy prefix), add `--base /docs`, or give `--site` the full address (`--site https://me.github.io/my-repo/` implies `--base /my-repo`): links, `navigate` and asset URLs get the prefix, and your code keeps writing `/products`. A GitHub Pages project site is served under its repository name: `--base /my-repo`.

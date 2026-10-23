@@ -203,7 +203,7 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
       heads.push(...lifted.heads);
       return `/* ${relative(root, f)} */\n${lifted.rest}`;
     });
-    const css = [...heads, `@layer art{${CSS}}`, ...body].join("\n");
+    const rest = [`@layer art{${CSS}}`, ...body].join("\n");
     // A favicon in public/ is linked from every page.
     const icon = ["favicon.svg", "favicon.png", "favicon.ico"].find((f) => existsSync(join(root, "public", f)));
     shellHead = (icon ? `<link rel="icon" href="${base}${icon}">` : "") + (existsSync(join(root, "public", "apple-touch-icon.png")) ? `<link rel="apple-touch-icon" href="${base}apple-touch-icon.png">` : "");
@@ -214,7 +214,11 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
     shellLang = defaultLang(r.program);
     const files: Record<string, string> = { "index.html": htmlShell("ArtScript", shellHead, "", true, base, shellLang) };
     for (const f of out.outputFiles) files[relative("/out", f.path)] = f.text;
-    files["app.css"] = css;
+    // Minified in a production build (comments and spaces out; the cascade layer and order stay). The
+    // lifted @charset/@import lines stay first and as written.
+    const body2 = minify ? (await esbuild.transform(rest, { loader: "css", minify: true, logLevel: "silent" })).code.trim() : rest;
+    const charset = heads.find((h) => /^@charset/i.test(h)); // only valid as the file's first line
+    files["app.css"] = [...(charset ? [charset] : []), ...heads.filter((h) => !/^@charset/i.test(h)), body2].join("\n");
     if (demoFile) rmSync(demoFile, { force: true });
     return { files, server: r.server };
   } catch (e: any) {
@@ -257,6 +261,31 @@ function instructionsWarning(dir: string): Diagnostic[] {
   return [diag("INSTRUCTIONS_OUTDATED", `the agent instructions in ${stale.join(", ")} are older than @artscript/core ${PKG.version}`, { file: relative(process.cwd(), join(dir, stale[0])) || stale[0], line: 1, col: 1 }, {
     severity: "warning", expected: `the instructions of @artscript/core ${PKG.version}`, actual: stale.join(", "), fixes: ["npx art upgrade"],
   })];
+}
+
+// An app with a server (`api`, `auth`, `server fn`) is served with a Content-Security-Policy that
+// only allows its own origin for requests (connect-src) and stylesheets (style-src). What breaks
+// that only shows in the browser's console; `art check` says it first.
+function cspWarnings(target: string, program: ReturnType<typeof parseProject>["program"]): Diagnostic[] {
+  if (!program.decls.some((d) => d.kind === "Api" || d.kind === "Auth" || d.kind === "ServerFn")) return [];
+  if (process.env.ART_CSP) return [];
+  const out: Diagnostic[] = [];
+  for (const s of sources(target)) {
+    const re = /\bfetch\(\s*[`"'](https?:\/\/[^/`"'\s$]+)/g;
+    for (let m; (m = re.exec(s.src));) {
+      const line = s.src.slice(0, m.index).split("\n").length;
+      out.push(diag("CSP_BLOCKS", `the server's Content-Security-Policy blocks this request to ${m[1]} (connect-src 'self')`, { file: s.file, line, col: 1 }, { severity: "warning", expr: m[1], fixes: ["call the service from a `server fn`", `or set ART_CSP with connect-src 'self' ${m[1]}`] }));
+    }
+  }
+  for (const f of projectCss(target)) {
+    const css = readFileSync(f, "utf8");
+    const re = /@import\s+(?:url\()?\s*["']?(https?:\/\/[^/"')\s]+)/g;
+    for (let m; (m = re.exec(css));) {
+      const line = css.slice(0, m.index).split("\n").length;
+      out.push(diag("CSP_BLOCKS", `the server's Content-Security-Policy blocks this stylesheet from ${m[1]} (style-src 'self')`, { file: f, line, col: 1 }, { severity: "warning", expr: m[1], fixes: ["self-host the fonts: put the .woff2 files in public/fonts and an @font-face in your .css", `or set ART_CSP with style-src 'self' ${m[1]}`] }));
+    }
+  }
+  return out;
 }
 
 // The pixel size of a PNG, JPEG or GIF file, or null.
@@ -312,7 +341,9 @@ switch (cmd) {
     const target = pos[0] ?? defaultTarget();
     const outDir = (flag("--out") as string) ?? join(projectRoot(target), "dist");
     // --base /sub: the app is served under that path (GitHub Pages project sites, a proxy prefix).
-    const base = `/${((flag("--base") as string | undefined) ?? "").replace(/^\/+|\/+$/g, "")}/`.replace("//", "/");
+    // Without it, the path of --site is the base (`--site https://me.github.io/shop` → /shop/).
+    const sitePath = (() => { try { return new URL(String(flag("--site") ?? "")).pathname; } catch { return ""; } })();
+    const base = `/${((flag("--base") as string | undefined) ?? sitePath).replace(/^\/+|\/+$/g, "")}/`.replace("//", "/");
     const demo = flags.has("--demo");
     const r = await buildFiles(target, true, flags.has("--sourcemap") ? "linked" : false, base, false, demo);
     if ("diagnostics" in r) { report(r.diagnostics, false); process.exit(1); }
@@ -351,7 +382,7 @@ switch (cmd) {
           head += `<link rel="canonical" href="${url}"><meta property="og:url" content="${url}"><meta property="og:type" content="website">`;
           if (!/name="twitter:card"/.test(head)) head += `<meta name="twitter:card" content="${card}">`;
         }
-        return htmlShell(page.title || "ArtScript", shellHead + head, page.html, true, base, page.lang || shellLang);
+        return htmlShell(page.title || "ArtScript", shellHead + head, page.html, true, base, page.lang || shellLang, page.theme);
       };
       for (const path of paths) {
         const file = path === "/" ? join(outDir, "index.html") : join(outDir, path, "index.html");
@@ -405,7 +436,7 @@ switch (cmd) {
     const { program, diagnostics } = parseProject(src);
     const a = diagnostics.length ? null : analyze(program);
     const diags = a ? a.diagnostics : diagnostics;
-    const warns = [...(a?.warnings ?? []), ...instructionsWarning(projectRoot(pos[0] ?? defaultTarget()))];
+    const warns = [...(a?.warnings ?? []), ...instructionsWarning(projectRoot(pos[0] ?? defaultTarget())), ...cspWarnings(pos[0] ?? defaultTarget(), program)];
     report([...diags, ...warns], ai);
     if (!diags.length) console.log(ai ? '{"ok":true}' : `ok: ${src.length} file(s), ${program.decls.length} declarations${warns.length ? `, ${warns.length} warning(s)` : ""}`);
     process.exit(diags.length ? 1 : 0);

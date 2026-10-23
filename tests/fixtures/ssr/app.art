@@ -42,3 +42,9 @@ page Admin "/admin" requires login {
 page Login "/login" {
   title "Sign in"
 }
+
+page Hola "/es" {
+  meta lang="es" theme="light"
+
+  title "Hola"
+}

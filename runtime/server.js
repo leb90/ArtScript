@@ -890,7 +890,7 @@ export function serve(schema, fns, rootUrl, port = Number(process.env.PORT ?? 30
       const seed = JSON.stringify(out.seed).replace(/</g, "\\u003c");
       const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
       const html = shell
-        .replace(/<html lang="[^"]*">/, out.lang ? `<html lang="${esc(out.lang).replace(/"/g, "")}">` : "$&")
+        .replace(/<html lang="([^"]*)"[^>]*>/, (_m, l) => `<html lang="${esc(out.lang || l).replace(/"/g, "")}"${out.theme ? ` data-theme="${esc(out.theme).replace(/"/g, "")}"` : ""}>`)
         .replace(/<title>[^<]*<\/title>/, out.title ? `<title>${esc(out.title)}</title>` : "$&")
         .replace("</head>", `${out.head}</head>`)
         .replace('<div id="app"></div>', `<div id="app">${out.html}</div><script type="application/json" id="art-data">${seed}</script>`);

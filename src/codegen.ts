@@ -1,5 +1,5 @@
 // Generates an ES module that builds the DOM directly (no virtual DOM) using runtime.js.
-import type { ApiAccess, ComponentDecl, ComputedDecl, FieldRules, Element, Expr, Loc, Member, Program, ServerFnDecl, SharedDecl, Stmt, ViewNode } from "./ast.ts";
+import type { ApiAccess, ComponentDecl, ComputedDecl, FieldRules, Element, Expr, Loc, Member, Program, Prop, ServerFnDecl, SharedDecl, Stmt, ViewNode } from "./ast.ts";
 import { specifier } from "./modules.ts";
 import { boundNames, isPattern } from "./patterns.ts";
 import { printDecl, printType } from "./printer.ts";
@@ -300,9 +300,9 @@ export function serverEntry(schema: ServerSchema): string {
 
 // `head`/`body`: a prerendered page's extra <head> tags and the HTML inside #app.
 // `css`: link app.css (the runtime's styles and the project's; its id tells the runtime not to add them again).
-export function htmlShell(title = "ArtScript", head = "", body = "", css = false, base = "/", lang = "en"): string {
+export function htmlShell(title = "ArtScript", head = "", body = "", css = false, base = "/", lang = "en", theme: string | null = null): string {
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
-  return `<!doctype html><html lang="${esc(lang).replace(/"/g, "")}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${head}${css ? `<link rel="stylesheet" id="art-css" href="${base}app.css">` : ""}</head><body><div id="app">${body}</div><script type="module" src="${base}app.js"></script></body></html>\n`;
+  return `<!doctype html><html lang="${esc(lang).replace(/"/g, "")}"${theme ? ` data-theme="${esc(theme).replace(/"/g, "")}"` : ""}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${head}${css ? `<link rel="stylesheet" id="art-css" href="${base}app.css">` : ""}</head><body><div id="app">${body}</div><script type="module" src="${base}app.js"></script></body></html>\n`;
 }
 
 // Top-level `state`, `computed` and `fn`: module-level, visible in every component.
@@ -626,6 +626,8 @@ class ComponentGen {
     const inputType = spec.type ?? (typeProp?.kind === "Ident" ? typeProp.name : typeProp?.kind === "Str" ? typeProp.value : null);
     const options = el.props.find((p) => p.name === "options")?.value;
 
+    // `on:` handlers are attached after the value binding, so `on:input` reads the new value.
+    const handlers: Prop[] = [];
     // `class` first: the classes other props add (responsive props, conditional flags) come after it.
     for (const p of [...el.props.filter((q) => q.name === "class"), ...el.props.filter((q) => q.name !== "class")]) {
       if (!p.value) {
@@ -648,10 +650,7 @@ class ComponentGen {
         continue;
       }
       if (p.name.startsWith("on:")) {
-        const s = scope.child();
-        s.vars.set("event", { kind: "param" });
-        const body = val.kind === "Arrow" ? `${this.expr(val, s)}(event)` : this.expr(val, s);
-        this.emit(`$.$on(${v}, "${p.name.slice(3)}", ${exprHasAwait(val) ? "async " : ""}(event) => { ${body}; });`);
+        handlers.push(p);
         continue;
       }
       if (isAttr(p.name)) {
@@ -709,6 +708,12 @@ class ComponentGen {
           this.emit(`$.$bind(${v}, ${get}, ($v) => ${set}, "${mode}");`);
         }
       }
+    }
+    for (const p of handlers) {
+      const s = scope.child();
+      s.vars.set("event", { kind: "param" });
+      const body = p.value!.kind === "Arrow" ? `${this.expr(p.value!, s)}(event)` : this.expr(p.value!, s);
+      this.emit(`$.$on(${v}, "${p.name.slice(3)}", ${exprHasAwait(p.value!) ? "async " : ""}(event) => { ${body}; });`);
     }
 
     for (const p of el.props) {

@@ -40,6 +40,7 @@ export const CATALOG: Record<string, { code: string; desc: string }> = {
   UNKNOWN_EXPORT: { code: "E1051", desc: "The module doesn't export that name." },
   // Warnings
   INSTRUCTIONS_OUTDATED: { code: "W1053", desc: "The agent instructions `art init` copied (ARTSCRIPT.md, AGENTS.md, the skill, the Cursor rule) are older than the installed @artscript/core: `npx art upgrade` refreshes them." },
+  CSP_BLOCKS: { code: "W1054", desc: "An app with a server is served with a Content-Security-Policy that only allows its own origin for requests and stylesheets: a fetch to another site or a remote @import is blocked in the browser." },
   MODULE_COULD_BE_ART: { code: "W1052", desc: "A local .ts/.js module only holds data and functions (no DOM or canvas, no loops, no class): it could be ArtScript, which the checker verifies." },
   AUTH_REQUIRED: { code: "E1040", desc: "`login` and `private` need an `auth` declaration." },
   // View

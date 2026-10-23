@@ -55,6 +55,8 @@ Any `.css` file in the project is bundled into `app.css`, after the defaults. Se
 }
 ```
 
+The page sits in `#app`, centered with `max-width: 960px` and `padding: 24px`. For full-width sections (a landing page), set `#app { max-width: none; padding: 0; }` and give each section its own padding.
+
 Every element takes `class`, `style` and `id`, so regular CSS works too: `card class="hero"`, `text t.name style="letter-spacing: 1px"`. Both may be expressions: `class=(active ? "tab on" : "tab")`.
 
 ## 4. Scoped styles
@@ -81,6 +83,8 @@ Apps follow the system's light or dark setting. To let people choose:
 ```art
 button (theme() == "dark" ? "Light mode" : "Dark mode") -> setTheme(theme() == "dark" ? "light" : "dark")
 ```
+
+A site designed only in light colors says so once in its layout, and the system setting no longer applies: `meta theme="light"` (or `"dark"`).
 
 `setTheme("dark" | "light" | "auto")` changes it and remembers it; `theme()` reads it and updates the view when it changes. For your own CSS, match both cases the same way the defaults do:
 

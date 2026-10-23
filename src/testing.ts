@@ -12,7 +12,7 @@ import { compile, type Source } from "./compile.ts";
 
 export class StepError extends Error {}
 
-const norm = (s: string) => s.replace(/\s+/g, " ").trim();
+const norm = (s: string) => s.replace(/\s+/g, " ").trim(); // \s covers the no-break space
 const visible = (el: Element | null): boolean => {
   for (let e = el; e; e = e.parentElement) {
     if (e.tagName === "DIALOG" && !(e as HTMLDialogElement).open) return false;
@@ -24,8 +24,26 @@ const visible = (el: Element | null): boolean => {
 
 // What a test step can do, with its argument types (s: string, n: number; `?` optional).
 export const STEPS: Record<string, string> = {
-  open: "s?", see: "s", notSee: "s", click: "sn?", link: "sn?", fill: "ss", press: "ss", select: "ns", check: "n",
+  open: "s?", see: "s", notSee: "s", click: "sn?", link: "sn?", fill: "ss", press: "ss", select: "ns", check: "n", respond: "sn?o",
 };
+
+// `respond "https://api.example.com/*" 200 { "ok": true }`: what a request to another origin gets
+// in this test. Without one, such a request fails (a test never reaches a real service: a form
+// that emails would send mail on every run).
+type Stub = { re: RegExp; status: number; body: unknown };
+const glob = (p: string) => new RegExp("^" + p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$");
+function guardFetch(stubs: Stub[]) {
+  const real = globalThis.fetch;
+  globalThis.fetch = (async (input: any, init?: any) => {
+    const url = new URL(typeof input === "string" || input instanceof URL ? String(input) : input.url, location.href);
+    const stub = stubs.find((s) => s.re.test(url.href));
+    if (stub) return new Response(JSON.stringify(stub.body), { status: stub.status, headers: { "content-type": "application/json" } });
+    if (url.origin !== location.origin) {
+      throw new TypeError(`art test: the page requested ${url.href}, and a test doesn't reach other sites: add \`respond "${url.origin}/*" 200 { }\` before the step that sends it`);
+    }
+    return real(input, init);
+  }) as typeof fetch;
+}
 
 // Each mount imports the bundle under a new URL, so the app runs again from scratch.
 let mounts = 0;
@@ -52,9 +70,11 @@ class Page {
     this.reg = reg;
   }
 
+  stubs: Stub[] = [];
   async open(path?: string) {
     await leave(this.reg);
     this.reg.register({ url: path ? new URL(path, this.url).href : this.url });
+    guardFetch(this.stubs);
     document.body.innerHTML = '<div id="app"></div>';
     await import(`${pathToFileURL(this.bundle).href}?run=${mounts++}`);
     await this.settle();
@@ -125,14 +145,31 @@ class Page {
   }
 }
 
-const literal = (e: Expr): string | number => (e.kind === "Str" || e.kind === "Num" ? e.value : NaN);
+// A step's argument as a value (a JSON body is an object or list literal).
+const literal = (e: Expr): any => {
+  if (e.kind === "Str" || e.kind === "Num" || e.kind === "Bool") return e.value;
+  if (e.kind === "Null") return null;
+  if (e.kind === "Unary" && e.op === "-") return -literal(e.arg);
+  if (e.kind === "Array") return e.items.map(literal);
+  if (e.kind === "Object") return Object.fromEntries(e.props.flatMap((p) => ("key" in p ? [[p.key, literal(p.value)]] : [])));
+  return NaN;
+};
 
 async function run(page: Page, steps: Stmt[]) {
   for (const s of steps) {
     if (s.kind !== "ExprStmt" || s.expr.kind !== "Call" || s.expr.callee.kind !== "Ident") continue;
-    const [a, b] = s.expr.args.map(literal) as [any, any];
+    const args = s.expr.args.map(literal);
     const step = s.expr.callee.name;
+    // Labels and texts are compared as the screen reads them: a no-break space (`Intl` writes one in
+    // "10 €") is a space on both sides.
+    const [a, b] = step === "fill" || step === "press" || step === "open" || step === "respond" ? args : [typeof args[0] === "string" ? norm(args[0]) : args[0], typeof args[1] === "string" ? norm(args[1]) : args[1]];
     try {
+      if (step === "respond") {
+        const status = typeof args[1] === "number" ? args[1] : 200;
+        const body = typeof args[1] === "number" ? args[2] : args[1];
+        page.stubs.push({ re: glob(String(args[0])), status, body: body ?? {} });
+        continue;
+      }
       if (step === "open") await page.open(a);
       else if (step === "see") await page.until(() => page.text().includes(a), `"${a}"`);
       else if (step === "notSee") await page.until(() => !page.text().includes(a), `no "${a}"`);

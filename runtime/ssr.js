@@ -240,7 +240,7 @@ export async function prerender(bundleUrl, path) {
   try {
     await import(`${bundleUrl}?prerender=${encodeURIComponent(path)}`);
     for (let i = 0; i < 3; i++) await new Promise((ok) => setTimeout(ok, 0));
-    return { html: inner(app), head: headOf(document), title: document.title, lang: document.documentElement.getAttribute("lang") };
+    return { html: inner(app), head: headOf(document), title: document.title, lang: document.documentElement.getAttribute("lang"), theme: document.documentElement.getAttribute("data-theme") };
   } finally {
     for (const [k, d] of Object.entries(saved)) {
       if (d) Object.defineProperty(globalThis, k, d);
@@ -326,7 +326,7 @@ async function renderOnce(bundleUrl, url, base, apiFetch, timeout) {
       else idle++;
     }
     const now = loc.pathname + loc.search;
-    return { html: inner(app), head: headOf(document), title: document.title, lang: document.documentElement.getAttribute("lang"), seed, redirect: now !== start ? now : null };
+    return { html: inner(app), head: headOf(document), title: document.title, lang: document.documentElement.getAttribute("lang"), theme: document.documentElement.getAttribute("data-theme"), seed, redirect: now !== start ? now : null };
   } finally {
     try { dispose?.(); } catch { /* the next render starts clean anyway */ }
     for (const [k, d] of Object.entries(saved)) {

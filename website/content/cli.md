@@ -16,10 +16,10 @@ Dev tools: press Alt+A in the page (or click the "art" badge at the bottom right
 
 ### `art build [path] [--out dist] [--sourcemap] [--base /sub] [--prerender [--site url]]`
 
-The production build: `index.html`, one minified `app.js` (the runtime and every `use` module bundled in) and `app.css`. A dynamic `import()` inside a `use` module becomes its own file in `chunks/`, downloaded only when it runs. With apis, also `server.js` (a single file with the server and its packages, no `node_modules`) and a `Dockerfile`.
+The production build: `index.html`, one minified `app.js` (the runtime and every `use` module bundled in) and a minified `app.css`. Without apis, `dist/` is plain static files: any static server shows it as visitors get it (`npx serve dist`), also for a screenshot tool or an agent driving a browser. A dynamic `import()` inside a `use` module becomes its own file in `chunks/`, downloaded only when it runs. With apis, also `server.js` (a single file with the server and its packages, no `node_modules`) and a `Dockerfile`.
 
 - `--prerender`: an HTML file per page without params, with its content and meta tags.
-- `--site https://example.com`: with `--prerender`, also `sitemap.xml` and `robots.txt`, and each page's canonical address, `og:url` and `twitter:card`.
+- `--site https://example.com`: with `--prerender`, also `sitemap.xml` and `robots.txt`, and each page's canonical address, `og:url` and `twitter:card`. A path in it (`https://me.github.io/repo/`) is also the `--base`.
 - `--base /sub`: the app is served under that path.
 - `--sourcemap`: `app.js.map`, pointing back to the `.art` files.
 - `--demo`: a full-stack app as static files. The api, accounts and server fns run in the visitor's browser with the server's rules, and their data stays in that browser: a demo that costs nothing to host (any static host, no server). See [Deploying](/learn/deploy).

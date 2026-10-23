@@ -27,8 +27,8 @@ page Users "/users" {
 - Files: `photo: File? max=2000000 accept="image/*"` (max in bytes). Pass the File from `file picked` straight to `create`/`update`: it's uploaded and stored as `{ url, name, type, size }` (`image post.photo.url`).
 - Changing a stored model needs no migration code; a new required field needs a default (or `?`); a renamed one: `title: String was="name"`.
 - `page Product "/products/:id"`: a component with a route; inside it `params.id` (String) and `query.tab` (from `?tab=`). `page NotFound "*"` catches unknown paths. Without a route: `/lowercase-name`.
-- `meta title="..." description="..." image="/og.png"` in a page sets its title, description and Open Graph tags; also `imageAlt=`, `siteName=`, `locale="es_ES"`, `themeColor=`, `lang="es"` (the page's language: `<html lang>`, and the default of every page when a layout sets it) and `jsonld=(obj)` (structured data, built from the app's own data: `jsonld=({ "@type": "Store", name: SHOP })`). A `head.html` at the project root goes into every page's `<head>` as written (a verification tag, a font preload).
-- `layout Main { ... slot ... }` wraps pages and stays mounted while they change (the only top-level layout applies to every page; `page X "/x" layout Main` picks one; `layout Docs layout Main` goes inside Main). Links to the current page get `aria-current="page"`. `link "x" to="/path"` and `navigate("/path")` change pages without reloading. `notify("Saved", "success")` shows a short message (`info`, `success`, `danger`). `page Admin "/admin" requires admin` (or `requires login`) only shows to them (others go to `/login` or `/`). `setTheme("dark" | "light" | "auto")`, `theme()`.
+- `meta title="..." description="..." image="/og.png"` in a page sets its title, description and Open Graph tags; also `imageAlt=`, `siteName=`, `locale="es_ES"`, `themeColor=`, `lang="es"` (the page's language: `<html lang>`, and the default of every page when a layout sets it), `theme="light"` (`light|dark|auto`: that page's colors whatever the system says) and `jsonld=(obj)` (structured data, built from the app's own data: `jsonld=({ "@type": "Store", name: SHOP })`). A `head.html` at the project root goes into every page's `<head>` as written (a verification tag, a font preload).
+- `layout Main { ... slot ... }` wraps pages and stays mounted while they change (the only top-level layout applies to every page; `page X "/x" layout Main` picks one; `layout Docs layout Main` goes inside Main). Links to the current page get `aria-current="page"`. `link "x" to="/path"` and `navigate("/path")` change pages without reloading (`"#plans"` or `"/#plans"` on the current page scrolls to `id="plans"` and keeps the page). `notify("Saved", "success")` shows a short message (`info`, `success`, `danger`). `page Admin "/admin" requires admin` (or `requires login`) only shows to them (others go to `/login` or `/`). `setTheme("dark" | "light" | "auto")`, `theme()`.
 
 ## Imports: `use`
 
@@ -139,7 +139,7 @@ column gap=4 align=center {
 | `list` > `item` | item: text | item: click | | item: muted |
 | `table` > `tr` > `th` `td` | th/td: text | tr: click | | td: muted |
 
-- All take `class style id role aria-* data-*` (`button "Menu" aria-expanded=open`); texts and containers take `tag=` for the HTML element (`title "Plans" tag=h1`, `column tag=nav`; default: `title` is an h2, `text` a span); a field without `label=` is named by its `placeholder`. `style { .box { ... } }` in a component: CSS only for its elements. `.css` files in the project are bundled; theme: `:root { --a-primary: #e11d48; --a-radius: 4px; --a-font: Inter }` (also `--a-bg --a-fg --a-surface --a-border --a-muted --a-danger --a-success`; the defaults meet WCAG AA contrast in light and dark).
+- All take `class style id role aria-* data-*` (`button "Menu" aria-expanded=open`); texts and containers take `tag=` for the HTML element (`title "Plans" tag=h1`, `column tag=nav`; default: `title` is an h2, `text` a span); a field without `label=` is named by its `placeholder`. `style { .box { ... } }` in a component: CSS only for its elements. `.css` files in the project are bundled; theme: `:root { --a-primary: #e11d48; --a-radius: 4px; --a-font: Inter }` (also `--a-bg --a-fg --a-surface --a-border --a-muted --a-danger --a-success`; the defaults meet WCAG AA contrast in light and dark). The page sits in `#app` (`max-width: 960px; padding: 24px`): `#app { max-width: none; padding: 0 }` for full-width sections.
 - Motion without code, as flags and props on any element (reduced-motion respected; a prerendered page shows everything without JavaScript):
   ```
   title "Nimbus" animate=rise                 // on mount: rise fade zoom slide-left slide-right pop
@@ -163,7 +163,7 @@ column gap=4 align=center {
 
 ## Tests
 
-`test "adds a task" {` then one step per line, `}`; `art test` runs them in a simulated browser. Steps: `open "/path"`, `see "x"`, `notSee "x"`, `click "Label" [n]`, `link "Label"`, `fill "Placeholder" "value"`, `press "Placeholder" "Enter"`, `select 0 "Option"`, `check 0`.
+`test "adds a task" {` then one step per line, `}`; `art test` runs them in a simulated browser. Steps: `open "/path"`, `see "x"`, `notSee "x"`, `click "Label" [n]`, `link "Label"`, `fill "Placeholder" "value"`, `press "Placeholder" "Enter"`, `select 0 "Option"`, `check 0`, `respond "https://api.example.com/*" [200] [{ "ok": true }]` (what a request to another site gets in this test: without it, such a request fails). Labels match with no-break spaces (`Intl` money) as spaces.
 
 ## Expressions
 

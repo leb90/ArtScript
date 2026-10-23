@@ -105,6 +105,29 @@ test("prerender: with --base and --site, og:image has the base once", () => {
   assert.match(home, /rel="canonical" href="https:\/\/x.example\/club\/"/);
 });
 
+test("prerender: --site with a path implies --base; meta theme pins the page's colors", () => {
+  const dir = mkdtempSync(join(tmpdir(), "art-pre4-"));
+  writeFileSync(join(dir, "app.art"), 'page Home "/" {\n  meta title="Home" theme="light"\n  text "hi"\n}\n');
+  execFileSync(process.execPath, ["src/cli.ts", "build", dir, "--prerender", "--site", "https://me.github.io/club/"], { stdio: "pipe" });
+  const home = readFileSync(join(dir, "dist", "index.html"), "utf8");
+  assert.match(home, /<html lang="en" data-theme="light">/);
+  assert.match(home, /src="\/club\/app.js"/);
+  assert.match(home, /rel="canonical" href="https:\/\/me.github.io\/club\/"/);
+  assert.deepEqual(types('page P {\n  meta theme="blue"\n}'), ["TYPE_MISMATCH"]);
+});
+
+test("art check: in an app with a server, a fetch to another site or a remote @import warns CSP_BLOCKS", () => {
+  const dir = mkdtempSync(join(tmpdir(), "art-csp-"));
+  const app = 'server fn ping() {\n  return 1\n}\n\npage Home "/" {\n  fn send() {\n    fetch("https://forms.example/submit", { method: "POST" })\n  }\n  button "Send" -> send()\n}\n';
+  writeFileSync(join(dir, "app.art"), app);
+  writeFileSync(join(dir, "styles.css"), '@import url("https://fonts.googleapis.com/css2?family=Inter");\n');
+  const out = execFileSync(process.execPath, ["src/cli.ts", "check", dir, "--ai"], { encoding: "utf8" });
+  assert.equal((out.match(/CSP_BLOCKS/g) ?? []).length, 2, out);
+  // A static site (no server) has no such policy.
+  writeFileSync(join(dir, "app.art"), app.replace(/^server fn[\s\S]*?\n}\n\n/, ""));
+  assert.doesNotMatch(execFileSync(process.execPath, ["src/cli.ts", "check", dir, "--ai"], { encoding: "utf8" }), /CSP_BLOCKS/);
+});
+
 test("prerender: a page's language, Open Graph tags with the image's size, JSON-LD from the app's data, head.html, image and form attributes", () => {
   const dir = mkdtempSync(join(tmpdir(), "art-pre4-"));
   mkdirSync(join(dir, "src"));

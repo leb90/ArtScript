@@ -310,6 +310,74 @@ page Weather "/" {
 }
 ```
 
+## Send a form by email from a static site
+
+Without a server (GitHub Pages, any static host), a form service such as Web3Forms or Formspree takes the request and emails it. Its key is public: anyone can read it in the page and send with it, so the page limits what one browser sends, a hidden field catches simple bots, and the service's own limits (and its allowed-domains setting) do the rest.
+
+```art
+const FORM = "https://api.web3forms.com/submit"
+const KEY = "your-public-access-key"
+
+page Contact "/contact" {
+  state email = ""
+  state message = ""
+  state trap = ""
+  state status = ""
+
+  fn send() {
+    // At most 3 messages an hour from one browser.
+    let sent = JSON.parse(localStorage.getItem("sent") ?? "[]").filter(t => Date.now() - t < 3600000)
+    if trap != "" || sent.length >= 3 {
+      status = "Please try again later."
+      return
+    }
+    try {
+      let res = await fetch(FORM, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ access_key: KEY, email, message })
+      })
+      if !res.ok {
+        throw new Error(`The form service answered ${res.status}`)
+      }
+      localStorage.setItem("sent", JSON.stringify([...sent, Date.now()]))
+      status = "Thanks, we'll write back soon."
+      message = ""
+    } catch (e) {
+      status = "It didn't go through. Write to hello@example.com."
+    }
+  }
+
+  style {
+    .trap { position: absolute; left: -9999px; }
+  }
+
+  form gap=3 -> send() {
+    input email label="Email" type=email autocomplete="email" required
+    textarea message label="Message" required
+    // People don't see this field; bots fill it.
+    column class="trap" aria-hidden="true" {
+      input trap label="Website" autocomplete="off" tabindex=-1
+    }
+    if status != "" {
+      text status muted
+    }
+    button "Send" primary
+  }
+}
+
+test "sends the message" {
+  open "/contact"
+  respond "https://api.web3forms.com/*" 200 { success: true }
+  fill "Email" "ana@example.com"
+  fill "Message" "Hi"
+  click "Send"
+  see "Thanks, we'll write back soon."
+}
+```
+
+The test answers for the service with `respond`, so running it never sends mail. In an app with an `api`, send from a `server fn` instead (as in the recipe above): its server only lets the page talk to its own origin.
+
 ## Animations without code
 
 Entrances, scroll reveals, hover effects and staggered lists are flags and props on any element: no CSS, no observers, no library. `reveal` appears when scrolled into view (siblings one after another), `animate=` plays on mount, `stagger` delays a container's children, `hover=` answers the pointer. Reduced-motion settings are respected and a prerendered page shows everything without JavaScript. Backgrounds and counters come as components: `art add MeshBackground Particles Marquee Counter`.

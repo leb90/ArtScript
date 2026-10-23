@@ -574,8 +574,9 @@ class Checker {
   // Each step is a known command with literal arguments of the right type (see STEPS).
   test(d: TestDecl) {
     this.at = d.name;
-    const STEPS: Record<string, string> = { open: "s?", see: "s", notSee: "s", click: "sn?", link: "sn?", fill: "ss", press: "ss", select: "ns", check: "n" };
-    const usage: Record<string, string> = { open: 'open "/path"', see: 'see "text"', notSee: 'notSee "text"', click: 'click "Label" [n]', link: 'link "Label" [n]', fill: 'fill "Placeholder" "value"', press: 'press "Placeholder" "Enter"', select: 'select 0 "Option"', check: "check 0" };
+    // s: string, n: number, o: an object or list (JSON); `?` after an argument: it and the ones after it are optional.
+    const STEPS: Record<string, string> = { open: "s?", see: "s", notSee: "s", click: "sn?", link: "sn?", fill: "ss", press: "ss", select: "ns", check: "n", respond: "sn?o" };
+    const usage: Record<string, string> = { open: 'open "/path"', see: 'see "text"', notSee: 'notSee "text"', click: 'click "Label" [n]', link: 'link "Label" [n]', fill: 'fill "Placeholder" "value"', press: 'press "Placeholder" "Enter"', select: 'select 0 "Option"', check: "check 0", respond: 'respond "https://api.example.com/*" [200] [{ "ok": true }]' };
     for (const s of d.body) {
       if (s.kind !== "ExprStmt" || s.expr.kind !== "Call" || s.expr.callee.kind !== "Ident") continue;
       const name = s.expr.callee.name, sig = STEPS[name], args = s.expr.args;
@@ -584,8 +585,11 @@ class Checker {
         continue;
       }
       const kinds = sig.replace("?", "");
-      const required = sig.endsWith("?") ? kinds.length - 1 : kinds.length;
-      const ok = args.length >= required && args.length <= kinds.length && args.every((a, i) => (kinds[i] === "s" ? a.kind === "Str" : a.kind === "Num"));
+      const required = sig.includes("?") ? sig.indexOf("?") - 1 : kinds.length;
+      const json = (a: Expr): boolean => ["Str", "Num", "Bool", "Null"].includes(a.kind) || (a.kind === "Unary" && a.op === "-" && a.arg.kind === "Num") || (a.kind === "Array" && a.items.every(json)) || (a.kind === "Object" && a.props.every((p) => "key" in p && json(p.value)));
+      const fits = (a: Expr, k: string) => (k === "s" ? a.kind === "Str" : k === "n" ? a.kind === "Num" : (a.kind === "Object" || a.kind === "Array") && json(a));
+      // An optional argument may be left out: respond "url" { ... } skips the status.
+      const ok = args.length >= required && args.length <= kinds.length && (args.every((a, i) => fits(a, kinds[i])) || (name === "respond" && args.length === 2 && fits(args[1], "o")));
       if (!ok) this.err("TYPE_MISMATCH", `'${name}' takes ${usage[name]}`, s.loc, { expr: name, expected: usage[name], actual: `${args.length} argument(s)`, fixes: [usage[name]] });
     }
   }
@@ -707,6 +711,9 @@ class Checker {
         if (!META_PROPS.includes(p.name) || !p.value) {
           this.err("UNKNOWN_PROP", `'meta' doesn't take '${p.name}'`, p.loc, { expr: p.name, expected: META_PROPS.join(" "), fixes: suggest(p.name, META_PROPS) });
         } else if (p.name === "jsonld") this.infer(p.value, scope); // any object: written as JSON
+        else if (p.name === "theme" && p.value.kind === "Str" && !["light", "dark", "auto"].includes(p.value.value)) {
+          this.err("TYPE_MISMATCH", "`theme` is light, dark or auto", p.value.loc, { expr: p.value.value, expected: "light|dark|auto", fixes: suggest(p.value.value, ["light", "dark", "auto"]).map((t) => `theme="${t}"`) });
+        }
         else this.expectTy(p.value, this.infer(p.value, scope), STR);
       }
       if (el.content || el.children.length || el.action) this.err("NO_CONTENT", "`meta` only takes props: title=, description=, image=...", el.loc, { expr: "meta", fixes: ['meta title="..." description="..."'] });

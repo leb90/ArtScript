@@ -13,6 +13,18 @@ From building a Spanish-language static site with 0.2.15 (chipaclub, GitHub Page
 - `title` and `text` take inline children, to style a word inside a heading: `title tag=h1 { text "Your "; text "club" class="hl" }` (it was NO_CHILDREN).
 - `art fmt` keeps the author's layout, as 0.2.15 meant to: a call, an arrow's block, an array or an object written over lines stays over lines (arguments hug the call: `new X(e => {` ... `}, { threshold: 0.1 })`, `[` ... `].join("\n")`, `await fetch(url, {` ... `})`), a trailing comma stays, a list written one item per line stays that way, and the blank lines the author left between declarations, members, statements, view nodes and comment blocks stay (one at most). An arrow called in place keeps its parentheses when it breaks over lines (`(() => { ... })()`); before, it lost them.
 
+From a second report on the same site:
+
+- `link "Plans" to="#plans"` and `navigate("/#plans")` on the current page scroll to `id="plans"` and move the focus there. Before, the page was mounted again: its state reset and its entrance animations played again. Opening a page at `/#plans` scrolls there too; any other page change starts at the top.
+- A prerendered page no longer plays its entrance animations (`animate=`, `reveal`) again when the app starts over it: what the visitor already sees stays put, and what appears later (scrolling, another page) still animates. The largest content paint isn't delayed by an animation that starts from transparent.
+- `art test`: `respond "https://api.example.com/*" [200] [{ "ok": true }]` answers the requests to that address for the rest of the test. A request to another origin without one fails with the step to add: a test never reaches a real service (a form that emails sent mail on every run). Labels with a no-break space (`Intl` money: `10,00 €`) match the same text typed with a space.
+- An image with `width=` keeps its proportions when the page is narrower than that width (`height: auto`).
+- `art build --site https://me.github.io/repo/` implies `--base /repo`. `app.css` is minified in a production build; a lifted `@charset` is written first.
+- `meta theme="light"` (`light|dark|auto`): the page's colors whatever the system's dark setting says; in the prerendered page too (`<html data-theme>`).
+- `art check` warns `CSP_BLOCKS` (W1054) in an app with a server when a `.art` file fetches another site or a project stylesheet `@import`s a remote one: the server's Content-Security-Policy blocks both in the browser (it passed in `art dev`).
+- `on:input` and `on:change` on a bound field run after the binding: `input q on:input=search()` reads the new `q` (it read the one before, so a search started one keystroke late, or never). The same for `select`, `checkbox` and the choice fields.
+- Docs: a static-site recipe that emails a form through a form service (with a per-browser limit, a hidden field for bots and a test that never sends mail); the `#app` container (`#app { max-width: none; padding: 0; }` for full-width sections); `dist/` served by any static server for screenshots.
+
 ## 0.2.15 (2026-10-23)
 
 From a report on an app built with 0.2.14:

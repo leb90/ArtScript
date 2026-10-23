@@ -623,3 +623,77 @@ test("title and text take inline children; enum words and form attributes; bad v
   const [meta] = check(parse('page P {\n  meta titel="x"\n}', "t"));
   assert.deepEqual([meta.type, meta.fixes?.[0]], ["UNKNOWN_PROP", "title"]);
 });
+
+test("navigate to a section of the current page scrolls there and keeps the page (its state stays)", async () => {
+  const src = 'page Home "/" {\n  state draft = ""\n  input draft placeholder="Name"\n  button "Go" -> navigate("/#plans")\n  column id="plans" {\n    text "Plans"\n  }\n}\n';
+  const r = compile([{ file: "app.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  const dir = mkdtempSync(join(tmpdir(), "art-hash-"));
+  writeFileSync(join(dir, "app.js"), r.js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    const app = await import(pathToFileURL(join(dir, "app.js")).href);
+    app.start(document.getElementById("app"));
+    await new Promise((ok) => setTimeout(ok, 10));
+    const input = document.querySelector("input")!;
+    input.value = "Ana";
+    input.dispatchEvent(new Event("input"));
+    [...document.querySelectorAll("button")].find((b) => b.textContent === "Go")!.click();
+    await new Promise((ok) => setTimeout(ok, 10));
+    assert.equal(location.hash, "#plans");
+    assert.equal(document.querySelector("input"), input, "the page wasn't built again");
+    assert.equal(input.value, "Ana");
+    assert.equal(document.activeElement?.id, "plans", "the focus moved to the section");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});
+
+test("on:input and on:change read the value the binding just wrote", async () => {
+  const src = 'page Home "/" {\n  state q = ""\n  state size = "S"\n  state seen = ""\n  input q placeholder="Search" on:input=(seen = q)\n  select size options=["S", "M"] on:change=(seen = `${seen} ${size}`)\n  text seen\n}\n';
+  const r = compile([{ file: "app.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  const dir = mkdtempSync(join(tmpdir(), "art-order-"));
+  writeFileSync(join(dir, "app.js"), r.js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"></div>';
+    const app = await import(pathToFileURL(join(dir, "app.js")).href);
+    app.start(document.getElementById("app"));
+    await new Promise((ok) => setTimeout(ok, 10));
+    const input = document.querySelector("input")!;
+    input.value = "chair";
+    input.dispatchEvent(new Event("input"));
+    const select = document.querySelector("select")!;
+    select.selectedIndex = 1;
+    select.dispatchEvent(new Event("change"));
+    await new Promise((ok) => setTimeout(ok, 10));
+    assert.equal(document.querySelector("span")?.textContent, "chair M");
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});
+
+test("over a prerendered page the first render doesn't replay entrance animations; images keep their proportions", async () => {
+  const src = 'page Home "/" {\n  title "Hi" animate=rise\n}\n';
+  const r = compile([{ file: "app.art", src }]);
+  const dir = mkdtempSync(join(tmpdir(), "art-start-"));
+  writeFileSync(join(dir, "app.js"), r.js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.body.innerHTML = '<div id="app"><h2 class="a-title a-anim a-anim-rise">Hi</h2></div>'; // as prerendered
+    const app = await import(pathToFileURL(join(dir, "app.js")).href);
+    app.start(document.getElementById("app"));
+    await new Promise((ok) => setTimeout(ok, 50));
+    assert.ok(document.querySelector("h2")!.classList.contains("a-anim-done"), "the first screen doesn't animate again");
+    assert.ok(!document.documentElement.classList.contains("a-start"), "later renders animate as usual");
+    const rt = await import(pathToFileURL(join(dir, "runtime.js")).href);
+    assert.match(rt.CSS, /img\[width\],video\[width\]\{height:auto\}/);
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});

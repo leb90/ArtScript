@@ -48,8 +48,13 @@ One step per line:
 | `press "Field" "Enter"` | Presses a key in that input |
 | `select 0 "Option"` | Picks an option in the first select |
 | `check 0` | Toggles the first checkbox |
+| `respond "https://api.example.com/*" 200 { "ok": true }` | What a request to that address gets for the rest of the test (status and body are optional: `200`, `{}`) |
 
 Steps wait for the page to settle (pending api calls, re-renders) before the next one, so there are no sleeps or retries to write. An error the page doesn't catch (a failed request in an event handler without `try`) fails the test with `the page threw: ...`.
+
+A test never reaches another site: a form that emails through a service would send mail on every run. A request to another origin fails, and the error says which `respond` step to add. Requests to the app's own api go to the test's server as usual.
+
+A label written by `Intl` (`10,00 €` has a no-break space) matches the same text typed with a normal space.
 
 ## Full-stack tests
 

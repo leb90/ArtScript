@@ -46,6 +46,10 @@ test("ssr: pages arrive with their data, title and the responses the client reus
   const seed = JSON.parse(/id="art-data">(.*?)<\/script>/.exec(page)![1]);
   assert.deepEqual(seed[`/api/products/${made.id}`], [200, made]);
 
+  // The page's language and colors, as in a prerendered page.
+  assert.match(await (await fetch(`${base}/es`)).text(), /^<!doctype html><html lang="es" data-theme="light">/);
+  assert.match(homeHtml, /^<!doctype html><html lang="es">/, "the only language the pages set is the default; the theme is that page's");
+
   const missing = await (await fetch(`${base}/products/nope`)).text();
   assert.match(missing, /Loading/, "a missing row renders like the page does without it");
 });
