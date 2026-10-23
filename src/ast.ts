@@ -11,7 +11,9 @@ export type TypeRef = { name: string; list: boolean; optional: boolean; params?:
 export type Program = { kind: "Program"; decls: Decl[]; comments?: string[] };
 // Comments are kept for fmt and patch: `comments` go before a node, `after` after it (they were
 // right before the `}` that closes its block). Any declaration, field, member, view node or statement.
-export type Commented = { comments?: string[]; after?: string[] };
+// Layout kept by fmt: `gap` is a blank line before the node (or before its comments); a blank
+// line between two comment blocks is an empty string in `comments`.
+export type Commented = { comments?: string[]; after?: string[]; gap?: boolean };
 
 export type Decl = ModelDecl | ComponentDecl | ApiDecl | AuthDecl | ServerFnDecl | UseDecl | TestDecl | SharedDecl;
 // `state cart = []`, `computed total = ...` or `fn add(p) { }` at the top level: shared by every
@@ -148,9 +150,11 @@ export type Expr =
   | { kind: "Binary"; op: string; left: Expr; right: Expr; loc: Loc }
   | { kind: "Cond"; test: Expr; then: Expr; else: Expr; loc: Loc }
   | { kind: "Assign"; op: string; target: Expr; value: Expr; loc: Loc }
-  | { kind: "Array"; items: Expr[]; multiline?: boolean; loc: Loc } // multiline: written with a line break after `[`
-  | { kind: "Object"; props: ObjProp[]; multiline?: boolean; loc: Loc }
-  | { kind: "Arrow"; params: string[]; body: Expr | Stmt[]; loc: Loc }
+  // Layout as written: `multiline` (a line break after the bracket), `trailing` (a comma before the
+  // closing one), `onePerLine` (each item on a line of its own).
+  | { kind: "Array"; items: Expr[]; multiline?: boolean; trailing?: boolean; onePerLine?: boolean; loc: Loc }
+  | { kind: "Object"; props: ObjProp[]; multiline?: boolean; trailing?: boolean; loc: Loc }
+  | { kind: "Arrow"; params: string[]; body: Expr | Stmt[]; multiline?: boolean; loc: Loc } // multiline: a block written over lines
   | { kind: "Spread"; arg: Expr; loc: Loc }
   // `/^\d+$/i`, kept as written.
   | { kind: "Regex"; source: string; loc: Loc };

@@ -70,14 +70,14 @@ To store the tasks on the server instead: `api tasks: Task` at the top, `data ta
 
 | Element | Content | `->` | Props / flags |
 |---|---|---|---|
-| `text` `title` | text | | bold muted small large danger; `tag=h1|p|…` |
+| `text` `title` | text and/or inline `{ children }` | | bold muted small large danger; `tag=h1|p|…` |
 | `button` | text | click | disabled; primary danger small |
-| `input` `textarea` | state (two-way) | Enter | placeholder type label disabled; required (`type=text|number|email|password|date|search|checkbox`) |
+| `input` `textarea` | state (two-way) | Enter | placeholder type label disabled autocomplete inputmode name; required (`type=text|number|email|password|date|search|checkbox`) |
 | `select` `radio` `tabs` | state | change | options=[...] label |
 | `checkbox` | Bool state | change | label |
 | `file` | File state | change | accept; multiple |
 | `modal` | Bool state (open) | | gap pad |
-| `image` `video` `audio` | src (a String) | | alt width height; controls |
+| `image` `video` `audio` | src (a String) | | alt width height; image: loading=lazy fetchpriority srcset sizes; controls |
 | `link` | text or `{ }` | | to="/path" href target |
 | `badge` `icon` `spinner` `divider` | text / lucide name | | primary success danger |
 | `row` `column` `card` `grid` `form` | — | form: submit | gap pad align justify cols; row: wrap |

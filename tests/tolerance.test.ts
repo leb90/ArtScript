@@ -498,7 +498,8 @@ test("tolerance: `async` before an arrow is accepted and dropped", () => {
   const r = compile([{ file: "a.art", src }]);
   assert.deepEqual(r.diagnostics, []);
   assert.match(r.js!, /then\(\(async \(r\) => \{/);
-  assert.equal(printProgram(parse(src, "a")), 'page P {\n  state n = 0\n  fn load() {\n    fetch("/x").then(r => { n = await r.json() })\n  }\n\n  text n\n}\n');
+  // The block stays over lines, as written; `async` goes.
+  assert.equal(printProgram(parse(src, "a")), 'page P {\n  state n = 0\n  fn load() {\n    fetch("/x").then(r => {\n      n = await r.json()\n    })\n  }\n\n  text n\n}\n');
 });
 
 test("tolerance: `async fn`, and several access words on an api", () => {

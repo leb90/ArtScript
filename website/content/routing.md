@@ -128,6 +128,24 @@ page Pricing "/pricing" {
 }
 ```
 
+It also takes `imageAlt=` (what the shared preview shows to screen readers), `siteName=`, `locale="es_ES"`, `themeColor=` and `lang="es"`: the page's language, written on `<html lang>` in the prerendered page and set again as the visitor moves between pages; when a layout sets it, it is the default of every page. A prerendered page also gets the image's width and height (`og:image:width`, read from the file in `public/`).
+
+`jsonld=` writes structured data for search engines, built from the app's own data so it can't drift from what the page shows:
+
+```art
+const PRODUCTS = [
+  { name: "Chipa", price: 3 },
+  { name: "Mate", price: 5 },
+]
+
+page Home "/" {
+  meta title="Chipa Club" lang="es" jsonld=({ "@context": "https://schema.org", "@type": "Store", name: "Chipa Club", makesOffer: PRODUCTS.map(p => ({ "@type": "Offer", name: p.name, price: p.price })) })
+  title "Chipa Club"
+}
+```
+
+For tags no prop covers (a search engine's verification tag, a font preload), put them in `head.html` at the project root: it goes into every page's `<head>` as written.
+
 ## Guards
 
 `requires login` shows a page only to signed-in users; `requires admin` only to admins. Others are sent to `/login` (when the app has that page) or to `/`.

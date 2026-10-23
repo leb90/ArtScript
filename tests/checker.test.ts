@@ -90,7 +90,7 @@ test("components: missing and unknown props, and types", () => {
 test("input needs something bindable; actions and children only where allowed", () => {
   assert.deepEqual(types('page P {\n  input "hola"\n}'), ["NOT_BINDABLE"]);
   assert.deepEqual(types('page P {\n  text "a" -> x()\n}').includes("NO_ACTION"), true);
-  assert.deepEqual(types('page P {\n  text "a" {\n    text "b"\n  }\n}'), ["NO_CHILDREN"]);
+  assert.deepEqual(types('page P {\n  image "/a.png" alt="a" {\n    text "b"\n  }\n}'), ["NO_CHILDREN"]); // text and title take inline children now
 });
 
 test("for needs a list", () => {

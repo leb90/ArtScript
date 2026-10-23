@@ -28,18 +28,18 @@ export const TAG_ELEMENTS = ["text", "title", "row", "column", "grid", "card"];
 const MEDIA = ["controls", "autoplay", "loop", "muted"];
 
 export const ELEMENTS: Record<string, ElementSpec> = {
-  text: { html: "span", content: "text", action: null, children: false, props: [], flags: ["bold", "muted", "small", "large", "danger", "primary", "success"] },
-  title: { html: "h2", cls: "a-title", content: "text", action: null, children: false, props: [], flags: ["bold", "muted", "small", "large", "danger", "primary", "success"] },
+  text: { html: "span", content: "text", action: null, children: true, props: [], flags: ["bold", "muted", "small", "large", "danger", "primary", "success"] },
+  title: { html: "h2", cls: "a-title", content: "text", action: null, children: true, props: [], flags: ["bold", "muted", "small", "large", "danger", "primary", "success"] },
   button: { html: "button", content: "text", action: "click", children: true, props: ["disabled"], flags: ["primary", "danger", "small"] },
-  input: { html: "input", content: "bind", action: "enter", children: false, props: ["placeholder", "type", "disabled", "label", "min", "max", "step"], flags: ["required"], attrs: ["required"] },
-  textarea: { html: "textarea", content: "bind", action: null, children: false, props: ["placeholder", "rows", "disabled", "label"], flags: ["required"], attrs: ["required"] },
-  select: { html: "select", content: "bind", bind: "choice", action: "change", children: false, props: ["options", "placeholder", "disabled", "label"], flags: [] },
+  input: { html: "input", content: "bind", action: "enter", children: false, props: ["placeholder", "type", "disabled", "label", "min", "max", "step", "autocomplete", "inputmode", "name"], flags: ["required"], attrs: ["required"] },
+  textarea: { html: "textarea", content: "bind", action: null, children: false, props: ["placeholder", "rows", "disabled", "label", "autocomplete", "inputmode", "name"], flags: ["required"], attrs: ["required"] },
+  select: { html: "select", content: "bind", bind: "choice", action: "change", children: false, props: ["options", "placeholder", "disabled", "label", "autocomplete", "name"], flags: [] },
   checkbox: { html: "input", type: "checkbox", content: "bind", bind: "checked", action: "change", children: false, props: ["label", "disabled"], flags: [] },
   radio: { html: "div", cls: "a-radio", content: "bind", bind: "choice", action: "change", children: false, props: ["options", "label"], flags: [] },
   tabs: { html: "div", cls: "a-tabs", content: "bind", bind: "choice", action: "change", children: false, props: ["options", "label"], flags: [] },
   file: { html: "input", type: "file", content: "bind", bind: "file", action: "change", children: false, props: ["accept", "label", "disabled"], flags: ["multiple"], attrs: ["multiple"] },
   modal: { html: "dialog", cls: "a-modal a-column", content: "bind", bind: "open", action: null, children: true, props: LAYOUT, flags: [] },
-  image: { html: "img", content: "src", action: null, children: false, props: ["alt", "width", "height"], flags: [] },
+  image: { html: "img", content: "src", action: null, children: false, props: ["alt", "width", "height", "loading", "decoding", "fetchpriority", "srcset", "sizes"], flags: [] },
   video: { html: "video", content: "src", action: null, children: false, props: ["width", "height", "poster"], flags: MEDIA, attrs: MEDIA },
   audio: { html: "audio", content: "src", action: null, children: false, props: [], flags: MEDIA, attrs: MEDIA },
   // `target="_blank"` opens a new tab (and the router leaves the link to the browser).
@@ -73,7 +73,16 @@ export const ENUM_PROPS: Record<string, string[]> = {
   align: ["start", "center", "end", "stretch"],
   justify: ["start", "center", "end", "between", "around"],
   type: ["text", "number", "email", "password", "checkbox", "date", "search", "tel", "url", "color", "range", "time", "datetime-local", "month", "week"],
+  inputmode: ["none", "text", "decimal", "numeric", "tel", "search", "email", "url"],
+  loading: ["lazy", "eager"],
+  decoding: ["async", "sync", "auto"],
+  fetchpriority: ["high", "low", "auto"],
 };
+// HTML attributes with no DOM property of the same name (`tabIndex`, `inputMode`...) or that
+// server rendering must see: always written with setAttribute.
+export const ATTRIBUTES = new Set(["tabindex", "inputmode", "autocomplete", "fetchpriority", "loading", "decoding", "srcset", "sizes"]);
+// `meta` props: the page's title, description, Open Graph tags, language and structured data.
+export const META_PROPS = ["title", "description", "image", "imageAlt", "siteName", "locale", "lang", "themeColor", "jsonld"];
 
 // `md:cols=3`: applies from that screen width up (px). Only for these numeric props.
 export const BREAKPOINTS: Record<string, number> = { sm: 640, md: 768, lg: 1024, xl: 1280 };

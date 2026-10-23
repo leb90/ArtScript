@@ -3,7 +3,7 @@ import type { ApiAccess, ComponentDecl, ComputedDecl, FieldRules, Element, Expr,
 import { specifier } from "./modules.ts";
 import { boundNames, isPattern } from "./patterns.ts";
 import { printDecl, printType } from "./printer.ts";
-import { BREAKPOINTS, ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
+import { ATTRIBUTES, BREAKPOINTS, ELEMENTS, ENUM_PROPS, SPACING_PROPS } from "./elements.ts";
 import { serverShared, slotNames, twoWayProps } from "./checker.ts";
 import { ICONS, iconName } from "./icons.ts";
 import { scopeCss } from "./css.ts";
@@ -300,9 +300,9 @@ export function serverEntry(schema: ServerSchema): string {
 
 // `head`/`body`: a prerendered page's extra <head> tags and the HTML inside #app.
 // `css`: link app.css (the runtime's styles and the project's; its id tells the runtime not to add them again).
-export function htmlShell(title = "ArtScript", head = "", body = "", css = false, base = "/"): string {
+export function htmlShell(title = "ArtScript", head = "", body = "", css = false, base = "/", lang = "en"): string {
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${head}${css ? `<link rel="stylesheet" id="art-css" href="${base}app.css">` : ""}</head><body><div id="app">${body}</div><script type="module" src="${base}app.js"></script></body></html>\n`;
+  return `<!doctype html><html lang="${esc(lang).replace(/"/g, "")}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${head}${css ? `<link rel="stylesheet" id="art-css" href="${base}app.css">` : ""}</head><body><div id="app">${body}</div><script type="module" src="${base}app.js"></script></body></html>\n`;
 }
 
 // Top-level `state`, `computed` and `fn`: module-level, visible in every component.
@@ -766,10 +766,12 @@ class ComponentGen {
   }
 
   attr(v: string, name: string, val: Expr, scope: Scope, wrap = (s: string) => s) {
+    // `loading=lazy`, `inputmode=tel`: a word of the prop's values (not a variable) is that word.
+    if (val.kind === "Ident" && ENUM_PROPS[name]?.includes(val.name) && !scope.get(val.name)) val = { kind: "Str", value: val.name, loc: val.loc };
     const lit = literal(val);
     // ARIA attributes are set as attributes (not every browser reflects them as properties).
     // ARIA, data and tabindex are written as attributes (`tabindex` is no DOM property: it's `tabIndex`).
-    if (lit !== null && (name === "role" || name === "tabindex" || name.startsWith("aria-") || name.startsWith("data-"))) return this.emit(`${v}.setAttribute(${JSON.stringify(name)}, ${JSON.stringify(String(lit))});`);
+    if (lit !== null && (name === "role" || ATTRIBUTES.has(name) || name.startsWith("aria-") || name.startsWith("data-"))) return this.emit(`${v}.setAttribute(${JSON.stringify(name)}, ${JSON.stringify(String(lit))});`);
     // Added to the element's own styles (`gap`, `pad`...), not instead of them.
     if (lit !== null && name === "style") return this.emit(`${v}.style.cssText += ${JSON.stringify(";" + lit)};`);
     // A root-relative URL gets the app's base path (`art build --base`).
@@ -1032,4 +1034,26 @@ const printExprName = (e: Expr) => (e.kind === "Ident" ? e.name : "undefined");
 function literal(e: Expr): string | number | boolean | null {
   if (e.kind === "Str" || e.kind === "Num" || e.kind === "Bool") return e.value;
   return null;
+}
+
+// The language the app's HTML shell declares: the `meta lang=` of its layout (a literal), or the one
+// every page that sets one agrees on; "en" otherwise. Pages with another `meta lang` change it.
+export function defaultLang(program: Program): string {
+  const langOf = (nodes: ViewNode[]): string | null => {
+    for (const n of nodes) {
+      if (n.kind !== "Element") continue;
+      if (n.tag === "meta") {
+        const p = n.props.find((q) => q.name === "lang");
+        if (p?.value?.kind === "Str") return p.value.value;
+      }
+      const inner = langOf(n.children);
+      if (inner) return inner;
+    }
+    return null;
+  };
+  const comps = program.decls.filter((d): d is ComponentDecl => d.kind === "Component");
+  const layout = comps.filter((c) => c.layout).map((c) => langOf(c.view)).find(Boolean);
+  if (layout) return layout;
+  const pages = [...new Set(comps.filter((c) => c.page).map((c) => langOf(c.view)).filter((l): l is string => !!l))];
+  return pages.length === 1 ? pages[0] : "en";
 }

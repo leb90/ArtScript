@@ -27,7 +27,7 @@ page Users "/users" {
 - Files: `photo: File? max=2000000 accept="image/*"` (max in bytes). Pass the File from `file picked` straight to `create`/`update`: it's uploaded and stored as `{ url, name, type, size }` (`image post.photo.url`).
 - Changing a stored model needs no migration code; a new required field needs a default (or `?`); a renamed one: `title: String was="name"`.
 - `page Product "/products/:id"`: a component with a route; inside it `params.id` (String) and `query.tab` (from `?tab=`). `page NotFound "*"` catches unknown paths. Without a route: `/lowercase-name`.
-- `meta title="..." description="..." image="/og.png"` in a page sets its title, description and Open Graph tags.
+- `meta title="..." description="..." image="/og.png"` in a page sets its title, description and Open Graph tags; also `imageAlt=`, `siteName=`, `locale="es_ES"`, `themeColor=`, `lang="es"` (the page's language: `<html lang>`, and the default of every page when a layout sets it) and `jsonld=(obj)` (structured data, built from the app's own data: `jsonld=({ "@type": "Store", name: SHOP })`). A `head.html` at the project root goes into every page's `<head>` as written (a verification tag, a font preload).
 - `layout Main { ... slot ... }` wraps pages and stays mounted while they change (the only top-level layout applies to every page; `page X "/x" layout Main` picks one; `layout Docs layout Main` goes inside Main). Links to the current page get `aria-current="page"`. `link "x" to="/path"` and `navigate("/path")` change pages without reloading. `notify("Saved", "success")` shows a short message (`info`, `success`, `danger`). `page Admin "/admin" requires admin` (or `requires login`) only shows to them (others go to `/login` or `/`). `setTheme("dark" | "light" | "auto")`, `theme()`.
 
 ## Imports: `use`
@@ -116,17 +116,17 @@ column gap=4 align=center {
 
 | Element | Content | `->` fires on | Props | Flags |
 |---|---|---|---|---|
-| `text` | text | — | | bold muted small large danger |
-| `title` | text | — | | muted small large |
+| `text` | text, and/or inline `{ children }` | — | | bold muted small large danger |
+| `title` | text, and/or inline `{ children }` (`title tag=h1 { text "Your "; text "club" class="hl" }`) | — | | muted small large |
 | `button` | text | click | disabled | primary danger small |
-| `input` | **state to bind** (two-way) | Enter | placeholder type disabled label | required |
-| `textarea` | state to bind | — | placeholder rows disabled label | required |
-| `select` | state to bind | change | **options** placeholder disabled label | |
+| `input` | **state to bind** (two-way) | Enter | placeholder type disabled label autocomplete inputmode name | required |
+| `textarea` | state to bind | — | placeholder rows disabled label autocomplete inputmode name | required |
+| `select` | state to bind | change | **options** placeholder disabled label autocomplete name | |
 | `radio` `tabs` | state to bind | change | **options** label | |
 | `checkbox` | Bool state | change | label disabled | |
 | `file` | state (`File`, or list with `multiple`) | change | accept label disabled | multiple |
 | `modal` | Bool state (open) | — | gap pad align justify | |
-| `image` | src | — | alt width height | |
+| `image` | src | — | alt width height loading decoding fetchpriority srcset sizes | |
 | `video` `audio` | src | — | video: width height poster | controls autoplay loop muted |
 | `link` | text | — | to href target | muted bold |
 | `badge` | text | — | | primary success danger |

@@ -2,6 +2,17 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## 0.2.16 (2026-10-23)
+
+From building a Spanish-language static site with 0.2.15 (chipaclub, GitHub Pages, prerendered):
+
+- A page's language: `meta lang="es"`. The prerendered page is `<html lang="es">`, the visitor's browser updates it between pages, and a server-rendered page carries it too. When a layout sets it (or every page that sets one agrees), the app's shell uses it; otherwise `en`. Screen readers pronounce the page in its language and search engines see it (WCAG 3.1.1).
+- `meta` also takes `imageAlt=` (`og:image:alt`), `siteName=` (`og:site_name`), `locale=` (`og:locale`), `themeColor=` (`theme-color`) and `jsonld=(obj)`: structured data as `<script type="application/ld+json">`, built from the app's own data, in the prerendered page and kept (not doubled) when the app starts; it leaves with its page. A prerendered page with a PNG, JPEG or GIF `image=` from `public/` gets `og:image:width` and `og:image:height`.
+- `head.html` at the project root goes into every page's `<head>` as written (a verification tag, a font preload), in `art dev`, `art build` and the prerendered pages.
+- `input`, `textarea` and `select` take `autocomplete` (phones autofill a checkout; WCAG 1.3.5) and `name`; `input` and `textarea` take `inputmode` (`numeric`, `tel`...). `image` takes `loading` (`lazy`), `decoding`, `fetchpriority`, `srcset` and `sizes`. They are written as attributes, so the prerendered HTML has them; a word value needs no quotes (`loading=lazy`) and a wrong one is an error with the fix.
+- `title` and `text` take inline children, to style a word inside a heading: `title tag=h1 { text "Your "; text "club" class="hl" }` (it was NO_CHILDREN).
+- `art fmt` keeps the author's layout, as 0.2.15 meant to: a call, an arrow's block, an array or an object written over lines stays over lines (arguments hug the call: `new X(e => {` ... `}, { threshold: 0.1 })`, `[` ... `].join("\n")`, `await fetch(url, {` ... `})`), a trailing comma stays, a list written one item per line stays that way, and the blank lines the author left between declarations, members, statements, view nodes and comment blocks stay (one at most). An arrow called in place keeps its parentheses when it breaks over lines (`(() => { ... })()`); before, it lost them.
+
 ## 0.2.15 (2026-10-23)
 
 From a report on an app built with 0.2.14:

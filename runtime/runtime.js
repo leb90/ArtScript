@@ -801,6 +801,36 @@ export function $meta(props) {
   if (props.title) effect(() => { const t = str(props.title()); document.title = t; metaTag("property", "og:title").setAttribute("content", t); });
   if (props.description) effect(() => { const d = str(props.description()); metaTag("name", "description").setAttribute("content", d); metaTag("property", "og:description").setAttribute("content", d); });
   if (props.image) effect(() => metaTag("property", "og:image").setAttribute("content", withBase(str(props.image()))));
+  const og = (key, fn) => fn && effect(() => metaTag("property", key).setAttribute("content", str(fn())));
+  og("og:image:alt", props.imageAlt);
+  og("og:site_name", props.siteName);
+  og("og:locale", props.locale);
+  if (props.themeColor) effect(() => metaTag("name", "theme-color").setAttribute("content", str(props.themeColor())));
+  // `lang="es"`: the page's language; leaving the page gives back the one it had.
+  if (props.lang) {
+    const html = document.documentElement, was = html.getAttribute("lang");
+    effect(() => html.setAttribute("lang", str(props.lang())));
+    onDispose(() => (was == null ? html.removeAttribute("lang") : html.setAttribute("lang", was)));
+  }
+  // `jsonld=(obj)`: structured data, as a script the page owns. The prerendered one is taken over.
+  if (props.jsonld) {
+    let s = null;
+    effect(() => {
+      const json = JSON.stringify(props.jsonld()).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
+      if (!s) {
+        s = [...(document.head.querySelectorAll?.("script[data-art-jsonld]") ?? [])].find((x) => !x.$owned && x.textContent === json) ?? null;
+        if (!s) {
+          s = document.createElement("script");
+          s.setAttribute("type", "application/ld+json");
+          s.setAttribute("data-art-jsonld", "");
+          document.head.appendChild(s);
+        }
+        s.$owned = true;
+      }
+      if (s.textContent !== json) s.textContent = json;
+    });
+    onDispose(() => s?.parentNode?.removeChild(s));
+  }
 }
 
 // `setTheme("dark" | "light" | "auto")`: remembered in this browser; "auto" follows the system.

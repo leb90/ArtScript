@@ -104,3 +104,47 @@ test("prerender: with --base and --site, og:image has the base once", () => {
   assert.match(home, /property="og:image" content="https:\/\/x.example\/club\/og.png"/);
   assert.match(home, /rel="canonical" href="https:\/\/x.example\/club\/"/);
 });
+
+test("prerender: a page's language, Open Graph tags with the image's size, JSON-LD from the app's data, head.html, image and form attributes", () => {
+  const dir = mkdtempSync(join(tmpdir(), "art-pre4-"));
+  mkdirSync(join(dir, "src"));
+  mkdirSync(join(dir, "public"));
+  // A 3×2 PNG: only its header is read.
+  const png = Buffer.alloc(33);
+  png.writeUInt32BE(0x89504e47, 0); png.writeUInt32BE(0x0d0a1a0a, 4); png.writeUInt32BE(13, 8); png.write("IHDR", 12); png.writeUInt32BE(3, 16); png.writeUInt32BE(2, 20);
+  writeFileSync(join(dir, "public", "og.png"), png);
+  writeFileSync(join(dir, "head.html"), '<meta name="google-site-verification" content="abc">\n');
+  writeFileSync(join(dir, "src", "app.art"), `const ITEMS = ["Chipa", "Mate"]
+
+page Home "/" {
+  meta title="Club" image="/og.png" imageAlt="Una bandeja" siteName="Club" locale="es_ES" lang="es" themeColor="#b45309" jsonld=({ "@type": "ItemList", items: ITEMS, note: "</script>" })
+  state phone = ""
+
+  title tag=h1 {
+    text "Somos tu "
+    text "club" class="hl"
+  }
+  image "/og.png" alt="Chipas" loading=lazy decoding=async fetchpriority=low
+  input phone placeholder="Teléfono" type=tel autocomplete="tel" inputmode=tel name="phone"
+}
+
+page About "/about" {
+  meta title="About" lang="en"
+  text "About"
+}
+`);
+  execFileSync(process.execPath, ["src/cli.ts", "build", dir, "--prerender", "--base", "/club", "--site", "https://x.example/club"], { stdio: "pipe" });
+  const home = readFileSync(join(dir, "dist", "index.html"), "utf8");
+  assert.match(home, /^<!doctype html><html lang="es">/);
+  assert.match(readFileSync(join(dir, "dist", "about", "index.html"), "utf8"), /<html lang="en">/);
+  assert.match(readFileSync(join(dir, "dist", "_app.html"), "utf8"), /<html lang="en">/, "pages disagree: the shell keeps en");
+  for (const tag of ['property="og:image:alt" content="Una bandeja"', 'property="og:site_name" content="Club"', 'property="og:locale" content="es_ES"', 'name="theme-color" content="#b45309"', 'property="og:image:width" content="3"', 'property="og:image:height" content="2"', 'name="google-site-verification" content="abc"']) {
+    assert.ok(home.includes(tag), tag);
+  }
+  const json = /<script type="application\/ld\+json" data-art-jsonld="">(.*?)<\/script>/.exec(home)![1];
+  assert.deepEqual(JSON.parse(json), { "@type": "ItemList", items: ["Chipa", "Mate"], note: "</script>" });
+  assert.doesNotMatch(json, /<\/script>/, "the data can't close the script");
+  assert.match(home, /<h1 class="a-title"><span>Somos tu <\/span><span class="hl">club<\/span><\/h1>/);
+  assert.match(home, /<img alt="Chipas" loading="lazy" decoding="async" fetchpriority="low"/);
+  assert.match(home, /<input [^>]*autocomplete="tel" inputmode="tel" name="phone"/);
+});

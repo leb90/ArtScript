@@ -271,3 +271,62 @@ test("throw is a statement: parsed, checked, compiled, printed; it ends a branch
   assert.deepEqual(r.diagnostics, []);
   assert.match(r.js!, /throw \(?new Error\("no value"\)\)?;/);
 });
+
+test("fmt keeps the author's layout: calls and blocks over lines, trailing commas, one item per line, blank lines between members, declarations and comment blocks", () => {
+  const src = `// Config
+// (edit freely)
+
+// Prices
+const URL = "https://formsubmit.co/x"
+const PRICES = {
+  chipa: 3,
+  mate: 5,
+}
+const WORDS = [
+  "uno",
+  "dos",
+]
+
+fn text(o) {
+  return [
+    \`a \${o.x}\`,
+    "",
+    \`b \${o.y}\`,
+  ].join("\\n")
+}
+
+fn send(o) {
+  let res = await fetch(URL, {
+    method: "POST",
+    body: JSON.stringify({ a: o.a }),
+  })
+  return res
+}
+
+page Home "/" {
+  state seen = false
+  state n = 0
+
+  mount {
+    let io = new IntersectionObserver(entries => {
+      seen = entries[0].isIntersecting
+    }, { threshold: 0.12 })
+  }
+
+  fn bump() {
+    n++
+
+    n++
+  }
+
+  computed label = (() => {
+    return "x"
+  })()
+
+  text n
+}
+`;
+  assert.equal(printProgram(parse(src, "f")), src);
+  const r = compile([{ file: "f.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+});

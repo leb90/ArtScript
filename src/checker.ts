@@ -1,6 +1,6 @@
 // Type checker: small type system, null safety and errors with fixes.
 import type { ComponentDecl, Element, Expr, Field, Loc, ModelDecl, Program, ServerFnDecl, SharedDecl, Stmt, TestDecl, TypeRef, UseDecl, ViewNode } from "./ast.ts";
-import { ANIMATIONS, BREAKPOINTS, ELEMENTS, ENUM_PROPS, HOVERS, RESPONSIVE_PROPS, TAGS } from "./elements.ts";
+import { META_PROPS, ANIMATIONS, BREAKPOINTS, ELEMENTS, ENUM_PROPS, HOVERS, RESPONSIVE_PROPS, TAGS } from "./elements.ts";
 import { ICONS, iconName } from "./icons.ts";
 import { CATALOG, diag, suggest, type Diagnostic } from "./errors.ts";
 import { inspectModule, isLocal, moduleFiles, packageName, readText } from "./modules.ts";
@@ -704,11 +704,12 @@ class Checker {
     if (/^[A-Z]/.test(el.tag)) return this.componentUse(el, scope);
     if (el.tag === "meta") {
       for (const p of el.props) {
-        if (!["title", "description", "image"].includes(p.name) || !p.value) {
-          this.err("UNKNOWN_PROP", `'meta' doesn't take '${p.name}'`, p.loc, { expr: p.name, expected: "title description image", fixes: suggest(p.name, ["title", "description", "image"]) });
-        } else this.expectTy(p.value, this.infer(p.value, scope), STR);
+        if (!META_PROPS.includes(p.name) || !p.value) {
+          this.err("UNKNOWN_PROP", `'meta' doesn't take '${p.name}'`, p.loc, { expr: p.name, expected: META_PROPS.join(" "), fixes: suggest(p.name, META_PROPS) });
+        } else if (p.name === "jsonld") this.infer(p.value, scope); // any object: written as JSON
+        else this.expectTy(p.value, this.infer(p.value, scope), STR);
       }
-      if (el.content || el.children.length || el.action) this.err("NO_CONTENT", "`meta` only takes title=, description= and image=", el.loc, { expr: "meta", fixes: ['meta title="..." description="..."'] });
+      if (el.content || el.children.length || el.action) this.err("NO_CONTENT", "`meta` only takes props: title=, description=, image=...", el.loc, { expr: "meta", fixes: ['meta title="..." description="..."'] });
       return;
     }
     if (el.tag === "slot") {

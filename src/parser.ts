@@ -73,18 +73,39 @@ class Parser {
     this.comments = comments;
   }
 
-  // Comments on lines before `line` not attached yet.
-  lead(line: number): string[] | undefined {
+  // Comments on lines before `line` not attached yet. With `from` (the line the previous code ends
+  // on), a blank line between two comments, or between the last one and `line`, is kept as "".
+  lead(line: number, from?: number): string[] | undefined {
     const out: string[] = [];
-    while (this.ci < this.comments.length && this.comments[this.ci].line < line) out.push(this.comments[this.ci++].text);
+    let last = from ?? 0;
+    while (this.ci < this.comments.length && this.comments[this.ci].line < line) {
+      const c = this.comments[this.ci++];
+      if (from !== undefined && out.length && c.line > last + 1) out.push("");
+      out.push(c.text);
+      last = c.line + (c.text.match(/\n/g)?.length ?? 0);
+    }
+    if (from !== undefined && out.length && line > last + 1) out.push("");
     return out.length ? out : undefined;
   }
+  // The line where the code before the current token ends (0 at the start of the file).
+  prevEnd(): number {
+    for (let j = this.i - 1; j >= 0; j--) {
+      const t = this.toks[j];
+      if (t.t !== "nl") return t.loc.line + (t.v.match(/\n/g)?.length ?? 0);
+    }
+    return 0;
+  }
   // Parses a node with `fn` and gives it the comments before it (taken first, so the node's own
-  // children don't take them).
+  // children don't take them) and whether a blank line comes before it.
   noted<T extends object | null>(fn: () => T): T {
-    const c = this.lead(this.tok.loc.line);
+    const from = this.prevEnd();
+    const first = this.ci < this.comments.length && this.comments[this.ci].line < this.tok.loc.line ? this.comments[this.ci].line : this.tok.loc.line;
+    const c = this.lead(this.tok.loc.line, from);
     const node = fn();
-    if (c && node) (node as Commented).comments = c;
+    if (node) {
+      if (c) (node as Commented).comments = c;
+      (node as Commented).gap = from > 0 && first > from + 1;
+    }
     return node;
   }
   note<T extends object>(node: T, line: number): T {
@@ -859,7 +880,13 @@ class Parser {
       this.expect(")");
     } else if (!this.is("=>")) params.push(this.next().v);
     this.expect("=>");
-    const body = this.is("{") ? this.block() : this.expr();
+    if (this.is("{")) {
+      const open = this.tok.loc.line;
+      const body = this.block();
+      const multiline = this.toks[this.i - 1].loc.line > open; // its `}` on a later line than its `{`
+      return { kind: "Arrow", params, body, ...(multiline ? { multiline } : {}), loc };
+    }
+    const body = this.expr();
     return { kind: "Arrow", params, body, loc };
   }
 
@@ -979,22 +1006,27 @@ class Parser {
     if (this.eat("[")) {
       const open = this.toks[this.i - 1];
       const items: Expr[] = [];
+      let trailing = false;
       while (!this.is("]")) {
+        trailing = false;
         items.push(this.spreadOrExpr());
+        if (this.is(",")) trailing = true;
         // One item per line without commas (models write lists of objects that way): fmt adds them.
         // (also side by side: `["a" "b"]`)
         if (!this.eat(",") && !(this.tok.t !== "eof" && this.tok.loc.line > this.toks[this.i - 1].loc.line) && this.tok.t !== "str" && this.tok.t !== "num") break;
       }
       this.expect("]");
-      // Written over several lines: fmt keeps it that way.
+      // Written over several lines: fmt keeps it that way (and its trailing comma, and one item per line).
       const multiline = items.length > 0 && items[0].loc.line > open.loc.line;
-      return { kind: "Array", items, ...(multiline ? { multiline } : {}), loc };
+      const onePerLine = multiline && items.every((it, k) => k === 0 || it.loc.line > items[k - 1].loc.line);
+      return { kind: "Array", items, ...(multiline ? { multiline } : {}), ...(multiline && trailing ? { trailing } : {}), ...(onePerLine ? { onePerLine } : {}), loc };
     }
     if (this.eat("{")) {
       const open = this.toks[this.i - 1];
       const props: ObjProp[] = [];
       this.skipNl();
       const multiline = !this.is("}") && this.tok.loc.line > open.loc.line;
+      let trailing = false;
       while (!this.is("}")) {
         if (this.eat("...")) props.push({ spread: this.expr() });
         else if (this.eat("[")) {
@@ -1011,12 +1043,14 @@ class Parser {
         }
         const newLine = this.tok.t === "nl";
         this.skipNl();
-        if (!this.eat(",") && !newLine) break; // one property per line without commas is accepted
+        const comma = this.eat(",");
+        if (!comma && !newLine) break; // one property per line without commas is accepted
         this.skipNl();
+        trailing = comma && this.is("}");
       }
       this.skipNl();
       this.expect("}");
-      return { kind: "Object", props, ...(multiline ? { multiline } : {}), loc };
+      return { kind: "Object", props, ...(multiline ? { multiline } : {}), ...(multiline && trailing ? { trailing } : {}), loc };
     }
     this.fail("an expression");
   }

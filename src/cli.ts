@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { brotliCompressSync, gzipSync } from "node:zlib";
 import { analyze } from "./checker.ts";
 import { compile, parseProject, type Source } from "./compile.ts";
-import { htmlShell, serverEntry, type ServerSchema } from "./codegen.ts";
+import { defaultLang, htmlShell, serverEntry, type ServerSchema } from "./codegen.ts";
 import { declContexts, projectMap } from "./context.ts";
 import { diag, formatAI, formatHuman, type Diagnostic } from "./errors.ts";
 import { parse } from "./parser.ts";
@@ -165,7 +165,8 @@ function sizes(files: Record<string, string>): string {
 // runtime and every `use` module (npm packages resolve from the project's node_modules).
 // With apis, `server` is the schema for the server runtime.
 // `dev` (art dev): the bundle includes the dev tools panel.
-let shellHead = ""; // <head> tags every page of the project gets (the favicon)
+let shellHead = ""; // <head> tags every page of the project gets (the favicon, head.html)
+let shellLang = "en"; // the language of the HTML shell (see defaultLang)
 // `demo` (art build --demo): the api, accounts and server fns are bundled in and run in the browser
 // (runtime/demo.js), so a full-stack app is published as static files.
 async function buildFiles(target: string, minify: boolean, maps: "inline" | "linked" | false = minify ? false : "inline", base = "/", dev = false, demo = false): Promise<{ files: Record<string, string>; server: ServerSchema | null } | { diagnostics: Diagnostic[] }> {
@@ -206,7 +207,12 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
     // A favicon in public/ is linked from every page.
     const icon = ["favicon.svg", "favicon.png", "favicon.ico"].find((f) => existsSync(join(root, "public", f)));
     shellHead = (icon ? `<link rel="icon" href="${base}${icon}">` : "") + (existsSync(join(root, "public", "apple-touch-icon.png")) ? `<link rel="apple-touch-icon" href="${base}apple-touch-icon.png">` : "");
-    const files: Record<string, string> = { "index.html": htmlShell("ArtScript", shellHead, "", true, base) };
+    // head.html at the project root: written as is into every page's <head> (a site verification tag,
+    // a font preload, theme-color...).
+    const headFile = join(root, "head.html");
+    if (existsSync(headFile)) shellHead += readFileSync(headFile, "utf8").trim();
+    shellLang = defaultLang(r.program);
+    const files: Record<string, string> = { "index.html": htmlShell("ArtScript", shellHead, "", true, base, shellLang) };
     for (const f of out.outputFiles) files[relative("/out", f.path)] = f.text;
     files["app.css"] = css;
     if (demoFile) rmSync(demoFile, { force: true });
@@ -251,6 +257,23 @@ function instructionsWarning(dir: string): Diagnostic[] {
   return [diag("INSTRUCTIONS_OUTDATED", `the agent instructions in ${stale.join(", ")} are older than @artscript/core ${PKG.version}`, { file: relative(process.cwd(), join(dir, stale[0])) || stale[0], line: 1, col: 1 }, {
     severity: "warning", expected: `the instructions of @artscript/core ${PKG.version}`, actual: stale.join(", "), fixes: ["npx art upgrade"],
   })];
+}
+
+// The pixel size of a PNG, JPEG or GIF file, or null.
+function imageSize(file: string): { width: number; height: number } | null {
+  if (!existsSync(file)) return null;
+  const b = readFileSync(file);
+  if (b.length > 24 && b.readUInt32BE(0) === 0x89504e47) return { width: b.readUInt32BE(16), height: b.readUInt32BE(20) };
+  if (b.length > 10 && b.toString("ascii", 0, 3) === "GIF") return { width: b.readUInt16LE(6), height: b.readUInt16LE(8) };
+  if (b.length > 4 && b[0] === 0xff && b[1] === 0xd8) {
+    for (let i = 2; i + 9 < b.length;) {
+      if (b[i] !== 0xff) { i++; continue; }
+      const marker = b[i + 1], len = b.readUInt16BE(i + 2);
+      if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) return { width: b.readUInt16BE(i + 7), height: b.readUInt16BE(i + 5) };
+      i += 2 + len;
+    }
+  }
+  return null;
 }
 
 // ---------- commands ----------
@@ -316,13 +339,19 @@ switch (cmd) {
         const page = await prerender(pathToFileURL(join(outDir, "app.js")).href, base.slice(0, -1) + path);
         // The image path already carries the base (`/sub/og.png`), and so does --site (`https://x.io/sub`).
         let head = site ? page.head.replace(/(property="og:image" content=")(\/[^"]*)/, (_m: string, attr: string, p: string) => `${attr}${site}${p.startsWith(base) ? "/" + p.slice(base.length) : p}`) : page.head;
+        // og:image:width/height, read from the image in public/ (PNG, JPEG, GIF), for link previews.
+        const img = /property="og:image" content="(\/[^"]*)"/.exec(page.head)?.[1];
+        if (img && !/property="og:image:width"/.test(head)) {
+          const size = imageSize(join(projectRoot(target), "public", img.startsWith(base) ? img.slice(base.length) : img.slice(1)));
+          if (size) head += `<meta property="og:image:width" content="${size.width}"><meta property="og:image:height" content="${size.height}">`;
+        }
         if (site && indexed) {
           const url = urlOf(path).replace(/"/g, "%22");
           const card = /property="og:image"/.test(head) ? "summary_large_image" : "summary";
           head += `<link rel="canonical" href="${url}"><meta property="og:url" content="${url}"><meta property="og:type" content="website">`;
           if (!/name="twitter:card"/.test(head)) head += `<meta name="twitter:card" content="${card}">`;
         }
-        return htmlShell(page.title || "ArtScript", shellHead + head, page.html, true, base);
+        return htmlShell(page.title || "ArtScript", shellHead + head, page.html, true, base, page.lang || shellLang);
       };
       for (const path of paths) {
         const file = path === "/" ? join(outDir, "index.html") : join(outDir, path, "index.html");

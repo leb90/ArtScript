@@ -98,16 +98,22 @@ export function printStmt(s: Stmt): string {
 const WIDTH = 100;
 // An arrow whose block has several statements (or a control statement) always breaks.
 const multi = (e: Expr): boolean => e.kind === "Arrow" && Array.isArray(e.body) && (e.body.length > 1 || e.body.some((s) => s.kind !== "ExprStmt" && s.kind !== "Return"));
-// Also kept over lines: an object or array written with a line break after its bracket (as the
-// author laid it out), and anything holding one.
+// Also kept over lines: an object or array written with a line break after its bracket, an arrow
+// whose block was written over lines (as the author laid them out), and anything holding one.
 const forced = (e: Expr): boolean => {
   if (multi(e)) return true;
+  if (e.kind === "Arrow") return Array.isArray(e.body) ? !!e.multiline && e.body.length > 0 : forced(e.body);
   if (e.kind === "Object") return (!!e.multiline && e.props.length > 0) || e.props.some((p) => !("spread" in p) && forced(p.value));
   if (e.kind === "Array") return (!!e.multiline && e.items.length > 0) || e.items.some(forced);
-  if (e.kind === "Call") return e.args.length > 0 && forced(e.args[e.args.length - 1]);
+  if (e.kind === "Call") return forced(e.callee) || e.args.some(forced);
+  if (e.kind === "Member" || e.kind === "Index") return forced(e.object);
+  if (e.kind === "Unary") return forced(e.arg);
   if (e.kind === "Assign") return forced(e.value);
   return false;
 };
+// Lines of an operand that binds looser than `min` go in parentheses, as `wrap` does on one line
+// (`(() => { ... })()`).
+const parens = (e: Expr, min: number, ls: string[]) => (prec(e) < min ? ["(" + ls[0], ...ls.slice(1, -1), ...(ls.length > 1 ? [ls[ls.length - 1] + ")"] : [])].map((l, i, all) => (all.length === 1 && i === 0 ? l + ")" : l)) : ls);
 // `force`: break it even if it fits (an arrow that didn't fit breaks the object it returns).
 export function printExprLines(e: Expr, depth: number, force = false): string[] {
   const one = printExpr(e);
@@ -115,7 +121,8 @@ export function printExprLines(e: Expr, depth: number, force = false): string[] 
   const breaks = force || forced(e);
   if (!breaks && pad.length + one.length <= WIDTH) return [one];
   const inner = IND.repeat(depth + 1);
-  const entries = (items: string[][]) => items.flatMap((ls, i) => ls.map((l, j) => (j === 0 ? inner + l : l) + (j === ls.length - 1 && i < items.length - 1 ? "," : "")));
+  // One entry per line, separated by commas; `trailing`: the last one keeps the comma it was written with.
+  const entries = (items: string[][], trailing = false) => items.flatMap((ls, i) => ls.map((l, j) => (j === 0 ? inner + l : l) + (j === ls.length - 1 && (i < items.length - 1 || trailing) ? "," : "")));
   if (e.kind === "Object" && e.props.length) {
     const props = e.props.map((p) => {
       if ("spread" in p) return ["..." + printExpr(p.spread)];
@@ -124,21 +131,22 @@ export function printExprLines(e: Expr, depth: number, force = false): string[] 
       const [first, ...rest] = printExprLines(p.value, depth + 1);
       return [`${key}: ${first}`, ...rest];
     });
-    return ["{", ...entries(props), pad + "}"];
+    return ["{", ...entries(props, !!e.trailing), pad + "}"];
   }
   if (e.kind === "Array" && e.items.length) {
-    // A list of plain values (words, numbers) fills each line; anything else goes one item per line.
-    if (e.items.every((it) => ["Num", "Str", "Bool", "Null", "Ident"].includes(it.kind))) {
+    // A list of plain values (words, numbers) fills each line, unless it was written one per line;
+    // anything else goes one item per line.
+    if (!e.onePerLine && e.items.every((it) => ["Num", "Str", "Bool", "Null", "Ident"].includes(it.kind))) {
       const lines: string[] = [];
       for (const it of e.items.map(printExpr)) {
         const last = lines[lines.length - 1];
         if (last !== undefined && last.length + 1 + it.length + 1 <= WIDTH) lines[lines.length - 1] = `${last} ${it},`;
         else lines.push(`${inner}${it},`);
       }
-      lines[lines.length - 1] = lines[lines.length - 1].slice(0, -1);
+      if (!e.trailing) lines[lines.length - 1] = lines[lines.length - 1].slice(0, -1);
       return ["[", ...lines, pad + "]"];
     }
-    return ["[", ...entries(e.items.map((it) => printExprLines(it, depth + 1))), pad + "]"];
+    return ["[", ...entries(e.items.map((it) => printExprLines(it, depth + 1)), !!e.trailing), pad + "]"];
   }
   if (e.kind === "Arrow") {
     const ps = e.params.length === 1 && !/^[{[]/.test(e.params[0]) ? e.params[0] : `(${e.params.join(", ")})`;
@@ -146,13 +154,31 @@ export function printExprLines(e: Expr, depth: number, force = false): string[] 
     const [first, ...rest] = printExprLines(e.body, depth, e.body.kind === "Object" && e.body.props.length > 0);
     return e.body.kind === "Object" && rest.length ? [`${ps} => (${first}`, ...rest.slice(0, -1), rest.at(-1) + ")"] : [`${ps} => ${e.body.kind === "Object" ? `(${first})` : first}`, ...rest];
   }
-  if (e.kind === "Call" && e.args.length) {
-    const last = e.args[e.args.length - 1];
-    if (last.kind === "Object" || last.kind === "Array" || last.kind === "Arrow") {
-      const head = wrap(e.callee, 10) + (e.optional ? "?.(" : "(") + e.args.slice(0, -1).map((a) => printExpr(a) + ", ").join("");
-      const [first, ...rest] = printExprLines(last, depth);
-      if (rest.length) return [head + first, ...rest.slice(0, -1), rest.at(-1) + ")"];
-    }
+  // `await f(...)`, `new X(...)`: the operand's lines, the word in front.
+  if (e.kind === "Unary" && (e.op === "await" || e.op === "new" || e.op === "typeof") && prec(e.arg) >= 9) {
+    const ls = printExprLines(e.arg, depth, force);
+    if (ls.length > 1) return [`${e.op} ${ls[0]}`, ...ls.slice(1)];
+  }
+  // `[...].join("\n")`: the object's lines, the member after its last one.
+  if ((e.kind === "Member" || e.kind === "Index") && forced(e.object)) {
+    const ls = parens(e.object, 10, printExprLines(e.object, depth));
+    const tail = e.kind === "Member" ? (e.optional ? "?." : ".") + e.prop : (e.optional ? "?.[" : "[") + printExpr(e.index) + "]";
+    return [...ls.slice(0, -1), ls[ls.length - 1] + tail];
+  }
+  // A call hugs its arguments: each one continues the line, and one written over lines (or that
+  // doesn't fit by itself) breaks in place: `f(a, {` ... `})`, `new X(e => {` ... `}, opts)`.
+  if (e.kind === "Call") {
+    const out = forced(e.callee) ? parens(e.callee, 10, printExprLines(e.callee, depth)) : [wrap(e.callee, 10)];
+    out[out.length - 1] += e.optional ? "?.(" : "(";
+    e.args.forEach((a, i) => {
+      const last = i === e.args.length - 1;
+      const ls = printExprLines(a, depth);
+      out[out.length - 1] += ls[0];
+      out.push(...ls.slice(1));
+      if (!last) out[out.length - 1] += ", ";
+    });
+    out[out.length - 1] += ")";
+    if (out.length > 1) return out;
   }
   if (e.kind === "Assign") {
     const [first, ...rest] = printExprLines(e.value, depth);
@@ -178,13 +204,19 @@ export function printBlockInline(stmts: Stmt[]): string {
 
 const IND = "  ";
 
+// Declarations are separated by a blank line, unless they were written right under each other.
 export function printProgram(p: Program): string {
-  const decls = p.decls.map((d) => [...before(d, ""), printDecl(d), ...after(d, "")].join("\n"));
-  return [...decls, ...(p.comments ? [p.comments.join("\n")] : [])].join("\n\n") + "\n";
+  let out = "";
+  p.decls.forEach((d, i) => {
+    if (i > 0) out += (d as Commented).gap === false ? "\n" : "\n\n";
+    out += [...before(d, ""), printDecl(d), ...after(d, "")].join("\n");
+  });
+  if (p.comments) out += (out ? "\n\n" : "") + p.comments.join("\n");
+  return out + "\n";
 }
 
 // A node's comments, each line at the node's indentation (a block comment keeps its inner lines).
-const commentLines = (c: string[] | undefined, pad: string) => (c ?? []).map((t) => pad + t);
+const commentLines = (c: string[] | undefined, pad: string) => (c ?? []).map((t) => (t === "" ? "" : pad + t));
 const before = (n: object, pad: string) => commentLines((n as Commented).comments, pad);
 const after = (n: object, pad: string) => commentLines((n as Commented).after, pad);
 // `lines` of a node, wrapped in its comments.
@@ -246,6 +278,7 @@ export function printDecl(d: Decl): string {
     else if (m.kind === "Mount" || m.kind === "Effect") lines.push(`${IND}${m.name} {`, ...printStmts(m.body, 2), `${IND}}`);
     else if (m.kind === "Fn") lines.push(`${IND}fn ${m.name}(${printParams(m)}) {`, ...printStmts(m.body, 2), `${IND}}`);
     else if (m.kind === "Style") lines.push(`${IND}style {`, ...cssLines(m.css, IND.repeat(2)), `${IND}}`);
+    if (out.length && (m as Commented).gap && out[out.length - 1] !== "") out.push(""); // a blank line the author left
     out.push(...withComments(m, IND, lines));
   }
   if (out.length && view.length) out.push("");
@@ -257,6 +290,7 @@ export function printStmts(stmts: Stmt[], depth: number): string[] {
   const pad = IND.repeat(depth);
   const out: string[] = [];
   for (const s of stmts) {
+    if (out.length && (s as Commented).gap && out[out.length - 1] !== "") out.push(""); // a blank line the author left
     const start = out.length;
     printStmt1(s, depth, pad, out);
     out.splice(start, 0, ...before(s, pad));
@@ -315,6 +349,7 @@ export function printView(nodes: ViewNode[], depth: number): string[] {
   const pad = IND.repeat(depth);
   const out: string[] = [];
   for (const n of nodes) {
+    if (out.length && (n as Commented).gap && out[out.length - 1] !== "") out.push(""); // a blank line the author left
     const start = out.length;
     printNode(n, depth, pad, out);
     out.splice(start, 0, ...before(n, pad));

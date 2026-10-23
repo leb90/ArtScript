@@ -584,3 +584,42 @@ test("tabindex is written as an attribute, literal or dynamic", () => {
   assert.match(r.js!, /\$\.\$attr\(e\d+, "tabindex", \(\) => n\.v\)/);
   assert.doesNotMatch(r.js!, /\.tabindex = /);
 });
+
+test("meta: lang follows the page; a page's JSON-LD leaves with it; a prerendered one is taken over, not doubled", async () => {
+  const src = 'page Home "/" {\n  meta lang="es" jsonld=({ "@type": "Store", name: "Club" })\n  link "about" to="/about"\n}\n\npage About "/about" {\n  meta title="About"\n  text "About"\n}\n';
+  const r = compile([{ file: "app.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  const dir = mkdtempSync(join(tmpdir(), "art-meta-"));
+  writeFileSync(join(dir, "app.js"), r.js!);
+  copyFileSync(new URL("../runtime/runtime.js", import.meta.url), join(dir, "runtime.js"));
+  GlobalRegistrator.register({ url: "http://localhost/" });
+  try {
+    document.documentElement.setAttribute("lang", "en");
+    // As the prerendered page left it.
+    document.head.innerHTML = '<script type="application/ld+json" data-art-jsonld="">{"@type":"Store","name":"Club"}</script>';
+    document.body.innerHTML = '<div id="app"></div>';
+    const app = await import(pathToFileURL(join(dir, "app.js")).href);
+    app.start(document.getElementById("app"));
+    await new Promise((ok) => setTimeout(ok, 10));
+    assert.equal(document.documentElement.getAttribute("lang"), "es");
+    assert.equal(document.querySelectorAll("script[data-art-jsonld]").length, 1);
+    const rt = await import(pathToFileURL(join(dir, "runtime.js")).href);
+    rt.navigate("/about");
+    await new Promise((ok) => setTimeout(ok, 10));
+    assert.equal(document.documentElement.getAttribute("lang"), "en", "back to the shell's language");
+    assert.equal(document.querySelectorAll("script[data-art-jsonld]").length, 0);
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+});
+
+test("title and text take inline children; enum words and form attributes; bad values are errors with the fix", () => {
+  const ok = compile([{ file: "t.art", src: 'page P {\n  state q = ""\n  title tag=h1 { text "Hola "; text "mundo" class="hl" }\n  text "Total: " { text "3" bold }\n  input q placeholder="Search" autocomplete="off" inputmode=search name="q"\n  image "/a.png" alt="a" loading=eager srcset="/a.png 1x, /a@2x.png 2x" sizes="100vw"\n}' }]);
+  assert.deepEqual(ok.diagnostics, []);
+  assert.match(ok.js!, /setAttribute\("inputmode", "search"\)/);
+  assert.match(ok.js!, /setAttribute\("srcset", "\/a.png 1x, \/a@2x.png 2x"\)/);
+  const [bad] = check(parse('page P {\n  image "/a.png" alt="a" loading=lazzy\n}', "t"));
+  assert.deepEqual([bad.type, bad.fixes], ["TYPE_MISMATCH", ["lazy"]]);
+  const [meta] = check(parse('page P {\n  meta titel="x"\n}', "t"));
+  assert.deepEqual([meta.type, meta.fixes?.[0]], ["UNKNOWN_PROP", "title"]);
+});
