@@ -95,7 +95,7 @@ page Sim "/" {
     }
     row gap=2 {
       button "Agregar" -> balls.push(make())
-      button paused ? "Reanudar" : "Pausar" -> paused = !paused
+      button (paused ? "Reanudar" : "Pausar") -> paused = !paused
       button "Reiniciar" -> reset()
     }
   }

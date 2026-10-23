@@ -160,7 +160,7 @@ module.exports = grammar({
     block: ($) => prec.dynamic(1, seq("{", repeat($._statement), "}")),
 
     _statement: ($) => choice(
-      seq(choice($.let_statement, $.return_statement, $.break_statement, $.continue_statement, $.expression_statement), $._terminator),
+      seq(choice($.let_statement, $.return_statement, $.throw_statement, $.break_statement, $.continue_statement, $.expression_statement), $._terminator),
       $.if_statement,
       $.for_statement,
       $.loop_statement,
@@ -170,6 +170,7 @@ module.exports = grammar({
     ),
     let_statement: ($) => seq(choice("let", "const"), field("name", $._binding), "=", field("value", $._expression)),
     return_statement: ($) => prec.right(seq("return", optional($._expression))),
+    throw_statement: ($) => seq("throw", $._expression),
     break_statement: ($) => "break",
     continue_statement: ($) => "continue",
     expression_statement: ($) => $._expression,

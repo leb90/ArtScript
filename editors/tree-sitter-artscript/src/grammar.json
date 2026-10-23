@@ -2368,6 +2368,10 @@
                 },
                 {
                   "type": "SYMBOL",
+                  "name": "throw_statement"
+                },
+                {
+                  "type": "SYMBOL",
                   "name": "break_statement"
                 },
                 {
@@ -2474,6 +2478,19 @@
           }
         ]
       }
+    },
+    "throw_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "throw"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_expression"
+        }
+      ]
     },
     "break_statement": {
       "type": "STRING",

@@ -2,6 +2,15 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## 0.2.15 (2026-10-23)
+
+From a report on an app built with 0.2.14:
+
+- `art fmt` keeps `const` as written (at the top level or in a component; it reads like a `computed`, as before), instead of rewriting it as `computed`. A `let` member is still written `computed`.
+- `art fmt` keeps an object or array written with a line break after its bracket over several lines (one entry per line), and anything holding one; before, every literal that fit in 100 columns was joined into one line.
+- `throw` is a statement (`throw new Error("...")`): it was an unknown name, and `art fmt` split `throw new Error(...)` into two lines, changing the code. Like `return`, it ends a branch for null narrowing.
+- `art build --prerender --base /sub --site https://host/sub`: `og:image` had the base twice (`/sub/sub/og.png`). Canonical addresses and the sitemap were already right.
+
 ## 0.2.14 (2026-10-20)
 
 - `art build --prerender --site <url>`: every page gets its canonical address, `og:url`, `og:type` and a `twitter:card` (large when the page has an image); the sitemap lists addresses ending in `/` (the form static hosts serve without a redirect; before, every sitemap URL answered 301 on GitHub Pages) with the build date as `lastmod`; the not-found page is not given a canonical address.

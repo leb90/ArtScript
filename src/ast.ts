@@ -79,7 +79,7 @@ export type Member = StateDecl | ComputedDecl | FnDecl | DataDecl | RefDecl | Ho
 // `style { .box { ... } }`: CSS that only applies to this component's elements.
 export type StyleDecl = { kind: "Style"; name: "style"; css: string; loc: Loc };
 export type StateDecl = { kind: "State"; name: string; type: TypeRef | null; init: Expr; loc: Loc };
-export type ComputedDecl = { kind: "Computed"; name: string; expr: Expr; loc: Loc };
+export type ComputedDecl = { kind: "Computed"; name: string; expr: Expr; keyword?: "const"; loc: Loc }; // keyword: written `const` (fmt keeps it)
 // `defaults[i]`: default value of params[i] (`fn sort(asc = true)`), when any param has one.
 export type FnDecl = { kind: "Fn"; name: string; params: string[]; defaults?: (Expr | null)[]; body: Stmt[]; loc: Loc };
 // `data users = api.users.list()`: async value, loaded on mount and reloaded when its api changes.
@@ -120,6 +120,7 @@ export type Stmt =
   | { kind: "Let"; name: string; init: Expr; loc: Loc }
   | { kind: "If"; cond: Expr; then: Stmt[]; else: Stmt[] | null; loc: Loc }
   | { kind: "Return"; value: Expr | null; loc: Loc }
+  | { kind: "Throw"; value: Expr; loc: Loc }
   | { kind: "Try"; body: Stmt[]; param: string | null; handler: Stmt[]; finally?: Stmt[]; rethrow?: boolean; loc: Loc }
   | { kind: "While"; cond: Expr; body: Stmt[]; loc: Loc }
   | { kind: "Break"; loc: Loc }
@@ -147,8 +148,8 @@ export type Expr =
   | { kind: "Binary"; op: string; left: Expr; right: Expr; loc: Loc }
   | { kind: "Cond"; test: Expr; then: Expr; else: Expr; loc: Loc }
   | { kind: "Assign"; op: string; target: Expr; value: Expr; loc: Loc }
-  | { kind: "Array"; items: Expr[]; loc: Loc }
-  | { kind: "Object"; props: ObjProp[]; loc: Loc }
+  | { kind: "Array"; items: Expr[]; multiline?: boolean; loc: Loc } // multiline: written with a line break after `[`
+  | { kind: "Object"; props: ObjProp[]; multiline?: boolean; loc: Loc }
   | { kind: "Arrow"; params: string[]; body: Expr | Stmt[]; loc: Loc }
   | { kind: "Spread"; arg: Expr; loc: Loc }
   // `/^\d+$/i`, kept as written.

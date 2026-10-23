@@ -93,3 +93,14 @@ page Missing "*" {
   // The mount's async failure and browser-only calls didn't stop the build; @import comes first in app.css.
   assert.match(readFileSync(join(dir, "dist", "app.css"), "utf8"), /^@import url\("https:\/\/fonts.example[^\n]*;\n@layer art\{/);
 });
+
+test("prerender: with --base and --site, og:image has the base once", () => {
+  const dir = mkdtempSync(join(tmpdir(), "art-pre3-"));
+  mkdirSync(join(dir, "public"));
+  writeFileSync(join(dir, "public", "og.png"), "png");
+  writeFileSync(join(dir, "app.art"), 'page Home "/" {\n  meta title="Home" image="/og.png"\n  text "hi"\n}\n');
+  execFileSync(process.execPath, ["src/cli.ts", "build", dir, "--prerender", "--base", "/club", "--site", "https://x.example/club"], { stdio: "pipe" });
+  const home = readFileSync(join(dir, "dist", "index.html"), "utf8");
+  assert.match(home, /property="og:image" content="https:\/\/x.example\/club\/og.png"/);
+  assert.match(home, /rel="canonical" href="https:\/\/x.example\/club\/"/);
+});

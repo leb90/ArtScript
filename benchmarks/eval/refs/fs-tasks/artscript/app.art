@@ -19,7 +19,7 @@ component TaskRow(task: Task) {
       input draft placeholder="Nuevo título"
       button "Guardar" primary -> save()
     } else {
-      text task.done ? `${task.title} (hecha)` : task.title
+      text (task.done ? `${task.title} (hecha)` : task.title)
       if !task.done {
         button "Hecha" small -> api.tasks.update(task.id, { done: true })
       }

@@ -9,7 +9,8 @@ import { printExpr } from "../src/printer.ts";
 import { compile } from "../src/compile.ts";
 import { check } from "../src/checker.ts";
 
-const noLoc = (x: unknown) => JSON.parse(JSON.stringify(x, (k, v) => (k === "loc" ? undefined : v)));
+// Layout (where a node was and whether it was written over lines) isn't part of the program.
+const noLoc = (x: unknown) => JSON.parse(JSON.stringify(x, (k, v) => (k === "loc" || k === "multiline" ? undefined : v)));
 
 test("lexer: basic tokens, long operators and newlines", () => {
   const t = lex("count++ -> a === b\nx", "t").map((x) => x.v);
@@ -230,4 +231,43 @@ test("break, continue and bitwise operators: parsed, canonical, compiled; break 
   const [e] = check(parse('page P {\n  fn f() {\n    break\n  }\n  text "x"\n}', "t"));
   assert.equal(e.type, "BREAK_OUTSIDE_LOOP");
   assert.deepEqual(e.fixes, ["remove `break`", "use `return` to leave a fn"]);
+});
+
+test("fmt keeps `const` and objects or arrays written over several lines; short one-line ones stay on one", () => {
+  const src = `const PRODUCTS = [
+  { id: 1, name: "Chipa" },
+  { id: 2, name: "Mate" }
+]
+
+const OPTIONS = {
+  size: "M",
+  color: "red"
+}
+
+const SHORT = { a: 1, b: 2 }
+
+page P {
+  const total = PRODUCTS.length
+  let double = total * 2
+  fn save() {
+    let body = {
+      size: OPTIONS.size
+    }
+    return body
+  }
+
+  text total
+}
+`;
+  const out = printProgram(parse(src, "f"));
+  assert.equal(out, src.replace("  let double = total * 2", "  computed double = total * 2"));
+  assert.equal(printProgram(parse(out, "f")), out, "idempotent");
+});
+
+test("throw is a statement: parsed, checked, compiled, printed; it ends a branch for narrowing", () => {
+  const src = 'page P {\n  state n: Number? = null\n  fn check() {\n    if n == null {\n      throw new Error("no value")\n    }\n    return n + 1\n  }\n\n  text "x"\n}\n';
+  assert.equal(printProgram(parse(src, "f")), src);
+  const r = compile([{ file: "a.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  assert.match(r.js!, /throw \(?new Error\("no value"\)\)?;/);
 });

@@ -23,7 +23,7 @@ page Shopping "/" {
     }
     for i in items {
       row gap=2 {
-        text i.bought ? `${i.name} ✓` : i.name
+        text (i.bought ? `${i.name} ✓` : i.name)
         button "Comprado" small -> api.items.update(i.id, { bought: true })
         button "Borrar" small -> api.items.remove(i.id)
       }

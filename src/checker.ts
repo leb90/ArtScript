@@ -914,6 +914,7 @@ class Checker {
         // `let b = null` is a slot for a value that comes later: anything may be assigned to it.
         if (names[0] === s.name) scope.vars.set(s.name, { kind: "let", ty: ty.k === "null" ? ANY : ty });
       }
+      else if (s.kind === "Throw") this.infer(s.value, scope);
       else if (s.kind === "Return") {
         const t = s.value ? this.infer(s.value, scope) : { k: "void" as const };
         this.returns?.push(t);
@@ -960,7 +961,7 @@ class Checker {
         // Early exit (`if !x { return }`): the rest of the block runs only when the condition was false.
         const last = s.then[s.then.length - 1];
         // `fail(...)` (server fns) never returns either.
-        const exits = last?.kind === "Return" || (last?.kind === "ExprStmt" && last.expr.kind === "Call" && last.expr.callee.kind === "Ident" && last.expr.callee.name === "fail");
+        const exits = last?.kind === "Return" || last?.kind === "Throw" || (last?.kind === "ExprStmt" && last.expr.kind === "Call" && last.expr.callee.kind === "Ident" && last.expr.callee.name === "fail");
         if (!s.else && exits) this.applyNarrowing(s.cond, false, scope, scope);
       }
     }

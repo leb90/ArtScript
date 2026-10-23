@@ -154,8 +154,9 @@ test("every syntax error of a file is reported in one compile", () => {
 test("lists and objects with one item per line and no commas", () => {
   const src = 'page P "/" {\n  state rows = [\n    { id: 1, name: "a" }\n    { id: 2, name: "b" }\n  ]\n  fn add() {\n    rows.push({\n      id: 3\n      name: "c"\n    })\n  }\n\n  text rows.length\n}\n';
   assert.deepEqual(types(src), []);
-  assert.match(printProgram(parse(src, "t")), /state rows = \[\{ id: 1, name: "a" \}, \{ id: 2, name: "b" \}\]/);
-  assert.match(printProgram(parse(src, "t")), /rows\.push\(\{ id: 3, name: "c" \}\)/);
+  // fmt adds the commas and keeps the lines as written.
+  assert.match(printProgram(parse(src, "t")), /state rows = \[\n    \{ id: 1, name: "a" \},\n    \{ id: 2, name: "b" \}\n  \]/);
+  assert.match(printProgram(parse(src, "t")), /rows\.push\(\{\n      id: 3,\n      name: "c"\n    \}\)/);
 });
 
 test("for loops in functions: over a list, and JavaScript's forms", async () => {

@@ -1,5 +1,10 @@
 page Employees "/" {
-  state rows = [{ name: "Caro", age: 35 }, { name: "Ana", age: 30 }, { name: "Dani", age: 28 }, { name: "Beto", age: 25 }]
+  state rows = [
+    { name: "Caro", age: 35 },
+    { name: "Ana", age: 30 },
+    { name: "Dani", age: 28 },
+    { name: "Beto", age: 25 }
+  ]
   state filter = ""
   computed shown = rows.filter(r => r.name.toLowerCase().includes(filter.toLowerCase()))
 

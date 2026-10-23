@@ -494,6 +494,7 @@ class Parser {
     // `ref timer = null`: a variable, not an element: a `state` (fmt writes it that way).
     if (kw.v === "ref" && this.is("=")) kw.v = "state";
     if (kw.v === "ref") return { kind: "Ref", name, loc: kw.loc };
+    const asConst = kw.v === "const";
     if (kw.v === "let" || kw.v === "const") kw.v = "computed";
     if (kw.v === "computed" && this.eat(":")) this.type(); // `let total: Number = ...`: annotation dropped
     if (kw.v === "state") {
@@ -522,6 +523,7 @@ class Parser {
         this.next();
         return { kind: "Data", name, expr, live: true, loc: kw.loc };
       }
+      if (kw.v === "computed" && asConst) return { kind: "Computed", name, expr, keyword: "const", loc: kw.loc };
       return { kind: kw.v === "data" ? "Data" : "Computed", name, expr, loc: kw.loc };
     }
     const { params, defaults } = this.fnParams();
@@ -762,6 +764,10 @@ class Parser {
       this.next();
       return { kind: "Cleanup", body: this.block(), loc: t.loc };
     }
+    if (this.is("throw") && this.peek().t !== "nl") {
+      this.next();
+      return { kind: "Throw", value: this.expr(), loc: t.loc };
+    }
     if (this.is("return")) {
       this.next();
       const value = this.tok.t === "nl" || this.is("}") || this.is(";") ? null : this.expr();
@@ -971,6 +977,7 @@ class Parser {
       return e;
     }
     if (this.eat("[")) {
+      const open = this.toks[this.i - 1];
       const items: Expr[] = [];
       while (!this.is("]")) {
         items.push(this.spreadOrExpr());
@@ -979,11 +986,15 @@ class Parser {
         if (!this.eat(",") && !(this.tok.t !== "eof" && this.tok.loc.line > this.toks[this.i - 1].loc.line) && this.tok.t !== "str" && this.tok.t !== "num") break;
       }
       this.expect("]");
-      return { kind: "Array", items, loc };
+      // Written over several lines: fmt keeps it that way.
+      const multiline = items.length > 0 && items[0].loc.line > open.loc.line;
+      return { kind: "Array", items, ...(multiline ? { multiline } : {}), loc };
     }
     if (this.eat("{")) {
+      const open = this.toks[this.i - 1];
       const props: ObjProp[] = [];
       this.skipNl();
+      const multiline = !this.is("}") && this.tok.loc.line > open.loc.line;
       while (!this.is("}")) {
         if (this.eat("...")) props.push({ spread: this.expr() });
         else if (this.eat("[")) {
@@ -1005,7 +1016,7 @@ class Parser {
       }
       this.skipNl();
       this.expect("}");
-      return { kind: "Object", props, loc };
+      return { kind: "Object", props, ...(multiline ? { multiline } : {}), loc };
     }
     this.fail("an expression");
   }

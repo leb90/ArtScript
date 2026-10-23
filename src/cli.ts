@@ -314,7 +314,8 @@ switch (cmd) {
       const urlOf = (path: string) => `${site}${path === "/" ? "/" : path.replace(/\/?$/, "/")}`;
       const render = async (path: string, indexed = true) => {
         const page = await prerender(pathToFileURL(join(outDir, "app.js")).href, base.slice(0, -1) + path);
-        let head = site ? page.head.replace(/(property="og:image" content=")(\/[^"]*)/, `$1${site}$2`) : page.head;
+        // The image path already carries the base (`/sub/og.png`), and so does --site (`https://x.io/sub`).
+        let head = site ? page.head.replace(/(property="og:image" content=")(\/[^"]*)/, (_m: string, attr: string, p: string) => `${attr}${site}${p.startsWith(base) ? "/" + p.slice(base.length) : p}`) : page.head;
         if (site && indexed) {
           const url = urlOf(path).replace(/"/g, "%22");
           const card = /property="og:image"/.test(head) ? "summary_large_image" : "summary";

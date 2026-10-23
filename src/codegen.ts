@@ -758,6 +758,7 @@ class ComponentGen {
         const sig = this.signalOf(s.init, scope);
         for (const n of boundNames(s.name)) scope.vars.set(n, { kind: "let", sig });
       } else if (s.kind === "Return") this.emit(s.value ? `return ${this.expr(s.value, scope)};` : "return;");
+      else if (s.kind === "Throw") this.emit(`throw ${this.expr(s.value, scope)};`);
       else if (s.kind === "Break") this.emit("break;");
       else if (s.kind === "Continue") this.emit("continue;");
       else if (s.kind === "Loop") {
@@ -978,6 +979,7 @@ function hasAwait(stmts: Stmt[]): boolean {
     if (s.kind === "ExprStmt") return exprHasAwait(s.expr);
     if (s.kind === "Let") return exprHasAwait(s.init);
     if (s.kind === "Return") return s.value !== null && exprHasAwait(s.value);
+    if (s.kind === "Throw") return exprHasAwait(s.value);
     if (s.kind === "Break" || s.kind === "Continue") return false;
     if (s.kind === "Try") return hasAwait(s.body) || hasAwait(s.handler) || hasAwait(s.finally ?? []);
     if (s.kind === "While") return exprHasAwait(s.cond) || hasAwait(s.body);

@@ -57,7 +57,7 @@ test "destructured" {
 
 test("destructuring: canonical, checked and compiled", () => {
   // A top-level `const` is written as a `computed` (the canonical form of a derived value).
-  assert.equal(printProgram(parse(SRC, "t")), SRC.replace("const PRICES", "computed PRICES"));
+  assert.equal(printProgram(parse(SRC, "t")), SRC); // `const` stays `const`
   assert.deepEqual(check(parse(SRC, "t")).map((d) => d.msg), []);
   const js = compile([{ file: "a.art", src: SRC }]).js!;
   assert.match(js, /function label\(\{ name, city = "\?" \}\)/);

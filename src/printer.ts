@@ -75,6 +75,7 @@ export function printStmt(s: Stmt): string {
     case "ExprStmt": return printExpr(s.expr);
     case "Let": return `let ${s.name} = ${printExpr(s.init)}`;
     case "Return": return s.value ? `return ${printExpr(s.value)}` : "return";
+    case "Throw": return `throw ${printExpr(s.value)}`;
     case "Try": return `try ${printBlockInline(s.body)}${s.rethrow ? "" : ` catch${s.param ? ` (${s.param})` : ""} ${printBlockInline(s.handler)}`}${s.finally ? ` finally ${printBlockInline(s.finally)}` : ""}`;
     case "While": return `while ${printExpr(s.cond)} ${printBlockInline(s.body)}`;
     case "Break": return "break";
@@ -97,11 +98,21 @@ export function printStmt(s: Stmt): string {
 const WIDTH = 100;
 // An arrow whose block has several statements (or a control statement) always breaks.
 const multi = (e: Expr): boolean => e.kind === "Arrow" && Array.isArray(e.body) && (e.body.length > 1 || e.body.some((s) => s.kind !== "ExprStmt" && s.kind !== "Return"));
+// Also kept over lines: an object or array written with a line break after its bracket (as the
+// author laid it out), and anything holding one.
+const forced = (e: Expr): boolean => {
+  if (multi(e)) return true;
+  if (e.kind === "Object") return (!!e.multiline && e.props.length > 0) || e.props.some((p) => !("spread" in p) && forced(p.value));
+  if (e.kind === "Array") return (!!e.multiline && e.items.length > 0) || e.items.some(forced);
+  if (e.kind === "Call") return e.args.length > 0 && forced(e.args[e.args.length - 1]);
+  if (e.kind === "Assign") return forced(e.value);
+  return false;
+};
 // `force`: break it even if it fits (an arrow that didn't fit breaks the object it returns).
 export function printExprLines(e: Expr, depth: number, force = false): string[] {
   const one = printExpr(e);
   const pad = IND.repeat(depth);
-  const breaks = force || multi(e) || (e.kind === "Call" && e.args.length > 0 && multi(e.args[e.args.length - 1])) || (e.kind === "Assign" && multi(e.value));
+  const breaks = force || forced(e);
   if (!breaks && pad.length + one.length <= WIDTH) return [one];
   const inner = IND.repeat(depth + 1);
   const entries = (items: string[][]) => items.flatMap((ls, i) => ls.map((l, j) => (j === 0 ? inner + l : l) + (j === ls.length - 1 && i < items.length - 1 ? "," : "")));
@@ -155,6 +166,7 @@ function printStmtLines(s: Stmt, depth: number): string[] {
   if (s.kind === "ExprStmt") return at("", s.expr);
   if (s.kind === "Let") return at(`let ${s.name} = `, s.init);
   if (s.kind === "Return" && s.value) return at("return ", s.value);
+  if (s.kind === "Throw") return at("throw ", s.value);
   return [printStmt(s)];
 }
 
@@ -228,7 +240,7 @@ export function printDecl(d: Decl): string {
     const lines: string[] = [];
     const init = (head: string, e: Expr, tail = "") => { const [first, ...rest] = printExprLines(e, 1); lines.push(IND + head + first + (rest.length ? "" : tail), ...(rest.length ? [...rest.slice(0, -1), rest.at(-1) + tail] : [])); };
     if (m.kind === "State") init(`state ${m.name}${m.type ? `: ${printType(m.type)}` : ""} = `, m.init);
-    else if (m.kind === "Computed") init(`computed ${m.name} = `, m.expr);
+    else if (m.kind === "Computed") init(`${m.keyword ?? "computed"} ${m.name} = `, m.expr);
     else if (m.kind === "Data") init(`data ${m.name} = `, m.expr, m.live ? " live" : "");
     else if (m.kind === "Ref") lines.push(`${IND}ref ${m.name}`);
     else if (m.kind === "Mount" || m.kind === "Effect") lines.push(`${IND}${m.name} {`, ...printStmts(m.body, 2), `${IND}}`);
