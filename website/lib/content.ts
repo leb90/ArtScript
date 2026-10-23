@@ -139,6 +139,7 @@ How to work:
 - Write everything in \`.art\`: data, constants, helpers and formatting (\`Intl\`, \`Date\` and string methods cover most of it); when you do need an npm package, call it from \`.art\` too (\`use "pkg" { x }\`). Imperative code goes in a \`.ts\` file instead: code that drives the DOM or a canvas, or runs heavy loops (an animation or physics loop, canvas or WebGL drawing, a parser), and the wrapper of a library that owns its DOM (a map, a chart). Not in \`.ts\`: mock data, constants, date or money formatters, small wrappers around npm functions. What you import from \`.ts\` arrives as \`Any\`: the checker can't verify it, and \`art check\` warns (\`MODULE_COULD_BE_ART\`) when a module could be ArtScript.
 - After every change run \`npx art check --ai\`: one JSON line per error, each with expected, actual and fixes. Apply the fix; don't guess.
 - Read \`npx art context <Component>\` instead of whole files; prefer a small \`npx art patch\` over rewriting files.
+- Split the code into files from the start: every \`.art\` file in \`src/\` (subfolders too) is part of one program, with no imports. \`app.art\` keeps the pages, each putting its sections together; one component per file in \`src/components/\`; the data and constants people change (prices, texts, an email address) in \`src/config.art\`; the tests in \`src/tests.art\`. A one-screen app can stay in \`app.art\`.
 - Write test "..." { } blocks for the main flows and run \`npx art test\`.
 - Format with \`npx art fmt --write\`, run with \`npm run dev\`, ship with \`npx art build\`.
 

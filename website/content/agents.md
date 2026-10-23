@@ -24,6 +24,7 @@ Everything goes in `.art` (data, constants, helpers, formatting, calls to npm pa
 - read `ARTSCRIPT.md` before writing code, or `ARTSCRIPT-EDIT.md` to only change it;
 - check every change with `npx art check --ai`;
 - read `npx art context` instead of whole files;
+- split the code into files: the pages, one component per file, the data people change in `config.art`, the tests;
 - prefer a small `art patch` to rewriting files;
 - write `test` blocks and run `npx art test`.
 

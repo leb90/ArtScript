@@ -8,6 +8,7 @@ This project is written in ArtScript (`.art` files in `src/`). Read `ARTSCRIPT.m
 - Expressions are JavaScript; only the structure (`page`, `component`, `model`, `api`, `state`, `computed`, `data`, `fn`, the view) is ArtScript's own.
 - After every change run `npx art check --ai` and apply what it reports: each error has `expected`, `actual` and `fixes`.
 - Read `npx art context <Component>` instead of whole files; prefer a small `npx art patch` to rewriting files.
+- Split the code into files from the start: every `.art` file in `src/` (subfolders too) is part of one program, with no imports. `app.art` keeps the pages, each putting its sections together; one component per file in `src/components/`; the data and constants people change (prices, texts, an email address) in `src/config.art`; the tests in `src/tests.art`. A one-screen app can stay in `app.art`.
 - Write `test "..." { }` blocks for the main flows and run `npx art test`.
 - Format with `npx art fmt --write`; run with `npm run dev`; ship with `npx art build`.
 - If MCP is available, `npx art mcp` offers `art_spec`, `art_check`, `art_context` and `art_patch` as tools.

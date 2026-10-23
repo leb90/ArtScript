@@ -22,3 +22,14 @@ test("the .ts rule is the same in every copy an agent reads", () => {
     assert.doesNotMatch(text, /Measured: with this rule/, file);
   }
 });
+
+// How to lay out the files is in every copy of the agent loop (not in the specs, which describe
+// the language): the same words everywhere.
+const STRUCTURE = "Split the code into files from the start: every `.art` file in `src/` (subfolders too) is part of one program, with no imports. `app.art` keeps the pages, each putting its sections together; one component per file in `src/components/`; the data and constants people change (prices, texts, an email address) in `src/config.art`; the tests in `src/tests.art`. A one-screen app can stay in `app.art`.";
+
+test("the file structure rule is the same in every copy of the agent loop", () => {
+  for (const file of COPIES.filter((f) => !f.startsWith("docs/"))) {
+    const text = readFileSync(file, "utf8").replaceAll("\\`", "`");
+    assert.ok(text.includes(STRUCTURE), `${file} doesn't carry the structure rule word for word`);
+  }
+});
