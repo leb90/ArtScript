@@ -2,11 +2,6 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
-## Unreleased
-
-- A top-level `state` can start from a `const`, `computed` or `state` declared in another file. Files are read in alphabetical order, so `state cart = Object.fromEntries(PRODUCTS.map(...))` in `cart.art` failed when the app started (`Cannot read properties of undefined (reading 'v')`) with `PRODUCTS` in `config.art`, while `art check` passed. Top-level computeds and fns are now made first, and each state after the states its initial value reads.
-- The agent instructions (the prompt on the site, `AGENTS.md`, the Claude Code skill and the Cursor rule) tell agents to split an app into files from the start: pages in `app.art`, one component per file, the data people change in `config.art`, the tests in `tests.art`. `npx art upgrade` brings existing projects the new text.
-
 ## 0.2.15 (2026-10-23)
 
 From a report on an app built with 0.2.14:
@@ -15,6 +10,8 @@ From a report on an app built with 0.2.14:
 - `art fmt` keeps an object or array written with a line break after its bracket over several lines (one entry per line), and anything holding one; before, every literal that fit in 100 columns was joined into one line.
 - `throw` is a statement (`throw new Error("...")`): it was an unknown name, and `art fmt` split `throw new Error(...)` into two lines, changing the code. Like `return`, it ends a branch for null narrowing.
 - `art build --prerender --base /sub --site https://host/sub`: `og:image` had the base twice (`/sub/sub/og.png`). Canonical addresses and the sitemap were already right.
+- A top-level `state` can start from a `const`, `computed` or `state` declared in another file. Files are read in alphabetical order, so `state cart = Object.fromEntries(PRODUCTS.map(...))` in `cart.art` failed when the app started (`Cannot read properties of undefined (reading 'v')`) with `PRODUCTS` in `config.art`, while `art check` passed. Top-level computeds and fns are now made first, and each state after the states its initial value reads.
+- The agent instructions (the prompt on the site, `AGENTS.md`, the Claude Code skill and the Cursor rule) tell agents to split an app into files from the start: pages in `app.art`, one component per file, the data people change in `config.art`, the tests in `tests.art`. `npx art upgrade` brings existing projects the new text.
 
 ## 0.2.14 (2026-10-20)
 
