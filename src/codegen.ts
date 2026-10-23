@@ -1,5 +1,5 @@
 // Generates an ES module that builds the DOM directly (no virtual DOM) using runtime.js.
-import type { ApiAccess, ComponentDecl, ComputedDecl, FieldRules, Element, Expr, Loc, Member, Program, ServerFnDecl, Stmt, ViewNode } from "./ast.ts";
+import type { ApiAccess, ComponentDecl, ComputedDecl, FieldRules, Element, Expr, Loc, Member, Program, ServerFnDecl, SharedDecl, Stmt, ViewNode } from "./ast.ts";
 import { specifier } from "./modules.ts";
 import { boundNames, isPattern } from "./patterns.ts";
 import { printDecl, printType } from "./printer.ts";
@@ -59,6 +59,36 @@ function importLines(program: Program, onlyFor?: string, skip?: string): string[
   return out;
 }
 
+// The order top-level code runs in. A `computed` (a top-level `const` too) or a `fn` is only made,
+// not run, so those go first; a `state` runs its initial value right away, so it goes after the
+// states that value reads, directly or through computeds and fns. Source order isn't enough: files
+// are read in alphabetical order, and `cart.art` may start from what `config.art` declares.
+function initOrder(program: Program, shared: SharedDecl[]): SharedDecl[] {
+  const { uses } = serverShared(program);
+  const byName = new Map(shared.map((d) => [d.name, d]));
+  // The states a declaration reads, following the computeds and fns it reads.
+  const statesRead = (name: string, seen = new Set([name]), out = new Set<string>()) => {
+    for (const u of uses.get(name) ?? []) {
+      const d = byName.get(u);
+      if (!d || seen.has(u)) continue;
+      seen.add(u);
+      if (d.member.kind === "State") out.add(u);
+      else statesRead(u, seen, out);
+    }
+    return out;
+  };
+  const states: SharedDecl[] = [], placed = new Set<string>();
+  const place = (d: SharedDecl, visiting: Set<string>) => {
+    if (placed.has(d.name) || visiting.has(d.name)) return; // a cycle keeps source order
+    visiting.add(d.name);
+    for (const u of statesRead(d.name)) place(byName.get(u)!, visiting);
+    placed.add(d.name);
+    states.push(d);
+  };
+  for (const d of shared) if (d.member.kind === "State") place(d, new Set());
+  return [...shared.filter((d) => d.member.kind !== "State"), ...states];
+}
+
 // A page's layouts, outermost first. Without an explicit one, a page uses the only top-level layout
 // (one that isn't inside another), if there is exactly one.
 function layoutChain(program: Program, name: string | null | undefined): string[] {
@@ -89,7 +119,7 @@ export function generateMapped(program: Program, dev = false): { js: string; mar
   if (program.decls.some((d) => d.kind === "Auth")) out.push("const auth = $.$auth();", "");
   if (program.decls.some((d) => d.kind === "ServerFn")) out.push("const server = $.$server();", "");
   sharedScope = new Scope(null);
-  const shared = program.decls.filter((d) => d.kind === "Shared");
+  const shared = initOrder(program, program.decls.filter((d) => d.kind === "Shared"));
   if (shared.length) {
     const g = new ComponentGen({ kind: "Component", page: false, name: "(shared)", path: null, params: [], members: [], view: [], loc: shared[0].loc });
     g.ind = 0;

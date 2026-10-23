@@ -97,3 +97,14 @@ page P {
   assert.match(d.msg, /'total' can't run on the server: it reads the state 'cart'/);
   assert.match(d.fixes![0], /parameter/);
 });
+
+// Files are read in alphabetical order (`cart.art` before `config.art`): a state's initial value runs
+// when the app starts, so it must find what it reads already made, whichever file declares it.
+test("a state can start from a const or a state declared in a later file", async () => {
+  const sources = [
+    { file: "app.art", src: `page Home "/" {\n  text \`\${Object.keys(cart).length} products, \${total} total\`\n}\n\ntest "starts" {\n  see "2 products, 42 total"\n}\n` },
+    { file: "cart.art", src: `state cart = Object.fromEntries(PRODUCTS.map(p => [p, 0]))\nstate total = doubled\n` },
+    { file: "config.art", src: `const PRODUCTS = ["a", "b"]\ncomputed doubled = base * 2\nstate base = 21\n` },
+  ];
+  assert.deepEqual(await runTests(sources), [{ name: 'test "starts"', ok: true }]);
+});
