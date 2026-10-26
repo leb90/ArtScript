@@ -2,6 +2,10 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## Unreleased
+
+- `art build --prerender`: links and `navigate` to the app's pages end in `/` (`/about/`, `/docs/?tab=cli`), the address of the `about/index.html` the build writes. Static hosts answered `/about` with a redirect, so every internal link cost a visitor a round trip and showed in Google Search Console as "Page with redirect". Files, api paths and pages with params keep the address as written; a build without `--prerender` is unchanged.
+
 ## 0.2.16 (2026-10-23)
 
 From building a Spanish-language static site with 0.2.15 (chipaclub, GitHub Pages, prerendered):

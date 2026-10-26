@@ -33,6 +33,14 @@ test("website: the ArtScript code in every guide is valid", () => {
   assert.deepEqual(problems, []);
 });
 
+test("website: every guide linked as Markdown (/md/<file>) is copied there by the build", () => {
+  const content = readFileSync("website/lib/content.ts", "utf8");
+  const copied = /^cp (.*) site\/md\/$/m.exec(readFileSync("website/build.sh", "utf8"))![1].split(" ");
+  const files = [...content.matchAll(/doc\("[^"]*", "[^"]*", "[^"]*", "[^"]*", "([^"]+\.md)"/g)].map((m) => m[1]);
+  assert.ok(files.length > 10);
+  assert.deepEqual(files.filter((f) => !copied.includes(f) && !(f.startsWith("website/content/") && copied.includes("website/content/*.md"))), []);
+});
+
 test("website: the tutorial's final app passes its test", async () => {
   const r = await runTests(sources("tests/fixtures/tutorial"));
   assert.ok(!("diagnostics" in r), JSON.stringify(r));

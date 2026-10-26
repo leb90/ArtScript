@@ -169,7 +169,7 @@ let shellHead = ""; // <head> tags every page of the project gets (the favicon, 
 let shellLang = "en"; // the language of the HTML shell (see defaultLang)
 // `demo` (art build --demo): the api, accounts and server fns are bundled in and run in the browser
 // (runtime/demo.js), so a full-stack app is published as static files.
-async function buildFiles(target: string, minify: boolean, maps: "inline" | "linked" | false = minify ? false : "inline", base = "/", dev = false, demo = false): Promise<{ files: Record<string, string>; server: ServerSchema | null } | { diagnostics: Diagnostic[] }> {
+async function buildFiles(target: string, minify: boolean, maps: "inline" | "linked" | false = minify ? false : "inline", base = "/", dev = false, demo = false, slash = false): Promise<{ files: Record<string, string>; server: ServerSchema | null } | { diagnostics: Diagnostic[] }> {
   const r = compile(sources(target), { dev });
   if (!r.js) return { diagnostics: r.diagnostics };
   const esbuild = await import("esbuild");
@@ -187,7 +187,7 @@ async function buildFiles(target: string, minify: boolean, maps: "inline" | "lin
     const out = await esbuild.build({
       // The bundle starts the app itself, so index.html has no inline script (a strict CSP works).
       // The .art source map goes in as an input map, so esbuild's map points back to the .art files.
-      stdin: { contents: demoEntry + r.js.replace('"./runtime.js"', JSON.stringify(RUNTIME)).replace('"./devtools.js"', JSON.stringify(DEVTOOLS)) + `\nif (!globalThis.__artSSR) start(undefined, ${JSON.stringify(base)});\n` + (maps && r.map ? `//# sourceMappingURL=data:application/json;base64,${Buffer.from(r.map).toString("base64")}\n` : ""), resolveDir: resolve(projectRoot(target)), loader: "js", sourcefile: "app.art.js" },
+      stdin: { contents: demoEntry + r.js.replace('"./runtime.js"', JSON.stringify(RUNTIME)).replace('"./devtools.js"', JSON.stringify(DEVTOOLS)) + `\nif (!globalThis.__artSSR) start(undefined, ${JSON.stringify(base)}${slash ? ", true" : ""});\n` + (maps && r.map ? `//# sourceMappingURL=data:application/json;base64,${Buffer.from(r.map).toString("base64")}\n` : ""), resolveDir: resolve(projectRoot(target)), loader: "js", sourcefile: "app.art.js" },
       // `import()` in a `use` module becomes its own chunk, loaded only when it runs.
       bundle: true, format: "esm", platform: "browser", write: false, minify, logLevel: "silent", sourcemap: maps || false,
       splitting: true, outdir: "/out", entryNames: "app", chunkNames: "chunks/[name]-[hash]",
@@ -345,7 +345,8 @@ switch (cmd) {
     const sitePath = (() => { try { return new URL(String(flag("--site") ?? "")).pathname; } catch { return ""; } })();
     const base = `/${((flag("--base") as string | undefined) ?? sitePath).replace(/^\/+|\/+$/g, "")}/`.replace("//", "/");
     const demo = flags.has("--demo");
-    const r = await buildFiles(target, true, flags.has("--sourcemap") ? "linked" : false, base, false, demo);
+    // --prerender: links to the app's pages end in `/`, the address of the files it writes.
+    const r = await buildFiles(target, true, flags.has("--sourcemap") ? "linked" : false, base, false, demo, flags.has("--prerender"));
     if ("diagnostics" in r) { report(r.diagnostics, false); process.exit(1); }
     mkdirSync(outDir, { recursive: true });
     for (const [f, s] of Object.entries(r.files)) {

@@ -148,7 +148,7 @@ export function generateMapped(program: Program, dev = false): { js: string; mar
     if (root) pages.push(`{ path: "/", comp: ${root.name} }`);
   }
   out.push(`export const routes = [${pages.join(", ")}];`);
-  out.push("export const start = (el, base) => $.start(routes, el, base);", "");
+  out.push("export const start = (el, base, slash) => $.start(routes, el, base, slash);", "");
   return { js: out.join("\n"), marks };
 }
 

@@ -887,7 +887,21 @@ export function $icon(parent, markup, size, label, cls) {
 let render = () => {};
 // An app served under a subpath (`art build --base /docs`): its own absolute URLs get the prefix.
 let base = "";
-export const withBase = (u) => (base && typeof u === "string" && u[0] === "/" && u[1] !== "/" && u !== base && !u.startsWith(base + "/") ? base + u : u);
+// A prerendered build writes each page as <path>/index.html, which static hosts serve at <path>/
+// and redirect <path> to: links and navigate() use that form for the app's pages, so no visitor
+// or crawler goes through a redirect. Files, api paths and pages with params stay as written.
+let pages = null;
+const pageForm = (u) => {
+  const m = pages && /^([^?#]*[^/?#])([?#].*)?$/.exec(u);
+  if (!m) return u;
+  const path = base && m[1].startsWith(base + "/") ? m[1].slice(base.length) : m[1];
+  return pages.some((re) => re.test(path)) ? `${m[1]}/${m[2] ?? ""}` : u;
+};
+export const withBase = (u) => {
+  if (typeof u !== "string" || u[0] !== "/" || u[1] === "/") return u;
+  u = pageForm(u);
+  return base && u !== base && !u.startsWith(base + "/") ? base + u : u;
+};
 export function navigate(to) {
   const url = new URL(withBase(to), location.href);
   // Another section of this same page (`/#plans`): as a browser does, it scrolls there; the page
@@ -917,8 +931,9 @@ function compileRoute(path) {
   return { re: new RegExp(`^${pattern}/?$`), keys };
 }
 
-export function start(routes, mount = document.getElementById("app"), prefix = "") {
+export function start(routes, mount = document.getElementById("app"), prefix = "", slash = false) {
   base = prefix.replace(/\/+$/, "");
+  pages = slash ? routes.filter((r) => r.path !== "*" && !r.path.includes(":")).map((r) => compileRoute(r.path).re) : null;
   // Motion runs only with JavaScript on: a prerendered page shows everything as it is.
   if (!globalThis.__artSSR && !globalThis.__artStatic) document.documentElement.classList?.add("a-motion");
   if (!apiBase) apiBase = base;

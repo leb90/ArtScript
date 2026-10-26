@@ -116,6 +116,34 @@ test("prerender: --site with a path implies --base; meta theme pins the page's c
   assert.deepEqual(types('page P {\n  meta theme="blue"\n}'), ["TYPE_MISMATCH"]);
 });
 
+test("prerender: links to the app's pages end in / (the address static hosts serve), in the HTML and once the app runs", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "art-slash-"));
+  const app = 'page Home "/" {\n  link "About" to="/about"\n  link "Plans" to="/about#plans"\n  link "Docs" to="/docs?tab=cli"\n  link "Post" to="/posts/1"\n  link "PDF" href="/guide.pdf"\n  link "Feed" href="/api/feed"\n  link "Top" to="/#top"\n}\n\npage About "/about" {\n  text "About"\n}\n\npage Docs "/docs" {\n  text "Docs"\n}\n\npage Post "/posts/:id" {\n  text params.id\n}\n';
+  writeFileSync(join(dir, "app.art"), app);
+  execFileSync(process.execPath, ["src/cli.ts", "build", dir, "--prerender", "--site", "https://x.example/club/"], { stdio: "pipe" });
+  const home = readFileSync(join(dir, "dist", "index.html"), "utf8");
+  const hrefs = (html: string) => [...html.matchAll(/<a href="([^"]*)"/g)].map((m) => m[1]);
+  const expected = ["/club/about/", "/club/about/#plans", "/club/docs/?tab=cli", "/club/posts/1", "/club/guide.pdf", "/club/api/feed", "/club/#top"];
+  assert.deepEqual(hrefs(home), expected);
+  GlobalRegistrator.register({ url: "https://x.example/club/" });
+  try {
+    const [, body] = /<body>(.*)<script/.exec(home)!;
+    document.body.innerHTML = body;
+    await import(pathToFileURL(join(dir, "dist", "app.js")).href);
+    await new Promise((ok) => setTimeout(ok, 20));
+    assert.deepEqual([...document.querySelectorAll("a")].map((a) => a.getAttribute("href")), expected);
+    (document.querySelector("a") as HTMLAnchorElement).click();
+    await new Promise((ok) => setTimeout(ok, 20));
+    assert.equal(location.pathname, "/club/about/");
+    assert.match(document.getElementById("app")!.textContent!, /About/);
+  } finally {
+    await GlobalRegistrator.unregister();
+  }
+  // A build that isn't prerendered keeps the links as written.
+  execFileSync(process.execPath, ["src/cli.ts", "build", dir], { stdio: "pipe" });
+  assert.match(readFileSync(join(dir, "dist", "app.js"), "utf8"), /__artSSR\|\|\w+\(void 0,"\/"\);/);
+});
+
 test("art check: in an app with a server, a fetch to another site or a remote @import warns CSP_BLOCKS", () => {
   const dir = mkdtempSync(join(tmpdir(), "art-csp-"));
   const app = 'server fn ping() {\n  return 1\n}\n\npage Home "/" {\n  fn send() {\n    fetch("https://forms.example/submit", { method: "POST" })\n  }\n  button "Send" -> send()\n}\n';
