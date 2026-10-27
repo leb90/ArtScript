@@ -17,5 +17,6 @@ benchmarks/eval/results/*.jsonl
 # Launch material (local)
 /LAUNCH.md
 
-# Packaged editor extension
+# Packaged editor extension and agent skill
 *.vsix
+skills/*.zip

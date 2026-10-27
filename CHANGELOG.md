@@ -2,6 +2,10 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
+## Unreleased
+
+- A standalone agent skill in the repository, `skills/artscript` (`SKILL.md` and the three specs in `references/`), for agents without an ArtScript project yet and for skill marketplaces: it starts a project with `npm create artscript` and then defers to the project's own copies. `npm run skill` refreshes its specs and packs `skills/artscript.zip`; a test fails while its specs are older than `docs/`. The npm package doesn't change.
+
 ## 0.2.17 (2026-10-26)
 
 - `art build --prerender`: links and `navigate` to the app's pages end in `/` (`/about/`, `/docs/?tab=cli`), the address of the `about/index.html` the build writes. Static hosts answered `/about` with a redirect, so every internal link cost a visitor a round trip and showed in Google Search Console as "Page with redirect". Files, api paths and pages with params keep the address as written; a build without `--prerender` is unchanged.

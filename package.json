@@ -67,6 +67,7 @@
     "eval:retries": "node benchmarks/eval/retries.ts",
     "eval:sizes": "node benchmarks/eval/sizes.ts",
     "site": "sh website/build.sh",
+    "skill": "sh scripts/skill.sh",
     "art": "node src/cli.ts",
     "prepack": "npm run build",
     "prepublishOnly": "node scripts/check-release.mjs && npm test && npm run typecheck"
