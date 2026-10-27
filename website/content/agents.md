@@ -32,8 +32,6 @@ After updating `@artscript/core`, run `npx art upgrade`: it refreshes these copi
 
 Cursor also gets `.cursor/rules/artscript.mdc`, a rule attached to every `.art` file, and Claude Code gets the skill `.claude/skills/artscript/SKILL.md`, loaded when it works on `.art` files. The project also recommends the ArtScript extension for VS Code and Cursor (`.vscode/extensions.json`): file icons, highlighting, snippets and live errors with fixes for the person reviewing the agent's work. If your agent uses another file (`.github/copilot-instructions.md`, `.windsurfrules`), copy the same text there.
 
-Before there's a project, the skill in [`skills/artscript`](https://github.com/leb90/ArtScript/tree/main/skills/artscript) teaches any agent that reads `SKILL.md` folders (Claude Code, Codex, Copilot, Cursor...) to start one and work in it: copy the folder into the agent's skills folder (`~/.claude/skills/` for Claude Code). It carries the specs of its version; inside a project, the project's own copies take over.
-
 ## MCP
 
 `art mcp` is an MCP server (stdio) with four tools:

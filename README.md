@@ -6,7 +6,7 @@
 npm create artscript@latest my-app
 ```
 
-Or copy [the prompt](https://artscript.dev/ai#prompt) into Claude Code, Cursor or Codex and let it do the rest, or give your agent [the ArtScript skill](skills/artscript) (a `SKILL.md` folder with the specs).
+Or copy [the prompt](https://artscript.dev/ai#prompt) into Claude Code, Cursor or Codex and let it do the rest.
 
 ```
 page Counter "/" {
