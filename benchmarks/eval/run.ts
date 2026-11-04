@@ -444,6 +444,7 @@ async function main() {
     let failed = 0;
     console.log = (...a: unknown[]) => { if (String(a[0]).startsWith("✗")) failed++; log(...a); };
     await dryRun();
+    if (STACK_IDS.includes("next")) removeAllBuilds();
     console.log = log;
     if (failed) { console.error(`\n${failed} failed`); process.exitCode = 1; }
     return;

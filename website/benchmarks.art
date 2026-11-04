@@ -1,17 +1,80 @@
 // The charts are drawn from the results table the eval writes into the README.
 use "./lib/content.ts" { RESULTS, IMPERATIVE, barWidth, resultsHtml, methodologyHtml }
 
-// ArtScript and Next.js on 2026-11-04, React on 2026-10-02: benchmarks/eval/results (tests/website.test.ts checks them).
+// USD per working result (solved runs / runs): benchmarks/eval/results, checked by tests/website.test.ts.
 const NEXT_ROWS = [
-  { tasks: "All 50 tasks", art: "$0.0093", next: "$0.0186", diff: "−50%", react: "$0.0178" },
   {
-    tasks: "Without a backend (41)",
-    art: "$0.0092",
-    next: "$0.0170",
-    diff: "−46%",
-    react: "$0.0162"
+    model: "Sonnet 5.5",
+    tasks: "All 50 tasks",
+    art: "$0.0093 (100/100)",
+    next: "$0.0186 (100/100)",
+    diff: "−50%",
+    react: "$0.0178 (100/100)"
   },
-  { tasks: "Full-stack (9)", art: "$0.0095", next: "$0.0261", diff: "−64%", react: "$0.0250" },
+  {
+    model: "Sonnet 5.5",
+    tasks: "Without a backend (41)",
+    art: "$0.0092 (82/82)",
+    next: "$0.0170 (82/82)",
+    diff: "−46%",
+    react: "$0.0162 (82/82)"
+  },
+  {
+    model: "Sonnet 5.5",
+    tasks: "Full-stack (9)",
+    art: "$0.0095 (18/18)",
+    next: "$0.0261 (18/18)",
+    diff: "−64%",
+    react: "$0.0250 (18/18)"
+  },
+  {
+    model: "Opus 5.5",
+    tasks: "All 50 tasks",
+    art: "$0.0220 (100/100)",
+    next: "$0.0403 (100/100)",
+    diff: "−45%",
+    react: "$0.0397 (99/99)"
+  },
+  {
+    model: "Opus 5.5",
+    tasks: "Without a backend (41)",
+    art: "$0.0210 (82/82)",
+    next: "$0.0349 (82/82)",
+    diff: "−40%",
+    react: "$0.0338 (82/82)"
+  },
+  {
+    model: "Opus 5.5",
+    tasks: "Full-stack (9)",
+    art: "$0.0265 (18/18)",
+    next: "$0.0652 (18/18)",
+    diff: "−59%",
+    react: "$0.0683 (17/17)"
+  },
+  {
+    model: "Haiku 4.5",
+    tasks: "All 50 tasks",
+    art: "$0.0088 (90/100)",
+    next: "$0.0123 (96/100)",
+    diff: "−29%",
+    react: "$0.0137 (88/100)"
+  },
+  {
+    model: "Haiku 4.5",
+    tasks: "Without a backend (41)",
+    art: "$0.0068 (77/82)",
+    next: "$0.0083 (80/82)",
+    diff: "−18%",
+    react: "$0.0099 (73/82)"
+  },
+  {
+    model: "Haiku 4.5",
+    tasks: "Full-stack (9)",
+    art: "$0.0207 (13/18)",
+    next: "$0.0326 (16/18)",
+    diff: "−37%",
+    react: "$0.0322 (15/18)"
+  },
 ]
 
 page Benchmarks "/benchmarks" {
@@ -46,10 +109,10 @@ page Benchmarks "/benchmarks" {
         }
       }
     }
-    text "Next.js was measured with Sonnet only. In that card, ArtScript and Next.js are from 2026-11-04 and the other stacks from 2026-10-02." muted small
+    text "Next.js was measured on 2026-11-04, with the three models, and so was ArtScript's Sonnet card. The other cells are from 2026-10-02." muted small
     card class="callout" gap=2 {
       text "Read the numbers honestly" bold
-      text "Two or three runs per task is an early signal, not a definitive benchmark. With the smallest model, Haiku, ArtScript solved fewer of the new-app tasks than React; on modifications of large projects with focused context it is close to even. The raw data of every run is in the repository, and anyone can reproduce it with npm run eval."
+      text "Two or three runs per task is an early signal, not a definitive benchmark. With the smallest model, Haiku, ArtScript solved fewer of the new-app tasks than React and Next.js (39/48, against 40/48 and 44/48). The raw data of every run is in the repository, and anyone can reproduce it with npm run eval."
     }
     card class="callout" gap=3 {
       text "Where it doesn't save: imperative code" bold
@@ -75,18 +138,21 @@ page Benchmarks "/benchmarks" {
       text "Four runs per cell (two full rounds), with the full spec and no project rules: here ArtScript cost more than React with every model. The breakdown showed why: the code was still a quarter shorter, but the model deliberated 650–1,600 extra tokens writing a less familiar syntax, and retried more. Then, measured apart (ArtScript only, two runs per model): with the project rule that puts the physics in a .ts file imported with use, and the core spec with a whole app as the example, every model wrote sim.ts + app.art at the first attempt with React-level thinking: Sonnet $0.0227 (React $0.0209), Opus $0.0618 (React $0.0634), Haiku $0.0084 (React $0.0110). New projects now carry that rule and the core spec. Then the core spec was measured on all 50 tasks (ArtScript cells, two runs): Sonnet $0.0092 against $0.0088 with the full spec, Haiku $0.0088 against $0.0088, Opus $0.0239 against $0.0220: the same results, no cheaper, so the full spec stays what new projects read first." class="body"
     }
     card class="callout" gap=3 {
-      text "Against Next.js: half the cost" bold
-      text "ArtScript and Next.js 16 measured on the same day (2026-11-04) with Sonnet 5.5: the same 50 tasks, two runs per task, and both solved 100/100. Next.js costs about the same as React, with or without a backend."
+      text "Against Next.js, with and without a backend" bold
+      text "Per working result, ArtScript cost 50% less than Next.js 16 with Sonnet, 45% less with Opus and 29% less with Haiku. Next.js costs about the same as React with Sonnet and Opus, also on the full-stack tasks: writing route handlers wasn't cheaper for the model than a hand-written Node server."
+      text "With Haiku, Next.js solved more tasks than ArtScript: 96/100 against 90/100, and 16/18 against 13/18 on the full-stack ones. It costs more per result, but it fails less with the smallest model. For real work, use Sonnet or Opus: both stacks solved every task with them." bold
       table {
         tr {
+          th "Model"
           th "USD per working result"
           th "ArtScript"
           th "Next.js"
           th "Difference"
-          th "React (2026-10-02)"
+          th "React"
         }
-        for r in NEXT_ROWS key r.tasks {
+        for r in NEXT_ROWS key `${r.model} ${r.tasks}` {
           tr {
+            td r.model
             td r.tasks
             td r.art bold
             td r.next
@@ -95,11 +161,12 @@ page Benchmarks "/benchmarks" {
           }
         }
       }
-      text "Every Next.js answer had to pass a real next build, a real next start served its route handlers, and the pages went through the same checks as every other stack, in a simulated browser with a small stand-in for Next's client router. Its apps ship about 147 KB of JavaScript (brotli, all of the build's client chunks), against about 8 KB."
-      text "Keep in mind: it's one model with two runs per task. The Next.js apps use route handlers and client components, with data in memory; Server Actions, and Server Components reading data directly, weren't measured." muted small
+      text "How it was measured: every Next.js answer had to pass a real next build, a real next start served its route handlers, and the pages went through the same checks as every other stack, in a simulated browser with a small stand-in for Next's client router. Its apps ship about 147 KB of JavaScript (brotli, all of the build's client chunks), against about 8 KB."
+      text "Keep in mind: Next.js and ArtScript's Sonnet cell are from 2026-11-04; ArtScript with Opus and Haiku and React are from 2026-10-02, when ArtScript's spec was shorter (with Sonnet that made it about 5% more expensive). Two runs per task. The Next.js apps use route handlers and client components, with data in memory; Server Actions, and Server Components reading data directly, weren't measured." muted small
       row gap=2 wrap {
-        link "Next.js raw data" href="https://github.com/leb90/ArtScript/blob/main/benchmarks/eval/results/2026-11-04T16-50-49-claude-sonnet-5-5.md" class="pill"
-        link "ArtScript raw data" href="https://github.com/leb90/ArtScript/blob/main/benchmarks/eval/results/2026-11-04T17-02-59-claude-sonnet-5-5.md" class="pill"
+        link "Sonnet raw data" href="https://github.com/leb90/ArtScript/blob/main/benchmarks/eval/results/2026-11-04T16-50-49-claude-sonnet-5-5.md" class="pill"
+        link "Opus raw data" href="https://github.com/leb90/ArtScript/blob/main/benchmarks/eval/results/2026-11-04T18-03-56-claude-opus-5-5.md" class="pill"
+        link "Haiku raw data" href="https://github.com/leb90/ArtScript/blob/main/benchmarks/eval/results/2026-11-04T17-56-39-claude-haiku-4-5.md" class="pill"
       }
     }
     card class="callout" gap=3 {

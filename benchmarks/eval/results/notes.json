@@ -46,5 +46,8 @@
   "2026-10-09T13-14-04-claude-haiku-4-5.json": "landing-motion, the round in the table (final harness: working IntersectionObserver, the count-up check waits for the number)",
   "2026-10-09T13-15-50-claude-opus-5-5.json": "landing-motion, the round in the table (final harness: working IntersectionObserver, the count-up check waits for the number)",
   "2026-11-04T17-02-59-claude-sonnet-5-5.json": "ArtScript again, with the spec as of the day Next.js was measured",
-  "2026-11-04T16-50-49-claude-sonnet-5-5.json": "Next.js 16, added to the measurement"
+  "2026-11-04T16-50-49-claude-sonnet-5-5.json": "Next.js 16, added to the measurement",
+  "2026-11-04T18-03-56-claude-opus-5-5.json": "Next.js 16, added to the measurement",
+  "2026-11-04T17-56-39-claude-haiku-4-5.json": "Next.js 16, added to the measurement; four of its runs were repeated after fixing three defects of the harness, which had failed them",
+  "2026-11-04T17-56-58-claude-haiku-4-5.json": "React's fs-products again: the simulated browser had rejected valid numbers with step=\"0.01\" and failed both runs"
 }

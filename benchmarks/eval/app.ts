@@ -13,7 +13,7 @@ import { compile } from "../../src/compile.ts";
 // @ts-ignore: runtime is plain JS
 import { createApi } from "../../runtime/server.js";
 import { compileVue, type Files, type Stack } from "./validate.ts";
-import { buildDir, nextBuild, NEXT_BIN, nextPlugin, nextSize, removeBuild, writeNextPages } from "./next-stack.ts";
+import { buildDir, nextBuild, NEXT_BIN, nextPlugin, nextSize, writeNextPages } from "./next-stack.ts";
 
 // Solid's JSX compiles to DOM code with its Babel preset (esbuild only knows React-style JSX).
 const solidJsx: esbuild.Plugin = {
@@ -238,6 +238,9 @@ export class Page {
     GlobalRegistrator.register({ url: path ? new URL(path, this.url).href : this.url });
     document.body.innerHTML = '<div id="app"></div>';
     canvasStub();
+    // happy-dom checks `step` with a float remainder (10 % 0.01 isn't 0), so a valid number blocks
+    // its form; a browser rounds. It failed apps that work (fs-products, with `step="0.01"`).
+    Object.defineProperty((window as any).ValidityState.prototype, "stepMismatch", { get: () => false, configurable: true });
     try {
       await import(`${pathToFileURL(this.bundlePath).href}?mount=${this.n++}`);
     } catch (e: any) {
@@ -390,7 +393,6 @@ export async function launch(stack: Stack, files: Files, fullstack: boolean): Pr
     server?.stop();
     if (GlobalRegistrator.isRegistered) await GlobalRegistrator.unregister();
     rmSync(dir, { recursive: true, force: true });
-    if (stack === "next") removeBuild(files);
   };
   try {
     const { path, size } = await bundle(stack, files, dir);

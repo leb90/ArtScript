@@ -293,7 +293,7 @@ const SCHEMA = {
       "@type": "SoftwareApplication",
       name: "ArtScript",
       alternateName: "Art Script",
-      description: "An open-source full-stack web framework and language designed for AI agents: apps built and changed for half the cost of React or Next.js, with about 8 KB of JavaScript.",
+      description: "An open-source full-stack web framework and language designed for AI agents: with Claude Sonnet or Opus, apps built and changed for about half the cost of React or Next.js, with about 8 KB of JavaScript.",
       url: "https://artscript.dev/",
       applicationCategory: "DeveloperApplication",
       operatingSystem: "Node.js 24, any modern browser",

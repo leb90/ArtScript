@@ -5,7 +5,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { behave } from "./behavior.ts";
-import { readTree } from "./next-stack.ts";
+import { readTree, removeAllBuilds } from "./next-stack.ts";
 import { TASKS } from "./tasks.ts";
 import { validate, type Stack } from "./validate.ts";
 
@@ -27,4 +27,5 @@ for (const id of ids.length ? ids : readdirSync(refs)) {
     console.log(`${errs.length ? "✗" : "✓"} ${id}/${stack}${errs.length ? ": " + errs[0] : ""}`);
   }
 }
+if (stacks.includes("next")) removeAllBuilds();
 if (failed) process.exitCode = 1;

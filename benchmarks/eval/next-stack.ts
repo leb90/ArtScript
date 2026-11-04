@@ -25,10 +25,10 @@ export const SCAFFOLD: Files = {
   "tsconfig.json": JSON.stringify({
     compilerOptions: {
       target: "ES2017", lib: ["dom", "dom.iterable", "esnext"], allowJs: true, skipLibCheck: true, strict: true, noEmit: true, esModuleInterop: true,
-      module: "esnext", moduleResolution: "bundler", resolveJsonModule: true, isolatedModules: true, jsx: "preserve", incremental: true,
+      module: "esnext", moduleResolution: "bundler", resolveJsonModule: true, isolatedModules: true, jsx: "react-jsx", incremental: true,
       plugins: [{ name: "next" }], paths: { "@/*": ["./*"] },
     },
-    include: ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+    include: ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
     exclude: ["node_modules"],
   }, null, 2),
   "next.config.mjs": `export default { images: { unoptimized: true }, turbopack: { root: ${JSON.stringify(NEXT_DIR)} }, outputFileTracingRoot: ${JSON.stringify(NEXT_DIR)} };\n`,
@@ -55,16 +55,18 @@ const write = (dir: string, files: Files) => {
 const keyOf = (files: Files) => createHash("sha1").update(JSON.stringify(Object.entries(files).sort())).digest("hex").slice(0, 16);
 export const buildDir = (files: Files) => join(BUILDS, keyOf(withScaffold(files)));
 
-// What the model reads back: the build's own message, without paths of this machine or its preamble.
+// What the model reads back: the build's output, without its progress lines, stack frames or paths
+// of this machine. The cause can come before "Error occurred prerendering", so nothing else goes.
+const PROGRESS = /^\s*(▲|✓|at |Creating an optimized|Running TypeScript|Finished TypeScript|Linting|We detected TypeScript|Collecting|Generating static|Finalizing|Skipping)/;
 function buildErrors(output: string, dir: string): string[] {
-  const clean = output.replace(/\u001b\[[0-9;]*m/g, "").replaceAll(dir + "/", "").replaceAll(dir, ".");
-  const start = clean.search(/Failed to compile|Type error|Error occurred prerendering|Build error occurred|Module not found/);
-  const text = (start >= 0 ? clean.slice(start) : clean).trim();
+  const clean = output.replace(/\u001b\[[0-9;]*m/g, "").replaceAll(dir + "/", "").replaceAll(dir, ".").replaceAll(NEXT_DIR + "/", "");
+  const text = clean.split("\n").filter((l) => l.trim() && !PROGRESS.test(l)).join("\n");
   return [`next build falló:\n${text.slice(0, 3000)}`];
 }
 
 // A real `next build`. The folder stays for `next start` and the behavior check, in another process,
-// which finds it by the files' hash; launch() removes it when it's done.
+// which finds it by the files' hash. Two runs may share it (the same answer twice), so it goes when
+// the whole eval ends (removeAllBuilds), not when one run does.
 const running = new Map<string, Promise<string[]>>();
 export function nextBuild(files: Files): Promise<string[]> {
   const merged = withScaffold(files);
@@ -99,7 +101,6 @@ export function validateNext(files: Files): Promise<string[]> {
   return nextBuild(files);
 }
 
-export const removeBuild = (files: Files) => rmSync(buildDir(files), { recursive: true, force: true });
 export const removeAllBuilds = () => rmSync(BUILDS, { recursive: true, force: true });
 export const hasRouteHandlers = (files: Files) => Object.keys(files).some((n) => /^app\/(.*\/)?route\.ts$/.test(n));
 

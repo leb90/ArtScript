@@ -42,16 +42,31 @@ test("website: every guide linked as Markdown (/md/<file>) is copied there by th
 });
 
 test("website: the Next.js table says what the result files say", () => {
-  const load = (file: string, stack: string) => JSON.parse(readFileSync(`benchmarks/eval/results/${file}-claude-sonnet-5-5.json`, "utf8")).results.filter((r: any) => r.stack === stack);
-  const art = load("2026-11-04T17-02-59", "artscript"), next = load("2026-11-04T16-50-49", "next"), react = load("2026-10-02T17-07-31", "react");
-  const per = (rows: any[]) => rows.reduce((a, r) => a + r.usd, 0) / rows.filter((r) => r.ok).length;
-  const usd = (n: number) => `$${n.toFixed(4)}`;
+  // In order, as the report merges them: a later file replaces the cells it has.
+  const FILES: Record<string, string[]> = {
+    "Sonnet 5.5": ["2026-10-02T17-07-31-claude-sonnet-5-5", "2026-11-04T16-50-49-claude-sonnet-5-5", "2026-11-04T17-02-59-claude-sonnet-5-5"],
+    "Opus 5.5": ["2026-10-02T17-49-54-claude-opus-5-5", "2026-11-04T18-03-56-claude-opus-5-5"],
+    "Haiku 4.5": ["2026-10-02T16-45-31-claude-haiku-4-5", "2026-10-02T17-35-30-claude-haiku-4-5", "2026-11-04T17-56-39-claude-haiku-4-5", "2026-11-04T17-56-58-claude-haiku-4-5"],
+  };
+  const cell = (rows: any[]) => {
+    const ok = rows.filter((r) => r.ok).length;
+    return { per: rows.reduce((a, r) => a + r.usd, 0) / ok, text: `$${(rows.reduce((a, r) => a + r.usd, 0) / ok).toFixed(4)} (${ok}/${rows.length})` };
+  };
   const page = readFileSync("website/benchmarks.art", "utf8").replace(/\s+/g, " ");
-  const groups: [string, (t: string) => boolean][] = [["All 50 tasks", () => true], ["Without a backend (41)", (t) => !t.startsWith("fs-")], ["Full-stack (9)", (t) => t.startsWith("fs-")]];
-  for (const [label, keep] of groups) {
-    const f = (rows: any[]) => per(rows.filter((r) => keep(r.task)));
-    const row = `{ tasks: "${label}", art: "${usd(f(art))}", next: "${usd(f(next))}", diff: "−${Math.round((1 - f(art) / f(next)) * 100)}%", react: "${usd(f(react))}" }`;
-    assert.ok(page.includes(row), `benchmarks.art should have ${row}`);
+  for (const [model, files] of Object.entries(FILES)) {
+    const cells = new Map<string, any[]>();
+    for (const file of files) {
+      const rows = JSON.parse(readFileSync(`benchmarks/eval/results/${file}.json`, "utf8")).results.filter((r: any) => r.errors?.[0] !== "refusal" && !/^(API \d+|budget exhausted)/.test(r.errors?.[0] ?? ""));
+      for (const key of new Set<string>(rows.map((r: any) => `${r.task}/${r.stack}`))) cells.set(key, rows.filter((r: any) => `${r.task}/${r.stack}` === key));
+    }
+    const all = [...cells.values()].flat();
+    const groups: [string, (t: string) => boolean][] = [["All 50 tasks", () => true], ["Without a backend (41)", (t) => !t.startsWith("fs-")], ["Full-stack (9)", (t) => t.startsWith("fs-")]];
+    for (const [tasks, keep] of groups) {
+      const of = (stack: string) => cell(all.filter((r) => r.stack === stack && keep(r.task)));
+      const art = of("artscript"), next = of("next");
+      const row = `{ model: "${model}", tasks: "${tasks}", art: "${art.text}", next: "${next.text}", diff: "−${Math.round((1 - art.per / next.per) * 100)}%", react: "${of("react").text}" }`;
+      assert.ok(page.includes(row), `benchmarks.art should have ${row}`);
+    }
   }
 });
 
