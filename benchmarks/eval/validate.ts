@@ -8,8 +8,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compile } from "../../src/compile.ts";
 import { formatAI } from "../../src/errors.ts";
+import { validateNext } from "./next-stack.ts";
 
-export type Stack = "artscript" | "react" | "svelte" | "vue" | "solid";
+export type Stack = "artscript" | "react" | "svelte" | "vue" | "solid" | "next";
 export type Files = Record<string, string>;
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -24,6 +25,7 @@ export async function validate(stack: Stack, files: Files): Promise<string[]> {
   if (stack === "react") return validateReact(files);
   if (stack === "solid") return tsc(files, Object.keys(files).filter((n) => /\.tsx?$/.test(n)), "solid");
   if (stack === "vue") return validateVue(files);
+  if (stack === "next") return validateNext(files);
   return validateSvelte(files);
 }
 
@@ -127,7 +129,7 @@ async function validateSvelte(files: Files): Promise<string[]> {
 // Extracts files from ```<name.ext> ... ``` blocks.
 export function extractFiles(text: string): Files {
   const out: Files = {};
-  for (const m of text.matchAll(/```([\w./-]+\.(?:art|tsx|ts|svelte|vue))[^\n]*\n([\s\S]*?)```/g)) out[m[1]] = m[2];
+  for (const m of text.matchAll(/```([\w./()\[\]-]+\.(?:art|tsx|ts|svelte|vue))[^\n]*\n([\s\S]*?)```/g)) out[m[1]] = m[2];
   return out;
 }
 
@@ -147,7 +149,7 @@ export function extractPatch(text: string): string | null {
 export function applyEdits(base: Files, text: string): { files: Files } | { errors: string[] } {
   const files = { ...base };
   const errors: string[] = [];
-  for (const block of text.matchAll(/```edit ([\w./-]+)\n([\s\S]*?)```/g)) {
+  for (const block of text.matchAll(/```edit ([\w./()\[\]-]+)\n([\s\S]*?)```/g)) {
     const name = block[1];
     if (!(name in files)) { errors.push(`edit: no existe el archivo ${name}; archivos: ${Object.keys(files).join(", ")}`); continue; }
     for (const pair of block[2].matchAll(/<<<<<<< SEARCH\n([\s\S]*?)\n?=======\n([\s\S]*?)\n?>>>>>>> REPLACE/g)) {

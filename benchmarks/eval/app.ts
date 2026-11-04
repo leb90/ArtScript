@@ -13,6 +13,7 @@ import { compile } from "../../src/compile.ts";
 // @ts-ignore: runtime is plain JS
 import { createApi } from "../../runtime/server.js";
 import { compileVue, type Files, type Stack } from "./validate.ts";
+import { buildDir, nextBuild, NEXT_BIN, nextPlugin, nextSize, removeBuild, writeNextPages } from "./next-stack.ts";
 
 // Solid's JSX compiles to DOM code with its Babel preset (esbuild only knows React-style JSX).
 const solidJsx: esbuild.Plugin = {
@@ -58,6 +59,9 @@ async function bundle(stack: Stack, files: Files, dir: string): Promise<{ path: 
     if (!root) throw new BehaviorError("no hay un componente .tsx");
     write("entry.tsx", `import App from "./${root}";\nimport { createRoot } from "react-dom/client";\ncreateRoot(document.getElementById("app")!).render(<App />);\n`);
     entry = "entry.tsx";
+  } else if (stack === "next") {
+    writeNextPages(dir, files);
+    entry = "entry.tsx";
   } else if (stack === "vue") {
     // Each .vue becomes X.vue.ts (script setup with the template compiled inline).
     const names = Object.keys(files).filter((n) => n.endsWith(".vue"));
@@ -99,7 +103,8 @@ async function bundle(stack: Stack, files: Files, dir: string): Promise<{ path: 
       entryPoints: [join(dir, entry)], bundle: true, format: "esm", platform: "browser", write: false, jsx: "automatic",
       conditions: ["browser"], logLevel: "silent", minify: true,
       define: { "process.env.NODE_ENV": '"production"', __VUE_OPTIONS_API__: "true", __VUE_PROD_DEVTOOLS__: "false", __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: "false" },
-      plugins: stack === "solid" ? [solidJsx] : [],
+      plugins: stack === "solid" ? [solidJsx] : stack === "next" ? [nextPlugin(dir)] : [],
+      ...(stack === "next" ? { jsxImportSource: "next-shim-jsx" } : {}),
     });
     write("bundle.mjs", out.outputFiles[0].text);
     const bytes = Buffer.from(out.outputFiles[0].text);
@@ -137,6 +142,20 @@ async function startServer(stack: Stack, files: Files, dir: string): Promise<Run
     await new Promise<void>((r) => server.listen(0, r));
     // Open connections (a live data stream) would keep close() waiting.
     return { port: (server.address() as AddressInfo).port, stop: () => { server.closeAllConnections(); server.close(); } };
+  }
+  if (stack === "next") {
+    const failed = await nextBuild(files);
+    if (failed.length) throw new BehaviorError(failed[0]);
+    const port = await freePort();
+    const child: ChildProcess = spawn(process.execPath, [NEXT_BIN, "start", "-p", String(port)], { cwd: buildDir(files), env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1", NODE_ENV: "production" }, stdio: ["ignore", "ignore", "pipe"] });
+    let stderr = "";
+    child.stderr!.on("data", (d) => { stderr += d; });
+    for (let i = 0; ; i++) {
+      if (child.exitCode !== null) throw new BehaviorError(`next start terminó con error: ${stderr.slice(0, 300)}`);
+      try { await fetch(`http://localhost:${port}/api/`); break; } catch { await new Promise((r) => setTimeout(r, 100)); }
+      if (i === 200) { child.kill(); throw new BehaviorError(`next start no responde. ${stderr.slice(0, 200)}`); }
+    }
+    return { port, stop: () => child.kill() };
   }
   if (!files["server.ts"]) throw new BehaviorError("falta server.ts");
   try {
@@ -371,13 +390,15 @@ export async function launch(stack: Stack, files: Files, fullstack: boolean): Pr
     server?.stop();
     if (GlobalRegistrator.isRegistered) await GlobalRegistrator.unregister();
     rmSync(dir, { recursive: true, force: true });
+    if (stack === "next") removeBuild(files);
   };
   try {
     const { path, size } = await bundle(stack, files, dir);
     if (fullstack) server = await startServer(stack, files, dir);
     const page = new Page(path, `http://localhost:${server?.port ?? 3999}/`);
     await page.open();
-    return { page, close, size };
+    // What a visitor downloads comes from the real build, not from this bundle for the checks.
+    return { page, close, size: stack === "next" ? nextSize(files) : size };
   } catch (e) {
     await close();
     throw e;

@@ -13,5 +13,5 @@
     "types": ["node"]
   },
   "include": ["src", "tests", "benchmarks/**/*.ts"],
-  "exclude": ["tests/fixtures/interop/lib/needs-missing.ts"]
+  "exclude": ["tests/fixtures/interop/lib/needs-missing.ts", "benchmarks/eval/next", "benchmarks/eval/refs/*/next", "benchmarks/eval/projects/*/next", "benchmarks/tasks/*/next"]
 }

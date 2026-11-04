@@ -8,7 +8,7 @@
 // `stacks`: the only stacks it runs in. Tasks named "exp-..." are experiments: they run only when
 // named with --tasks and the report leaves them out.
 export type Task = {
-  id: string; prompt: string; base?: string; fullstack?: boolean; stacks?: ("artscript" | "react" | "svelte" | "vue" | "solid")[];
+  id: string; prompt: string; base?: string; fullstack?: boolean; stacks?: ("artscript" | "react" | "svelte" | "vue" | "solid" | "next")[];
   project?: string; context?: "full" | "focus"; focus?: Partial<Record<"artscript" | "react" | "svelte" | "vue" | "solid", string[]>>;
 };
 
@@ -18,6 +18,8 @@ export function focusFor(task: Task, stack: string): string[] {
   if (stack in f) return f[stack as keyof typeof f]!;
   if (stack === "solid") return f.react ?? [];
   if (stack === "vue") return (f.react ?? []).map((n) => n.replace(/\.tsx$/, ".vue"));
+  // Next keeps React's components, in the folders a Next project has them (see gen-next.ts).
+  if (stack === "next") return (f.react ?? []).map((n) => (n === "App.tsx" ? "app/page.tsx" : n.endsWith(".tsx") ? `components/${n}` : `lib/${n}`));
   return [];
 }
 

@@ -4,6 +4,7 @@
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { BehaviorError, launch, type AppSize, type Page } from "./app.ts";
+import { hasRouteHandlers } from "./next-stack.ts";
 import type { Task } from "./tasks.ts";
 import type { Files, Stack } from "./validate.ts";
 
@@ -563,7 +564,7 @@ async function runCheck(task: Task, stack: Stack, files: Files): Promise<Checked
   let app: Awaited<ReturnType<typeof launch>> | null = null;
   try {
     // An app that declares an api (or ships a server.ts) gets its server, as `art dev` would give it.
-    const declares = stack === "artscript" ? Object.entries(files).some(([n, s]) => n.endsWith(".art") && /^\s*(api|auth)\s+\w+/m.test(s)) : "server.ts" in files;
+    const declares = stack === "artscript" ? Object.entries(files).some(([n, s]) => n.endsWith(".art") && /^\s*(api|auth)\s+\w+/m.test(s)) : stack === "next" ? hasRouteHandlers(files) : "server.ts" in files;
     app = await launch(stack, files, !!task.fullstack || declares);
     await check(app.page);
     return { errors: [], size: app.size };

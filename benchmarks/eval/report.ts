@@ -25,10 +25,10 @@ const notRun = (r: Run & { errors?: string[] }) => (r.attempts === 0 && /^(API \
 type ResultFile = { model: string; effort: string; runs: number; prices: { in: number; out: number; cacheRead: number; cacheWrite: number }; pricesDate: string; results: Run[] };
 
 // Stacks shown for the model being reported: those present in its results, in this order.
-const ORDER = ["artscript", "react", "svelte", "vue", "solid"];
+const ORDER = ["artscript", "react", "svelte", "vue", "solid", "next"];
 let STACKS: string[] = ORDER;
-const NAMES: Record<string, string> = { artscript: "**ArtScript**", react: "React + TS", svelte: "Svelte 5", vue: "Vue 3", solid: "SolidJS" };
-const PLAIN: Record<string, string> = { artscript: "ArtScript", react: "React + TS", svelte: "Svelte 5", vue: "Vue 3", solid: "SolidJS" };
+const NAMES: Record<string, string> = { artscript: "**ArtScript**", react: "React + TS", svelte: "Svelte 5", vue: "Vue 3", solid: "SolidJS", next: "Next.js" };
+const PLAIN: Record<string, string> = { artscript: "ArtScript", react: "React + TS", svelte: "Svelte 5", vue: "Vue 3", solid: "SolidJS", next: "Next.js" };
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 const usd = (n: number) => `$${n.toFixed(4)}`;

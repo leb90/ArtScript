@@ -1,0 +1,16 @@
+{
+  "name": "artscript-eval-next",
+  "private": true,
+  "description": "Next.js for the cost eval: a real `next build` and `next start` for the apps the model writes. Apart from the repo's dependencies: only `--stacks next` needs it (npm install here).",
+  "dependencies": {
+    "next": "16.4.5",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.0.0"
+  }
+}
