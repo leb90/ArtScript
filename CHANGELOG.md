@@ -2,9 +2,14 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
-## Unreleased
+## 0.2.19 (2026-11-04)
 
+From the retries in a measurement of the 50 tasks (replayed on the stored answers: 4 of its 5 retries are gone, nothing else changed):
+
+- An `api`, `server` or `auth` call in a `try` is awaited: `try { api.users.create(o) } catch (e) { ... }` compiles as `await api.users.create(o)`, so its error reaches the `catch`, and `art fmt` writes the word. It was the error `NOT_AWAITED` (E1025), which had only that one fix and cost a retry each time.
+- `api.posts.list({ include: ["post.author"] })`, a path written from the row itself, means `["author"]`. The spec's example now names what it lists (`api.comments.list`), since it read as if it were this case.
 - The tree-sitter grammar (highlighting in Zed, Neovim and Helix) reads a `const` at the top level; it was a parse error, and agents are told to keep constants in `config.art`.
+- The package description says what apps ship today: about 8 KB of JavaScript, not 5.
 
 ## 0.2.18 (2026-11-04)
 

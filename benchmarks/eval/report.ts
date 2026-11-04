@@ -27,6 +27,8 @@ type ResultFile = { model: string; effort: string; runs: number; prices: { in: n
 // Stacks shown for the model being reported: those present in its results, in this order.
 const ORDER = ["artscript", "react", "svelte", "vue", "solid", "next"];
 let STACKS: string[] = ORDER;
+// The tasks reported apart (imperative code, motion) weren't measured with Next.js.
+const FIVE = ORDER.filter((k) => k !== "next");
 const NAMES: Record<string, string> = { artscript: "**ArtScript**", react: "React + TS", svelte: "Svelte 5", vue: "Vue 3", solid: "SolidJS", next: "Next.js" };
 const PLAIN: Record<string, string> = { artscript: "ArtScript", react: "React + TS", svelte: "Svelte 5", vue: "Vue 3", solid: "SolidJS", next: "Next.js" };
 
@@ -138,17 +140,17 @@ function extraTable(loaded: Loaded[], x: typeof EXTRA[number]): string[] {
     for (const path of paths) {
       if (/Not in the table/.test(NOTES[basename(path)] ?? "")) continue; // a round a harness defect invalidated
       const rs = (JSON.parse(readFileSync(path, "utf8")) as ResultFile).results.filter((r) => x.match(r.task) && !notRun(r));
-      if (ORDER.every((k) => rs.some((r) => r.stack === k))) pooled.push(...rs);
+      if (FIVE.every((k) => rs.some((r) => r.stack === k))) pooled.push(...rs);
     }
     return pooled.length ? [{ data: { ...data, results: pooled } }] : [];
   });
   if (!rows.length) return [];
-  const out = [`### ${x.title}`, "", x.intro, "", ...(x.title.startsWith("Imperative") ? ["Two rounds of two runs per cell, pooled: four runs per cell. Between them, ArtScript's cells alone were re-run three times while the harness was being fixed (at first it rejected an answer that put the physics in a `.ts` module imported with `use`); those re-runs stay in the raw data and aren't in the table, so every stack has the same runs. No model moved the physics to a `.ts` file by itself, even with the spec suggesting it; Haiku's retries were its own errors (a typo, an effect that changed a state it read).", "", "**What closes the gap (measured, ArtScript only, two runs per cell, 2026-10-09):** the extra cost was the model deliberating in a less familiar syntax (650–1,600 output tokens of thinking per run, against ~10–600 in React) plus retries. With a project rule that puts the physics in a `.ts` file imported with `use` (what a new project's `AGENTS.md` says) and the core spec with a whole app as the example (`docs/SPEC-CORE.md`, ~1,600 tokens instead of 3,400), every model wrote `sim.ts` + `app.art` at the first attempt with React-level thinking: Sonnet $0.0227 (React $0.0209), Opus $0.0618 (React $0.0634), Haiku $0.0084 (React $0.0110). With the spec read from the prompt cache, as in a session: $0.0167, $0.049 and $0.0084. New projects get that rule and the core spec. The core spec was then measured on all 50 tasks (ArtScript cells only, two runs, 2026-10-09, files `12-22-28` Sonnet, `13-4*` Haiku and Opus): Sonnet $0.0092 per solved task against $0.0088 with the full spec (101/102 solved), Haiku $0.0088 against $0.0088 (90/102), Opus $0.0239 against $0.0220 (102/102); the same results and no cheaper, so the tables above keep the full spec and new projects read it first, with the core spec as the shorter option for a small or a canvas app. The retries those runs showed became tolerances of the compiler (`async fn`, `login private`, `event` in actions, an unawaited api call inside `try` named as an error)."] : []), "", `| Model | ${ORDER.map((k) => NAMES[k]).join(" | ")} | ArtScript vs React |`, `|---|${ORDER.map(() => "---").join("|")}|---|`];
+  const out = [`### ${x.title}`, "", x.intro, "", ...(x.title.startsWith("Imperative") ? ["Two rounds of two runs per cell, pooled: four runs per cell. Between them, ArtScript's cells alone were re-run three times while the harness was being fixed (at first it rejected an answer that put the physics in a `.ts` module imported with `use`); those re-runs stay in the raw data and aren't in the table, so every stack has the same runs. No model moved the physics to a `.ts` file by itself, even with the spec suggesting it; Haiku's retries were its own errors (a typo, an effect that changed a state it read).", "", "**What closes the gap (measured, ArtScript only, two runs per cell, 2026-10-09):** the extra cost was the model deliberating in a less familiar syntax (650–1,600 output tokens of thinking per run, against ~10–600 in React) plus retries. With a project rule that puts the physics in a `.ts` file imported with `use` (what a new project's `AGENTS.md` says) and the core spec with a whole app as the example (`docs/SPEC-CORE.md`, ~1,600 tokens instead of 3,400), every model wrote `sim.ts` + `app.art` at the first attempt with React-level thinking: Sonnet $0.0227 (React $0.0209), Opus $0.0618 (React $0.0634), Haiku $0.0084 (React $0.0110). With the spec read from the prompt cache, as in a session: $0.0167, $0.049 and $0.0084. New projects get that rule and the core spec. The core spec was then measured on all 50 tasks (ArtScript cells only, two runs, 2026-10-09, files `12-22-28` Sonnet, `13-4*` Haiku and Opus): Sonnet $0.0092 per solved task against $0.0088 with the full spec (101/102 solved), Haiku $0.0088 against $0.0088 (90/102), Opus $0.0239 against $0.0220 (102/102); the same results and no cheaper, so the tables above keep the full spec and new projects read it first, with the core spec as the shorter option for a small or a canvas app. The retries those runs showed became tolerances of the compiler (`async fn`, `login private`, `event` in actions, an unawaited api call inside `try` named as an error)."] : []), "", `| Model | ${FIVE.map((k) => NAMES[k]).join(" | ")} | ArtScript vs React |`, `|---|${FIVE.map(() => "---").join("|")}|---|`];
   for (const { data } of rows) {
     const rs = data.results.filter(imperative);
     const cell = (k: string) => { const x = rs.filter((r) => r.stack === k), ok = x.filter((r) => r.ok).length; return { n: x.length, ok, per: ok ? x.reduce((a, r) => a + r.usd, 0) / ok : Infinity }; };
     const art = cell("artscript"), react = cell("react");
-    out.push(`| ${data.model} | ${ORDER.map((k) => { const c = cell(k); return c.n ? `${k === "artscript" ? `**${usd(c.per)}**` : usd(c.per)} (${c.ok}/${c.n})` : "—"; }).join(" | ")} | **${pct(art.per, react.per)}** |`);
+    out.push(`| ${data.model} | ${FIVE.map((k) => { const c = cell(k); return c.n ? `${k === "artscript" ? `**${usd(c.per)}**` : usd(c.per)} (${c.ok}/${c.n})` : "—"; }).join(" | ")} | **${pct(art.per, react.per)}** |`);
   }
   return [...out, ...(x.after ? ["", x.after] : []), ""];
 }
@@ -201,7 +203,8 @@ function section(loaded: Loaded[]): string {
     const rerun = reruns.length ? ` ${reruns.join("; ")}.` : "";
     out.push("", "</details>", "");
     if (project.length) out.push(...projectTables(project));
-    out.push(`Run ${date}: ${tasks.length} tasks × ${STACKS.length} stacks × ${f.runs} runs, total $${total.toFixed(2)}, prices as of ${f.pricesDate}.${rerun} Raw data: ${links}.`, "");
+    const lastDate = basename(paths[paths.length - 1]).slice(0, 10);
+    out.push(`Run${lastDate === date ? ` ${date}` : `s ${date} to ${lastDate}`}: ${tasks.length} tasks × ${STACKS.length} stacks × ${f.runs} runs, total $${total.toFixed(2)}, prices as of ${f.pricesDate}.${rerun} Raw data: ${links}.`, "");
   }
   out.push(...imp);
   out.push("### Methodology and limitations", "",
@@ -211,6 +214,7 @@ function section(loaded: Loaded[]): string {
     "- Cost is computed from the real `usage` the API returns: the ArtScript spec in the system prompt, retries and thinking tokens (billed as output) all count.",
     "- ArtScript's system prompt includes its spec (1.2K–3.2K tokens depending on the run date; 3.2K in the 2026-10-02 measurement), which is served from the prompt cache after the first request; the \"without prompt cache\" column prices those tokens at the full input rate.",
     "- Since 2026-10-01 every app is also **run and used like a person would**: it's mounted in a simulated browser (happy-dom) and a stack-agnostic check clicks, types and reads the screen (e.g. adds and completes todos, reloads the page to check data persisted on the server). A failed check is fed back to Claude like a compiler error. Earlier runs only checked that code compiled and typechecked.",
+    "- Next.js (Sonnet only, 2026-11-04): every answer has to pass a real `next build`, a real `next start` serves its route handlers, and the pages go through the same checks in the simulated browser, with a small stand-in for Next's client router (`benchmarks/eval/next-stack.ts`). The apps use route handlers and client components with data in memory; Server Actions, and Server Components reading data directly, aren't measured. Its App JS counts all of the build's client chunks.",
     "- Full-stack tasks: the other stacks also write their own `server.ts` (Node `http`, no dependencies, data in memory); ArtScript uses `api`, which also persists to SQLite. Svelte is validated without TypeScript type checking of `.svelte` files, which favors it.",
     "- Since 2026-10-01 18:47, ArtScript modification tasks get docs/SPEC-EDIT.md (~800 tokens) instead of the full spec; creation tasks keep the full spec. Earlier runs sent the full spec everywhere.",
     "- Each run uses the ArtScript spec as of its date (in English since 2026-10-02).",

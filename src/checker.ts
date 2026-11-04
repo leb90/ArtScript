@@ -928,14 +928,6 @@ class Checker {
         this.returns?.push(t);
       }
       else if (s.kind === "Try") {
-        // `try { api.x.create(o) } catch (e) { }`: without `await` the rejection skips the catch.
-        for (const b of s.body) {
-          const e = b.kind === "ExprStmt" ? b.expr : b.kind === "Let" ? b.init : null;
-          const root = (x: Expr): string | null => (x.kind === "Ident" ? x.name : x.kind === "Member" || x.kind === "Index" ? root(x.object) : x.kind === "Call" ? root(x.callee) : null);
-          if (e && e.kind === "Call" && ["api", "server", "auth"].includes(root(e) ?? "")) {
-            this.err("NOT_AWAITED", `\`${printExpr(e).slice(0, 40)}\` runs after the try: add \`await\` so its error reaches the catch`, e.loc, { expr: printExpr(e), fixes: [`await ${printExpr(e)}`] });
-          }
-        }
         this.stmts(s.body, new Scope(scope), inLoop);
         const h = new Scope(scope);
         // The caught error: `e.message` always exists; api errors also carry `status` and `details`.
@@ -1339,6 +1331,9 @@ class Checker {
         if (p.value.kind === "Array") for (const it of p.value.items) {
           if (it.kind !== "Str") continue;
           let model = t.model;
+          // `api.posts.list({ include: ["post.author"] })`: a path written from the row itself.
+          const own = `${model.toLowerCase()}.`;
+          if (it.value.startsWith(own) && !this.refTarget(model, it.value.split(".")[0])) it.value = it.value.slice(own.length);
           for (const step of it.value.split(".")) {
             const next = this.refTarget(model, step);
             if (!next) {

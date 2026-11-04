@@ -46,6 +46,7 @@ page Benchmarks "/benchmarks" {
         }
       }
     }
+    text "Next.js was measured with Sonnet only. In that card, ArtScript and Next.js are from 2026-11-04 and the other stacks from 2026-10-02." muted small
     card class="callout" gap=2 {
       text "Read the numbers honestly" bold
       text "Two or three runs per task is an early signal, not a definitive benchmark. With the smallest model, Haiku, ArtScript solved fewer of the new-app tasks than React; on modifications of large projects with focused context it is close to even. The raw data of every run is in the repository, and anyone can reproduce it with npm run eval."

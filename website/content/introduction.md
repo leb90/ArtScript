@@ -36,7 +36,7 @@ That is a complete app: no imports, no hooks, no build configuration.
 
 **Edits instead of rewrites.** `art context` gives the agent only the part of the project it needs, and `art patch` applies a small, typechecked change to it.
 
-The [benchmarks](#cost-eval-results) measure this with Claude Opus, Sonnet and Haiku against React, Svelte, Vue and SolidJS.
+The [benchmarks](#cost-eval-results) measure this with Claude Opus, Sonnet and Haiku against React, Next.js, Svelte, Vue and SolidJS.
 
 ## What you get
 

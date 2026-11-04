@@ -112,4 +112,4 @@ with `npx art patch`, then run `npx art check --ai` and `npx art test`.
 
 ## What it costs
 
-The [benchmarks](/benchmarks) compare ArtScript with React, Svelte, Vue and SolidJS on the same tasks, with Claude Opus, Sonnet and Haiku, counting the spec, retries and thinking tokens. Over 50 tasks, ArtScript cost 50% less per working result than React with TypeScript with Sonnet, 45% less with Opus and 40% less with Haiku.
+The [benchmarks](/benchmarks) compare ArtScript with React, Next.js, Svelte, Vue and SolidJS on the same tasks, with Claude Opus, Sonnet and Haiku, counting the spec, retries and thinking tokens. Over 50 tasks, ArtScript cost 50% less per working result than React with TypeScript with Sonnet, 45% less with Opus and 40% less with Haiku.

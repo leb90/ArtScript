@@ -44,5 +44,7 @@
   "2026-10-09T13-00-28-claude-opus-5-5.json": "landing-motion, second round: the check gave the count-up 1.8 s and required exactly 12.000, so counters at 11.99x retried in every stack (a check defect, not the models'; replayed with the final check, Sonnet's 14 answers all pass). Not in the table.",
   "2026-10-09T13-12-42-claude-sonnet-5-5.json": "landing-motion, the round in the table (final harness: working IntersectionObserver, the count-up check waits for the number)",
   "2026-10-09T13-14-04-claude-haiku-4-5.json": "landing-motion, the round in the table (final harness: working IntersectionObserver, the count-up check waits for the number)",
-  "2026-10-09T13-15-50-claude-opus-5-5.json": "landing-motion, the round in the table (final harness: working IntersectionObserver, the count-up check waits for the number)"
+  "2026-10-09T13-15-50-claude-opus-5-5.json": "landing-motion, the round in the table (final harness: working IntersectionObserver, the count-up check waits for the number)",
+  "2026-11-04T17-02-59-claude-sonnet-5-5.json": "ArtScript again, with the spec as of the day Next.js was measured",
+  "2026-11-04T16-50-49-claude-sonnet-5-5.json": "Next.js 16, added to the measurement"
 }

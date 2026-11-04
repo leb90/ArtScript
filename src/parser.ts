@@ -16,6 +16,19 @@ const ASSIGN_OPS = new Set(["=", "+=", "-=", "*=", "/=", "%=", "**=", "??=", "&=
 // Equivalent JS forms that are accepted and normalized to one canonical form.
 const CANONICAL: Record<string, string> = { "===": "==", "!==": "!=" };
 
+// `try { api.x.create(o) }`: without `await` the rejection would skip the `catch`. Models forget it
+// (in the eval, a retry each time) and there's only one thing it can mean, so the call is awaited
+// and `art fmt` writes the word.
+const rootName = (e: Expr): string | null => (e.kind === "Ident" ? e.name : e.kind === "Member" || e.kind === "Index" ? rootName(e.object) : e.kind === "Call" ? rootName(e.callee) : null);
+const awaited = (e: Expr): Expr => (e.kind === "Call" && ["api", "server", "auth"].includes(rootName(e) ?? "") ? { kind: "Unary", op: "await", arg: e, loc: e.loc } : e);
+function awaitCalls(body: Stmt[]): Stmt[] {
+  for (const s of body) {
+    if (s.kind === "ExprStmt") s.expr = awaited(s.expr);
+    else if (s.kind === "Let") s.init = awaited(s.init);
+  }
+  return body;
+}
+
 export function parse(src: string, file: string, startLine = 1): Program {
   const comments: Comment[] = [];
   return new Parser(lex(src, file, startLine, 1, comments), comments).program();
@@ -757,7 +770,7 @@ class Parser {
     }
     if (this.is("try")) {
       this.next();
-      const body = this.block();
+      const body = awaitCalls(this.block());
       // `try { } finally { }` (no catch): the error goes on after the `finally`.
       if (this.keywordAhead("finally")) {
         this.next();

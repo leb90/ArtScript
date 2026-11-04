@@ -22,13 +22,13 @@ page Counter "/" {
 }
 ```
 
-Status: **0.2.18**, usable for prototypes and small or medium apps built with an AI agent; the syntax may still change before 1.0. What is measured, proven and not yet: [artscript.dev/status](https://artscript.dev/status/). In the [official js-framework-benchmark results](https://krausest.github.io/js-framework-benchmark/2026/chrome154.html) since Chrome 154: between Svelte and Vue, ahead of React ([numbers](benchmarks/js-framework-benchmark/RESULTS.md)).
+Status: **0.2.19**, usable for prototypes and small or medium apps built with an AI agent; the syntax may still change before 1.0. What is measured, proven and not yet: [artscript.dev/status](https://artscript.dev/status/). In the [official js-framework-benchmark results](https://krausest.github.io/js-framework-benchmark/2026/chrome154.html) since Chrome 154: between Svelte and Vue, ahead of React ([numbers](benchmarks/js-framework-benchmark/RESULTS.md)).
 
 Made by [Leandro Bisceglie](https://github.com/leb90). Issues and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 **Measured result (2026-10-02):** Claude built and modified the same 50 tasks (small apps, full-stack apps, and changes to projects of 11, 42 and 102 components) in ArtScript, React + TypeScript, Svelte 5, Vue 3 and SolidJS, twice per task; every app was run and used in a simulated browser to check it works. Per working result, counting the spec, retries and thinking tokens, ArtScript cost **50% less than React with Claude Sonnet 5.5, 45% less with Opus 5.5 and 40% less with Haiku 4.5**, and less than every other stack with the three models. Sonnet and Opus solved 100/100 in ArtScript; Haiku solved 90/100 (86–89 in the other stacks), after three rounds of compiler fixes that its first runs (76/100, then 80/100) led to. The apps ship about 5–7 KB of JavaScript (brotli) versus ~59 KB for React, ~20 KB for Svelte, ~24 KB for Vue and ~6 KB for Solid. See [Cost eval results](#cost-eval-results) for the tables, the raw data and the method.
 
-**Against Next.js (2026-11-04):** ArtScript and Next.js 16 measured on the same day with Sonnet 5.5, the same 50 tasks, two runs per task: **$0.0093 per working result against $0.0186, 50% less** (46% without a backend, 64% on the nine full-stack tasks), both 100/100. Next.js costs about the same as React ($0.0178, from 2026-10-02). Every Next.js answer had to pass a real `next build`, a real `next start` served its route handlers, and the pages went through the same checks as every other stack, in a simulated browser with a small stand-in for Next's client router. Its apps ship about 147 KB of JavaScript (brotli, all of the build's client chunks), against about 8 KB. Keep in mind: it's one model with two runs per task, and the Next.js apps use route handlers and client components, with data in memory, so Server Actions and Server Components reading data directly weren't measured. Raw data: [Next.js](benchmarks/eval/results/2026-11-04T16-50-49-claude-sonnet-5-5.md), [ArtScript](benchmarks/eval/results/2026-11-04T17-02-59-claude-sonnet-5-5.md); harness: [`benchmarks/eval/next-stack.ts`](benchmarks/eval/next-stack.ts).
+**Against Next.js (2026-11-04):** ArtScript and Next.js 16 measured on the same day with Sonnet 5.5, the same 50 tasks, two runs per task: **$0.0093 per working result against $0.0186, 50% less** (46% without a backend, 64% on the nine full-stack tasks), both 100/100. Next.js costs about the same as React ($0.0178, from 2026-10-02). In the tables below, Sonnet's ArtScript and Next.js cells are from this day, so Sonnet's figure against React is now 48%, not 50%. Every Next.js answer had to pass a real `next build`, a real `next start` served its route handlers, and the pages went through the same checks as every other stack, in a simulated browser with a small stand-in for Next's client router. Its apps ship about 147 KB of JavaScript (brotli, all of the build's client chunks), against about 8 KB. Keep in mind: it's one model with two runs per task, and the Next.js apps use route handlers and client components, with data in memory, so Server Actions and Server Components reading data directly weren't measured. Raw data: [Next.js](benchmarks/eval/results/2026-11-04T16-50-49-claude-sonnet-5-5.md), [ArtScript](benchmarks/eval/results/2026-11-04T17-02-59-claude-sonnet-5-5.md); harness: [`benchmarks/eval/next-stack.ts`](benchmarks/eval/next-stack.ts).
 
 ## Usage
 
@@ -216,11 +216,11 @@ Validation: ArtScript with its own compiler, React with strict `tsc`, Svelte wit
 
 All tasks, USD per solved task (solved runs / runs):
 
-| Model | **ArtScript** | React + TS | Svelte 5 | Vue 3 | SolidJS | ArtScript vs React |
-|---|---|---|---|---|---|---|
-| claude-haiku-4-5 | **$0.0088** (90/100) | $0.0147 (86/100) | $0.0156 (89/100) | $0.0154 (88/100) | $0.0157 (87/100) | **−40%** |
-| claude-sonnet-5-5 | **$0.0088** (100/100) | $0.0178 (100/100) | $0.0164 (100/100) | $0.0173 (100/100) | $0.0182 (100/100) | **−50%** |
-| claude-opus-5-5 | **$0.0220** (100/100) | $0.0397 (99/99) | $0.0363 (100/100) | $0.0377 (100/100) | $0.0395 (100/100) | **−45%** |
+| Model | **ArtScript** | React + TS | Svelte 5 | Vue 3 | SolidJS | Next.js | ArtScript vs React |
+|---|---|---|---|---|---|---|---|
+| claude-haiku-4-5 | **$0.0088** (90/100) | $0.0147 (86/100) | $0.0156 (89/100) | $0.0154 (88/100) | $0.0157 (87/100) | — | **−40%** |
+| claude-sonnet-5-5 | **$0.0093** (100/100) | $0.0178 (100/100) | $0.0164 (100/100) | $0.0173 (100/100) | $0.0182 (100/100) | $0.0186 (100/100) | **−48%** |
+| claude-opus-5-5 | **$0.0220** (100/100) | $0.0397 (99/99) | $0.0363 (100/100) | $0.0377 (100/100) | $0.0395 (100/100) | — | **−45%** |
 
 ### claude-haiku-4-5 (no effort setting)
 
@@ -317,58 +317,59 @@ Whole project in the prompt ("full") vs. what a good agent would read ("focus": 
 
 Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
 
-Run 2026-10-02: 26 tasks × 5 stacks × 2 runs, total $4.15, prices as of 2026-09-25. 2026-10-02T16-45-31-claude-haiku-4-5.json: 50 tasks × 5 stacks × 2 runs; ArtScript solved 76/100 here at $0.0125 per solved task (15% less than React); 50 cell(s) re-run in 2026-10-02T17-35-30-claude-haiku-4-5.json (ArtScript only, after three rounds of compiler fixes from what Haiku wrote (commits bec073d, e257d73, 49a1dc4); a run between them, 2026-10-02T17-10-22, solved 80/100 at $0.0116. The other stacks are unchanged); 2026-10-09T11-02-14-claude-haiku-4-5.json: the imperative task (imp-particles); ArtScript's retries were a typo of the model and an effect that changed a state it read; 5 cell(s) re-run in 2026-10-09T11-24-34-claude-haiku-4-5.json (imp-particles, second full round (all five stacks, two runs), pooled with the first in the imperative table); 2026-10-09T13-14-04-claude-haiku-4-5.json: landing-motion, the round in the table (final harness: working IntersectionObserver, the count-up check waits for the number). Raw data: [`benchmarks/eval/results/2026-10-02T16-45-31-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-02T16-45-31-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-02T17-35-30-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-02T17-35-30-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-09T11-02-14-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-09T11-02-14-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-09T11-24-34-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-09T11-24-34-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-09T13-14-04-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-09T13-14-04-claude-haiku-4-5.json).
+Runs 2026-10-02 to 2026-10-09: 26 tasks × 5 stacks × 2 runs, total $4.15, prices as of 2026-09-25. 2026-10-02T16-45-31-claude-haiku-4-5.json: 50 tasks × 5 stacks × 2 runs; ArtScript solved 76/100 here at $0.0125 per solved task (15% less than React); 50 cell(s) re-run in 2026-10-02T17-35-30-claude-haiku-4-5.json (ArtScript only, after three rounds of compiler fixes from what Haiku wrote (commits bec073d, e257d73, 49a1dc4); a run between them, 2026-10-02T17-10-22, solved 80/100 at $0.0116. The other stacks are unchanged); 2026-10-09T11-02-14-claude-haiku-4-5.json: the imperative task (imp-particles); ArtScript's retries were a typo of the model and an effect that changed a state it read; 5 cell(s) re-run in 2026-10-09T11-24-34-claude-haiku-4-5.json (imp-particles, second full round (all five stacks, two runs), pooled with the first in the imperative table); 2026-10-09T13-14-04-claude-haiku-4-5.json: landing-motion, the round in the table (final harness: working IntersectionObserver, the count-up check waits for the number). Raw data: [`benchmarks/eval/results/2026-10-02T16-45-31-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-02T16-45-31-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-02T17-35-30-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-02T17-35-30-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-09T11-02-14-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-09T11-02-14-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-09T11-24-34-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-09T11-24-34-claude-haiku-4-5.json), [`benchmarks/eval/results/2026-10-09T13-14-04-claude-haiku-4-5.json`](benchmarks/eval/results/2026-10-09T13-14-04-claude-haiku-4-5.json).
 
 ### claude-sonnet-5-5 (effort medium)
 
-With `claude-sonnet-5-5`, ArtScript cost **56% less** per solved task than React + TS and **52% less** than Svelte 5.
+With `claude-sonnet-5-5`, ArtScript cost **52% less** per solved task than React + TS and **48% less** than Svelte 5.
 
 | Stack | Solved | USD per solved task | vs React | Without prompt cache | Avg attempts | Output tokens / run | Final code tokens | App JS (brotli) |
 |---|---|---|---|---|---|---|---|---|
-| **ArtScript** | 52/52 | **$0.0071** | −56% | $0.0148 | 1.06 | 517 | 412 | 5.2 KB |
+| **ArtScript** | 52/52 | **$0.0077** | −52% | $0.0179 | 1.08 | 464 | 401 | 6.8 KB |
 | React + TS | 52/52 | $0.0160 | — | $0.0160 | 1.00 | 1516 | 1496 | 58.7 KB |
 | Svelte 5 | 52/52 | $0.0148 | −7% | $0.0148 | 1.00 | 1397 | 1363 | 18.3 KB |
 | Vue 3 | 52/52 | $0.0160 | +0% | $0.0160 | 1.04 | 1500 | 1395 | 23.6 KB |
 | SolidJS | 52/52 | $0.0152 | −5% | $0.0152 | 1.00 | 1431 | 1415 | 5.6 KB |
+| Next.js | 52/52 | $0.0161 | +1% | $0.0161 | 1.00 | 1511 | 1444 | 147.7 KB |
 
 ```mermaid
 xychart-beta
     title "USD per solved task (claude-sonnet-5-5)"
-    x-axis ["ArtScript", "React + TS", "Svelte 5", "Vue 3", "SolidJS"]
+    x-axis ["ArtScript", "React + TS", "Svelte 5", "Vue 3", "SolidJS", "Next.js"]
     y-axis "USD" 0 --> 0.020
-    bar [0.0071, 0.0160, 0.0148, 0.0160, 0.0152]
+    bar [0.0077, 0.0160, 0.0148, 0.0160, 0.0152, 0.0161]
 ```
 
 <details><summary>Per task</summary>
 
-| Task | ArtScript | React + TS | Svelte 5 | Vue 3 | SolidJS |
-|---|---|---|---|---|---|
-| counter | $0.0130 (2/2) | $0.0056 (2/2) | $0.0044 (2/2) | $0.0052 (2/2) | $0.0052 (2/2) |
-| todo | $0.0056 (2/2) | $0.0129 (2/2) | $0.0114 (2/2) | $0.0125 (2/2) | $0.0129 (2/2) |
-| login | $0.0037 (2/2) | $0.0096 (2/2) | $0.0096 (2/2) | $0.0092 (2/2) | $0.0096 (2/2) |
-| search | $0.0072 (2/2) | $0.0094 (2/2) | $0.0085 (2/2) | $0.0099 (2/2) | $0.0097 (2/2) |
-| cart | $0.0086 (2/2) | $0.0152 (2/2) | $0.0172 (2/2) | $0.0189 (2/2) | $0.0160 (2/2) |
-| tabs | $0.0045 (2/2) | $0.0100 (2/2) | $0.0096 (2/2) | $0.0080 (2/2) | $0.0081 (2/2) |
-| counter-mod | $0.0044 (2/2) | $0.0077 (2/2) | $0.0050 (2/2) | $0.0056 (2/2) | $0.0064 (2/2) |
-| todo-mod | $0.0061 (2/2) | $0.0123 (2/2) | $0.0050 (2/2) | $0.0076 (2/2) | $0.0063 (2/2) |
-| fs-users | $0.0054 (2/2) | $0.0239 (2/2) | $0.0216 (2/2) | $0.0205 (2/2) | $0.0209 (2/2) |
-| fs-shopping | $0.0052 (2/2) | $0.0264 (2/2) | $0.0243 (2/2) | $0.0233 (2/2) | $0.0238 (2/2) |
-| fs-blog | $0.0141 (2/2) | $0.0299 (2/2) | $0.0272 (2/2) | $0.0265 (2/2) | $0.0298 (2/2) |
-| fs-products | $0.0101 (2/2) | $0.0188 (2/2) | $0.0186 (2/2) | $0.0159 (2/2) | $0.0192 (2/2) |
-| fs-avatar | $0.0050 (2/2) | $0.0224 (2/2) | $0.0222 (2/2) | $0.0201 (2/2) | $0.0204 (2/2) |
-| routes | $0.0047 (2/2) | $0.0111 (2/2) | $0.0132 (2/2) | $0.0140 (2/2) | $0.0118 (2/2) |
-| contacts | $0.0053 (2/2) | $0.0148 (2/2) | $0.0118 (2/2) | $0.0129 (2/2) | $0.0123 (2/2) |
-| pagination | $0.0038 (2/2) | $0.0080 (2/2) | $0.0085 (2/2) | $0.0084 (2/2) | $0.0075 (2/2) |
-| sort-table | $0.0059 (2/2) | $0.0117 (2/2) | $0.0101 (2/2) | $0.0103 (2/2) | $0.0112 (2/2) |
-| stopwatch | $0.0039 (2/2) | $0.0076 (2/2) | $0.0077 (2/2) | $0.0065 (2/2) | $0.0066 (2/2) |
-| nav-layout | $0.0042 (2/2) | $0.0188 (2/2) | $0.0205 (2/2) | $0.0438 (2/2) | $0.0203 (2/2) |
-| query-search | $0.0042 (2/2) | $0.0094 (2/2) | $0.0094 (2/2) | $0.0123 (2/2) | $0.0089 (2/2) |
-| wizard | $0.0065 (2/2) | $0.0145 (2/2) | $0.0115 (2/2) | $0.0121 (2/2) | $0.0135 (2/2) |
-| inline-edit | $0.0115 (2/2) | $0.0119 (2/2) | $0.0089 (2/2) | $0.0112 (2/2) | $0.0118 (2/2) |
-| fs-tasks | $0.0078 (2/2) | $0.0250 (2/2) | $0.0255 (2/2) | $0.0244 (2/2) | $0.0266 (2/2) |
-| fs-votes | $0.0066 (2/2) | $0.0216 (2/2) | $0.0235 (2/2) | $0.0193 (2/2) | $0.0200 (2/2) |
-| fs-catalog | $0.0122 (2/2) | $0.0233 (2/2) | $0.0177 (2/2) | $0.0228 (2/2) | $0.0199 (2/2) |
-| fs-notes | $0.0138 (2/2) | $0.0339 (2/2) | $0.0325 (2/2) | $0.0359 (2/2) | $0.0365 (2/2) |
+| Task | ArtScript | React + TS | Svelte 5 | Vue 3 | SolidJS | Next.js |
+|---|---|---|---|---|---|---|
+| counter | $0.0173 (2/2) | $0.0056 (2/2) | $0.0044 (2/2) | $0.0052 (2/2) | $0.0052 (2/2) | $0.0059 (2/2) |
+| todo | $0.0203 (2/2) | $0.0129 (2/2) | $0.0114 (2/2) | $0.0125 (2/2) | $0.0129 (2/2) | $0.0139 (2/2) |
+| login | $0.0042 (2/2) | $0.0096 (2/2) | $0.0096 (2/2) | $0.0092 (2/2) | $0.0096 (2/2) | $0.0098 (2/2) |
+| search | $0.0050 (2/2) | $0.0094 (2/2) | $0.0085 (2/2) | $0.0099 (2/2) | $0.0097 (2/2) | $0.0099 (2/2) |
+| cart | $0.0091 (2/2) | $0.0152 (2/2) | $0.0172 (2/2) | $0.0189 (2/2) | $0.0160 (2/2) | $0.0176 (2/2) |
+| tabs | $0.0042 (2/2) | $0.0100 (2/2) | $0.0096 (2/2) | $0.0080 (2/2) | $0.0081 (2/2) | $0.0103 (2/2) |
+| counter-mod | $0.0058 (2/2) | $0.0077 (2/2) | $0.0050 (2/2) | $0.0056 (2/2) | $0.0064 (2/2) | $0.0055 (2/2) |
+| todo-mod | $0.0024 (2/2) | $0.0123 (2/2) | $0.0050 (2/2) | $0.0076 (2/2) | $0.0063 (2/2) | $0.0055 (2/2) |
+| fs-users | $0.0116 (2/2) | $0.0239 (2/2) | $0.0216 (2/2) | $0.0205 (2/2) | $0.0209 (2/2) | $0.0224 (2/2) |
+| fs-shopping | $0.0056 (2/2) | $0.0264 (2/2) | $0.0243 (2/2) | $0.0233 (2/2) | $0.0238 (2/2) | $0.0237 (2/2) |
+| fs-blog | $0.0181 (2/2) | $0.0299 (2/2) | $0.0272 (2/2) | $0.0265 (2/2) | $0.0298 (2/2) | $0.0285 (2/2) |
+| fs-products | $0.0067 (2/2) | $0.0188 (2/2) | $0.0186 (2/2) | $0.0159 (2/2) | $0.0192 (2/2) | $0.0180 (2/2) |
+| fs-avatar | $0.0056 (2/2) | $0.0224 (2/2) | $0.0222 (2/2) | $0.0201 (2/2) | $0.0204 (2/2) | $0.0218 (2/2) |
+| routes | $0.0043 (2/2) | $0.0111 (2/2) | $0.0132 (2/2) | $0.0140 (2/2) | $0.0118 (2/2) | $0.0096 (2/2) |
+| contacts | $0.0057 (2/2) | $0.0148 (2/2) | $0.0118 (2/2) | $0.0129 (2/2) | $0.0123 (2/2) | $0.0137 (2/2) |
+| pagination | $0.0049 (2/2) | $0.0080 (2/2) | $0.0085 (2/2) | $0.0084 (2/2) | $0.0075 (2/2) | $0.0080 (2/2) |
+| sort-table | $0.0055 (2/2) | $0.0117 (2/2) | $0.0101 (2/2) | $0.0103 (2/2) | $0.0112 (2/2) | $0.0115 (2/2) |
+| stopwatch | $0.0044 (2/2) | $0.0076 (2/2) | $0.0077 (2/2) | $0.0065 (2/2) | $0.0066 (2/2) | $0.0084 (2/2) |
+| nav-layout | $0.0045 (2/2) | $0.0188 (2/2) | $0.0205 (2/2) | $0.0438 (2/2) | $0.0203 (2/2) | $0.0153 (2/2) |
+| query-search | $0.0047 (2/2) | $0.0094 (2/2) | $0.0094 (2/2) | $0.0123 (2/2) | $0.0089 (2/2) | $0.0128 (2/2) |
+| wizard | $0.0061 (2/2) | $0.0145 (2/2) | $0.0115 (2/2) | $0.0121 (2/2) | $0.0135 (2/2) | $0.0146 (2/2) |
+| inline-edit | $0.0060 (2/2) | $0.0119 (2/2) | $0.0089 (2/2) | $0.0112 (2/2) | $0.0118 (2/2) | $0.0117 (2/2) |
+| fs-tasks | $0.0081 (2/2) | $0.0250 (2/2) | $0.0255 (2/2) | $0.0244 (2/2) | $0.0266 (2/2) | $0.0311 (2/2) |
+| fs-votes | $0.0113 (2/2) | $0.0216 (2/2) | $0.0235 (2/2) | $0.0193 (2/2) | $0.0200 (2/2) | $0.0231 (2/2) |
+| fs-catalog | $0.0106 (2/2) | $0.0233 (2/2) | $0.0177 (2/2) | $0.0228 (2/2) | $0.0199 (2/2) | $0.0215 (2/2) |
+| fs-notes | $0.0076 (2/2) | $0.0339 (2/2) | $0.0325 (2/2) | $0.0359 (2/2) | $0.0365 (2/2) | $0.0447 (2/2) |
 
 </details>
 
@@ -378,11 +379,12 @@ Whole project in the prompt ("full") vs. what a good agent would read ("focus": 
 
 | Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus | App JS (brotli) |
 |---|---|---|---|---|---|
-| **ArtScript** | $0.0060 (8/8) | $0.0048 (8/8) | 2811 | 2059 | 6.1 KB |
+| **ArtScript** | $0.0068 (8/8) | $0.0053 (8/8) | 2811 | 2064 | 7.7 KB |
 | React + TS | $0.0129 (8/8) | $0.0104 (8/8) | 2784 | 1084 | 59.2 KB |
 | Svelte 5 | $0.0126 (8/8) | $0.0090 (8/8) | 2731 | 1086 | 20.4 KB |
 | Vue 3 | $0.0118 (8/8) | $0.0095 (8/8) | 2879 | 1109 | 24.8 KB |
 | SolidJS | $0.0191 (8/8) | $0.0099 (8/8) | 4172 | 1132 | 6.4 KB |
+| Next.js | $0.0139 (8/8) | $0.0112 (8/8) | 2950 | 1218 | 138.5 KB |
 
 Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
 
@@ -392,11 +394,12 @@ Whole project in the prompt ("full") vs. what a good agent would read ("focus": 
 
 | Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus | App JS (brotli) |
 |---|---|---|---|---|---|
-| **ArtScript** | $0.0128 (8/8) | $0.0052 (8/8) | 6680 | 2255 | 6.3 KB |
+| **ArtScript** | $0.0127 (8/8) | $0.0050 (8/8) | 6680 | 2260 | 7.9 KB |
 | React + TS | $0.0245 (8/8) | $0.0100 (8/8) | 9534 | 1668 | 59.6 KB |
 | Svelte 5 | $0.0228 (8/8) | $0.0081 (8/8) | 8898 | 1421 | 20.3 KB |
 | Vue 3 | $0.0238 (8/8) | $0.0083 (8/8) | 9330 | 1405 | 24.8 KB |
 | SolidJS | $0.0264 (8/8) | $0.0090 (8/8) | 10254 | 1486 | 6.8 KB |
+| Next.js | $0.0255 (8/8) | $0.0114 (8/8) | 9956 | 1625 | 147.9 KB |
 
 Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
 
@@ -406,15 +409,16 @@ Whole project in the prompt ("full") vs. what a good agent would read ("focus": 
 
 | Stack | USD per solved task, full | USD per solved task, focus | Input tokens/run, full | Input tokens/run, focus | App JS (brotli) |
 |---|---|---|---|---|---|
-| **ArtScript** | $0.0288 (8/8) | $0.0070 (8/8) | 14374 | 2932 | 7.3 KB |
+| **ArtScript** | $0.0282 (8/8) | $0.0077 (8/8) | 14374 | 3341 | 8.8 KB |
 | React + TS | $0.0505 (8/8) | $0.0097 (8/8) | 22654 | 2110 | 60.9 KB |
 | Svelte 5 | $0.0468 (8/8) | $0.0094 (8/8) | 21052 | 2102 | 21.3 KB |
 | Vue 3 | $0.0493 (8/8) | $0.0096 (8/8) | 22084 | 2026 | 26.0 KB |
 | SolidJS | $0.0547 (8/8) | $0.0103 (8/8) | 24364 | 2167 | 7.8 KB |
+| Next.js | $0.0527 (8/8) | $0.0132 (8/8) | 23556 | 2426 | 148.5 KB |
 
 Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
 
-Run 2026-10-02: 26 tasks × 5 stacks × 2 runs, total $3.59, prices as of 2026-09-25. 2026-10-02T17-07-31-claude-sonnet-5-5.json: 50 tasks × 5 stacks × 2 runs, ArtScript at commit e257d73; 2026-10-09T11-00-28-claude-sonnet-5-5.json: the imperative task (imp-particles: a canvas with physics), reported in its own table; 5 cell(s) re-run in 2026-10-09T11-23-11-claude-sonnet-5-5.json (imp-particles, second full round (all five stacks, two runs), pooled with the first in the imperative table); 2026-10-09T13-12-42-claude-sonnet-5-5.json: landing-motion, the round in the table (final harness: working IntersectionObserver, the count-up check waits for the number). Raw data: [`benchmarks/eval/results/2026-10-02T17-07-31-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-02T17-07-31-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-09T11-00-28-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-09T11-00-28-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-09T11-23-11-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-09T11-23-11-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-09T13-12-42-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-09T13-12-42-claude-sonnet-5-5.json).
+Runs 2026-10-02 to 2026-11-04: 26 tasks × 6 stacks × 2 runs, total $4.46, prices as of 2026-09-25. 2026-10-02T17-07-31-claude-sonnet-5-5.json: 50 tasks × 5 stacks × 2 runs, ArtScript at commit e257d73; 2026-10-09T11-00-28-claude-sonnet-5-5.json: the imperative task (imp-particles: a canvas with physics), reported in its own table; 5 cell(s) re-run in 2026-10-09T11-23-11-claude-sonnet-5-5.json (imp-particles, second full round (all five stacks, two runs), pooled with the first in the imperative table); 2026-10-09T13-12-42-claude-sonnet-5-5.json: landing-motion, the round in the table (final harness: working IntersectionObserver, the count-up check waits for the number); 2026-11-04T16-50-49-claude-sonnet-5-5.json: Next.js 16, added to the measurement; 50 cell(s) re-run in 2026-11-04T17-02-59-claude-sonnet-5-5.json (ArtScript again, with the spec as of the day Next.js was measured). Raw data: [`benchmarks/eval/results/2026-10-02T17-07-31-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-02T17-07-31-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-09T11-00-28-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-09T11-00-28-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-09T11-23-11-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-09T11-23-11-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-10-09T13-12-42-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-10-09T13-12-42-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-11-04T16-50-49-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-11-04T16-50-49-claude-sonnet-5-5.json), [`benchmarks/eval/results/2026-11-04T17-02-59-claude-sonnet-5-5.json`](benchmarks/eval/results/2026-11-04T17-02-59-claude-sonnet-5-5.json).
 
 ### claude-opus-5-5 (effort medium)
 
@@ -511,7 +515,7 @@ Whole project in the prompt ("full") vs. what a good agent would read ("focus": 
 
 Input tokens include ArtScript's spec in the system prompt (~1.9K tokens in the 2026-09-30 runs, ~2.7K from 2026-10-01 17:00 on, after routes and the 0.3 UI; mostly billed at the cache rate) and every retry.
 
-Run 2026-10-02: 26 tasks × 5 stacks × 2 runs, total $8.74, prices as of 2026-09-25. 2026-10-02T17-49-54-claude-opus-5-5.json: 50 tasks × 5 stacks × 2 runs; ArtScript's first run at commit e257d73, its second at 7f81b5e; one React run was a model refusal and is left out; 2026-10-09T11-03-29-claude-opus-5-5.json: the imperative task (imp-particles); one ArtScript run needed a retry because the checker rejected `let b = null` later assigned an object, fixed in 0.2.9; 5 cell(s) re-run in 2026-10-09T11-25-48-claude-opus-5-5.json (imp-particles, second full round (all five stacks, two runs), pooled with the first in the imperative table); 2026-10-09T13-15-50-claude-opus-5-5.json: landing-motion, the round in the table (final harness: working IntersectionObserver, the count-up check waits for the number). Raw data: [`benchmarks/eval/results/2026-10-02T17-49-54-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-02T17-49-54-claude-opus-5-5.json), [`benchmarks/eval/results/2026-10-09T11-03-29-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-09T11-03-29-claude-opus-5-5.json), [`benchmarks/eval/results/2026-10-09T11-25-48-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-09T11-25-48-claude-opus-5-5.json), [`benchmarks/eval/results/2026-10-09T13-15-50-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-09T13-15-50-claude-opus-5-5.json).
+Runs 2026-10-02 to 2026-10-09: 26 tasks × 5 stacks × 2 runs, total $8.74, prices as of 2026-09-25. 2026-10-02T17-49-54-claude-opus-5-5.json: 50 tasks × 5 stacks × 2 runs; ArtScript's first run at commit e257d73, its second at 7f81b5e; one React run was a model refusal and is left out; 2026-10-09T11-03-29-claude-opus-5-5.json: the imperative task (imp-particles); one ArtScript run needed a retry because the checker rejected `let b = null` later assigned an object, fixed in 0.2.9; 5 cell(s) re-run in 2026-10-09T11-25-48-claude-opus-5-5.json (imp-particles, second full round (all five stacks, two runs), pooled with the first in the imperative table); 2026-10-09T13-15-50-claude-opus-5-5.json: landing-motion, the round in the table (final harness: working IntersectionObserver, the count-up check waits for the number). Raw data: [`benchmarks/eval/results/2026-10-02T17-49-54-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-02T17-49-54-claude-opus-5-5.json), [`benchmarks/eval/results/2026-10-09T11-03-29-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-09T11-03-29-claude-opus-5-5.json), [`benchmarks/eval/results/2026-10-09T11-25-48-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-09T11-25-48-claude-opus-5-5.json), [`benchmarks/eval/results/2026-10-09T13-15-50-claude-opus-5-5.json`](benchmarks/eval/results/2026-10-09T13-15-50-claude-opus-5-5.json).
 
 ### Imperative code: a canvas with animation and physics
 
@@ -548,6 +552,7 @@ Read with the breakdown (2026-10-09, two runs per cell): the ArtScript answers a
 - Cost is computed from the real `usage` the API returns: the ArtScript spec in the system prompt, retries and thinking tokens (billed as output) all count.
 - ArtScript's system prompt includes its spec (1.2K–3.2K tokens depending on the run date; 3.2K in the 2026-10-02 measurement), which is served from the prompt cache after the first request; the "without prompt cache" column prices those tokens at the full input rate.
 - Since 2026-10-01 every app is also **run and used like a person would**: it's mounted in a simulated browser (happy-dom) and a stack-agnostic check clicks, types and reads the screen (e.g. adds and completes todos, reloads the page to check data persisted on the server). A failed check is fed back to Claude like a compiler error. Earlier runs only checked that code compiled and typechecked.
+- Next.js (Sonnet only, 2026-11-04): every answer has to pass a real `next build`, a real `next start` serves its route handlers, and the pages go through the same checks in the simulated browser, with a small stand-in for Next's client router (`benchmarks/eval/next-stack.ts`). The apps use route handlers and client components with data in memory; Server Actions, and Server Components reading data directly, aren't measured. Its App JS counts all of the build's client chunks.
 - Full-stack tasks: the other stacks also write their own `server.ts` (Node `http`, no dependencies, data in memory); ArtScript uses `api`, which also persists to SQLite. Svelte is validated without TypeScript type checking of `.svelte` files, which favors it.
 - Since 2026-10-01 18:47, ArtScript modification tasks get docs/SPEC-EDIT.md (~800 tokens) instead of the full spec; creation tasks keep the full spec. Earlier runs sent the full spec everywhere.
 - Each run uses the ArtScript spec as of its date (in English since 2026-10-02).

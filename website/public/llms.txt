@@ -36,5 +36,5 @@ Read the spec before writing code; read the edit spec when only changing existin
 ## Optional
 
 - [Everything in one file](https://artscript.dev/llms-full.txt): the spec, the edit spec and every guide.
-- [Benchmarks](https://artscript.dev/benchmarks): measured cost against React, Svelte, Vue and SolidJS.
+- [Benchmarks](https://artscript.dev/benchmarks): measured cost against React, Next.js, Svelte, Vue and SolidJS.
 - [Source code](https://github.com/leb90/ArtScript)

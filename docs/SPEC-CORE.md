@@ -94,7 +94,7 @@ To store the tasks on the server instead: `api tasks: Task` at the top, `data ta
 ## Backend
 
 - `api items: Item` → `api.items.list({ where, search, sort: "-price", limit, offset })`, `count()`, `get(id)` (`T?`), `create(obj)`, `update(id, changes)`, `remove(id)`. After the model: `login` (needs a session), `private` (rows per user; the model needs `owner: ID`), `admin`, `readonly`.
-- Errors: `try { await api.items.create(obj) } catch (e) { msg = e.message }` — **await the call, or the error never reaches the catch**; `e.details.field` names the invalid field, `e.status` is 409 for a taken `unique` value.
+- Errors: `try { await api.items.create(obj) } catch (e) { msg = e.message }`; `e.details.field` names the invalid field, `e.status` is 409 for a taken `unique` value.
 - Accounts, exactly:
   ```
   model User {

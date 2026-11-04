@@ -559,3 +559,29 @@ test("link takes the bold flag (measured: models write `link t.name to=... bold`
   assert.deepEqual(r.diagnostics.map((d) => d.msg), []);
   assert.match(r.js!, /a-bold/);
 });
+
+test("an api, server or auth call in a try is awaited, so its error reaches the catch", async () => {
+  const USER = 'model User {\n  id: ID\n  name: String\n}\n\napi users: User\n\n';
+  const page = (line: string) => `${USER}page P {\n  state msg = ""\n  fn save() {\n    try {\n      ${line}\n      msg = "ok"\n    } catch (e) {\n      msg = e.message\n    }\n  }\n  text msg\n}\n`;
+  assert.deepEqual(types(page('api.users.create({ name: "a" })')), []);
+  // `art fmt` writes the word; written by hand it stays one `await`.
+  assert.match(printProgram(parse(page('api.users.create({ name: "a" })'), "t")), /\n      await api\.users\.create\(\{ name: "a" \}\)\n/);
+  assert.equal(printProgram(parse(page('await api.users.create({ name: "a" })'), "t")).match(/await/g)!.length, 1);
+  assert.match(printProgram(parse(page('let u = api.users.create({ name: "a" })'), "t")), /let u = await api\.users\.create/);
+  const js = compile([{ file: "t.art", src: page('api.users.create({ name: "a" })') }]).js!;
+  assert.match(js, /async \(?\)? ?=>|async function save/);
+  assert.match(js, /await [^;]*create\(/);
+  // Other calls and other places stay as written.
+  assert.doesNotMatch(printProgram(parse(page("notify(\"a\")"), "t")), /await/);
+});
+
+test("include: a path written from the row itself means the same path", () => {
+  const src = 'model Author {\n  id: ID\n  name: String\n}\n\nmodel Post {\n  id: ID\n  author: Author\n}\n\napi authors: Author\n\napi posts: Post\n\npage P {\n  data posts = api.posts.list({ include: ["post.author"] })\n  text "x"\n}\n';
+  const r = compile([{ file: "t.art", src }]);
+  assert.deepEqual(r.diagnostics, []);
+  assert.doesNotMatch(r.js!, /post\.author/);
+  assert.match(r.js!, /"include": \["author"\]/);
+  // A wrong path is still an error, with the relations there are.
+  const [e] = check(parse(src.replace("post.author", "post.editor"), "t.art"));
+  assert.equal(e.type, "UNKNOWN_FIELD");
+});

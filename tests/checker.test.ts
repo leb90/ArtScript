@@ -149,11 +149,7 @@ test("a let initialized with null takes any value later", () => {
   assert.deepEqual(types('page P {\n  fn f() {\n    let b = null\n    for (let t = 0; t < 3; t++) {\n      b = { x: t }\n    }\n    return b\n  }\n  text "x"\n}'), []);
 });
 
-test("an api/server/auth call inside try must be awaited; a page may name a state `query`", () => {
-  const [e] = errs(USER + 'api users: User\npage P {\n  state msg = ""\n  fn save() {\n    try {\n      api.users.create({ name: "a", email: "a@x.co" })\n    } catch (e) {\n      msg = e.message\n    }\n  }\n  text msg\n}');
-  assert.equal(e.type, "NOT_AWAITED");
-  assert.deepEqual(e.fixes, ['await api.users.create({ name: "a", email: "a@x.co" })']);
-  assert.deepEqual(types(USER + 'api users: User\npage P {\n  fn save() {\n    try {\n      await api.users.create({ name: "a", email: "a@x.co" })\n    } catch (e) {\n      return\n    }\n  }\n  text "x"\n}'), []);
+test("a page may name a state `query`", () => {
   const js = compile([{ file: "q.art", src: 'page P "/" {\n  state query = ""\n  input query placeholder="Search" type=search\n  text query\n}' }]);
   assert.deepEqual(js.diagnostics, []);
   assert.equal((js.js!.match(/const query =/g) ?? []).length, 1);
