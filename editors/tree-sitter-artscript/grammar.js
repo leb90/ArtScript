@@ -111,7 +111,7 @@ module.exports = grammar({
     _member: ($) => choice($.state, $.computed, $.data, $.function, $.ref, $.mount, $.effect, $.style),
 
     state: ($) => seq("state", field("name", $.identifier), optional(seq(":", field("type", $.type))), "=", field("value", $._expression), $._terminator),
-    computed: ($) => seq("computed", field("name", $.identifier), "=", field("value", $._expression), $._terminator),
+    computed: ($) => seq(choice("computed", "const"), field("name", $.identifier), "=", field("value", $._expression), $._terminator),
     data: ($) => seq("data", field("name", $.identifier), "=", field("value", $._expression), optional("live"), $._terminator),
     function: ($) => seq("fn", field("name", $.identifier), $.parameters, field("body", $.block)),
     ref: ($) => seq("ref", field("name", $.identifier), $._terminator),

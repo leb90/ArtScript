@@ -266,3 +266,36 @@ test "adds a task" {
       (identifier)
       (string
         (string_content)))))
+
+====================
+A const at the top level
+====================
+
+const PRICES = [
+  { name: "Mesa", price: 3 },
+  {
+    name: "Silla",
+    price: 5
+  },
+]
+
+---
+
+(source_file
+  (computed
+    (identifier)
+    (array
+      (object
+        (pair
+          (property_identifier)
+          (string))
+        (pair
+          (property_identifier)
+          (number)))
+      (object
+        (pair
+          (property_identifier)
+          (string))
+        (pair
+          (property_identifier)
+          (number))))))
