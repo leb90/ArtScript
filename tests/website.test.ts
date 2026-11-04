@@ -41,6 +41,20 @@ test("website: every guide linked as Markdown (/md/<file>) is copied there by th
   assert.deepEqual(files.filter((f) => !copied.includes(f) && !(f.startsWith("website/content/") && copied.includes("website/content/*.md"))), []);
 });
 
+test("website: the Next.js table says what the result files say", () => {
+  const load = (file: string, stack: string) => JSON.parse(readFileSync(`benchmarks/eval/results/${file}-claude-sonnet-5-5.json`, "utf8")).results.filter((r: any) => r.stack === stack);
+  const art = load("2026-11-04T17-02-59", "artscript"), next = load("2026-11-04T16-50-49", "next"), react = load("2026-10-02T17-07-31", "react");
+  const per = (rows: any[]) => rows.reduce((a, r) => a + r.usd, 0) / rows.filter((r) => r.ok).length;
+  const usd = (n: number) => `$${n.toFixed(4)}`;
+  const page = readFileSync("website/benchmarks.art", "utf8").replace(/\s+/g, " ");
+  const groups: [string, (t: string) => boolean][] = [["All 50 tasks", () => true], ["Without a backend (41)", (t) => !t.startsWith("fs-")], ["Full-stack (9)", (t) => t.startsWith("fs-")]];
+  for (const [label, keep] of groups) {
+    const f = (rows: any[]) => per(rows.filter((r) => keep(r.task)));
+    const row = `{ tasks: "${label}", art: "${usd(f(art))}", next: "${usd(f(next))}", diff: "−${Math.round((1 - f(art) / f(next)) * 100)}%", react: "${usd(f(react))}" }`;
+    assert.ok(page.includes(row), `benchmarks.art should have ${row}`);
+  }
+});
+
 test("website: the tutorial's final app passes its test", async () => {
   const r = await runTests(sources("tests/fixtures/tutorial"));
   assert.ok(!("diagnostics" in r), JSON.stringify(r));

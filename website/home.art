@@ -3,7 +3,7 @@ use "./lib/content.ts" { COMPARE, stackByName, resultFor, barWidth, specTokens, 
 use "./lib/markdown.ts" { copyText }
 
 page Home "/" {
-  meta title="ArtScript (Art Script): the web framework built for AI agents" description="ArtScript, or Art Script, is an open-source full-stack web framework and language for AI agents: measured over 50 tasks, Claude builds and changes the same apps for half the cost of React, and they ship 5 KB of JavaScript." image="/og.png"
+  meta title="ArtScript (Art Script): the web framework built for AI agents" description="ArtScript, or Art Script, is an open-source full-stack web framework and language for AI agents: measured over 50 tasks, Claude builds and changes the same apps for half the cost of React or Next.js, and they ship about 8 KB of JavaScript." image="/og.png"
   state other = "React"
   computed art = COMPARE[0]
   computed them = stackByName(other)
@@ -14,7 +14,7 @@ page Home "/" {
       column class="container" align=center gap=0 {
         link "Version 0.2 · Measured against React, Next.js, Svelte, Vue and SolidJS →" to="/benchmarks" class="eyebrow"
         title "Paste one prompt. Your agent builds the app for half the cost." class="hero-title" tag=h1
-        text "ArtScript is a full-stack web language designed for AI agents: measured over 50 tasks, Claude builds and changes the same apps for 50% less than in React. Your agent writes a third of the code, the compiler catches its mistakes, and the app ships about 5 KB of JavaScript." class="lead"
+        text "ArtScript is a full-stack web language designed for AI agents: measured over 50 tasks, Claude builds and changes the same apps for about half the cost of React or Next.js. Your agent writes a third of the code, the compiler catches its mistakes, and the app ships about 8 KB of JavaScript." class="lead"
         row gap=3 wrap justify=center class="cta" {
           link "Get started" to="/learn/quick-start" class="btn primary"
           button "Copy prompt for your AI" class="btn" on:click=copyText(AI_PROMPT, event.currentTarget)
@@ -26,11 +26,11 @@ page Home "/" {
       grid cols=1 sm:cols=2 lg:cols=4 gap=4 {
         card class="stat reveal" gap=1 {
           text `−${sonnet.headline}%` class="num grad"
-          text `cost per working app vs React + TypeScript (${sonnet.name})` class="label"
+          text `cost per working app vs React + TypeScript (${sonnet.name}). Vs Next.js: −50%` class="label"
         }
         card class="stat reveal" gap=1 {
-          text "~5 KB" class="num"
-          text "of JavaScript per app (brotli), runtime included. React: ~59 KB" class="label"
+          text "~8 KB" class="num"
+          text "of JavaScript per app (brotli), runtime included. React: ~59 KB. Next.js: ~147 KB" class="label"
         }
         card class="stat reveal" gap=1 {
           text `${Math.round(specTokens / 100) / 10}K` class="num"
@@ -47,7 +47,7 @@ page Home "/" {
         title "Same app. A fraction of the code." class="section-title reveal"
         text "A full-stack users list (form, validation, a REST api and storage) exactly as the eval measured it in each stack. The labels are in Spanish, like the eval's dataset." class="section-lead reveal"
         row justify=center {
-          tabs other options=["React", "Svelte", "Vue", "SolidJS"]
+          tabs other options=["React", "Next.js", "Svelte", "Vue", "SolidJS"]
         }
         grid cols=1 md:cols=2 gap=5 class="compare reveal" {
           column gap=2 class="compare-col" {
@@ -87,7 +87,7 @@ page Home "/" {
           Feature heading="Edits, not rewrites" body="An agent changes existing code with art patch: small, addressable, typechecked and atomic. It doesn't re-send whole files to rename a button." {
             icon "edit" size=22
           }
-          Feature heading="About 3 KB of JavaScript" body="Signals and direct DOM updates, no virtual DOM. A typical app ships 2 to 5 KB brotli including the runtime, against about 59 KB for React." {
+          Feature heading="Under 10 KB of JavaScript" body="Signals and direct DOM updates, no virtual DOM. A typical app ships about 8 KB brotli including the runtime, against about 59 KB for React and 147 KB for Next.js." {
             icon "package" size=22
           }
           Feature heading="Secure by default" body="Hashed passwords, cookie sessions, CSRF protection, rate limits, validation on the server, CSP headers and safe URLs, with nothing to configure." {

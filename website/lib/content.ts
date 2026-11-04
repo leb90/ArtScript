@@ -41,6 +41,10 @@ import srcCss from "../site.css" with { type: "text" };
 import cmpArt from "../../benchmarks/eval/refs/fs-users/artscript/app.art" with { type: "text" };
 import cmpReact from "../../benchmarks/eval/refs/fs-users/react/App.tsx" with { type: "text" };
 import cmpReactServer from "../../benchmarks/eval/refs/fs-users/react/server.ts" with { type: "text" };
+import cmpNextPage from "../../benchmarks/eval/refs/fs-users/next/app/page.tsx" with { type: "text" };
+import cmpNextDb from "../../benchmarks/eval/refs/fs-users/next/lib/db.ts" with { type: "text" };
+import cmpNextUsers from "../../benchmarks/eval/refs/fs-users/next/app/api/users/route.ts" with { type: "text" };
+import cmpNextUser from "../../benchmarks/eval/refs/fs-users/next/app/api/users/[id]/route.ts" with { type: "text" };
 import cmpSvelte from "../../benchmarks/eval/refs/fs-users/svelte/App.svelte" with { type: "text" };
 import cmpSvelteServer from "../../benchmarks/eval/refs/fs-users/svelte/server.ts" with { type: "text" };
 import cmpVue from "../../benchmarks/eval/refs/fs-users/vue/App.vue" with { type: "text" };
@@ -199,6 +203,7 @@ const stack = (name: string, lang: string, files: [string, string][]): Stack => 
 export const COMPARE: Stack[] = [
   stack("ArtScript", "art", [["app.art", cmpArt]]),
   stack("React", "tsx", [["App.tsx", cmpReact], ["server.ts", cmpReactServer]]),
+  stack("Next.js", "tsx", [["app/page.tsx", cmpNextPage], ["lib/db.ts", cmpNextDb], ["app/api/users/route.ts", cmpNextUsers], ["app/api/users/[id]/route.ts", cmpNextUser]]),
   stack("Svelte", "svelte", [["App.svelte", cmpSvelte], ["server.ts", cmpSvelteServer]]),
   stack("Vue", "vue", [["App.vue", cmpVue], ["server.ts", cmpVueServer]]),
   stack("SolidJS", "tsx", [["App.tsx", cmpSolid], ["server.ts", cmpSolidServer]]),
@@ -288,7 +293,7 @@ const SCHEMA = {
       "@type": "SoftwareApplication",
       name: "ArtScript",
       alternateName: "Art Script",
-      description: "An open-source full-stack web framework and language designed for AI agents: apps built and changed for half the cost of React, with about 5 KB of JavaScript.",
+      description: "An open-source full-stack web framework and language designed for AI agents: apps built and changed for half the cost of React or Next.js, with about 8 KB of JavaScript.",
       url: "https://artscript.dev/",
       applicationCategory: "DeveloperApplication",
       operatingSystem: "Node.js 24, any modern browser",

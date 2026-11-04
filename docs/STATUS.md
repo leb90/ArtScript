@@ -6,7 +6,7 @@ What is measured, what is proven in use, and what isn't yet. Updated with every 
 
 ## Measured
 
-- **Cost:** over 50 tasks, three models and five stacks, ArtScript cost 50% less per working result than React + TypeScript with Claude Sonnet 5.5, 45% less with Opus 5.5 and 40% less with Haiku 4.5, and less than Svelte, Vue and Solid with each. Sonnet and Opus solved 100% of the tasks; Haiku 90% (86–89% in the other stacks). Next.js, measured apart with Sonnet on the same tasks (2026-11-04): $0.0186 per working result, about the same as React ($0.0178) and twice ArtScript ($0.0088). Raw data and method: [Benchmarks](/benchmarks).
+- **Cost:** over 50 tasks, three models and five stacks, ArtScript cost 50% less per working result than React + TypeScript with Claude Sonnet 5.5, 45% less with Opus 5.5 and 40% less with Haiku 4.5, and less than Svelte, Vue and Solid with each. Sonnet and Opus solved 100% of the tasks; Haiku 90% (86–89% in the other stacks). Against Next.js, measured the same day with Sonnet on the same tasks (2026-11-04): ArtScript $0.0093 per working result, Next.js $0.0186, 50% less; Next.js costs about the same as React. Raw data and method: [Benchmarks](/benchmarks).
 - **Performance:** in the [official js-framework-benchmark results](https://krausest.github.io/js-framework-benchmark/2026/chrome154.html) (Chrome 154), ArtScript scores 1.32 where 1.00 is the fastest keyed implementation: between Svelte (1.24) and Vue (1.33), ahead of React (1.91); 7.5 KB compressed. Apps ship 5–20 KB of JavaScript.
 - **Tests:** 284 in CI, covering the compiler, the runtime, the server, the dev tools and every example and guide on this site.
 

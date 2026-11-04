@@ -1,7 +1,7 @@
 {
   "name": "@artscript/core",
   "version": "0.2.18",
-  "description": "ArtScript (Art Script): a full-stack web framework and language for AI agents. Apps built and changed for half the cost of React, with 5 KB of JavaScript.",
+  "description": "ArtScript (Art Script): a full-stack web framework and language for AI agents. Apps built and changed for half the cost of React or Next.js, with about 8 KB of JavaScript.",
   "keywords": [
     "artscript",
     "art script",
