@@ -318,9 +318,11 @@ export function installDemo(schema, fns = {}, jobs = {}, base = "") {
 
   const network = globalThis.fetch?.bind(globalThis);
   const prefix = `${base.replace(/\/+$/, "")}/api/`;
+  let jobsDue = null;
   globalThis.fetch = async (input, init = {}) => {
     const url = new URL(typeof input === "string" || input instanceof URL ? input : input.url, location.href);
     if (url.origin !== location.origin || !url.pathname.startsWith(prefix)) return network(input, init);
+    await jobsDue;
     const method = (init.method ?? (typeof input === "object" && "method" in input ? input.method : "GET")).toUpperCase();
     const headers = new Headers(init.headers ?? {});
     const path = url.pathname.slice(prefix.length);
@@ -340,7 +342,10 @@ export function installDemo(schema, fns = {}, jobs = {}, base = "") {
     return new Response(status === 204 ? null : JSON.stringify(data ?? null), { status, headers: { "content-type": "application/json" } });
   };
 
-  // `server job`s run while the page is open, when they are due (the last run is remembered).
+  // `server job`s run while the page is open, when they are due (the last run is remembered). One
+  // that came due while the page was closed runs first and the page's requests wait for it (2 s at
+  // most), so a visitor coming back sees its work on the first screen.
+  const due = [];
   for (const [name, job] of Object.entries(jobs)) {
     store.jobs[name] ??= Date.now();
     let running = false;
@@ -351,8 +356,9 @@ export function installDemo(schema, fns = {}, jobs = {}, base = "") {
       try { await job.run({ db, fail, email }); save(); } catch (e) { console.error(`server job ${name}:`, e?.message ?? e); } finally { running = false; }
     };
     setInterval(tick, Math.min(job.every, 60_000));
-    setTimeout(tick, 1000);
+    due.push(tick());
   }
+  jobsDue = Promise.race([Promise.all(due), new Promise((ok) => setTimeout(ok, 2000))]);
 
   // What this is, and a way to start over.
   globalThis.__artDemo = { reset() { localStorage.removeItem(KEY); location.reload(); } };

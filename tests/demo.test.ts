@@ -190,6 +190,45 @@ test("demo backend: the same answers as the server", async () => {
   assert.doesNotMatch(stored, /secret123/);
 });
 
+test("demo backend: a job that came due while the page was closed runs before the first answer", async () => {
+  const r = compile([{ file: "app.art", src: SRC }]);
+  const { fns: code, ...schema } = r.server!;
+  const dir = mkdtempSync(join(tmpdir(), "art-demo-jobs-"));
+  writeFileSync(join(dir, "fns.mjs"), code);
+  const { fns } = await import(join(dir, "fns.mjs"));
+  const g = globalThis as any;
+  const saved = { fetch: g.fetch, localStorage: g.localStorage, location: g.location, document: g.document, setInterval: g.setInterval };
+  // @ts-ignore: runtime is plain JS
+  const { installDemo } = await import("../runtime/demo.js");
+  const HOUR = 3600000;
+  const visit = async (lastRun: number | null, run: (ctx: any) => Promise<void>) => {
+    const storage = new Map<string, string>();
+    if (lastRun !== null) storage.set("art-demo:/", JSON.stringify({ tables: {}, session: null, jobs: { refresh: lastRun } }));
+    g.localStorage = { getItem: (k: string) => storage.get(k) ?? null, setItem: (k: string, v: string) => void storage.set(k, v), removeItem: (k: string) => void storage.delete(k) };
+    g.location = new URL("http://demo.local/");
+    g.document = { body: null, addEventListener() {} };
+    g.setInterval = () => 0; // the page would stay open; this test's process doesn't
+    installDemo(schema, fns, { refresh: { every: HOUR, run } }, "");
+    const res = await g.fetch("http://demo.local/api/authors");
+    return (await res.json()).map((a: any) => a.name);
+  };
+  const fill = async ({ db }: any) => {
+    await new Promise((ok) => setTimeout(ok, 30));
+    db.authors.create({ name: "From the job" });
+  };
+  try {
+    assert.deepEqual(await visit(Date.now() - 2 * HOUR, fill), ["From the job"], "due: its work is in the first answer");
+    assert.deepEqual(await visit(Date.now() - 60000, fill), [], "not due yet: it doesn't run");
+    assert.deepEqual(await visit(null, fill), [], "a first visit starts the clock");
+    assert.deepEqual(await visit(Date.now() - 2 * HOUR, async () => { throw new Error("broken"); }), [], "a job that fails doesn't stop the page");
+    const started = Date.now();
+    assert.deepEqual(await visit(Date.now() - 2 * HOUR, () => new Promise(() => {})), [], "a job that never ends doesn't hold the page");
+    assert.ok(Date.now() - started < 3000);
+  } finally {
+    Object.assign(g, saved);
+  }
+});
+
 test("art build --demo: static files with the backend inside, no server", () => {
   const dir = mkdtempSync(join(tmpdir(), "art-demo-build-"));
   writeFileSync(join(dir, "app.art"), SRC);
