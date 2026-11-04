@@ -2,13 +2,13 @@
 
 What is measured, what is proven in use, and what isn't yet. Updated with every release; the numbers come from the repository's own data.
 
-**Version 0.2 (October 2026).** Usable for prototypes and small apps built with an AI agent. The syntax may still change before 1.0; every change is listed in the changelog with what to write instead.
+**Version 0.2 (November 2026).** Usable for prototypes and small apps built with an AI agent. The syntax may still change before 1.0; every change is listed in the changelog with what to write instead.
 
 ## Measured
 
 - **Cost:** over 50 tasks, three models and five stacks, ArtScript cost 50% less per working result than React + TypeScript with Claude Sonnet 5.5, 45% less with Opus 5.5 and 40% less with Haiku 4.5, and less than Svelte, Vue and Solid with each. Sonnet and Opus solved 100% of the tasks; Haiku 90% (86–89% in the other stacks). Raw data and method: [Benchmarks](/benchmarks).
 - **Performance:** in the [official js-framework-benchmark results](https://krausest.github.io/js-framework-benchmark/2026/chrome154.html) (Chrome 154), ArtScript scores 1.32 where 1.00 is the fastest keyed implementation: between Svelte (1.24) and Vue (1.33), ahead of React (1.91); 7.5 KB compressed. Apps ship 5–20 KB of JavaScript.
-- **Tests:** 215 in CI, covering the compiler, the runtime, the server, the dev tools and every example and guide on this site.
+- **Tests:** 284 in CI, covering the compiler, the runtime, the server, the dev tools and every example and guide on this site.
 
 ## Proven in use
 
