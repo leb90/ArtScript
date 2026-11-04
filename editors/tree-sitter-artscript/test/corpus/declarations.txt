@@ -288,14 +288,16 @@ const PRICES = [
       (object
         (pair
           (property_identifier)
-          (string))
+          (string
+            (string_content)))
         (pair
           (property_identifier)
           (number)))
       (object
         (pair
           (property_identifier)
-          (string))
+          (string
+            (string_content)))
         (pair
           (property_identifier)
           (number))))))
