@@ -2,7 +2,7 @@
 
 ArtScript follows [semantic versioning](https://semver.org) from 1.0. Before 1.0, a minor version (0.x) may change the syntax; every change of that kind is listed here with what to write instead.
 
-## Unreleased
+## 0.2.18 (2026-11-04)
 
 - `art build --demo`: a `server job` that came due while the page was closed runs before the page's first requests are answered (they wait 2 s at most). Before, it ran a second after the page opened: a visitor coming back after weeks saw an empty dashboard until reloading, with the job's new data already stored.
 
