@@ -1,0 +1,37 @@
+# Asks Context7 to index the docs again when they change: it's what agents using Context7 read.
+# Needs the repository secret CONTEXT7_API_KEY (context7.com/dashboard, API Keys); without it, this
+# does nothing.
+name: context7
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/**
+      - website/content/**
+      - SECURITY.md
+      - context7.json
+  workflow_dispatch:
+permissions: {}
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refresh the library
+        env:
+          KEY: ${{ secrets.CONTEXT7_API_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "CONTEXT7_API_KEY isn't set: nothing to do"
+            exit 0
+          fi
+          status=$(curl -sS --max-time 60 -o response.json -w '%{http_code}' -X POST https://context7.com/api/v1/refresh \
+            -H "Authorization: Bearer $KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"libraryName": "/leb90/artscript"}')
+          echo "$status $(cat response.json)"
+          case "$status" in
+            200) ;;
+            # Too many refreshes in a row: the next change to the docs asks again.
+            429) echo "::warning::Context7 rate limit: this change wasn't indexed yet" ;;
+            *) exit 1 ;;
+          esac
