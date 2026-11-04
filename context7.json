@@ -1,0 +1,22 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "ArtScript",
+  "description": "Full-stack web language and framework for AI agents. .art files hold the pages, components, data models and api of one program, and compile to dependency-free JavaScript and a Node server.",
+  "folders": ["docs", "website/content"],
+  "excludeFiles": [
+    "README.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "THIRD_PARTY_NOTICES.md",
+    "LICENSE.md",
+    "llms.txt",
+    "PUBLISHING.md",
+    "STATUS.md"
+  ],
+  "rules": [
+    "Expressions are JavaScript; only the structure (page, component, model, api, state, computed, data, fn and the view) is ArtScript's own.",
+    "Every .art file in src/ is part of one program: there are no imports between .art files.",
+    "After every change run npx art check --ai and apply what it reports: each error has expected, actual and fixes.",
+    "Write data, constants, helpers and formatting in .art. Use a .ts file only for code that drives the DOM or a canvas, runs heavy loops, or wraps a library that owns its DOM."
+  ]
+}
